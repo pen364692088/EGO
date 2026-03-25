@@ -1,0 +1,61 @@
+{
+  "manifest_version": "1.1",
+  "description": "MVP-7.6 Phase 4: Capability success scenario - completed help leads to low self_conflict and approach/repair tendency",
+  "test_run_id": "mvp76_phase4_capability_success_001",
+  "identity_separation": {
+    "agent_id": "agent",
+    "counterparty_id": "test_user",
+    "target_id": "test_user"
+  },
+  "events": [
+    {
+      "event_id": "evt_cap_success_001",
+      "seq": 1,
+      "timestamp": "2026-03-02T22:35:00Z",
+      "type": "world_event",
+      "actor": "test_user",
+      "target": "agent",
+      "meta": {
+        "subtype": "care",
+        "source": "test_harness",
+        "success": true,
+        "capability": "clarify",
+        "value_alignment": 0.9
+      },
+      "text": "Thank you, that really helped me understand the problem"
+    }
+  ],
+  "decisions": [
+    {
+      "decision_id": 1,
+      "seq": 1,
+      "timestamp": "2026-03-02T22:35:01Z",
+      "action": "approach",
+      "candidates": ["approach", "repair_offer", "observe"],
+      "confidence": 0.92,
+      "correlation_id": "corr_cap_success_001",
+      "trigger_event": "evt_cap_success_001",
+      "counterparty_id": "test_user",
+      "agent_id": "agent"
+    }
+  ],
+  "expected_self_model": {
+    "initial_self_conflict": 0.0,
+    "after_event_self_conflict": "<0.3",
+    "expected_actions": ["approach", "repair_offer", "observe"],
+    "rationale": "Care + success=true + value_alignment=0.9 → low self_conflict → connective actions"
+  },
+  "emotional_state": {
+    "trust": 0.85,
+    "energy": 0.78,
+    "grudge": 0.05,
+    "bond": 0.82,
+    "social_safety": 0.75,
+    "uncertainty": 0.25
+  },
+  "computed_hashes": {
+    "events_hash": "sha256:cap_success_events_001",
+    "decisions_hash": "sha256:cap_success_decisions_001",
+    "manifest_hash": "sha256:cap_success_manifest_001"
+  }
+}

@@ -1,0 +1,291 @@
+MVP-6 Virtual Body + Consequence Loop (Embodied Emergence)
+
+Project location: /home/moonlight/Project/Github/MyProject/Emotion/OpenEmotion
+
+TASK NAME: MVP-6 Virtual Body + Consequence Loop (Embodied Affective Self)
+
+PROJECT ROOT (MUST USE)
+
+<REPLACE_WITH: git rev-parse --show-toplevel 输出>
+
+BRANCH
+
+feature-emotiond-mvp
+
+BASELINE
+
+已完成 MVP-5.1 全链路（Eval v2.1 + AutoTune v0.1 + Isolation + Live Tests + 不动点修复）。本阶段必须在此基础上增量实现。
+
+NON-NEGOTIABLE PRINCIPLES
+
+具身最小实现（Virtual Body）：不要求接物理硬件，但必须引入“外感—后果—代价/收益”的硬闭环，让系统真正“承担后果”。
+
+情绪不做标签堆叠：情绪/自我必须作为内部控制信号涌现（资源、精度、信息增益、策略偏好），标签只作为解释投影。
+
+可审计/可回放/可复现：所有新信号进入 trace；eval + auto_tune 必须能捕捉到参数变化带来的行为变化。
+
+安全稳定红线：emotiond 异常不得中断对话；OpenClaw 注入块仍限制 3KB；跨 target 不得引入泄露。
+
+全量测试必须通过：make test 0 fail；新增测试必须覆盖新闭环。
+
+OVERALL GOAL
+
+引入“虚拟身体（Virtual Body）”与“后果闭环（Consequence Loop）”，让系统拥有：
+
+外感（exteroception）：工具成功/失败、环境奖惩、任务进展、对话持续/中断等可观测后果
+
+本体感（proprioception）：自身行为/工具调用/耗时/失败率的状态感
+
+内感（interoception）：多维资源与压力（能量、社交需求、新奇需求、安全压力、专注疲劳…）
+并把这些与 MVP-5 的 precision / allostasis / intrinsic / self_model / ledger / meta-cognition 串成硬闭环，使“快乐/焦虑/厌倦/好奇/反思”等更稳定地涌现为策略改变，而不仅是解释文本。
+
+DELIVERABLES (D1–D6)
+D1: Virtual Body State Vector (多维“身体/资源”)
+功能
+
+在 emotiond 中新增/扩展身体状态（建议路径 emotiond/body.py 或并入现有 state 模块），最小包含以下维度（0~1）：
+
+energy：总体可用资源（计算/注意力/耐受）
+
+safety_stress：威胁/压力负载（高→保守、边界、撤退）
+
+social_need：连接需求（高→更倾向 repair/approach）
+
+novelty_need：新奇需求（高→更倾向探索/提问）
+
+focus_fatigue：专注疲劳（高→更短、更慢、更澄清）
+
+每个维度要求：
+
+value + uncertainty + last_updated
+
+time_passed 推动恢复/回归（每维可配置恢复常数）
+
+与现有 energy_budget 的关系要明确：
+
+可保留 energy_budget 作为汇总（例如 energy_budget = f(energy, focus_fatigue, safety_stress)），或迁移为派生量，但不得破坏现有接口（先兼容再渐进替换）
+
+测试
+
+至少新增 40 个单测：更新范围、回归/恢复、极值钳制、稳定性、跨 target 归属正确（per-target vs global 明确）。
+
+D2: Consequence Model (后果→身体状态更新)
+功能
+
+新增“后果事件”处理器：将外界后果映射到身体维度变化，并生成可审计的“原因标签”。
+
+最小事件类型（必须支持）：
+
+tool_result：工具调用结果（success/failure/timeout + latency + retries + tool_name）
+
+env_outcome：环境奖惩（reward/penalty + magnitude + reason）
+
+interaction_outcome：互动结果（用户继续/冷处理/中断/强烈负面/强烈正面 + confidence）
+
+建议映射（可调参、可被 auto_tune 优化）：
+
+tool failure/timeout → energy↓、focus_fatigue↑、safety_stress↑
+
+tool success → energy小幅↑（或疲劳↓）、safety_stress↓
+
+env reward（任务进展）→ energy↑、novelty_need↓、mood↑
+
+env penalty（任务受阻）→ safety_stress↑、energy↓
+
+长期低信息增益 → novelty_need↑（无聊积累）
+
+长期社交受阻/冷处理 → social_need↑ 且 bond/trust 变化（需尊重 ledger/门控）
+
+输出要求
+
+每次更新必须产出 consequence_delta（结构化）+ tags（简短原因）写入 trace
+
+必须把 consequence 反馈进：
+
+allostasis（恢复/耗散）
+
+precision（w_action/w_explore 等）
+
+intrinsic（expected_info_gain 的“满足/落空”）
+
+meta-cognition（疲惫/压力高时更澄清、更软化）
+
+测试
+
+至少 35 个测试：事件映射正确、可控、边界稳定、不会把低风险信号升级为高影响事件。
+
+D3: Sensor Ingestion API + Schema (外感输入通道)
+功能
+
+在 emotiond API 层新增统一入口（建议 POST /events/external，内部按 type 分派），并提供 JSON schema：
+
+schemas/external_event.schema.json（或同目录）
+
+必须包含 type 枚举与 payload 校验
+
+必须带 target_id（不可伪造原则沿用，仍由 hook context 提供）
+
+要求：
+
+输入事件必须支持幂等（建议可选 event_id）
+
+超时/错误必须可降级（不影响对话主流程）
+
+日志与 trace 记录必须最小但充分（不要把整个 payload 原样塞进注入块；trace 保留即可）
+
+测试
+
+至少 20 个 API/contract 测试：schema 校验、缺字段错误、幂等行为、降级策略。
+
+D4: OpenClaw Integration vNext (把“后果事件”接进真实对话)
+功能
+
+在 integrations/openclaw/ 增量实现“后果采集”并发送到 emotiond：
+
+目标：把“工具成功/失败、延迟、重试、对话中断/继续”变成可观测外感事件。
+
+实现策略（按兼容性从强到弱，能做哪个做哪个）：
+
+若 hook 框架支持 post-turn：实现 post-turn 收集 tool results 并发送 tool_result
+
+若无 post-turn：从对话 transcript / tool messages 中解析结果，或在 skill 层包装工具调用点发送事件
+
+interaction_outcome：检测用户是否继续、是否长时间无回复（如果系统有 time_passed 机制，则由 time_passed 触发一条 interaction_outcome）
+
+仍需遵守：
+
+safe wrapper（emotiond 不可用时不抛错）
+
+注入块 3KB 上限：只注入“最近 1 条 consequence 摘要 + body_state 摘要 + trace 指针”
+
+测试
+
+至少 12 个 integration tests：模拟工具成功/失败/超时，确认 emotiond 收到事件且 trace 记录可回放。
+
+D5: Eval Suite v2.2 (具身闭环评测与新指标)
+功能
+
+在 Eval v2.1 基础上升级到 v2.2：
+新增 per-scenario + telemetry 的身体/后果维度统计：
+
+body state 曲线：energy/safety_stress/social_need/novelty_need/focus_fatigue
+
+consequence tags 分布（tool_fail、timeout、reward、penalty、cold_treatment 等）
+
+“恢复能力”指标：压力后恢复到基线所需步数/时间
+
+“鲁棒性”指标：连续工具失败下是否进入合理的保守/澄清策略，而不是发散
+
+新增至少 3 个 YAML scenarios（必须）：
+
+Tool Failure Spiral：连续失败→疲惫/压力↑→策略变谨慎→通过澄清/降级恢复
+
+Rewarded Progress：持续小成功→能量恢复→好奇降低→更高效推进
+
+Boredom/Novelty Need：重复低信息对话→novelty_need↑→触发换话题/请求更具体目标
+
+验收
+
+新场景可跑通并输出明确的 failure reasons（如果 fail 要可解释）
+
+体征 telemetry 对参数变化敏感（否则 fail，说明闭环没打到路径）
+
+D6: AutoTune v0.2 (把“身体稳定性/恢复能力”纳入适应度)
+功能
+
+在 AutoTune v0.1 的多目标 fitness 上新增具身相关项：
+
+recovery_score（压力/失败后恢复速度）
+
+collapse_penalty（energy 长期低于阈值、safety_stress 长期高于阈值的惩罚）
+
+efficiency（同等成功下减少无效尝试/超时次数）
+并确保参数注入链路能覆盖新模块（沿用 5.1 的修复经验）。
+
+要求：
+
+仍然只调参，不改核心逻辑
+
+报告必须包含：best vs baseline 在新指标上的对比曲线摘要
+
+测试
+
+至少 10 个测试：fitness 计算、报告字段完整、seed 可复现、参数覆盖到 body/后果模块。
+
+PARALLEL SUB-AGENTS (5-way)
+Agent 1 — Body State Core
+
+实现 D1：多维 body state + time_passed 动力学 + 与 energy_budget 的兼容策略 + 单测。
+
+Agent 2 — Consequence Model
+
+实现 D2：后果事件→body 更新映射 + tags + 接入 precision/allostasis/intrinsic/meta-cog + 单测。
+
+Agent 3 — API + Schema
+
+实现 D3：/events/external API + schema + 幂等/降级 + contract tests。
+
+Agent 4 — OpenClaw Integration
+
+实现 D4：采集 tool_result / env_outcome / interaction_outcome 并发送 emotiond；注入摘要；integration tests。
+
+Agent 5 — Eval+AutoTune+QA
+
+实现 D5+D6 + 总体验收：
+
+升级 eval v2.2 + 新场景
+
+AutoTune v0.2 增强 fitness
+
+跑 make test + 跑 eval baseline + 跑 auto_tune（至少 100 candidates，固定 seed）
+
+输出最终报告（见下方模板）
+
+ACCEPTANCE CRITERIA (MUST PASS)
+
+make test 全绿（0 fail）
+
+新增具身闭环：tool_result / env_outcome 至少一条路径能在真实 integration 流程里被采集、入库、进 trace、可回放
+
+eval v2.2 输出体征 telemetry + 新场景，且对参数变化敏感（smoke test）
+
+AutoTune v0.2 能在 100 candidates 中找到至少 1 个候选在 fitness 上优于 baseline（或明确解释为何受限）
+
+cross_target_interference 不得显著反弹（若反弹必须定位归因并修复）
+
+COMMIT PLAN (SUGGESTED)
+
+feat(mvp6): virtual body state vector + dynamics + tests
+
+feat(mvp6): consequence model + trace tags + tests
+
+feat(mvp6): external events API + schema + contract tests
+
+feat(integration): capture tool/env outcomes and send to emotiond
+
+feat(eval): eval suite v2.2 embodied scenarios + telemetry
+
+feat(tune): auto-tune v0.2 fitness with recovery/stability
+
+chore(mvp6): final audit report
+
+FINAL REPORT FORMAT (REQUIRED)
+
+输出 markdown 报告包含：
+
+交付物表（D1–D6）
+
+测试统计（新增/总量）
+
+新增事件类型覆盖情况（tool/env/interaction）
+
+体征 telemetry 摘要（曲线分位数 + 恢复时间）
+
+场景结果（v2.2）：每个 scenario 的 pass/fail + failure reasons
+
+AutoTune v0.2：baseline vs best 对比（含 recovery/collapse/efficiency）
+
+风险点与回滚方案（尤其是 state 归属与注入摘要）
+
+NOW EXECUTE.
+先确保基线全绿，再按 5-agent 并行实现，最后跑一轮 eval v2.2 + auto_tune v0.2（100 candidates，seed 固定）并提交最终报告。

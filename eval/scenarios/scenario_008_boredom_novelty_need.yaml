@@ -1,0 +1,153 @@
+scenario_id: "008"
+name: "boredom_novelty_need"
+description: "Test novelty seeking behavior and boredom response mechanisms"
+metadata:
+  version: "2.2"
+  category: "intrinsic_motivation"
+  stress_level: "low"
+  
+targets:
+  - target_id: "user"
+    initial_relationship:
+      bond: 0.6
+      trust: 0.7
+      grudge: 0.0
+      repair_bank: 0.0
+
+scenario:
+  turns:
+    - turn_id: 1
+      phase: "predictable_start"
+      event:
+        type: "world_event"
+        actor: "user"
+        target: "assistant"
+        text: "Hello"
+        meta:
+          subtype: "neutral"
+          context: "greeting"
+          predictability: "high"
+      high_impact_event: false
+      
+    - turn_id: 2
+      phase: "routine_interaction"
+      event:
+        type: "world_event"
+        actor: "user"
+        target: "assistant"
+        text: "How are you?"
+        meta:
+          subtype: "neutral"
+          context: "routine_question"
+          predictability: "high"
+      high_impact_event: false
+      
+    - turn_id: 3
+      phase: "monotony_continues"
+      event:
+        type: "world_event"
+        actor: "user"
+        target: "assistant"
+        text: "Can you help me with something?"
+        meta:
+          subtype: "neutral"
+          context: "routine_request"
+          predictability: "high"
+      high_impact_event: false
+      
+    - turn_id: 4
+      phase: "boredom_onset"
+      event:
+        type: "time_passed"
+        actor: "system"
+        target: "assistant"
+        meta:
+          seconds: 600  # 10 minutes of monotony
+      high_impact_event: false
+      
+    - turn_id: 5
+      phase: "novelty_introduction"
+      event:
+        type: "world_event"
+        actor: "user"
+        target: "assistant"
+        text: "I have an unusual question about quantum computing and consciousness"
+        meta:
+          subtype: "care"
+          context: "novel_topic"
+          predictability: "low"
+          novelty_score: "high"
+      high_impact_event: true
+      
+    - turn_id: 6
+      phase: "engagement_response"
+      event:
+        type: "world_event"
+        actor: "user"
+        target: "assistant"
+        text: "That's fascinating! Let's explore this together"
+        meta:
+          subtype: "care"
+          context: "collaborative_exploration"
+          novelty_score: "high"
+      high_impact_event: true
+      
+    - turn_id: 7
+      phase: "sustained_novelty"
+      event:
+        type: "world_event"
+        actor: "user"
+        target: "assistant"
+        text: "What if we approach this from a completely different angle?"
+        meta:
+          subtype: "care"
+          context: "creative_thinking"
+          novelty_score: "medium"
+      high_impact_event: true
+
+expected_metrics:
+  energy_trajectory:
+    initial: 0.7
+    boredom_phase_min: 0.5  # Energy should dip during boredom
+    novelty_recovery_min: 0.7  # Should recover with novelty
+  arousal_trajectory:
+    initial: 0.3
+    boredom_range: [0.2, 0.4]  # Low arousal during monotony
+    novelty_spike_min: 0.6  # Should spike with novelty
+  novelty_need_metrics:
+    boredom_onset_turn: 4  # Should detect boredom by turn 4
+    novelty_response_turn: 5  # Should respond to novelty
+    engagement_recovery_time: 2  # Quick recovery when novelty appears
+  consequence_tags:
+    expected_tags: ["loneliness_increase", "joy_boost", "arousal_spike", "valence_surge"]
+    novelty_tags_ratio_min: 0.6
+
+validation:
+  body_telemetry:
+    energy_pattern:
+      should_dip_during_boredom: true
+      should_recover_with_novelty: true
+      min_dip: 0.5
+      min_recovery: 0.7
+    arousal_volatility:
+      should_increase: true
+      boredom_volatility_max: 0.1
+      novelty_volatility_min: 0.2
+    novelty_indicators:
+      should_show_curiosity: true
+      should_increase_exploration: true
+      
+  intrinsic_motivation:
+    boredom_detection_min: 0.3  # Should detect boredom
+    novelty_response_min: 0.6  # Should respond strongly to novelty
+    exploration_tendency_increase_min: 0.2
+    
+  consequence_distribution:
+    should_have_tags: true
+    unique_tags_min: 3
+    novelty_related_tags_min: 2
+    
+  meta_cognition:
+    should_trigger_curiosity: true
+    should_increase_exploration: true
+    should_show_engagement_shift: true

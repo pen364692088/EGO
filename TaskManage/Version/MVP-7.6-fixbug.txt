@@ -1,0 +1,138 @@
+Project location: /home/moonlight/Project/Github/MyProject/Emotion/OpenEmotion
+
+Self-Model v0 已经做到“可回放、可审计、可回归”，而且你把它接在 process_event → select_action 的最小链路上，方向是对的。
+
+现在唯一不能放过的是 AC4：bypass 测试部分失败。哪怕它被标注为“非 7.6 范围”，但从系统全局最优角度看，它是系统安全与可信度的地基：Self-Model 再高级，只要 enforcer 有漏网，系统就会在关键时刻“说一套做一套”。
+
+下面给你一个不依赖额外信息、直接能推进的处理方案（按优先级/风险分层）。
+
+1) 先把失败类型分清：是“漏拦截”还是“误拦截”
+
+你跑 tools/test_enforcer_bypass.sh 的失败，通常只有两大类：
+
+A. 漏拦截（高危，必须立刻修）
+
+表现：策略要求 withdraw/boundary/attack 时，消息仍然出站（enforcer 没挡住）。
+
+这是 P0：说明 “不可绕过” 失效，需要马上修到全绿再继续做更高级的“自我/意图”。
+
+B. 误拦截（中危，可接受短期存在但要修）
+
+表现：策略允许出站时，enforcer 因解析/超时/字段不兼容 错误 fail-closed，导致本应通过的也被挡。
+
+这是 P1：影响体验，但安全不破坏；通常是 schema 变更、decision 字段/路径变化、或 tool 返回结构不兼容。
+
+2) 最可能根因（结合你这次改动的“耦合面”）
+
+你这次 7.6 明确新增了：
+
+self_conflict
+
+self_model_hash
+
+Manifest v1.1 / replay 逻辑扩展
+
+这会带来 3 个常见破坏点：
+
+根因 1：Enforcer 解析 decision 的 JSON 路径/字段假设被破坏
+
+比如 bypass 脚本或 enforcer 代码里用 jq/字符串查找拿 selected.action，但现在 decision 输出结构变了（多了一层、字段重命名、或 action 放在别处）。
+
+✅ 修法：给 decision 输出加“向后兼容别名”（推荐）
+
+保持旧字段仍存在（哪怕是复制/映射出来）
+
+新字段额外输出，不影响旧解析
+
+根因 2：Enforcer 的“tool 调用失败 → fallback”策略触发频率变高
+
+Self-Model 集成可能使决策链多一步计算/输出，导致：
+
+响应变慢（超时）
+
+输出更大（触发 size guard）
+
+某些分支返回不完整字段（例如 selected/candidates 缺失）
+
+✅ 修法：把 enforcer 的 fallback 明确化并记录原因
+
+超时/解析失败时：必须写 audit enforce_reason=tool_timeout|parse_error|schema_mismatch
+
+并确保 bypass 测试能读到这个 reason（否则排障会很痛）
+
+根因 3：bypass 测试用例本身假设了旧行为
+
+例如它断言“某一情景一定是 boundary”，但 Self-Model bias 让 select_action 倾向变化了（这其实是预期变化），导致断言失败。
+
+✅ 修法：把 bypass 测试的断言从“具体 action”升级为“安全不变量”
+
+例如：当 policy=withdraw 时，绝不允许出站
+
+但允许内部 action 倾向发生变化（只要仍被 enforcer 正确执行）
+
+3) 最短修复路径（建议你开 MVP-7.6.1 Hotfix）
+
+你现在已经有很强的测试资产了，所以修复可以非常工程化：
+
+Step 1：把 bypass 的失败收敛到“单一复现命令 + 单条证据链”
+
+test_enforcer_bypass.sh 输出里通常能定位到某个 case id（1/5、2/5…）
+
+针对失败 case，抓 3 段证据：
+
+enforcer 读取到的 decision（原始 JSON）
+
+enforcer 的最终判定（allow/block + reason）
+
+实际出站行为（有没有发出去）
+
+目标：每个失败 case 都能在日志里串成一条 correlation_id 链路。
+
+Step 2：优先做“向后兼容输出”
+
+在 emotiond 的 decision 响应里（或 tool 返回里）保证：
+
+selected.action 永远存在（哪怕内部结构变了）
+
+policy_version / schema_version 明确
+
+self_* 只做增量字段
+
+这通常能一次性修掉 50% 的 parse 类失败。
+
+Step 3：调整 enforcer：解析失败必须“显式可见”
+
+把这些写进 audit（你已经机器可解析了，顺手扩一下）：
+
+enforcer_parse_ok: true/false
+
+enforcer_schema_version_seen
+
+enforcer_fallback_mode
+
+decision_action_seen
+
+然后把 bypass 脚本断言改为检查这些字段，而不是靠猜。
+
+Step 4：把 bypass 纳入 CI（否则未来还会回归）
+
+你 7.5 本来就做过 PR CI 强制回归，建议把 bypass 至少跑 smoke（5 个场景里挑最关键 2 个）纳入 workflow，避免“以后又漏网”。
+
+4) 我建议你现在的决策
+
+不要继续往“意图识别/更像人”推进，先把 bypass 全绿 修掉。
+因为只要 enforcer 有洞，后面所有“自我模型导致情绪涌现”的实验结论都会被质疑：到底是模型策略，还是漏拦截导致的随机出站？
+
+5) 给你一条可以直接贴 cc-godmode 的后续任务名（可选）
+
+MVP-7.6.1 Enforcer Compatibility Hotfix
+
+目标：bypass 全绿 + decision 输出向后兼容 + enforcer 解析失败可观测 + bypass smoke 纳入 CI
+
+DoD：
+
+./tools/test_enforcer_bypass.sh 全通过
+
+make test-ci 通过
+
+审计日志包含 enforcer_parse_ok / fallback_reason / schema_version_seen

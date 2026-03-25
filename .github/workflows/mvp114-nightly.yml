@@ -1,0 +1,218 @@
+name: MVP11.4 Nightly (Shadow Hard Gate)
+
+on:
+  workflow_dispatch:
+    inputs:
+      shadow-soft-fail:
+        description: 'Shadow mode soft-fail (CI passes even if gates fail)'
+        required: false
+        default: true
+        type: boolean
+  schedule:
+    # Run at 6:05 AM UTC daily
+    - cron: '5 6 * * *'
+
+env:
+  # Phase 1 Shadow Mode: Enable enforcement logic but don't block CI
+  HARD_GATE_ENFORCE: '1'
+
+jobs:
+  nightly:
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: |
+          python -m venv .venv
+          . .venv/bin/activate
+          pip install -e .
+          pip install pytest
+
+      - name: Run tests
+        run: |
+          . .venv/bin/activate
+          pytest tests/mvp11/ -v --tb=short
+
+      - name: Eval - Quick mode
+        run: |
+          . .venv/bin/activate
+          python scripts/eval_mvp11.py \
+            --mode quick \
+            --seed 42 \
+            --ticks 120 \
+            --artifacts-dir artifacts/mvp11
+
+      - name: Eval - Science mode
+        run: |
+          . .venv/bin/activate
+          python scripts/eval_mvp11.py \
+            --mode science \
+            --seed 42 \
+            --ticks 600 \
+            --artifacts-dir artifacts/mvp11
+
+      - name: Eval - Replay
+        run: |
+          . .venv/bin/activate
+          RUN_ID=$(ls -t artifacts/mvp11/mvp11_*.jsonl 2>/dev/null | head -1 | xargs -I{} basename {} .jsonl || echo "")
+          if [ -n "$RUN_ID" ]; then
+            python scripts/eval_mvp11.py \
+              --mode replay \
+              --run-id "$RUN_ID" \
+              --artifacts-dir artifacts/mvp11
+          else
+            echo "No run found for replay"
+          fi
+
+      - name: Cycle Analyze
+        run: |
+          . .venv/bin/activate
+          python scripts/cycle_analyze_mvp11.py \
+            --artifacts-dir artifacts/mvp11 \
+            --min-count 3 \
+            --top-k 128
+
+      - name: Cycle Graph - Merge Global
+        run: |
+          . .venv/bin/activate
+          python scripts/cycle_graph_mvp11.py \
+            --artifacts-dir artifacts/mvp11 \
+            --merge-global \
+            --max-nodes 10000 \
+            --max-edges 50000
+
+      - name: A/B Quick Check (5×3×300)
+        run: |
+          . .venv/bin/activate
+          python scripts/mvp114_ab_eval.py \
+            --scenarios baseline,focused,wide,chaos,stress \
+            --seeds 41,42,43 \
+            --ticks 300 \
+            --artifacts-dir artifacts/mvp11_ab_nightly \
+            --out artifacts/mvp11_ab_nightly/mvp114_ab_nightly.json \
+            --out-md artifacts/mvp11_ab_nightly/mvp114_ab_nightly.md \
+            --pairs-file artifacts/mvp11_ab_nightly/pairs.jsonl \
+            --resume \
+            --max-runtime-sec 600
+
+      - name: Generate Nightly Summary
+        if: always()
+        run: |
+          . .venv/bin/activate
+          python scripts/nightly_summary_mvp114.py \
+            --artifacts-dir artifacts/mvp11 \
+            --ab-report artifacts/mvp11_ab_nightly/mvp114_ab_nightly.json \
+            --out-dir artifacts/mvp11/nightly/$(date +%Y%m%d)
+
+      - name: Update Trend Entry
+        if: always()
+        run: |
+          . .venv/bin/activate
+          python scripts/export_mvp114_trend_entry.py \
+            --dashboard artifacts/mvp11/dashboard/nightly_dashboard.json \
+            --out artifacts/mvp11/trends/trend_entry.json \
+            || echo "Trend entry generation skipped"
+
+      - name: Scenario-Stratified Trend
+        if: always()
+        run: |
+          . .venv/bin/activate
+          python scripts/mvp11_scenario_trend.py \
+            --trend-dir artifacts/mvp11/trends \
+            --out-dir artifacts/mvp11/trends/scenario_stratified \
+            || echo "Scenario trend generation skipped"
+
+      # Phase 1 Shadow Mode: HARD_GATE_ENFORCE=1 + continue-on-error + shadow-soft-fail
+      # This enables enforcement logic without blocking CI
+      - name: Hard Gate Evaluation (Shadow Mode)
+        if: always()
+        continue-on-error: true
+        run: |
+          . .venv/bin/activate
+          # Determine shadow-soft-fail setting
+          SHADOW_SOFT_FAIL="${{ inputs.shadow-soft-fail }}"
+          if [ -z "$SHADOW_SOFT_FAIL" ]; then
+            SHADOW_SOFT_FAIL="true"
+          fi
+          
+          # Build command with frozen thresholds
+          CMD="python scripts/mvp11_hard_gate_eval.py \
+            --thresholds artifacts/mvp11/gates/thresholds.20260305T145736Z.json \
+            --trend-dir artifacts/mvp11/trends \
+            --window-days 7 \
+            --out artifacts/mvp11/profiles/hard_gate_summary.json \
+            --out-report artifacts/mvp11/profiles/hard_gate_report.json \
+            --out-md artifacts/mvp11/profiles/hard_gate_report.md"
+          
+          # Add shadow-soft-fail flag if enabled (Phase 1 default)
+          if [ "$SHADOW_SOFT_FAIL" = "true" ]; then
+            CMD="$CMD --shadow-soft-fail"
+          fi
+          
+          eval $CMD
+
+      - name: Publish Summary to Job
+        if: always()
+        run: |
+          NIGHTLY_MD="artifacts/mvp11/nightly/$(date +%Y%m%d)/nightly_summary.md"
+          HARD_GATE_MD="artifacts/mvp11/profiles/hard_gate_report.md"
+          SCENARIO_MD="artifacts/mvp11/trends/scenario_stratified/scenario_trend.md"
+          
+          echo "# MVP11.4 Nightly Summary" >> "$GITHUB_STEP_SUMMARY"
+          echo "" >> "$GITHUB_STEP_SUMMARY"
+          
+          if [ -f "$NIGHTLY_MD" ]; then
+            cat "$NIGHTLY_MD" >> "$GITHUB_STEP_SUMMARY"
+          else
+            echo "Summary file not generated" >> "$GITHUB_STEP_SUMMARY"
+          fi
+          
+          echo "" >> "$GITHUB_STEP_SUMMARY"
+          echo "---" >> "$GITHUB_STEP_SUMMARY"
+          echo "" >> "$GITHUB_STEP_SUMMARY"
+          
+          if [ -f "$HARD_GATE_MD" ]; then
+            echo "## Hard Gate Status (Shadow Mode)" >> "$GITHUB_STEP_SUMMARY"
+            cat "$HARD_GATE_MD" >> "$GITHUB_STEP_SUMMARY"
+          fi
+          
+          if [ -f "$SCENARIO_MD" ]; then
+            echo "" >> "$GITHUB_STEP_SUMMARY"
+            echo "## Scenario-Stratified Trend" >> "$GITHUB_STEP_SUMMARY"
+            cat "$SCENARIO_MD" >> "$GITHUB_STEP_SUMMARY"
+          fi
+
+      - name: Upload Artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: mvp114-nightly-${{ github.run_id }}
+          path: |
+            artifacts/mvp11/**
+            artifacts/mvp11_ab_nightly/**
+          retention-days: 30
+
+      # Shadow mode: Job always passes due to continue-on-error + shadow-soft-fail
+      # Phase 2: Remove continue-on-error and set inputs.shadow-soft-fail=false
+      - name: Check Hard Gate Status (Shadow Mode)
+        if: always()
+        run: |
+          HARD_GATE_JSON="artifacts/mvp11/profiles/hard_gate_report.json"
+          if [ -f "$HARD_GATE_JSON" ]; then
+            STATUS=$(jq -r '.overall_status' "$HARD_GATE_JSON")
+            MODE=$(jq -r '.mode' "$HARD_GATE_JSON")
+            SHOULD_FAIL=$(jq -r '.should_fail' "$HARD_GATE_JSON")
+            echo "Hard Gate status: $STATUS (mode: $MODE, should_fail: $SHOULD_FAIL)"
+            echo "Phase 1 Shadow Mode: CI passes regardless of gate status"
+            # Shadow mode: Don't fail even on FAIL status
+            # Phase 2: Uncomment to enable hard gate enforcement
+            # if [ "$SHOULD_FAIL" = "true" ]; then exit 1; fi
+          fi

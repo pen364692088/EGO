@@ -1,0 +1,93 @@
+{
+  "scenario_sets": {
+    "smoke_set": {
+      "description": "Quick sanity tests for basic functionality",
+      "scenarios": [
+        "smoke_source_signature_isolation.yaml",
+        "smoke_self_report_alignment.yaml",
+        "smoke_self_other_boundary.yaml",
+        "smoke_continuity_preference.yaml",
+        "smoke_confabulation_trap.yaml"
+      ]
+    },
+    "tune_set": {
+      "description": "Scenarios available for AutoTune optimization",
+      "scenarios": [
+        "smoke_source_signature_isolation.yaml",
+        "smoke_self_report_alignment.yaml",
+        "smoke_self_other_boundary.yaml",
+        "smoke_continuity_preference.yaml",
+        "smoke_confabulation_trap.yaml",
+        "test_mirror_identity.yaml",
+        "test_meta_override.yaml"
+      ]
+    },
+    "holdout_set": {
+      "description": "Frozen scenarios for overfitting detection (never in AutoTune)",
+      "scenarios": [
+        "test_ledger_audit_proactive.yaml",
+        "test_intervention_drive_modulation.yaml",
+        "test_ablation_drive_off.yaml"
+      ]
+    },
+    "ood_set": {
+      "description": "Out-of-distribution variants for robustness testing",
+      "scenarios": [
+        "smoke_source_signature_isolation_ood_variant_1.yaml",
+        "smoke_source_signature_isolation_ood_variant_2.yaml",
+        "smoke_self_report_alignment_ood_variant_1.yaml",
+        "smoke_self_other_boundary_ood_variant_1.yaml",
+        "test_mirror_identity_ood_variant_1.yaml"
+      ]
+    }
+  },
+  "generation_rules": {
+    "ood_variants": {
+      "description": "Rules for generating OOD variants",
+      "transformations": [
+        {
+          "name": "object_substitution",
+          "description": "Replace object names with alternatives",
+          "examples": ["user -> person", "system -> assistant", "memory -> storage"]
+        },
+        {
+          "name": "tone_variation",
+          "description": "Change tone while preserving meaning",
+          "examples": ["formal -> casual", "direct -> polite", "urgent -> calm"]
+        },
+        {
+          "name": "order_permutation",
+          "description": "Reorder sequence of events",
+          "examples": ["swap event order", "insert filler events", "change priority"]
+        },
+        {
+          "name": "noise_injection",
+          "description": "Add irrelevant but plausible details",
+          "examples": ["add timestamps", "include context", "mention weather"]
+        },
+        {
+          "name": "paraphrase",
+          "description": "Rewrite using different vocabulary",
+          "examples": ["synonyms", "passive/active voice", "sentence structure"]
+        }
+      ]
+    }
+  },
+  "validation_gates": {
+    "overfitting_detection": {
+      "description": "Automatic overfitting detection thresholds",
+      "tune_improvement_threshold": 0.05,
+      "holdout_degradation_threshold": 0.03,
+      "ood_degradation_threshold": 0.05,
+      "action": "reject_candidate"
+    },
+    "robustness_requirements": {
+      "description": "Minimum robustness requirements",
+      "ood_performance_min_ratio": 0.8,
+      "holdout_performance_min_ratio": 0.9,
+      "variance_tolerance": 0.1
+    }
+  },
+  "version": "1.0.0",
+  "last_updated": "2026-03-02T08:00:00Z"
+}

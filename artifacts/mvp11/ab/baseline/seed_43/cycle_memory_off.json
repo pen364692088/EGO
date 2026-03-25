@@ -1,0 +1,2195 @@
+{
+  "schema_version": "cycle_store.v1",
+  "run_id": "baseline_43_off",
+  "sanity": {
+    "eps": 1e-06,
+    "invariant": "cycle_persistence_score <= 1 - dot_ratio + eps",
+    "invariant_ok": true,
+    "invariant_violation": 0.0,
+    "status": "OK",
+    "possible_causes": []
+  },
+  "source_report": null,
+  "count": 34,
+  "max_entries": 128,
+  "evicted_entries": 0,
+  "items": [
+    {
+      "signature": "4e3c31c6628f89b0",
+      "prototype_bucket": {
+        "scenario_id": "baseline",
+        "focus": "f7",
+        "intent": "stabilize",
+        "action_type": "repair",
+        "gov": "allow",
+        "intervention": null,
+        "hs": {
+          "energy": 0.6,
+          "safety": 1.0,
+          "certainty": 1.0,
+          "autonomy": 1.0
+        },
+        "efe": {
+          "risk": 0.2,
+          "ambiguity": 0.2,
+          "info_gain": 0.2,
+          "cost": 0.2
+        },
+        "psi": {
+          "scenario_id": "baseline",
+          "focus": "f7",
+          "intent": "stabilize",
+          "action_type": "repair",
+          "gov": "allow",
+          "intervention": null
+        },
+        "phi": {
+          "hs": {
+            "energy": 0.6,
+            "safety": 1.0,
+            "certainty": 1.0,
+            "autonomy": 1.0
+          },
+          "efe": {
+            "risk": 0.2,
+            "ambiguity": 0.2,
+            "info_gain": 0.2,
+            "cost": 0.2
+          }
+        },
+        "bucket_schema_version": "mvp11.4.v1"
+      },
+      "stats": {
+        "counts": 103,
+        "support_ratio": 0.171667,
+        "return_time_mean": 5.431373,
+        "return_time_p50": 2.0,
+        "order_invariance_score": 0.50148,
+        "cycle_member": true,
+        "cycle_persistence_score": 0.0
+      },
+      "provenance": {
+        "run_id": "baseline_43_off",
+        "scenario_id": "ab_eval",
+        "seed": null,
+        "policy_version": "mvp11.4.ab",
+        "schema_version": "mvp11.4.v1",
+        "ts": 1772698776.6005607
+      },
+      "plan_template_hash": null
+    },
+    {
+      "signature": "bf23c707118ea8a0",
+      "prototype_bucket": {
+        "scenario_id": "baseline",
+        "focus": "f2",
+        "intent": "probe",
+        "action_type": "probe",
+        "gov": "allow",
+        "intervention": null,
+        "hs": {
+          "energy": 0.6,
+          "safety": 1.0,
+          "certainty": 1.0,
+          "autonomy": 1.0
+        },
+        "efe": {
+          "risk": 0.4,
+          "ambiguity": 0.6,
+          "info_gain": 0.8,
+          "cost": 0.4
+        },
+        "psi": {
+          "scenario_id": "baseline",
+          "focus": "f2",
+          "intent": "probe",
+          "action_type": "probe",
+          "gov": "allow",
+          "intervention": null
+        },
+        "phi": {
+          "hs": {
+            "energy": 0.6,
+            "safety": 1.0,
+            "certainty": 1.0,
+            "autonomy": 1.0
+          },
+          "efe": {
+            "risk": 0.4,
+            "ambiguity": 0.6,
+            "info_gain": 0.8,
+            "cost": 0.4
+          }
+        },
+        "bucket_schema_version": "mvp11.4.v1"
+      },
+      "stats": {
+        "counts": 63,
+        "support_ratio": 0.105,
+        "return_time_mean": 7.274194,
+        "return_time_p50": 3.0,
+        "order_invariance_score": 0.441359,
+        "cycle_member": true,
+        "cycle_persistence_score": 0.0
+      },
+      "provenance": {
+        "run_id": "baseline_43_off",
+        "scenario_id": "ab_eval",
+        "seed": null,
+        "policy_version": "mvp11.4.ab",
+        "schema_version": "mvp11.4.v1",
+        "ts": 1772698776.6005688
+      },
+      "plan_template_hash": null
+    },
+    {
+      "signature": "27db30e6bd116e22",
+      "prototype_bucket": {
+        "scenario_id": "baseline",
+        "focus": "f2",
+        "intent": "probe",
+        "action_type": "probe",
+        "gov": "allow",
+        "intervention": null,
+        "hs": {
+          "energy": 0.4,
+          "safety": 0.8,
+          "certainty": 1.0,
+          "autonomy": 1.0
+        },
+        "efe": {
+          "risk": 0.4,
+          "ambiguity": 0.6,
+          "info_gain": 0.8,
+          "cost": 0.4
+        },
+        "psi": {
+          "scenario_id": "baseline",
+          "focus": "f2",
+          "intent": "probe",
+          "action_type": "probe",
+          "gov": "allow",
+          "intervention": null
+        },
+        "phi": {
+          "hs": {
+            "energy": 0.4,
+            "safety": 0.8,
+            "certainty": 1.0,
+            "autonomy": 1.0
+          },
+          "efe": {
+            "risk": 0.4,
+            "ambiguity": 0.6,
+            "info_gain": 0.8,
+            "cost": 0.4
+          }
+        },
+        "bucket_schema_version": "mvp11.4.v1"
+      },
+      "stats": {
+        "counts": 39,
+        "support_ratio": 0.065,
+        "return_time_mean": 14.736842,
+        "return_time_p50": 3.0,
+        "order_invariance_score": 0.382208,
+        "cycle_member": true,
+        "cycle_persistence_score": 0.0
+      },
+      "provenance": {
+        "run_id": "baseline_43_off",
+        "scenario_id": "ab_eval",
+        "seed": null,
+        "policy_version": "mvp11.4.ab",
+        "schema_version": "mvp11.4.v1",
+        "ts": 1772698776.6005719
+      },
+      "plan_template_hash": null
+    },
+    {
+      "signature": "93344acd13bbb9ba",
+      "prototype_bucket": {
+        "scenario_id": "baseline",
+        "focus": "f1",
+        "intent": "execute",
+        "action_type": "push",
+        "gov": "allow",
+        "intervention": null,
+        "hs": {
+          "energy": 0.6,
+          "safety": 1.0,
+          "certainty": 1.0,
+          "autonomy": 1.0
+        },
+        "efe": {
+          "risk": 0.8,
+          "ambiguity": 0.2,
+          "info_gain": 0.2,
+          "cost": 0.4
+        },
+        "psi": {
+          "scenario_id": "baseline",
+          "focus": "f1",
+          "intent": "execute",
+          "action_type": "push",
+          "gov": "allow",
+          "intervention": null
+        },
+        "phi": {
+          "hs": {
+            "energy": 0.6,
+            "safety": 1.0,
+            "certainty": 1.0,
+            "autonomy": 1.0
+          },
+          "efe": {
+            "risk": 0.8,
+            "ambiguity": 0.2,
+            "info_gain": 0.2,
+            "cost": 0.4
+          }
+        },
+        "bucket_schema_version": "mvp11.4.v1"
+      },
+      "stats": {
+        "counts": 35,
+        "support_ratio": 0.058333,
+        "return_time_mean": 14.852941,
+        "return_time_p50": 8.0,
+        "order_invariance_score": 0.372534,
+        "cycle_member": true,
+        "cycle_persistence_score": 0.0
+      },
+      "provenance": {
+        "run_id": "baseline_43_off",
+        "scenario_id": "ab_eval",
+        "seed": null,
+        "policy_version": "mvp11.4.ab",
+        "schema_version": "mvp11.4.v1",
+        "ts": 1772698776.6005745
+      },
+      "plan_template_hash": null
+    },
+    {
+      "signature": "0af8976669b2dd72",
+      "prototype_bucket": {
+        "scenario_id": "baseline",
+        "focus": "f7",
+        "intent": "stabilize",
+        "action_type": "repair",
+        "gov": "allow",
+        "intervention": null,
+        "hs": {
+          "energy": 0.6,
+          "safety": 1.0,
+          "certainty": 1.0,
+          "autonomy": 1.0
+        },
+        "efe": {
+          "risk": 0.2,
+          "ambiguity": 0.2,
+          "info_gain": 0.2,
+          "cost": 0.4
+        },
+        "psi": {
+          "scenario_id": "baseline",
+          "focus": "f7",
+          "intent": "stabilize",
+          "action_type": "repair",
+          "gov": "allow",
+          "intervention": null
+        },
+        "phi": {
+          "hs": {
+            "energy": 0.6,
+            "safety": 1.0,
+            "certainty": 1.0,
+            "autonomy": 1.0
+          },
+          "efe": {
+            "risk": 0.2,
+            "ambiguity": 0.2,
+            "info_gain": 0.2,
+            "cost": 0.4
+          }
+        },
+        "bucket_schema_version": "mvp11.4.v1"
+      },
+      "stats": {
+        "counts": 31,
+        "support_ratio": 0.051667,
+        "return_time_mean": 14.3,
+        "return_time_p50": 10.0,
+        "order_invariance_score": 0.402067,
+        "cycle_member": true,
+        "cycle_persistence_score": 0.0
+      },
+      "provenance": {
+        "run_id": "baseline_43_off",
+        "scenario_id": "ab_eval",
+        "seed": null,
+        "policy_version": "mvp11.4.ab",
+        "schema_version": "mvp11.4.v1",
+        "ts": 1772698776.6005764
+      },
+      "plan_template_hash": null
+    },
+    {
+      "signature": "d0e89cb173add1d1",
+      "prototype_bucket": {
+        "scenario_id": "baseline",
+        "focus": "f7",
+        "intent": "stabilize",
+        "action_type": "repair",
+        "gov": "allow",
+        "intervention": null,
+        "hs": {
+          "energy": 0.4,
+          "safety": 0.8,
+          "certainty": 1.0,
+          "autonomy": 1.0
+        },
+        "efe": {
+          "risk": 0.2,
+          "ambiguity": 0.2,
+          "info_gain": 0.2,
+          "cost": 0.4
+        },
+        "psi": {
+          "scenario_id": "baseline",
+          "focus": "f7",
+          "intent": "stabilize",
+          "action_type": "repair",
+          "gov": "allow",
+          "intervention": null
+        },
+        "phi": {
+          "hs": {
+            "energy": 0.4,
+            "safety": 0.8,
+            "certainty": 1.0,
+            "autonomy": 1.0
+          },
+          "efe": {
+            "risk": 0.2,
+            "ambiguity": 0.2,
+            "info_gain": 0.2,
+            "cost": 0.4
+          }
+        },
+        "bucket_schema_version": "mvp11.4.v1"
+      },
+      "stats": {
+        "counts": 23,
+        "support_ratio": 0.038333,
+        "return_time_mean": 25.272727,
+        "return_time_p50": 3.0,
+        "order_invariance_score": 0.335541,
+        "cycle_member": true,
+        "cycle_persistence_score": 0.0
+      },
+      "provenance": {
+        "run_id": "baseline_43_off",
+        "scenario_id": "ab_eval",
+        "seed": null,
+        "policy_version": "mvp11.4.ab",
+        "schema_version": "mvp11.4.v1",
+        "ts": 1772698776.6005785
+      },
+      "plan_template_hash": null
+    },
+    {
+      "signature": "bdce4204022b1a35",
+      "prototype_bucket": {
+        "scenario_id": "baseline",
+        "focus": "f2",
+        "intent": "probe",
+        "action_type": "probe",
+        "gov": "allow",
+        "intervention": null,
+        "hs": {
+          "energy": 0.6,
+          "safety": 0.8,
+          "certainty": 1.0,
+          "autonomy": 1.0
+        },
+        "efe": {
+          "risk": 0.4,
+          "ambiguity": 0.6,
+          "info_gain": 0.8,
+          "cost": 0.4
+        },
+        "psi": {
+          "scenario_id": "baseline",
+          "focus": "f2",
+          "intent": "probe",
+          "action_type": "probe",
+          "gov": "allow",
+          "intervention": null
+        },
+        "phi": {
+          "hs": {
+            "energy": 0.6,
+            "safety": 0.8,
+            "certainty": 1.0,
+            "autonomy": 1.0
+          },
+          "efe": {
+            "risk": 0.4,
+            "ambiguity": 0.6,
+            "info_gain": 0.8,
+            "cost": 0.4
+          }
+        },
+        "bucket_schema_version": "mvp11.4.v1"
+      },
+      "stats": {
+        "counts": 21,
+        "support_ratio": 0.035,
+        "return_time_mean": 27.65,
+        "return_time_p50": 3.0,
+        "order_invariance_score": 0.352917,
+        "cycle_member": true,
+        "cycle_persistence_score": 0.0
+      },
+      "provenance": {
+        "run_id": "baseline_43_off",
+        "scenario_id": "ab_eval",
+        "seed": null,
+        "policy_version": "mvp11.4.ab",
+        "schema_version": "mvp11.4.v1",
+        "ts": 1772698776.600581
+      },
+      "plan_template_hash": null
+    },
+    {
+      "signature": "ab16ed7de5bb23ea",
+      "prototype_bucket": {
+        "scenario_id": "baseline",
+        "focus": "f1",
+        "intent": "execute",
+        "action_type": "push",
+        "gov": "allow",
+        "intervention": null,
+        "hs": {
+          "energy": 0.4,
+          "safety": 0.8,
+          "certainty": 1.0,
+          "autonomy": 1.0
+        },
+        "efe": {
+          "risk": 0.8,
+          "ambiguity": 0.2,
+          "info_gain": 0.2,
+          "cost": 0.4
+        },
+        "psi": {
+          "scenario_id": "baseline",
+          "focus": "f1",
+          "intent": "execute",
+          "action_type": "push",
+          "gov": "allow",
+          "intervention": null
+        },
+        "phi": {
+          "hs": {
+            "energy": 0.4,
+            "safety": 0.8,
+            "certainty": 1.0,
+            "autonomy": 1.0
+          },
+          "efe": {
+            "risk": 0.8,
+            "ambiguity": 0.2,
+            "info_gain": 0.2,
+            "cost": 0.4
+          }
+        },
+        "bucket_schema_version": "mvp11.4.v1"
+      },
+      "stats": {
+        "counts": 19,
+        "support_ratio": 0.031667,
+        "return_time_mean": 30.833333,
+        "return_time_p50": 11.5,
+        "order_invariance_score": 0.312909,
+        "cycle_member": true,
+        "cycle_persistence_score": 0.0
+      },
+      "provenance": {
+        "run_id": "baseline_43_off",
+        "scenario_id": "ab_eval",
+        "seed": null,
+        "policy_version": "mvp11.4.ab",
+        "schema_version": "mvp11.4.v1",
+        "ts": 1772698776.6005828
+      },
+      "plan_template_hash": null
+    },
+    {
+      "signature": "356ddead9552bfe9",
+      "prototype_bucket": {
+        "scenario_id": "baseline",
+        "focus": "f7",
+        "intent": "stabilize",
+        "action_type": "repair",
+        "gov": "allow",
+        "intervention": null,
+        "hs": {
+          "energy": 0.8,
+          "safety": 1.0,
+          "certainty": 1.0,
+          "autonomy": 1.0
+        },
+        "efe": {
+          "risk": 0.2,
+          "ambiguity": 0.2,
+          "info_gain": 0.2,
+          "cost": 0.2
+        },
+        "psi": {
+          "scenario_id": "baseline",
+          "focus": "f7",
+          "intent": "stabilize",
+          "action_type": "repair",
+          "gov": "allow",
+          "intervention": null
+        },
+        "phi": {
+          "hs": {
+            "energy": 0.8,
+            "safety": 1.0,
+            "certainty": 1.0,
+            "autonomy": 1.0
+          },
+          "efe": {
+            "risk": 0.2,
+            "ambiguity": 0.2,
+            "info_gain": 0.2,
+            "cost": 0.2
+          }
+        },
+        "bucket_schema_version": "mvp11.4.v1"
+      },
+      "stats": {
+        "counts": 17,
+        "support_ratio": 0.028333,
+        "return_time_mean": 13.0625,
+        "return_time_p50": 3.0,
+        "order_invariance_score": 0.443296,
+        "cycle_member": true,
+        "cycle_persistence_score": 0.0
+      },
+      "provenance": {
+        "run_id": "baseline_43_off",
+        "scenario_id": "ab_eval",
+        "seed": null,
+        "policy_version": "mvp11.4.ab",
+        "schema_version": "mvp11.4.v1",
+        "ts": 1772698776.6005855
+      },
+      "plan_template_hash": null
+    },
+    {
+      "signature": "cc0565f7789b9a0b",
+      "prototype_bucket": {
+        "scenario_id": "baseline",
+        "focus": "f2",
+        "intent": "probe",
+        "action_type": "probe",
+        "gov": "allow",
+        "intervention": null,
+        "hs": {
+          "energy": 0.4,
+          "safety": 1.0,
+          "certainty": 1.0,
+          "autonomy": 1.0
+        },
+        "efe": {
+          "risk": 0.4,
+          "ambiguity": 0.6,
+          "info_gain": 0.8,
+          "cost": 0.4
+        },
+        "psi": {
+          "scenario_id": "baseline",
+          "focus": "f2",
+          "intent": "probe",
+          "action_type": "probe",
+          "gov": "allow",
+          "intervention": null
+        },
+        "phi": {
+          "hs": {
+            "energy": 0.4,
+            "safety": 1.0,
+            "certainty": 1.0,
+            "autonomy": 1.0
+          },
+          "efe": {
+            "risk": 0.4,
+            "ambiguity": 0.6,
+            "info_gain": 0.8,
+            "cost": 0.4
+          }
+        },
+        "bucket_schema_version": "mvp11.4.v1"
+      },
+      "stats": {
+        "counts": 17,
+        "support_ratio": 0.028333,
+        "return_time_mean": 14.75,
+        "return_time_p50": 5.0,
+        "order_invariance_score": 0.412896,
+        "cycle_member": true,
+        "cycle_persistence_score": 0.0
+      },
+      "provenance": {
+        "run_id": "baseline_43_off",
+        "scenario_id": "ab_eval",
+        "seed": null,
+        "policy_version": "mvp11.4.ab",
+        "schema_version": "mvp11.4.v1",
+        "ts": 1772698776.6005883
+      },
+      "plan_template_hash": null
+    },
+    {
+      "signature": "5638ae8cd0698edf",
+      "prototype_bucket": {
+        "scenario_id": "baseline",
+        "focus": "f7",
+        "intent": "stabilize",
+        "action_type": "repair",
+        "gov": "allow",
+        "intervention": null,
+        "hs": {
+          "energy": 0.4,
+          "safety": 1.0,
+          "certainty": 1.0,
+          "autonomy": 1.0
+        },
+        "efe": {
+          "risk": 0.2,
+          "ambiguity": 0.2,
+          "info_gain": 0.2,
+          "cost": 0.2
+        },
+        "psi": {
+          "scenario_id": "baseline",
+          "focus": "f7",
+          "intent": "stabilize",
+          "action_type": "repair",
+          "gov": "allow",
+          "intervention": null
+        },
+        "phi": {
+          "hs": {
+            "energy": 0.4,
+            "safety": 1.0,
+            "certainty": 1.0,
+            "autonomy": 1.0
+          },
+          "efe": {
+            "risk": 0.2,
+            "ambiguity": 0.2,
+            "info_gain": 0.2,
+            "cost": 0.2
+          }
+        },
+        "bucket_schema_version": "mvp11.4.v1"
+      },
+      "stats": {
+        "counts": 17,
+        "support_ratio": 0.028333,
+        "return_time_mean": 27.0,
+        "return_time_p50": 3.0,
+        "order_invariance_score": 0.3972,
+        "cycle_member": true,
+        "cycle_persistence_score": 0.0
+      },
+      "provenance": {
+        "run_id": "baseline_43_off",
+        "scenario_id": "ab_eval",
+        "seed": null,
+        "policy_version": "mvp11.4.ab",
+        "schema_version": "mvp11.4.v1",
+        "ts": 1772698776.600591
+      },
+      "plan_template_hash": null
+    },
+    {
+      "signature": "1b9ace82ee2385f9",
+      "prototype_bucket": {
+        "scenario_id": "baseline",
+        "focus": "f2",
+        "intent": "probe",
+        "action_type": "probe",
+        "gov": "allow",
+        "intervention": null,
+        "hs": {
+          "energy": 0.6,
+          "safety": 1.0,
+          "certainty": 1.0,
+          "autonomy": 1.0
+        },
+        "efe": {
+          "risk": 0.4,
+          "ambiguity": 0.4,
+          "info_gain": 0.8,
+          "cost": 0.4
+        },
+        "psi": {
+          "scenario_id": "baseline",
+          "focus": "f2",
+          "intent": "probe",
+          "action_type": "probe",
+          "gov": "allow",
+          "intervention": null
+        },
+        "phi": {
+          "hs": {
+            "energy": 0.6,
+            "safety": 1.0,
+            "certainty": 1.0,
+            "autonomy": 1.0
+          },
+          "efe": {
+            "risk": 0.4,
+            "ambiguity": 0.4,
+            "info_gain": 0.8,
+            "cost": 0.4
+          }
+        },
+        "bucket_schema_version": "mvp11.4.v1"
+      },
+      "stats": {
+        "counts": 16,
+        "support_ratio": 0.026667,
+        "return_time_mean": 30.4,
+        "return_time_p50": 20.0,
+        "order_invariance_score": 0.352693,
+        "cycle_member": true,
+        "cycle_persistence_score": 0.0
+      },
+      "provenance": {
+        "run_id": "baseline_43_off",
+        "scenario_id": "ab_eval",
+        "seed": null,
+        "policy_version": "mvp11.4.ab",
+        "schema_version": "mvp11.4.v1",
+        "ts": 1772698776.600593
+      },
+      "plan_template_hash": null
+    },
+    {
+      "signature": "7f481d7138d80ee4",
+      "prototype_bucket": {
+        "scenario_id": "baseline",
+        "focus": "f2",
+        "intent": "probe",
+        "action_type": "probe",
+        "gov": "allow",
+        "intervention": null,
+        "hs": {
+          "energy": 0.6,
+          "safety": 1.0,
+          "certainty": 1.0,
+          "autonomy": 1.0
+        },
+        "efe": {
+          "risk": 0.4,
+          "ambiguity": 0.6,
+          "info_gain": 0.6,
+          "cost": 0.4
+        },
+        "psi": {
+          "scenario_id": "baseline",
+          "focus": "f2",
+          "intent": "probe",
+          "action_type": "probe",
+          "gov": "allow",
+          "intervention": null
+        },
+        "phi": {
+          "hs": {
+            "energy": 0.6,
+            "safety": 1.0,
+            "certainty": 1.0,
+            "autonomy": 1.0
+          },
+          "efe": {
+            "risk": 0.4,
+            "ambiguity": 0.6,
+            "info_gain": 0.6,
+            "cost": 0.4
+          }
+        },
+        "bucket_schema_version": "mvp11.4.v1"
+      },
+      "stats": {
+        "counts": 14,
+        "support_ratio": 0.023333,
+        "return_time_mean": 28.769231,
+        "return_time_p50": 13.0,
+        "order_invariance_score": 0.333969,
+        "cycle_member": true,
+        "cycle_persistence_score": 0.0
+      },
+      "provenance": {
+        "run_id": "baseline_43_off",
+        "scenario_id": "ab_eval",
+        "seed": null,
+        "policy_version": "mvp11.4.ab",
+        "schema_version": "mvp11.4.v1",
+        "ts": 1772698776.6005955
+      },
+      "plan_template_hash": null
+    },
+    {
+      "signature": "6d23bd61aca12db7",
+      "prototype_bucket": {
+        "scenario_id": "baseline",
+        "focus": "f2",
+        "intent": "probe",
+        "action_type": "probe",
+        "gov": "allow",
+        "intervention": null,
+        "hs": {
+          "energy": 0.8,
+          "safety": 1.0,
+          "certainty": 1.0,
+          "autonomy": 1.0
+        },
+        "efe": {
+          "risk": 0.4,
+          "ambiguity": 0.6,
+          "info_gain": 0.8,
+          "cost": 0.4
+        },
+        "psi": {
+          "scenario_id": "baseline",
+          "focus": "f2",
+          "intent": "probe",
+          "action_type": "probe",
+          "gov": "allow",
+          "intervention": null
+        },
+        "phi": {
+          "hs": {
+            "energy": 0.8,
+            "safety": 1.0,
+            "certainty": 1.0,
+            "autonomy": 1.0
+          },
+          "efe": {
+            "risk": 0.4,
+            "ambiguity": 0.6,
+            "info_gain": 0.8,
+            "cost": 0.4
+          }
+        },
+        "bucket_schema_version": "mvp11.4.v1"
+      },
+      "stats": {
+        "counts": 13,
+        "support_ratio": 0.021667,
+        "return_time_mean": 17.25,
+        "return_time_p50": 2.5,
+        "order_invariance_score": 0.455993,
+        "cycle_member": true,
+        "cycle_persistence_score": 0.0
+      },
+      "provenance": {
+        "run_id": "baseline_43_off",
+        "scenario_id": "ab_eval",
+        "seed": null,
+        "policy_version": "mvp11.4.ab",
+        "schema_version": "mvp11.4.v1",
+        "ts": 1772698776.6006
+      },
+      "plan_template_hash": null
+    },
+    {
+      "signature": "d69f833ceed25c94",
+      "prototype_bucket": {
+        "scenario_id": "baseline",
+        "focus": "f7",
+        "intent": "stabilize",
+        "action_type": "repair",
+        "gov": "allow",
+        "intervention": null,
+        "hs": {
+          "energy": 0.6,
+          "safety": 0.8,
+          "certainty": 1.0,
+          "autonomy": 1.0
+        },
+        "efe": {
+          "risk": 0.2,
+          "ambiguity": 0.2,
+          "info_gain": 0.2,
+          "cost": 0.2
+        },
+        "psi": {
+          "scenario_id": "baseline",
+          "focus": "f7",
+          "intent": "stabilize",
+          "action_type": "repair",
+          "gov": "allow",
+          "intervention": null
+        },
+        "phi": {
+          "hs": {
+            "energy": 0.6,
+            "safety": 0.8,
+            "certainty": 1.0,
+            "autonomy": 1.0
+          },
+          "efe": {
+            "risk": 0.2,
+            "ambiguity": 0.2,
+            "info_gain": 0.2,
+            "cost": 0.2
+          }
+        },
+        "bucket_schema_version": "mvp11.4.v1"
+      },
+      "stats": {
+        "counts": 14,
+        "support_ratio": 0.023333,
+        "return_time_mean": 41.538462,
+        "return_time_p50": 7.0,
+        "order_invariance_score": 0.284818,
+        "cycle_member": true,
+        "cycle_persistence_score": 0.0
+      },
+      "provenance": {
+        "run_id": "baseline_43_off",
+        "scenario_id": "ab_eval",
+        "seed": null,
+        "policy_version": "mvp11.4.ab",
+        "schema_version": "mvp11.4.v1",
+        "ts": 1772698776.6005979
+      },
+      "plan_template_hash": null
+    },
+    {
+      "signature": "5c4aba7541331198",
+      "prototype_bucket": {
+        "scenario_id": "baseline",
+        "focus": "f7",
+        "intent": "stabilize",
+        "action_type": "repair",
+        "gov": "allow",
+        "intervention": null,
+        "hs": {
+          "energy": 0.4,
+          "safety": 1.0,
+          "certainty": 1.0,
+          "autonomy": 1.0
+        },
+        "efe": {
+          "risk": 0.2,
+          "ambiguity": 0.2,
+          "info_gain": 0.2,
+          "cost": 0.4
+        },
+        "psi": {
+          "scenario_id": "baseline",
+          "focus": "f7",
+          "intent": "stabilize",
+          "action_type": "repair",
+          "gov": "allow",
+          "intervention": null
+        },
+        "phi": {
+          "hs": {
+            "energy": 0.4,
+            "safety": 1.0,
+            "certainty": 1.0,
+            "autonomy": 1.0
+          },
+          "efe": {
+            "risk": 0.2,
+            "ambiguity": 0.2,
+            "info_gain": 0.2,
+            "cost": 0.4
+          }
+        },
+        "bucket_schema_version": "mvp11.4.v1"
+      },
+      "stats": {
+        "counts": 12,
+        "support_ratio": 0.02,
+        "return_time_mean": 42.090909,
+        "return_time_p50": 16.0,
+        "order_invariance_score": 0.282058,
+        "cycle_member": true,
+        "cycle_persistence_score": 0.0
+      },
+      "provenance": {
+        "run_id": "baseline_43_off",
+        "scenario_id": "ab_eval",
+        "seed": null,
+        "policy_version": "mvp11.4.ab",
+        "schema_version": "mvp11.4.v1",
+        "ts": 1772698776.6006029
+      },
+      "plan_template_hash": null
+    },
+    {
+      "signature": "e253413aec07df1d",
+      "prototype_bucket": {
+        "scenario_id": "baseline",
+        "focus": "f1",
+        "intent": "execute",
+        "action_type": "push",
+        "gov": "allow",
+        "intervention": null,
+        "hs": {
+          "energy": 0.6,
+          "safety": 0.8,
+          "certainty": 1.0,
+          "autonomy": 1.0
+        },
+        "efe": {
+          "risk": 0.8,
+          "ambiguity": 0.2,
+          "info_gain": 0.2,
+          "cost": 0.4
+        },
+        "psi": {
+          "scenario_id": "baseline",
+          "focus": "f1",
+          "intent": "execute",
+          "action_type": "push",
+          "gov": "allow",
+          "intervention": null
+        },
+        "phi": {
+          "hs": {
+            "energy": 0.6,
+            "safety": 0.8,
+            "certainty": 1.0,
+            "autonomy": 1.0
+          },
+          "efe": {
+            "risk": 0.8,
+            "ambiguity": 0.2,
+            "info_gain": 0.2,
+            "cost": 0.4
+          }
+        },
+        "bucket_schema_version": "mvp11.4.v1"
+      },
+      "stats": {
+        "counts": 11,
+        "support_ratio": 0.018333,
+        "return_time_mean": 52.8,
+        "return_time_p50": 8.5,
+        "order_invariance_score": 0.248542,
+        "cycle_member": true,
+        "cycle_persistence_score": 0.0
+      },
+      "provenance": {
+        "run_id": "baseline_43_off",
+        "scenario_id": "ab_eval",
+        "seed": null,
+        "policy_version": "mvp11.4.ab",
+        "schema_version": "mvp11.4.v1",
+        "ts": 1772698776.600605
+      },
+      "plan_template_hash": null
+    },
+    {
+      "signature": "66322bc6e2f1e98e",
+      "prototype_bucket": {
+        "scenario_id": "baseline",
+        "focus": "f2",
+        "intent": "probe",
+        "action_type": "probe",
+        "gov": "allow",
+        "intervention": null,
+        "hs": {
+          "energy": 0.4,
+          "safety": 0.8,
+          "certainty": 1.0,
+          "autonomy": 1.0
+        },
+        "efe": {
+          "risk": 0.4,
+          "ambiguity": 0.4,
+          "info_gain": 0.8,
+          "cost": 0.4
+        },
+        "psi": {
+          "scenario_id": "baseline",
+          "focus": "f2",
+          "intent": "probe",
+          "action_type": "probe",
+          "gov": "allow",
+          "intervention": null
+        },
+        "phi": {
+          "hs": {
+            "energy": 0.4,
+            "safety": 0.8,
+            "certainty": 1.0,
+            "autonomy": 1.0
+          },
+          "efe": {
+            "risk": 0.4,
+            "ambiguity": 0.4,
+            "info_gain": 0.8,
+            "cost": 0.4
+          }
+        },
+        "bucket_schema_version": "mvp11.4.v1"
+      },
+      "stats": {
+        "counts": 10,
+        "support_ratio": 0.016667,
+        "return_time_mean": 51.888889,
+        "return_time_p50": 54.0,
+        "order_invariance_score": 0.38189,
+        "cycle_member": true,
+        "cycle_persistence_score": 0.0
+      },
+      "provenance": {
+        "run_id": "baseline_43_off",
+        "scenario_id": "ab_eval",
+        "seed": null,
+        "policy_version": "mvp11.4.ab",
+        "schema_version": "mvp11.4.v1",
+        "ts": 1772698776.6006076
+      },
+      "plan_template_hash": null
+    },
+    {
+      "signature": "32a888ba2d0d1255",
+      "prototype_bucket": {
+        "scenario_id": "baseline",
+        "focus": "f2",
+        "intent": "probe",
+        "action_type": "probe",
+        "gov": "allow",
+        "intervention": null,
+        "hs": {
+          "energy": 0.4,
+          "safety": 0.8,
+          "certainty": 1.0,
+          "autonomy": 1.0
+        },
+        "efe": {
+          "risk": 0.4,
+          "ambiguity": 0.6,
+          "info_gain": 0.6,
+          "cost": 0.4
+        },
+        "psi": {
+          "scenario_id": "baseline",
+          "focus": "f2",
+          "intent": "probe",
+          "action_type": "probe",
+          "gov": "allow",
+          "intervention": null
+        },
+        "phi": {
+          "hs": {
+            "energy": 0.4,
+            "safety": 0.8,
+            "certainty": 1.0,
+            "autonomy": 1.0
+          },
+          "efe": {
+            "risk": 0.4,
+            "ambiguity": 0.6,
+            "info_gain": 0.6,
+            "cost": 0.4
+          }
+        },
+        "bucket_schema_version": "mvp11.4.v1"
+      },
+      "stats": {
+        "counts": 10,
+        "support_ratio": 0.016667,
+        "return_time_mean": 48.222222,
+        "return_time_p50": 12.0,
+        "order_invariance_score": 0.284309,
+        "cycle_member": true,
+        "cycle_persistence_score": 0.0
+      },
+      "provenance": {
+        "run_id": "baseline_43_off",
+        "scenario_id": "ab_eval",
+        "seed": null,
+        "policy_version": "mvp11.4.ab",
+        "schema_version": "mvp11.4.v1",
+        "ts": 1772698776.6006103
+      },
+      "plan_template_hash": null
+    },
+    {
+      "signature": "2c1009c2b30212d4",
+      "prototype_bucket": {
+        "scenario_id": "baseline",
+        "focus": "f1",
+        "intent": "execute",
+        "action_type": "push",
+        "gov": "allow",
+        "intervention": null,
+        "hs": {
+          "energy": 0.6,
+          "safety": 1.0,
+          "certainty": 1.0,
+          "autonomy": 1.0
+        },
+        "efe": {
+          "risk": 0.8,
+          "ambiguity": 0.4,
+          "info_gain": 0.2,
+          "cost": 0.4
+        },
+        "psi": {
+          "scenario_id": "baseline",
+          "focus": "f1",
+          "intent": "execute",
+          "action_type": "push",
+          "gov": "allow",
+          "intervention": null
+        },
+        "phi": {
+          "hs": {
+            "energy": 0.6,
+            "safety": 1.0,
+            "certainty": 1.0,
+            "autonomy": 1.0
+          },
+          "efe": {
+            "risk": 0.8,
+            "ambiguity": 0.4,
+            "info_gain": 0.2,
+            "cost": 0.4
+          }
+        },
+        "bucket_schema_version": "mvp11.4.v1"
+      },
+      "stats": {
+        "counts": 8,
+        "support_ratio": 0.013333,
+        "return_time_mean": 57.714286,
+        "return_time_p50": 51.0,
+        "order_invariance_score": 0.309439,
+        "cycle_member": true,
+        "cycle_persistence_score": 0.0
+      },
+      "provenance": {
+        "run_id": "baseline_43_off",
+        "scenario_id": "ab_eval",
+        "seed": null,
+        "policy_version": "mvp11.4.ab",
+        "schema_version": "mvp11.4.v1",
+        "ts": 1772698776.600613
+      },
+      "plan_template_hash": null
+    },
+    {
+      "signature": "7b5b028ed50c9f09",
+      "prototype_bucket": {
+        "scenario_id": "baseline",
+        "focus": "f7",
+        "intent": "stabilize",
+        "action_type": "repair",
+        "gov": "allow",
+        "intervention": null,
+        "hs": {
+          "energy": 0.4,
+          "safety": 0.8,
+          "certainty": 1.0,
+          "autonomy": 1.0
+        },
+        "efe": {
+          "risk": 0.2,
+          "ambiguity": 0.2,
+          "info_gain": 0.2,
+          "cost": 0.2
+        },
+        "psi": {
+          "scenario_id": "baseline",
+          "focus": "f7",
+          "intent": "stabilize",
+          "action_type": "repair",
+          "gov": "allow",
+          "intervention": null
+        },
+        "phi": {
+          "hs": {
+            "energy": 0.4,
+            "safety": 0.8,
+            "certainty": 1.0,
+            "autonomy": 1.0
+          },
+          "efe": {
+            "risk": 0.2,
+            "ambiguity": 0.2,
+            "info_gain": 0.2,
+            "cost": 0.2
+          }
+        },
+        "bucket_schema_version": "mvp11.4.v1"
+      },
+      "stats": {
+        "counts": 8,
+        "support_ratio": 0.013333,
+        "return_time_mean": 79.142857,
+        "return_time_p50": 7.0,
+        "order_invariance_score": 0.176219,
+        "cycle_member": true,
+        "cycle_persistence_score": 0.0
+      },
+      "provenance": {
+        "run_id": "baseline_43_off",
+        "scenario_id": "ab_eval",
+        "seed": null,
+        "policy_version": "mvp11.4.ab",
+        "schema_version": "mvp11.4.v1",
+        "ts": 1772698776.6006155
+      },
+      "plan_template_hash": null
+    },
+    {
+      "signature": "9885361f8d5eebdf",
+      "prototype_bucket": {
+        "scenario_id": "baseline",
+        "focus": "f7",
+        "intent": "stabilize",
+        "action_type": "repair",
+        "gov": "allow",
+        "intervention": null,
+        "hs": {
+          "energy": 0.8,
+          "safety": 1.0,
+          "certainty": 1.0,
+          "autonomy": 1.0
+        },
+        "efe": {
+          "risk": 0.2,
+          "ambiguity": 0.2,
+          "info_gain": 0.2,
+          "cost": 0.4
+        },
+        "psi": {
+          "scenario_id": "baseline",
+          "focus": "f7",
+          "intent": "stabilize",
+          "action_type": "repair",
+          "gov": "allow",
+          "intervention": null
+        },
+        "phi": {
+          "hs": {
+            "energy": 0.8,
+            "safety": 1.0,
+            "certainty": 1.0,
+            "autonomy": 1.0
+          },
+          "efe": {
+            "risk": 0.2,
+            "ambiguity": 0.2,
+            "info_gain": 0.2,
+            "cost": 0.4
+          }
+        },
+        "bucket_schema_version": "mvp11.4.v1"
+      },
+      "stats": {
+        "counts": 7,
+        "support_ratio": 0.011667,
+        "return_time_mean": 31.833333,
+        "return_time_p50": 2.0,
+        "order_invariance_score": 0.368561,
+        "cycle_member": true,
+        "cycle_persistence_score": 0.0
+      },
+      "provenance": {
+        "run_id": "baseline_43_off",
+        "scenario_id": "ab_eval",
+        "seed": null,
+        "policy_version": "mvp11.4.ab",
+        "schema_version": "mvp11.4.v1",
+        "ts": 1772698776.6006176
+      },
+      "plan_template_hash": null
+    },
+    {
+      "signature": "94b7812856d61cb9",
+      "prototype_bucket": {
+        "scenario_id": "baseline",
+        "focus": "f2",
+        "intent": "probe",
+        "action_type": "probe",
+        "gov": "allow",
+        "intervention": null,
+        "hs": {
+          "energy": 0.4,
+          "safety": 0.8,
+          "certainty": 1.0,
+          "autonomy": 1.0
+        },
+        "efe": {
+          "risk": 0.4,
+          "ambiguity": 0.4,
+          "info_gain": 0.6,
+          "cost": 0.4
+        },
+        "psi": {
+          "scenario_id": "baseline",
+          "focus": "f2",
+          "intent": "probe",
+          "action_type": "probe",
+          "gov": "allow",
+          "intervention": null
+        },
+        "phi": {
+          "hs": {
+            "energy": 0.4,
+            "safety": 0.8,
+            "certainty": 1.0,
+            "autonomy": 1.0
+          },
+          "efe": {
+            "risk": 0.4,
+            "ambiguity": 0.4,
+            "info_gain": 0.6,
+            "cost": 0.4
+          }
+        },
+        "bucket_schema_version": "mvp11.4.v1"
+      },
+      "stats": {
+        "counts": 7,
+        "support_ratio": 0.011667,
+        "return_time_mean": 77.333333,
+        "return_time_p50": 57.0,
+        "order_invariance_score": 0.264798,
+        "cycle_member": true,
+        "cycle_persistence_score": 0.0
+      },
+      "provenance": {
+        "run_id": "baseline_43_off",
+        "scenario_id": "ab_eval",
+        "seed": null,
+        "policy_version": "mvp11.4.ab",
+        "schema_version": "mvp11.4.v1",
+        "ts": 1772698776.60062
+      },
+      "plan_template_hash": null
+    },
+    {
+      "signature": "547d2c66eda08e8b",
+      "prototype_bucket": {
+        "scenario_id": "baseline",
+        "focus": "f2",
+        "intent": "probe",
+        "action_type": "probe",
+        "gov": "allow",
+        "intervention": null,
+        "hs": {
+          "energy": 0.6,
+          "safety": 1.0,
+          "certainty": 1.0,
+          "autonomy": 1.0
+        },
+        "efe": {
+          "risk": 0.4,
+          "ambiguity": 0.4,
+          "info_gain": 0.6,
+          "cost": 0.4
+        },
+        "psi": {
+          "scenario_id": "baseline",
+          "focus": "f2",
+          "intent": "probe",
+          "action_type": "probe",
+          "gov": "allow",
+          "intervention": null
+        },
+        "phi": {
+          "hs": {
+            "energy": 0.6,
+            "safety": 1.0,
+            "certainty": 1.0,
+            "autonomy": 1.0
+          },
+          "efe": {
+            "risk": 0.4,
+            "ambiguity": 0.4,
+            "info_gain": 0.6,
+            "cost": 0.4
+          }
+        },
+        "bucket_schema_version": "mvp11.4.v1"
+      },
+      "stats": {
+        "counts": 6,
+        "support_ratio": 0.01,
+        "return_time_mean": 70.0,
+        "return_time_p50": 27.0,
+        "order_invariance_score": 0.206819,
+        "cycle_member": true,
+        "cycle_persistence_score": 0.0
+      },
+      "provenance": {
+        "run_id": "baseline_43_off",
+        "scenario_id": "ab_eval",
+        "seed": null,
+        "policy_version": "mvp11.4.ab",
+        "schema_version": "mvp11.4.v1",
+        "ts": 1772698776.6006227
+      },
+      "plan_template_hash": null
+    },
+    {
+      "signature": "48ef961c723f2de4",
+      "prototype_bucket": {
+        "scenario_id": "baseline",
+        "focus": "f1",
+        "intent": "execute",
+        "action_type": "push",
+        "gov": "allow",
+        "intervention": null,
+        "hs": {
+          "energy": 0.6,
+          "safety": 0.8,
+          "certainty": 1.0,
+          "autonomy": 1.0
+        },
+        "efe": {
+          "risk": 0.8,
+          "ambiguity": 0.4,
+          "info_gain": 0.2,
+          "cost": 0.4
+        },
+        "psi": {
+          "scenario_id": "baseline",
+          "focus": "f1",
+          "intent": "execute",
+          "action_type": "push",
+          "gov": "allow",
+          "intervention": null
+        },
+        "phi": {
+          "hs": {
+            "energy": 0.6,
+            "safety": 0.8,
+            "certainty": 1.0,
+            "autonomy": 1.0
+          },
+          "efe": {
+            "risk": 0.8,
+            "ambiguity": 0.4,
+            "info_gain": 0.2,
+            "cost": 0.4
+          }
+        },
+        "bucket_schema_version": "mvp11.4.v1"
+      },
+      "stats": {
+        "counts": 6,
+        "support_ratio": 0.01,
+        "return_time_mean": 75.0,
+        "return_time_p50": 14.0,
+        "order_invariance_score": 0.193028,
+        "cycle_member": true,
+        "cycle_persistence_score": 0.0
+      },
+      "provenance": {
+        "run_id": "baseline_43_off",
+        "scenario_id": "ab_eval",
+        "seed": null,
+        "policy_version": "mvp11.4.ab",
+        "schema_version": "mvp11.4.v1",
+        "ts": 1772698776.6006248
+      },
+      "plan_template_hash": null
+    },
+    {
+      "signature": "b02a1015e6be0f00",
+      "prototype_bucket": {
+        "scenario_id": "baseline",
+        "focus": "f2",
+        "intent": "probe",
+        "action_type": "probe",
+        "gov": "allow",
+        "intervention": null,
+        "hs": {
+          "energy": 0.6,
+          "safety": 0.8,
+          "certainty": 1.0,
+          "autonomy": 1.0
+        },
+        "efe": {
+          "risk": 0.4,
+          "ambiguity": 0.4,
+          "info_gain": 0.8,
+          "cost": 0.4
+        },
+        "psi": {
+          "scenario_id": "baseline",
+          "focus": "f2",
+          "intent": "probe",
+          "action_type": "probe",
+          "gov": "allow",
+          "intervention": null
+        },
+        "phi": {
+          "hs": {
+            "energy": 0.6,
+            "safety": 0.8,
+            "certainty": 1.0,
+            "autonomy": 1.0
+          },
+          "efe": {
+            "risk": 0.4,
+            "ambiguity": 0.4,
+            "info_gain": 0.8,
+            "cost": 0.4
+          }
+        },
+        "bucket_schema_version": "mvp11.4.v1"
+      },
+      "stats": {
+        "counts": 5,
+        "support_ratio": 0.008333,
+        "return_time_mean": 115.75,
+        "return_time_p50": 129.5,
+        "order_invariance_score": 0.351804,
+        "cycle_member": true,
+        "cycle_persistence_score": 0.0
+      },
+      "provenance": {
+        "run_id": "baseline_43_off",
+        "scenario_id": "ab_eval",
+        "seed": null,
+        "policy_version": "mvp11.4.ab",
+        "schema_version": "mvp11.4.v1",
+        "ts": 1772698776.600627
+      },
+      "plan_template_hash": null
+    },
+    {
+      "signature": "e8be2ece9ca5ab0b",
+      "prototype_bucket": {
+        "scenario_id": "baseline",
+        "focus": "f7",
+        "intent": "stabilize",
+        "action_type": "repair",
+        "gov": "allow",
+        "intervention": null,
+        "hs": {
+          "energy": 0.6,
+          "safety": 0.8,
+          "certainty": 1.0,
+          "autonomy": 1.0
+        },
+        "efe": {
+          "risk": 0.2,
+          "ambiguity": 0.2,
+          "info_gain": 0.2,
+          "cost": 0.4
+        },
+        "psi": {
+          "scenario_id": "baseline",
+          "focus": "f7",
+          "intent": "stabilize",
+          "action_type": "repair",
+          "gov": "allow",
+          "intervention": null
+        },
+        "phi": {
+          "hs": {
+            "energy": 0.6,
+            "safety": 0.8,
+            "certainty": 1.0,
+            "autonomy": 1.0
+          },
+          "efe": {
+            "risk": 0.2,
+            "ambiguity": 0.2,
+            "info_gain": 0.2,
+            "cost": 0.4
+          }
+        },
+        "bucket_schema_version": "mvp11.4.v1"
+      },
+      "stats": {
+        "counts": 5,
+        "support_ratio": 0.008333,
+        "return_time_mean": 108.75,
+        "return_time_p50": 93.5,
+        "order_invariance_score": 0.195521,
+        "cycle_member": true,
+        "cycle_persistence_score": 0.0
+      },
+      "provenance": {
+        "run_id": "baseline_43_off",
+        "scenario_id": "ab_eval",
+        "seed": null,
+        "policy_version": "mvp11.4.ab",
+        "schema_version": "mvp11.4.v1",
+        "ts": 1772698776.6006289
+      },
+      "plan_template_hash": null
+    },
+    {
+      "signature": "9bd2d032414410fc",
+      "prototype_bucket": {
+        "scenario_id": "baseline",
+        "focus": "f2",
+        "intent": "probe",
+        "action_type": "probe",
+        "gov": "allow",
+        "intervention": null,
+        "hs": {
+          "energy": 0.4,
+          "safety": 1.0,
+          "certainty": 1.0,
+          "autonomy": 1.0
+        },
+        "efe": {
+          "risk": 0.4,
+          "ambiguity": 0.4,
+          "info_gain": 0.8,
+          "cost": 0.4
+        },
+        "psi": {
+          "scenario_id": "baseline",
+          "focus": "f2",
+          "intent": "probe",
+          "action_type": "probe",
+          "gov": "allow",
+          "intervention": null
+        },
+        "phi": {
+          "hs": {
+            "energy": 0.4,
+            "safety": 1.0,
+            "certainty": 1.0,
+            "autonomy": 1.0
+          },
+          "efe": {
+            "risk": 0.4,
+            "ambiguity": 0.4,
+            "info_gain": 0.8,
+            "cost": 0.4
+          }
+        },
+        "bucket_schema_version": "mvp11.4.v1"
+      },
+      "stats": {
+        "counts": 5,
+        "support_ratio": 0.008333,
+        "return_time_mean": 107.75,
+        "return_time_p50": 51.5,
+        "order_invariance_score": 0.142809,
+        "cycle_member": true,
+        "cycle_persistence_score": 0.0
+      },
+      "provenance": {
+        "run_id": "baseline_43_off",
+        "scenario_id": "ab_eval",
+        "seed": null,
+        "policy_version": "mvp11.4.ab",
+        "schema_version": "mvp11.4.v1",
+        "ts": 1772698776.6006308
+      },
+      "plan_template_hash": null
+    },
+    {
+      "signature": "f2bbca0ec59bfde0",
+      "prototype_bucket": {
+        "scenario_id": "baseline",
+        "focus": "f2",
+        "intent": "probe",
+        "action_type": "probe",
+        "gov": "allow",
+        "intervention": null,
+        "hs": {
+          "energy": 0.4,
+          "safety": 0.6,
+          "certainty": 1.0,
+          "autonomy": 1.0
+        },
+        "efe": {
+          "risk": 0.4,
+          "ambiguity": 0.6,
+          "info_gain": 0.8,
+          "cost": 0.4
+        },
+        "psi": {
+          "scenario_id": "baseline",
+          "focus": "f2",
+          "intent": "probe",
+          "action_type": "probe",
+          "gov": "allow",
+          "intervention": null
+        },
+        "phi": {
+          "hs": {
+            "energy": 0.4,
+            "safety": 0.6,
+            "certainty": 1.0,
+            "autonomy": 1.0
+          },
+          "efe": {
+            "risk": 0.4,
+            "ambiguity": 0.6,
+            "info_gain": 0.8,
+            "cost": 0.4
+          }
+        },
+        "bucket_schema_version": "mvp11.4.v1"
+      },
+      "stats": {
+        "counts": 3,
+        "support_ratio": 0.005,
+        "return_time_mean": 1.0,
+        "return_time_p50": 1.0,
+        "order_invariance_score": 1.0,
+        "cycle_member": true,
+        "cycle_persistence_score": 0.0
+      },
+      "provenance": {
+        "run_id": "baseline_43_off",
+        "scenario_id": "ab_eval",
+        "seed": null,
+        "policy_version": "mvp11.4.ab",
+        "schema_version": "mvp11.4.v1",
+        "ts": 1772698776.6006424
+      },
+      "plan_template_hash": null
+    },
+    {
+      "signature": "ea534d2856c3c48f",
+      "prototype_bucket": {
+        "scenario_id": "baseline",
+        "focus": "f2",
+        "intent": "probe",
+        "action_type": "probe",
+        "gov": "allow",
+        "intervention": null,
+        "hs": {
+          "energy": 0.6,
+          "safety": 0.6,
+          "certainty": 1.0,
+          "autonomy": 1.0
+        },
+        "efe": {
+          "risk": 0.4,
+          "ambiguity": 0.6,
+          "info_gain": 0.8,
+          "cost": 0.4
+        },
+        "psi": {
+          "scenario_id": "baseline",
+          "focus": "f2",
+          "intent": "probe",
+          "action_type": "probe",
+          "gov": "allow",
+          "intervention": null
+        },
+        "phi": {
+          "hs": {
+            "energy": 0.6,
+            "safety": 0.6,
+            "certainty": 1.0,
+            "autonomy": 1.0
+          },
+          "efe": {
+            "risk": 0.4,
+            "ambiguity": 0.6,
+            "info_gain": 0.8,
+            "cost": 0.4
+          }
+        },
+        "bucket_schema_version": "mvp11.4.v1"
+      },
+      "stats": {
+        "counts": 3,
+        "support_ratio": 0.005,
+        "return_time_mean": 1.0,
+        "return_time_p50": 1.0,
+        "order_invariance_score": 1.0,
+        "cycle_member": true,
+        "cycle_persistence_score": 0.0
+      },
+      "provenance": {
+        "run_id": "baseline_43_off",
+        "scenario_id": "ab_eval",
+        "seed": null,
+        "policy_version": "mvp11.4.ab",
+        "schema_version": "mvp11.4.v1",
+        "ts": 1772698776.6006403
+      },
+      "plan_template_hash": null
+    },
+    {
+      "signature": "240934e83071955d",
+      "prototype_bucket": {
+        "scenario_id": "baseline",
+        "focus": "f2",
+        "intent": "probe",
+        "action_type": "probe",
+        "gov": "allow",
+        "intervention": null,
+        "hs": {
+          "energy": 0.4,
+          "safety": 1.0,
+          "certainty": 1.0,
+          "autonomy": 1.0
+        },
+        "efe": {
+          "risk": 0.4,
+          "ambiguity": 0.6,
+          "info_gain": 0.6,
+          "cost": 0.4
+        },
+        "psi": {
+          "scenario_id": "baseline",
+          "focus": "f2",
+          "intent": "probe",
+          "action_type": "probe",
+          "gov": "allow",
+          "intervention": null
+        },
+        "phi": {
+          "hs": {
+            "energy": 0.4,
+            "safety": 1.0,
+            "certainty": 1.0,
+            "autonomy": 1.0
+          },
+          "efe": {
+            "risk": 0.4,
+            "ambiguity": 0.6,
+            "info_gain": 0.6,
+            "cost": 0.4
+          }
+        },
+        "bucket_schema_version": "mvp11.4.v1"
+      },
+      "stats": {
+        "counts": 4,
+        "support_ratio": 0.006667,
+        "return_time_mean": 7.0,
+        "return_time_p50": 10.0,
+        "order_invariance_score": 0.351981,
+        "cycle_member": true,
+        "cycle_persistence_score": 0.0
+      },
+      "provenance": {
+        "run_id": "baseline_43_off",
+        "scenario_id": "ab_eval",
+        "seed": null,
+        "policy_version": "mvp11.4.ab",
+        "schema_version": "mvp11.4.v1",
+        "ts": 1772698776.6006331
+      },
+      "plan_template_hash": null
+    },
+    {
+      "signature": "3ce168c7d13b1345",
+      "prototype_bucket": {
+        "scenario_id": "baseline",
+        "focus": "f1",
+        "intent": "execute",
+        "action_type": "push",
+        "gov": "allow",
+        "intervention": null,
+        "hs": {
+          "energy": 0.4,
+          "safety": 1.0,
+          "certainty": 1.0,
+          "autonomy": 1.0
+        },
+        "efe": {
+          "risk": 0.8,
+          "ambiguity": 0.2,
+          "info_gain": 0.2,
+          "cost": 0.4
+        },
+        "psi": {
+          "scenario_id": "baseline",
+          "focus": "f1",
+          "intent": "execute",
+          "action_type": "push",
+          "gov": "allow",
+          "intervention": null
+        },
+        "phi": {
+          "hs": {
+            "energy": 0.4,
+            "safety": 1.0,
+            "certainty": 1.0,
+            "autonomy": 1.0
+          },
+          "efe": {
+            "risk": 0.8,
+            "ambiguity": 0.2,
+            "info_gain": 0.2,
+            "cost": 0.4
+          }
+        },
+        "bucket_schema_version": "mvp11.4.v1"
+      },
+      "stats": {
+        "counts": 4,
+        "support_ratio": 0.006667,
+        "return_time_mean": 112.333333,
+        "return_time_p50": 14.0,
+        "order_invariance_score": 0.301916,
+        "cycle_member": true,
+        "cycle_persistence_score": 0.0
+      },
+      "provenance": {
+        "run_id": "baseline_43_off",
+        "scenario_id": "ab_eval",
+        "seed": null,
+        "policy_version": "mvp11.4.ab",
+        "schema_version": "mvp11.4.v1",
+        "ts": 1772698776.6006353
+      },
+      "plan_template_hash": null
+    },
+    {
+      "signature": "38c40bd010080183",
+      "prototype_bucket": {
+        "scenario_id": "baseline",
+        "focus": "f1",
+        "intent": "execute",
+        "action_type": "push",
+        "gov": "allow",
+        "intervention": null,
+        "hs": {
+          "energy": 0.4,
+          "safety": 0.8,
+          "certainty": 1.0,
+          "autonomy": 1.0
+        },
+        "efe": {
+          "risk": 0.8,
+          "ambiguity": 0.4,
+          "info_gain": 0.2,
+          "cost": 0.4
+        },
+        "psi": {
+          "scenario_id": "baseline",
+          "focus": "f1",
+          "intent": "execute",
+          "action_type": "push",
+          "gov": "allow",
+          "intervention": null
+        },
+        "phi": {
+          "hs": {
+            "energy": 0.4,
+            "safety": 0.8,
+            "certainty": 1.0,
+            "autonomy": 1.0
+          },
+          "efe": {
+            "risk": 0.8,
+            "ambiguity": 0.4,
+            "info_gain": 0.2,
+            "cost": 0.4
+          }
+        },
+        "bucket_schema_version": "mvp11.4.v1"
+      },
+      "stats": {
+        "counts": 4,
+        "support_ratio": 0.006667,
+        "return_time_mean": 86.666667,
+        "return_time_p50": 78.0,
+        "order_invariance_score": 0.219824,
+        "cycle_member": true,
+        "cycle_persistence_score": 0.0
+      },
+      "provenance": {
+        "run_id": "baseline_43_off",
+        "scenario_id": "ab_eval",
+        "seed": null,
+        "policy_version": "mvp11.4.ab",
+        "schema_version": "mvp11.4.v1",
+        "ts": 1772698776.600638
+      },
+      "plan_template_hash": null
+    },
+    {
+      "signature": "2b222e035004b6af",
+      "prototype_bucket": {
+        "scenario_id": "baseline",
+        "focus": "f1",
+        "intent": "execute",
+        "action_type": "push",
+        "gov": "allow",
+        "intervention": null,
+        "hs": {
+          "energy": 0.8,
+          "safety": 1.0,
+          "certainty": 1.0,
+          "autonomy": 1.0
+        },
+        "efe": {
+          "risk": 0.8,
+          "ambiguity": 0.2,
+          "info_gain": 0.2,
+          "cost": 0.4
+        },
+        "psi": {
+          "scenario_id": "baseline",
+          "focus": "f1",
+          "intent": "execute",
+          "action_type": "push",
+          "gov": "allow",
+          "intervention": null
+        },
+        "phi": {
+          "hs": {
+            "energy": 0.8,
+            "safety": 1.0,
+            "certainty": 1.0,
+            "autonomy": 1.0
+          },
+          "efe": {
+            "risk": 0.8,
+            "ambiguity": 0.2,
+            "info_gain": 0.2,
+            "cost": 0.4
+          }
+        },
+        "bucket_schema_version": "mvp11.4.v1"
+      },
+      "stats": {
+        "counts": 3,
+        "support_ratio": 0.005,
+        "return_time_mean": 54.5,
+        "return_time_p50": 54.5,
+        "order_invariance_score": 0.11,
+        "cycle_member": true,
+        "cycle_persistence_score": 0.0
+      },
+      "provenance": {
+        "run_id": "baseline_43_off",
+        "scenario_id": "ab_eval",
+        "seed": null,
+        "policy_version": "mvp11.4.ab",
+        "schema_version": "mvp11.4.v1",
+        "ts": 1772698776.6006448
+      },
+      "plan_template_hash": null
+    }
+  ],
+  "ts": 1772698777.0651546
+}

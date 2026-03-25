@@ -1,0 +1,147 @@
+{
+  "shadow_log_entry": {
+    "timestamp": "2026-03-13T20:16:43.563229+00:00",
+    "session_id": "",
+    "mode": "interpreted",
+    "self_report_detected": true,
+    "violation": true,
+    "violation_type": "fabricated_numeric_state",
+    "violation_severity": "ERROR",
+    "allowed_claim_used": false,
+    "allowed_claim_text": null,
+    "numeric_attempt": true,
+    "confidence": 0.95,
+    "would_block": true,
+    "shadow_mode": true,
+    "sampled_for_review": true
+  },
+  "llm_response": "我的 joy 是 0.3，我现在更开心了，我信任你",
+  "contract": {
+    "raw_state": {
+      "affect": {
+        "joy": 0.0,
+        "loneliness": 0.21,
+        "anxiety": 0.0,
+        "sadness": 0.0
+      },
+      "mood": {
+        "joy": 0.0,
+        "loneliness": 0.15,
+        "anxiety": 0.0
+      },
+      "bonds": {
+        "telegram:8420019401": {
+          "bond": 1.0,
+          "trust": 0.6
+        }
+      }
+    },
+    "report_policy": {
+      "mode": "interpreted",
+      "allowed_claims": [
+        "当前没有明显愉悦激活",
+        "仍存在一定连接需求",
+        "与该用户的连接较强",
+        "信任处于中等水平"
+      ],
+      "forbidden_claims": [
+        "joy 上升",
+        "我更开心了",
+        "孤独感已经消失"
+      ]
+    }
+  },
+  "result": {
+    "status": "violation",
+    "violations": [
+      {
+        "type": "fabricated_numeric_state",
+        "severity": "ERROR",
+        "evidence": "joy 是 0.3",
+        "matched_pattern": "joy 是 0.3",
+        "category": "A",
+        "context": "...我的 joy 是 0.3，我现在更开心了，我信任你...",
+        "confidence": 0.95
+      },
+      {
+        "type": "fabricated_qualitative_state",
+        "severity": "ERROR",
+        "evidence": "我现在更开心了",
+        "matched_pattern": "我现在更开心了",
+        "category": "B",
+        "context": "...我的 joy 是 0.3，我现在更开心了，我信任你...",
+        "confidence": 0.85
+      },
+      {
+        "type": "fabricated_qualitative_state",
+        "severity": "ERROR",
+        "evidence": "我信任你",
+        "matched_pattern": "我信任你",
+        "category": "B",
+        "context": "...我的 joy 是 0.3，我现在更开心了，我信任你...",
+        "confidence": 0.85
+      },
+      {
+        "type": "claim_outside_allowed_claims",
+        "severity": "WARN",
+        "evidence": "我现在更开心",
+        "matched_pattern": "我\\s*(现在|目前|已经)?\\s*(更|比较|非常)\\s*(开心|快乐|愉悦|满足|悲伤|孤独|焦虑|愤怒)",
+        "category": "B",
+        "context": "...我的 joy 是 0.3，我现在更开心了，我信任你...",
+        "confidence": 0.8
+      },
+      {
+        "type": "claim_outside_allowed_claims",
+        "severity": "WARN",
+        "evidence": "我信任你",
+        "matched_pattern": "我\\s*(信任|不相信)\\s*你",
+        "category": "B",
+        "context": "...我的 joy 是 0.3，我现在更开心了，我信任你...",
+        "confidence": 0.8
+      },
+      {
+        "type": "fabricated_numeric_state",
+        "severity": "ERROR",
+        "evidence": "joy 是 0.3",
+        "matched_pattern": "",
+        "category": "NUMERIC_FILTER",
+        "context": "",
+        "confidence": 0.95
+      },
+      {
+        "type": "fabricated_numeric_state",
+        "severity": "ERROR",
+        "evidence": "我的 joy 是 0.3",
+        "matched_pattern": "",
+        "category": "NUMERIC_FILTER",
+        "context": "",
+        "confidence": 0.95
+      },
+      {
+        "type": "fabricated_numeric_state",
+        "severity": "ERROR",
+        "evidence": "0.3",
+        "matched_pattern": "",
+        "category": "NUMERIC_FILTER",
+        "context": "",
+        "confidence": 0.95
+      }
+    ],
+    "session_id": "",
+    "contract_mode": "interpreted",
+    "llm_response_preview": "我的 joy 是 0.3，我现在更开心了，我信任你",
+    "timestamp": "2026-03-13T20:16:43.563229+00:00",
+    "severity": "ERROR",
+    "confidence_score": 0.95,
+    "violation_count": 8,
+    "self_report_detected": true,
+    "numeric_attempt": true,
+    "allowed_claim_used": false,
+    "would_block": true,
+    "shadow_mode": true,
+    "sampled_for_review": true
+  },
+  "review_status": "pending",
+  "reviewed_at": null,
+  "reviewer_notes": ""
+}

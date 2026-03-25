@@ -1,0 +1,90 @@
+name: Emotiond Tests
+
+on:
+  pull_request:
+    branches:
+      - main
+      - feature-emotiond-mvp
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: |
+          python -m venv .venv
+          . .venv/bin/activate
+          pip install -e .
+          pip install pytest
+
+      - name: Start emotiond
+        run: |
+          . .venv/bin/activate
+          python -m emotiond.main &
+          sleep 5
+          curl http://127.0.0.1:18080/health
+
+      - name: Run deterministic tests
+        run: |
+          chmod +x tools/test_emotiond_deterministic.sh
+          ./tools/test_emotiond_deterministic.sh agent test_ci care
+          ./tools/test_emotiond_deterministic.sh agent test_ci betrayal
+          ./tools/test_emotiond_deterministic.sh agent test_ci apology
+
+      - name: Run identity separation tests
+        run: |
+          chmod +x tools/test_identity_separation.sh
+          ./tools/test_identity_separation.sh
+
+      - name: Run enforcer bypass tests
+        run: |
+          chmod +x tools/test_enforcer_bypass.sh
+          ./tools/test_enforcer_bypass.sh
+
+      - name: Run MVP-8 unit tests
+        run: |
+          . .venv/bin/activate
+          pytest -q tests/test_mvp8_reflection_loop.py -v
+
+      - name: Run MVP-8 eval
+        run: |
+          . .venv/bin/activate
+          chmod +x tools/eval_mvp8.sh
+          ./tools/eval_mvp8.sh
+
+      - name: Run MVP-8.2 cross-process replay verifier
+        run: |
+          . .venv/bin/activate
+          chmod +x tools/replay_verify_mvp8.sh
+          ./tools/replay_verify_mvp8.sh
+
+      - name: Run MVP-9 evaluation
+        run: |
+          . .venv/bin/activate
+          chmod +x tools/eval_mvp9.sh
+          ./tools/eval_mvp9.sh
+
+      - name: Upload test artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-logs
+          path: |
+            emotiond/*.log
+            traces/*.jsonl
+            reports/mvp8_eval.json
+            reports/mvp8_replay_verify.json
+            reports/mvp9_eval.json
+            reports/mvp9_failures.md

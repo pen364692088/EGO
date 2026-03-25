@@ -1,0 +1,100 @@
+# MVP-2.1.1 — Unspoofable Source + Meta Sanitization + time_passed Clamp
+TARGET REPO ROOT (MUST USE):
+/home/moonlight/Project/Github/MyProject/Emotion/OpenEmotion
+BRANCH:
+feature-emotiond-mvp
+
+## Goal
+Close the remaining security hole: clients must NOT be able to spoof `meta.source="system/openclaw"` to bypass the event gate.
+Also harden `/event` against meta-field injection and time manipulation (time_passed fast-forward).
+
+## Non-goals
+- Do NOT change core emotional dynamics math (forgiveness curve, trust/repair_bank/budget formulas) unless required for security.
+- Do NOT break eval_suite; it must remain fully green.
+
+## Required Behavior (Acceptance Criteria)
+### A) Source is server-decided (unspoofable)
+1) If request has NO valid token, server MUST treat it as `source="user"` regardless of any `meta.source` in payload.
+2) If request has a valid SYSTEM token, server treats it as `source="system"`.
+3) If request has a valid OPENCLAW token, server treats it as `source="openclaw"`.
+4) `meta.source` sent by client must NEVER control permission decisions.
+5) Still record what client sent for audit: store it as `meta.client_source` (if provided), while storing the server-decided value as `meta.source`.
+
+### B) User event gate remains enforced
+- For `server_source=user`, deny `world_event` subtypes: `betrayal`, `repair_success` (same as MVP-2.1).
+- Allow for user: `care`, `rejection`, `ignored`, `apology`, `time_passed`.
+
+### C) Meta schema sanitization for user source
+For `server_source=user` and `type="world_event"`:
+- Only allow meta keys: `subtype`, `seconds` (only when subtype=time_passed), `client_source` (optional legacy capture).
+- Drop/deny any other meta keys (choose DENY with 4xx for strictness).
+- If deny, write an audit record with decision=deny and reason including unknown keys.
+
+### D) time_passed clamp / policy
+For `server_source=user` and subtype `time_passed`:
+- Enforce `seconds` is an int/float > 0.
+- Clamp seconds into `[1, 300]` (5 minutes max).
+- If clamped, record `meta.clamped_from` and keep decision=allow.
+For `server_source=system/openclaw`:
+- No clamp (or clamp at a higher bound if you think necessary, but must not affect eval_suite).
+
+### E) Auditing
+- On deny: write to events table with `decision="deny"` and a clear `reason` string (include server_source + why denied).
+- On allow: optionally keep existing allow logging behavior; do not remove existing audit data.
+
+### F) Tests / Stability
+- `pytest -q` must be fully green.
+- `python scripts/eval_suite.py` must be fully green.
+- Add at least 8 new focused tests for:
+  1) Spoof attempt: user sends `meta.source="system"` with betrayal -> DENY
+  2) Valid system token: betrayal -> ALLOW
+  3) Valid openclaw token: repair_success -> ALLOW
+  4) Unknown meta key from user -> DENY with audit reason mentions key
+  5) time_passed user seconds=100000 -> ALLOW but clamped to 300 and audit includes clamped_from
+  6) time_passed user seconds=0 -> DENY
+  7) Ensure server-decided meta.source saved even if client sent different
+  8) Ensure eval_suite uses system/openclaw source via token and passes
+
+## Implementation Plan
+### 1) Server-side source resolution (API layer)
+- Add env vars:
+  - `EMOTIOND_SYSTEM_TOKEN`
+  - `EMOTIOND_OPENCLAW_TOKEN`
+- In `emotiond/api.py` `/event` endpoint:
+  - Read Authorization header: `Authorization: Bearer <token>` (support also `X-Emotiond-Token` as fallback).
+  - Determine `server_source`:
+    - token matches system -> system
+    - token matches openclaw -> openclaw
+    - else -> user
+  - Before calling core processing:
+    - Preserve any client-provided meta.source as `meta.client_source`
+    - Overwrite meta.source with `server_source`
+
+### 2) Meta sanitizer + clamp
+- Implement a helper in `emotiond/core.py` (or a new `emotiond/security.py`) used by `process_event`:
+  - If `server_source=user` and type=world_event:
+    - Validate subtype exists and is whitelisted
+    - Validate meta keys are only allowed keys (strict deny)
+    - If subtype=time_passed: clamp seconds
+- Ensure audit record includes:
+  - decision, reason, and effective server_source
+
+### 3) Update eval_suite
+- Update `scripts/eval_suite.py` to send the correct token header so events are treated as `source=system` (or openclaw).
+- Ensure local developer experience:
+  - If token env var is missing, eval_suite should print a clear error and exit non-zero (do NOT silently fall back to user, because that would cause confusing failures).
+
+### 4) Update tests
+- Add/modify tests under `tests/` to cover the 8 required cases.
+- Use tmp env monkeypatch to set tokens for tests.
+- Ensure tests never depend on systemd, and stay deterministic.
+
+## Notes
+- Keep backward compatibility: if client sends `meta.source`, store it under `client_source` for audit but do not trust it.
+- Avoid changing DB schema; prefer using the existing events.meta JSON for audit fields.
+
+## Deliverables
+- Code changes implementing unspoofable source + sanitizer + clamp
+- New tests passing
+- eval_suite updated and passing
+- Update README or docs briefly describing auth headers + env vars

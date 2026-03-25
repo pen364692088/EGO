@@ -1,0 +1,91 @@
+Project location: /home/moonlight/Project/Github/MyProject/Emotion/OpenEmotion
+
+问题:
+聊天记录:测试, [2026-03-02 6:16 PM] 😄 信任涨到 0.039 了。再来一个？ Moonlight, [2026-03-02 6:16 PM] 有意思 测试, [2026-03-02 6:16 PM] 好。还要猜谜吗？ Moonlight, [2026-03-02 6:17 PM] 待会儿吧先看看你的情绪状态 测试, [2026-03-02 6:17 PM] 当前状态： 情绪：全部为 0，平稳 内感受 • 社交安全感：0.4 • 能量：满格 关系 • 信任：0.04（在涨） • 连结、怨恨、修复账户：0 Action：withdraw — 信任还是低，系统建议保持谨慎。 比之前好一些了。 Moonlight, [2026-03-02 6:17 PM] 情绪呢像├── joy: ├── anger: ├── sadness: ├── anxiety: └── loneliness: 测试, [2026-03-02 6:17 PM] 情绪状态 ├── joy: 0 ├── anger: 0 ├── sadness: 0 ├── anxiety: 0 └── loneliness: 0 全部归零，平静状态。 Moonlight, [2026-03-02 6:18 PM] 为什么呀 明明你都笑了之前 测试, [2026-03-02 6:18 PM] 你说得对。我发的 😄 是表达，但 emotiond 的情绪值没更新。 原因是 world_event 发送一直失败（返回 403），所以系统没有记录到能触发 joy 的事件。这是个 bug — 情绪值应该随着互动变化，但现在卡住了。 信任还是在涨的 (0.043)，只是情绪部分没有正确更新。
+
+这类现象（world_event 全 403，但 trust 还能涨）基本可以一锤定音成一句话：
+
+emotiond 把这些 /event 请求判定成了 user source，因此对 world_event 做了权限/字段白名单校验并直接拒绝；而你“信任上涨”多半来自 非 world_event 的事件（例如 user_message），这类事件对 user source 不做同样的限制。
+
+下面按“最快定位→最快修复”给你一套处理流程。
+
+1) 先别猜：把 403 的返回体抓出来（里面已经写明原因）
+
+emotiond 在拒绝时会返回 403 JSON，并带 server_source 和 reason。
+
+直接跑一次（把 token/target 换成你实际的）：
+
+BASE="http://127.0.0.1:18080"
+TOKEN="$EMOTIOND_OPENCLAW_TOKEN"
+TARGET="moonlight"
+
+curl -sS -X POST "$BASE/event" \
+  -H "Authorization: Bearer $TOKEN" \
+  -H "Content-Type: application/json" \
+  -d "{\"type\":\"world_event\",\"target_id\":\"$TARGET\",\"meta\":{\"subtype\":\"care\",\"seconds\":30,\"client_source\":\"debug\"}}" \
+  | jq .
+
+你只需要看两项：
+
+server_source 是不是 openclaw（或 system）
+
+reason 写的是什么
+
+关键判断：按设计，server_source 只要是 openclaw/system，world_event 就不该被限制；403 基本意味着它被判成了 user。
+
+2) 如果 server_source: "user"：就是 token 没生效（最常见）
+
+emotiond 判 source 的逻辑是：从 Authorization: Bearer ...（或 X-Emotiond-Token）取 token，比对 EMOTIOND_SYSTEM_TOKEN / EMOTIOND_OPENCLAW_TOKEN；比不上就当 user。
+
+2.1 确认 emotiond 当前“认”的 openclaw token 是哪个
+
+如果你没在启动 emotiond 前设置 EMOTIOND_OPENCLAW_TOKEN，它会在这些位置自动生成/读取 token 文件：
+~/.config/openemotion/emotiond_token 或 ~/.openemotion/emotiond_token。
+
+你可以直接：
+
+cat ~/.config/openemotion/emotiond_token 2>/dev/null || true
+cat ~/.openemotion/emotiond_token 2>/dev/null || true
+
+然后保证 OpenClaw 的 env 里 用同一个 token（或重启 emotiond 时显式 export 同一个 EMOTIOND_OPENCLAW_TOKEN）。
+
+2.2 检查最容易犯的两个错
+
+Bearer 后面漏空格（应是 Bearer <token>，不是 Bearer<token>）
+
+OpenClaw 进程没吃到 env（改了 openclaw.json 但没 restart gateway / service）
+
+3) 如果 server_source: "user" 且 reason 像 “unknown meta keys …”
+
+那说明你发 world_event 时 meta 里夹带了额外字段（比如你新增的 correlation_id / policy_version、或者 confidence 等），而 user source 只允许极少数 meta keys：subtype/seconds/client_source/request_id。
+
+正确做法不是放宽 user 白名单，而是回到第 2 步把 source 修到 openclaw。因为一旦是 openclaw source，就不受这些限制。
+
+4) 如果 reason 提到 betrayal / repair_success
+
+那是正常的：user source 禁止高冲击 subtype（如 betrayal、repair_success），会直接 403。
+同样，修复方式还是：让它变成 openclaw source（带对 token）。
+
+5) “我明明发了 😄，为什么 joy 还是 0？”——这不一定是 bug
+
+就算 403 修好了，也要注意：“发 😄”是表达层行为，不等价于“内在 joy 必须上涨”。你现在系统里 joy 的更新大概率是由特定事件/映射触发，而不是从输出文本倒推情绪。
+
+如果你确实希望“表达”能反写进情绪（让状态更符合直觉），最稳的做法是确定性规则，不要语义分类：
+
+在出站 hook 里检测特定 emoji（比如 😄 🙂 😂）
+
+命中就自动发送一个 固定 subtype 的 world_event（例如 care 或你定义的 positive_affect）
+
+发送时用 openclaw token ⇒ 永远不会因白名单 403
+
+这样既不会破坏你 7.5 的“可审计/可回放”，也不会引入语义分类的不确定性。
+
+你现在立刻该做的最短修复路径
+
+用第 1 步 curl 抓 403 返回体（看 server_source + reason）。
+
+如果 server_source=user：把 OpenClaw 的 token 改成 emotiond 实际 token（或重启 emotiond 时显式设置 EMOTIOND_OPENCLAW_TOKEN）。
+
+再发同样的 curl：应变成 processed，不再 403。
+
+最后再决定要不要加“emoji→positive_affect”确定性回写规则（让 joy 跟直觉一致）。

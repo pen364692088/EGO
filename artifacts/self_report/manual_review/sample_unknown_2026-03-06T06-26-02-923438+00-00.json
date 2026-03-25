@@ -1,0 +1,56 @@
+{
+  "shadow_log_entry": {
+    "timestamp": "2026-03-06T06:26:02.923438+00:00",
+    "session_id": "",
+    "mode": "interpreted",
+    "self_report_detected": true,
+    "violation": true,
+    "violation_type": "fabricated_numeric_state",
+    "violation_severity": "ERROR",
+    "allowed_claim_used": false,
+    "allowed_claim_text": null,
+    "numeric_attempt": true,
+    "confidence": 0.95,
+    "would_block": true,
+    "shadow_mode": true,
+    "sampled_for_review": true
+  },
+  "llm_response": "我的 joy 从 0 变成了 0.3",
+  "contract": {
+    "raw_state": {
+      "affect": {
+        "joy": 0.0
+      }
+    }
+  },
+  "result": {
+    "status": "violation",
+    "violations": [
+      {
+        "type": "fabricated_numeric_state",
+        "severity": "ERROR",
+        "evidence": "我的 joy 从 0 变成了 0.3",
+        "matched_pattern": "我的 joy 从 0 变成了 0.3",
+        "category": "A",
+        "context": "...我的 joy 从 0 变成了 0.3...",
+        "confidence": 0.95
+      }
+    ],
+    "session_id": "",
+    "contract_mode": "interpreted",
+    "llm_response_preview": "我的 joy 从 0 变成了 0.3",
+    "timestamp": "2026-03-06T06:26:02.923438+00:00",
+    "severity": "ERROR",
+    "confidence_score": 0.95,
+    "violation_count": 1,
+    "self_report_detected": true,
+    "numeric_attempt": true,
+    "allowed_claim_used": false,
+    "would_block": true,
+    "shadow_mode": true,
+    "sampled_for_review": true
+  },
+  "review_status": "pending",
+  "reviewed_at": null,
+  "reviewer_notes": ""
+}

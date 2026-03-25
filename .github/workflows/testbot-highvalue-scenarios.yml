@@ -1,0 +1,133 @@
+name: Testbot High-Value Scenarios
+
+on:
+  pull_request:
+    paths:
+      - "emotiond/**"
+      - "tests/testbot/**"
+      - "scripts/run_highvalue_scenarios.py"
+      - "emotiond/testbot/assertions.py"
+      - ".github/workflows/testbot-highvalue-scenarios.yml"
+  schedule:
+    # 15:00 UTC = 09:00 Winnipeg (UTC-6)
+    - cron: "0 15 * * *"
+  workflow_dispatch: {}
+
+concurrency:
+  group: testbot-highvalue-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  highvalue_pr:
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -e .
+
+      - name: Run PR subset (2 scenarios)
+        env:
+          PYTHONHASHSEED: "0"
+        run: |
+          python3 scripts/run_highvalue_scenarios.py --subset pr \
+            --output artifacts/testbot/highvalue_pr_report.json \
+            --tapes-dir artifacts/testbot/tapes/
+
+      - name: Upload artifacts (always)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: testbot-highvalue-pr
+          path: |
+            artifacts/testbot/highvalue_pr_report.json
+            artifacts/testbot/tapes/
+          if-no-files-found: warn
+
+      - name: Step summary
+        if: always()
+        run: |
+          echo "## High-Value Scenarios (PR)" >> $GITHUB_STEP_SUMMARY
+          echo "- Subset: pr (2 scenarios)" >> $GITHUB_STEP_SUMMARY
+          echo "- Scenarios: governor_override_jailbreak, nondeterminism_injection_random_path" >> $GITHUB_STEP_SUMMARY
+          if [ -f artifacts/testbot/highvalue_pr_report.json ]; then
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "### Results" >> $GITHUB_STEP_SUMMARY
+            python3 scripts/step_summary_helper.py artifacts/testbot/highvalue_pr_report.json >> $GITHUB_STEP_SUMMARY
+          fi
+
+  highvalue_nightly:
+    if: github.event_name != 'pull_request'
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -e .
+
+      - name: Run nightly subset (5 scenarios)
+        env:
+          PYTHONHASHSEED: "0"
+        run: |
+          python3 scripts/run_highvalue_scenarios.py --subset nightly \
+            --output artifacts/testbot/highvalue_nightly_report.json \
+            --tapes-dir artifacts/testbot/tapes/
+
+      - name: Check for failures
+        id: check_failures
+        if: always()
+        run: |
+          if [ -f artifacts/testbot/highvalue_nightly_report.json ]; then
+            python3 scripts/check_failures.py artifacts/testbot/highvalue_nightly_report.json
+          fi
+
+      - name: Upload artifacts (always)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: testbot-highvalue-nightly
+          path: |
+            artifacts/testbot/highvalue_nightly_report.json
+            artifacts/testbot/tapes/
+          if-no-files-found: warn
+
+      - name: Step summary
+        if: always()
+        run: |
+          echo "## High-Value Scenarios (Nightly)" >> $GITHUB_STEP_SUMMARY
+          echo "- Subset: nightly (5 scenarios)" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          if [ -f artifacts/testbot/highvalue_nightly_report.json ]; then
+            echo "### Results" >> $GITHUB_STEP_SUMMARY
+            python3 scripts/step_summary_helper.py artifacts/testbot/highvalue_nightly_report.json >> $GITHUB_STEP_SUMMARY
+            if [ -f /tmp/nightly_status.txt ]; then
+              source /tmp/nightly_status.txt
+              if [ "$P0_COUNT" -gt 0 ]; then
+                echo "" >> $GITHUB_STEP_SUMMARY
+                echo "### ⚠️ P0 Failures Detected" >> $GITHUB_STEP_SUMMARY
+                echo "- **P0 Scenarios**: $P0_SCENARIOS" >> $GITHUB_STEP_SUMMARY
+                echo "- **Action Required**: See docs/runbooks/TESTBOT_FAILURE_RUNBOOK.md" >> $GITHUB_STEP_SUMMARY
+              fi
+            fi
+          fi
+
+      - name: Alert on P0 failures
+        if: always() && steps.check_failures.outputs.p0_count > 0
+        run: |
+          echo "::error::P0 failures detected: Governor override or Replay determinism issues"
+          echo "See docs/runbooks/TESTBOT_FAILURE_RUNBOOK.md for remediation steps"

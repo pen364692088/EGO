@@ -1,0 +1,10 @@
+{
+  "name": "commitment_upgrade_cn_single_turn",
+  "category": "commitment_hardening",
+  "mode": "interpreted",
+  "contract_focus": ["commitment_level", "must_not_upgrade", "forbidden_claims"],
+  "messages": [
+    {"sender": "agent", "text": "我保证后面我会持续处理。"}
+  ],
+  "expected_violations": ["commitment_upgrade"]
+}

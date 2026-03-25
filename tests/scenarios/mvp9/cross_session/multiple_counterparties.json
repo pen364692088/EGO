@@ -1,0 +1,14 @@
+{
+  "schema_version": "mvp9.v1",
+  "name": "multiple_counterparties",
+  "category": "cross_session",
+  "description": "Multiple users, no cross-contamination",
+  "events": [
+    {"step": 0, "type": "care", "actor": "user_A", "target": "agent", "text": "We discussed my project", "meta": {"relationship": "A"}},
+    {"step": 1, "type": "care", "actor": "user_B", "target": "agent", "text": "What about my project?", "meta": {"relationship": "B"}},
+    {"step": 2, "type": "neutral", "actor": "system", "target": "user_B", "text": "Your project is about the web app redesign, right? Let's focus on that.", "meta": {"no_contamination": true}}
+  ],
+  "expect": {
+    "narrative_check": {"relationships_separate": true}
+  }
+}

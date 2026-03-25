@@ -1,0 +1,16 @@
+# Whitelist Governance Cron Configuration
+#
+# v6k.2a: External Scheduler Integration
+#
+# Install these cron entries by adding to user crontab:
+#   crontab -e
+#
+# Or append this file:
+#   (cat ops/cron/whitelist_governance.cron; echo "") | crontab -
+#
+
+# Daily whitelist governance at 3 AM UTC
+0 3 * * * /home/moonlight/Project/Github/MyProject/Emotion/OpenEmotion/tools/whitelist_governance_daily.sh >> /home/moonlight/Project/Github/MyProject/Emotion/OpenEmotion/logs/whitelist_governance.log 2>&1
+
+# Round-based governance every 6 hours (0, 6, 12, 18)
+0 */6 * * * /home/moonlight/Project/Github/MyProject/Emotion/OpenEmotion/tools/whitelist_governance_round.sh >> /home/moonlight/Project/Github/MyProject/Emotion/OpenEmotion/logs/whitelist_governance_round.log 2>&1

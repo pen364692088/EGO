@@ -1,0 +1,141 @@
+# Intrinsic Motivation: High-Info-Gap -> Curiosity Scenario
+# Tests that high expected information gain leads to curiosity
+
+metadata:
+  name: "intrinsic_curiosity"
+  version: "1.0"
+  description: "High info-gap leads to curiosity - tests high expected_info_gain with low social threat"
+  category: "intrinsic_motivation"
+  target_count: 1
+
+targets:
+  - target_id: "user_curiosity_test"
+    initial_relationship:
+      bond: 0.5
+      grudge: 0.0
+      trust: 0.6
+      repair_bank: 0.1
+
+scenario:
+  name: "high_info_gap_conversation"
+  description: "User asks questions and introduces novel topics, triggering curiosity"
+  turns:
+    # Turn 1: Question with uncertainty
+    - turn_id: 1
+      event:
+        type: "user_message"
+        actor: "user_curiosity_test"
+        target: "assistant"
+        text: "What do you think about the implications of quantum computing on cryptography?"
+      expected_intrinsic:
+        curiosity_min: 0.3
+        curiosity_max: 1.0
+        expected_info_gain_min: 0.5
+        boredom_max: 0.3
+        confusion_max: 0.4
+      expected_emotions:
+        valence_min: -0.1
+        valence_max: 0.3
+      
+    # Turn 2: Novel topic
+    - turn_id: 2
+      event:
+        type: "user_message"
+        actor: "user_curiosity_test"
+        target: "assistant"
+        text: "Let's try a completely different approach. What if we consider the ethical dimensions?"
+      expected_intrinsic:
+        curiosity_min: 0.4
+        curiosity_max: 1.0
+        expected_info_gain_min: 0.5
+        boredom_max: 0.2
+      
+    # Turn 3: Experiment proposal
+    - turn_id: 3
+      event:
+        type: "user_message"
+        actor: "user_curiosity_test"
+        target: "assistant"
+        text: "I want to experiment with a new framework. Can you help me design a test?"
+      expected_intrinsic:
+        curiosity_min: 0.5
+        curiosity_max: 1.0
+        expected_info_gain_min: 0.6
+        # Should trigger ask_more guidance
+        guidance_should_contain: ["ask_more"]
+      
+    # Turn 4: Deep question
+    - turn_id: 4
+      event:
+        type: "user_message"
+        actor: "user_curiosity_test"
+        target: "assistant"
+        text: "Why do you think this pattern emerges across different domains?"
+      expected_intrinsic:
+        curiosity_min: 0.6
+        curiosity_max: 1.0
+        expected_info_gain_min: 0.6
+        guidance_should_contain: ["ask_more"]
+      
+    # Turn 5: Very high curiosity triggers propose_experiment
+    - turn_id: 5
+      event:
+        type: "user_message"
+        actor: "user_curiosity_test"
+        target: "assistant"
+        text: "How would this work in practice? What are the edge cases we should test?"
+      expected_intrinsic:
+        curiosity_min: 0.7
+        curiosity_max: 1.0
+        expected_info_gain_min: 0.6
+        exploration_tendency_min: 0.5
+        # Should trigger both ask_more and propose_experiment
+        guidance_should_contain: ["ask_more", "propose_experiment"]
+
+# Expected behavior
+expected_behavior:
+  description: |
+    As the user asks questions and introduces novel topics:
+    1. Expected info gain remains high (> 0.5)
+    2. Novelty is detected from questions and new topic indicators
+    3. Curiosity increases with each high-info interaction
+    4. Boredom stays low (high info gain prevents boredom)
+    5. Confusion stays low (prediction errors are manageable)
+    6. Eventually triggers ask_more and propose_experiment guidance
+    7. Exploration tendency increases when social_threat is low
+
+# Trace verification
+trace_verification:
+  required_fields:
+    - "curiosity_trace"
+    - "info_gain_trace"
+    - "confusion_trace"
+  expected_trace_patterns:
+    curiosity_trace_contains:
+      - "info_gain"
+      - "threat"
+    info_gain_trace_contains:
+      - "base="
+      - "threat_factor="
+      - "question"  # Should detect questions
+    confusion_trace_should_not_contain:
+      - "non_converging"  # Should not have non-converging errors
+
+# Metrics
+metrics:
+  curiosity_progression:
+    description: "Curiosity should monotonically increase"
+    expected: true
+  ask_more_triggered:
+    description: "ask_more guidance should trigger by turn 3"
+    expected: true
+    by_turn: 3
+  propose_experiment_triggered:
+    description: "propose_experiment guidance should trigger by turn 5"
+    expected: true
+    by_turn: 5
+  exploration_boost:
+    description: "Exploration tendency should increase with low social threat"
+    expected: true
+    min_value: 0.5
+    by_turn: 5

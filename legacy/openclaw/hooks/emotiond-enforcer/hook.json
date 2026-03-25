@@ -1,0 +1,36 @@
+{
+  "name": "emotiond-enforcer",
+  "version": "1.1.0",
+  "description": "Enforces emotiond decisions on bot responses before they are sent",
+  "type": "pre-send",
+  "priority": 100,
+  "handler": "./handler.js",
+  "config": {
+    "testMode": true,
+    "auditEnabled": true,
+    "auditFile": "emotiond/enforcement_audit.jsonl"
+  },
+  "enforcement_rules": {
+    "withdraw": {
+      "action": "replace",
+      "template": "I understand. Noted."
+    },
+    "boundary": {
+      "action": "check",
+      "warnOnViolation": true
+    },
+    "attack": {
+      "action": "replace",
+      "template": "I need to step back."
+    },
+    "approach": {
+      "action": "allow"
+    },
+    "repair_offer": {
+      "action": "allow"
+    },
+    "observe": {
+      "action": "allow"
+    }
+  }
+}

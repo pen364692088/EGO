@@ -1,0 +1,72 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://openclaw.ai/schemas/narrative.schema.json",
+  "title": "Narrative",
+  "description": "叙事 - 事件的结构化聚合",
+  "type": "object",
+  "required": ["id", "narrative_type", "title", "status", "started_at"],
+  "properties": {
+    "id": {
+      "type": "string",
+      "description": "叙事唯一标识"
+    },
+    "narrative_type": {
+      "type": "string",
+      "enum": [
+        "project_start", "project_progress", "project_milestone", "project_completion",
+        "relationship_formation", "relationship_evolution",
+        "skill_acquisition", "knowledge_integration", "pattern_recognition",
+        "problem_encountered", "problem_solved", "problem_unsolved",
+        "insight", "behavior_change", "preference_shift"
+      ],
+      "description": "叙事类型"
+    },
+    "title": {
+      "type": "string",
+      "description": "叙事标题"
+    },
+    "summary": {
+      "type": "string",
+      "description": "叙事摘要"
+    },
+    "status": {
+      "type": "string",
+      "enum": ["active", "paused", "completed", "superseded"],
+      "description": "叙事状态"
+    },
+    "event_ids": {
+      "type": "array",
+      "items": {"type": "string"},
+      "description": "关联事件ID列表"
+    },
+    "started_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "开始时间"
+    },
+    "last_updated": {
+      "type": "string",
+      "format": "date-time",
+      "description": "最后更新时间"
+    },
+    "themes": {
+      "type": "array",
+      "items": {"type": "string"},
+      "description": "主题标签"
+    },
+    "key_insights": {
+      "type": "array",
+      "items": {"type": "string"},
+      "description": "关键洞察"
+    },
+    "related_narrative_ids": {
+      "type": "array",
+      "items": {"type": "string"},
+      "description": "关联叙事ID列表"
+    },
+    "metadata": {
+      "type": "object",
+      "description": "扩展元数据"
+    }
+  }
+}

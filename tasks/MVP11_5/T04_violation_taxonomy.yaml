@@ -1,0 +1,23 @@
+task_id: MVP11_5_T04
+goal: >
+  Build taxonomy of all violation types from shadow_log.jsonl.
+  Map violation categories to their root causes and frequency.
+depends_on:
+  - MVP11_5_T01
+deliverables:
+  - artifacts/self_report/violation_taxonomy.json
+  - artifacts/self_report/violation_taxonomy.md
+commands:
+  - python tools/analyze-violations --taxonomy
+acceptance_criteria:
+  - file_exists: artifacts/self_report/violation_taxonomy.json
+  - field_exists: violation_categories
+  - field_exists: root_causes
+  - field_exists: frequency_by_category
+stop_conditions:
+  - shadow_log_missing
+  - parse_error
+scope_boundary:
+  - ANALYZE only
+  - Document patterns
+  - No code modification

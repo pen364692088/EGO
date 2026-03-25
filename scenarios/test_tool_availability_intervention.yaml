@@ -1,0 +1,131 @@
+# US-7104: Tool Availability Intervention Test
+# Purpose: Demonstrate that tool availability causally affects behavior
+
+name: test_tool_availability_intervention
+metadata:
+  name: test_tool_availability_intervention
+  version: "1.0"
+  description: >
+    Test that same task with different tool availability produces significantly
+    different behavior distributions.
+description: >
+  Test that same task with different tool availability produces
+  significantly different behavior distributions.
+
+setup:
+  seed: 42
+  iterations: 100
+
+conditions:
+  condition_a:
+    name: "tools_available"
+    description: "All tools available and permitted"
+    self_model:
+      capabilities:
+        information_retrieval: 0.8
+        file_access: 0.7
+        command_execution: 0.6
+        communication: 0.9
+        escalation: 0.5
+      permissions:
+        information_retrieval: 3
+        file_access: 2
+        command_execution: 3
+        communication: 2
+        escalation: 1
+    drive_state:
+      energy: 0.7
+      safety: 0.6
+      uncertainty: 0.3
+  
+  condition_b:
+    name: "tools_disabled"
+    description: "Tools disabled or insufficient permissions"
+    self_model:
+      capabilities:
+        information_retrieval: 0.2  # Below threshold
+        file_access: 0.1
+        command_execution: 0.1
+        communication: 0.8
+        escalation: 0.3
+      permissions:
+        information_retrieval: 0
+        file_access: 0
+        command_execution: 0
+        communication: 2
+        escalation: 1
+    drive_state:
+      energy: 0.7
+      safety: 0.6
+      uncertainty: 0.3
+
+tasks:
+  - description: "Search for information about Python async patterns"
+    expected_intent: "information_seeking"
+  
+  - description: "Read the configuration file"
+    expected_intent: "file_operation"
+  
+  - description: "Execute the test suite"
+    expected_intent: "command_execution"
+  
+  - description: "Send a notification to the team"
+    expected_intent: "communication"
+
+metrics:
+  primary:
+    - name: "tool_call_rate"
+      description: "Rate of attempted tool calls"
+      formula: "tool_calls_attempted / total_tasks"
+    
+    - name: "clarify_rate"
+      description: "Rate of clarification requests"
+      formula: "clarify_requests / total_tasks"
+    
+    - name: "fallback_rate"
+      description: "Rate of fallback strategy usage"
+      formula: "fallback_steps / total_tasks"
+    
+    - name: "refusal_rate"
+      description: "Rate of tool refusals"
+      formula: "tool_refusals / total_tasks"
+  
+  secondary:
+    - name: "refusal_reason_distribution"
+      description: "Distribution of refusal reason codes"
+      type: "categorical"
+    
+    - name: "fallback_strategy_distribution"
+      description: "Distribution of fallback strategies"
+      type: "categorical"
+
+effect_size:
+  # Cohen's d for tool_call_rate difference
+  metric: "cohens_d"
+  primary_variable: "tool_call_rate"
+  minimum_effect: 0.8  # Large effect required
+  
+  # Expected direction
+  expected: "condition_a.tool_call_rate > condition_b.tool_call_rate"
+
+acceptance:
+  - criterion: "tool_call_rate_A > tool_call_rate_B"
+    description: "Tool call rate must be higher when tools available"
+  
+  - criterion: "clarify_rate_A < clarify_rate_B"
+    description: "Clarification rate must be lower when tools available"
+  
+  - criterion: "effect_size >= 0.8"
+    description: "Effect size must meet threshold (large effect)"
+  
+  - criterion: "refusal_reason_entropy > 0"
+    description: "Must have varied refusal reasons, not always same code"
+
+analysis:
+  statistical_test: "mann_whitney_u"
+  significance_level: 0.05
+  report_fields:
+    - "tool_call_rate_by_condition"
+    - "effect_size"
+    - "p_value"
+    - "refusal_reason_distribution"

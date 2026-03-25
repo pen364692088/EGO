@@ -1,0 +1,16 @@
+{
+  "name": "user_message_neutral",
+  "description": "Neutral user message → observe tendency",
+  "events": [
+    {
+      "type": "user_message",
+      "actor": "userA",
+      "target": "agent",
+      "text": "hello there",
+      "meta": {"target_id": "session_neutral"}
+    }
+  ],
+  "expect": {
+    "has_conflict": false
+  }
+}

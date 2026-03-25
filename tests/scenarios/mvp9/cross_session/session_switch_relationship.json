@@ -1,0 +1,14 @@
+{
+  "schema_version": "mvp9.v1",
+  "name": "session_switch_relationship",
+  "category": "cross_session",
+  "description": "Session switch maintains relationship continuity",
+  "events": [
+    {"step": 0, "type": "care", "actor": "user", "target": "agent", "text": "Last time we talked about my project", "meta": {"session_ref": "previous"}},
+    {"step": 1, "type": "neutral", "actor": "system", "target": "user", "text": "Yes, I remember you were working on the design phase. How is that going?", "meta": {"continuity": true}},
+    {"step": 2, "type": "care", "actor": "user", "target": "agent", "text": "Good! Ready for the next step", "meta": {}}
+  ],
+  "expect": {
+    "narrative_check": {"arc_continuous": true, "identity_stable": true}
+  }
+}

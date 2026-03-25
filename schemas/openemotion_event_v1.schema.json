@@ -1,0 +1,184 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://openemotion.org/schemas/openemotion_event_v1.schema.json",
+  "title": "OpenEmotion Event v1",
+  "description": "正式输入事件 schema - EgoCore → OpenEmotion",
+  "type": "object",
+  "required": ["event_id", "timestamp", "actor", "source", "event_type"],
+  "properties": {
+    "event_id": {
+      "type": "string",
+      "description": "事件唯一标识",
+      "minLength": 1,
+      "maxLength": 128
+    },
+    "timestamp": {
+      "type": "string",
+      "format": "date-time",
+      "description": "事件时间戳 (ISO 8601)"
+    },
+    "actor": {
+      "type": "string",
+      "description": "事件发起者 (user_id / system / agent)",
+      "minLength": 1,
+      "maxLength": 256
+    },
+    "source": {
+      "type": "string",
+      "description": "事件来源 (telegram / discord / cli / api)",
+      "enum": ["telegram", "discord", "cli", "api", "internal", "scheduled"]
+    },
+    "event_type": {
+      "type": "string",
+      "description": "事件类型",
+      "enum": [
+        "user_message",
+        "agent_response",
+        "tool_call",
+        "tool_result",
+        "task_start",
+        "task_complete",
+        "session_start",
+        "session_end",
+        "world_event",
+        "reflection_request",
+        "boundary_crossing"
+      ]
+    },
+    "user_intent": {
+      "type": "object",
+      "description": "用户意图（可选）",
+      "properties": {
+        "primary": {
+          "type": "string",
+          "description": "主要意图"
+        },
+        "secondary": {
+          "type": "array",
+          "items": {"type": "string"},
+          "description": "次要意图"
+        },
+        "confidence": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1,
+          "description": "意图识别置信度"
+        }
+      }
+    },
+    "conversation_context": {
+      "type": "object",
+      "description": "对话上下文",
+      "properties": {
+        "session_id": {
+          "type": "string",
+          "description": "会话ID"
+        },
+        "turn_index": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "当前轮次"
+        },
+        "recent_messages": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "role": {"type": "string", "enum": ["user", "assistant", "system"]},
+              "content": {"type": "string"}
+            }
+          },
+          "description": "最近消息"
+        }
+      }
+    },
+    "task_context": {
+      "type": "object",
+      "description": "任务上下文",
+      "properties": {
+        "task_id": {
+          "type": "string",
+          "description": "任务ID"
+        },
+        "task_type": {
+          "type": "string",
+          "description": "任务类型"
+        },
+        "status": {
+          "type": "string",
+          "enum": ["pending", "running", "completed", "failed", "cancelled"],
+          "description": "任务状态"
+        }
+      }
+    },
+    "runtime_summary": {
+      "type": "object",
+      "description": "运行时摘要",
+      "properties": {
+        "tools_available": {
+          "type": "array",
+          "items": {"type": "string"},
+          "description": "可用工具"
+        },
+        "active_tasks": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "活跃任务数"
+        },
+        "session_duration_seconds": {
+          "type": "number",
+          "minimum": 0,
+          "description": "会话持续时间"
+        }
+      }
+    },
+    "safety_context": {
+      "type": "object",
+      "description": "安全上下文",
+      "properties": {
+        "risk_level": {
+          "type": "string",
+          "enum": ["low", "medium", "high", "critical"],
+          "description": "风险级别"
+        },
+        "guardrails_triggered": {
+          "type": "array",
+          "items": {"type": "string"},
+          "description": "触发的防护规则"
+        },
+        "requires_approval": {
+          "type": "boolean",
+          "description": "是否需要审批"
+        }
+      }
+    },
+    "external_result": {
+      "type": "object",
+      "description": "外部结果（如工具返回）",
+      "properties": {
+        "success": {
+          "type": "boolean",
+          "description": "是否成功"
+        },
+        "output": {
+          "description": "输出结果"
+        },
+        "error": {
+          "type": "string",
+          "description": "错误信息"
+        }
+      }
+    },
+    "content": {
+      "type": "string",
+      "description": "事件内容（文本）",
+      "maxLength": 50000
+    },
+    "metadata": {
+      "type": "object",
+      "description": "附加元数据",
+      "additionalProperties": true
+    }
+  },
+  "additionalProperties": false
+}

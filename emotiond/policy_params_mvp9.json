@@ -1,0 +1,27 @@
+{
+  "schema_version": "mvp9.v1",
+  
+  "appraisal": {
+    "social_threat_weight": 0.7,
+    "novelty_weight": 0.3,
+    "intensity_threshold": 0.6
+  },
+  
+  "conflict": {
+    "detection_threshold": 0.5,
+    "repair_strategy_priority": ["boundary", "repair_offer", "withdraw"],
+    "resolution_window_steps": 2
+  },
+  
+  "commitment": {
+    "default_timeout_hours": 24,
+    "breach_sensitivity": 0.8,
+    "make_good_priority": ["apology", "explanation", "recommit"]
+  },
+  
+  "narrative": {
+    "identity_decay_rate": 0.1,
+    "arc_max_events": 10,
+    "contradiction_tolerance": 0.2
+  }
+}

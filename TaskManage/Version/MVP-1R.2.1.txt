@@ -1,0 +1,36 @@
+目标：让默认测试套件全绿，并让集成测试变得稳定、无端口冲突
+必做项
+
+修复端口冲突根因
+
+所有集成测试/启动脚本必须：
+
+使用随机可用端口（bind 0 或自动探测）
+
+或使用 pytest fixture 分配端口
+
+或支持 EMOTIOND_PORT=0（自动选择端口并在 stdout/日志里打印实际端口）
+
+隔离测试 DB 与运行 DB
+
+测试默认用临时目录（pytest tmp_path）
+
+所有测试必须显式设置 EMOTIOND_DB_PATH，避免污染真实数据
+
+集成测试收敛为“快且可重复”
+
+不跑 systemd
+
+以子进程启动 uvicorn（随机端口）
+
+等待 /health 就绪后开始测
+
+测完强制回收子进程（确保不会残留占端口）
+
+验收标准
+
+pytest -q 全绿（0 failed / 0 errors）
+
+python scripts/eval_suite.py 全绿并生成 report
+
+在连续跑 5 次测试时都全绿（防 flakiness）

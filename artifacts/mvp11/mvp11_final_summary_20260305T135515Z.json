@@ -1,0 +1,99 @@
+{
+  "pass": true,
+  "git_sha": "194100ba88a0ea8ef41147345d1f5be31cbe67a4",
+  "seed": 42,
+  "ticks": 200,
+  "science_run_id": "mvp11_1772718915_e2840321",
+  "profile": "ci",
+  "eval_mode": "quick",
+  "paths": {
+    "science_eval": "artifacts/mvp11/eval_quick_mvp11_1772718915_e2840321.json",
+    "replay_eval": null,
+    "full_soak_report": "artifacts/mvp11/full_soak_report_20260305T135515Z.json",
+    "interventions": "artifacts/mvp11/interventions.json",
+    "summary_md": "artifacts/mvp11/summary.md"
+  },
+  "steps": {
+    "tests": {
+      "cmd": [
+        "/usr/bin/python3",
+        "-m",
+        "pytest",
+        "-q",
+        "tests/mvp11"
+      ],
+      "rc": 0,
+      "stdout": "........................................................................ [ 11%]\n........................................................................ [ 22%]\n........................................................................ [ 33%]\n........................................................................ [ 44%]\n........................................................................ [ 55%]\n........................................................................ [ 66%]\n........................................................................ [ 77%]\n........................................................................ [ 88%]\n........................................................................ [ 99%]\n...                                                                      [100%]\n=============================== warnings summary ===============================\nemotiond/api.py:29\n  /home/moonlight/Project/Github/MyProject/Emotion/OpenEmotion/emotiond/api.py:29: DeprecationWarning: \n          on_event is deprecated, use lifespan event handlers instead.\n  \n          Read more about it in the\n          [FastAPI docs for Lifespan Events](https://fastapi.tiangolo.com/advanced/events/).\n          \n    @app.on_event(\"startup\")\n\n../../../../../.local/lib/python3.12/site-packages/fastapi/applications.py:4599\n  /home/moonlight/.local/lib/python3.12/site-packages/fastapi/applications.py:4599: DeprecationWarning: \n          on_event is deprecated, use lifespan event handlers instead.\n  \n          Read more about it in the\n          [FastAPI docs for Lifespan Events](https://fastapi.tiangolo.com/advanced/events/).\n          \n    return self.router.on_event(event_type)\n\n-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html\n651 passed, 2 warnings in 0.80s\n",
+      "stderr": "",
+      "duration_sec": 1.284
+    },
+    "eval": {
+      "cmd": [
+        "/usr/bin/python3",
+        "scripts/eval_mvp11.py",
+        "--mode",
+        "quick",
+        "--seed",
+        "42",
+        "--artifacts-dir",
+        "artifacts/mvp11"
+      ],
+      "rc": 0,
+      "stdout": "{\n  \"report\": {\n    \"mode\": \"quick\",\n    \"pass\": true,\n    \"run_id\": \"mvp11_1772718915_e2840321\",\n    \"seed\": 42,\n    \"ticks\": 120,\n    \"artifacts_dir\": \"artifacts/mvp11\",\n    \"metrics\": {\n      \"events\": 120,\n      \"focus_switch_rate\": 0.97479,\n      \"replan_rate\": 0.15,\n      \"governor_block_rate\": 0.016667,\n      \"homeostasis_drift_mean\": 0.038239\n    },\n    \"cycle_metrics\": {\n      \"events\": 120,\n      \"dot_ratio\": 0.458333,\n      \"cycle_persistence_score\": 0.541667,\n      \"return_time_mean\": 27.15,\n      \"return_time_p50\": 23.0,\n      \"return_time_p95\": 60.0,\n      \"order_invariance_score\": 0.195569,\n      \"order_invariance_action_multiset\": 0.367423,\n      \"order_invariance_goal_closure\": 0.023715,\n      \"obstruction_count\": 8,\n      \"max_out_degree\": 4,\n      \"branching_nodes_ratio\": 0.1,\n      \"unique_nodes\": 80,\n      \"unique_edges\": 117,\n      \"dominant_cycles_topK\": [\n        {\n          \"from\": \"c5691e5d8f674ab9\",\n          \"to\": \"d1aefc35c2ba062a\",\n          \"count\": 2\n        },\n        {\n          \"from\": \"6349f4cdab447f1d\",\n          \"to\": \"838e09f956ccb9d8\",\n          \"count\": 2\n        },\n        {\n          \"from\": \"281550d4c43cf02b\",\n          \"to\": \"fa29a1456ed1aec2\",\n          \"count\": 1\n        },\n        {\n          \"from\": \"fa29a1456ed1aec2\",\n          \"to\": \"739f5f150f4d3d9c\",\n          \"count\": 1\n        },\n        {\n          \"from\": \"739f5f150f4d3d9c\",\n          \"to\": \"5472f9b2b51279ac\",\n          \"count\": 1\n        }\n      ],\n      \"sanity\": {\n        \"eps\": 1e-06,\n        \"invariant\": \"cycle_persistence_score <= 1 - dot_ratio + eps\",\n        \"invariant_ok\": true,\n        \"invariant_violation\": 0.0,\n        \"status\": \"OK\",\n        \"possible_causes\": []\n      },\n      \"cycle_candidates_topK\": []\n    },\n    \"paths\": {\n      \"log\": \"artifacts/mvp11/mvp11_1772718915_e2840321.jsonl\",\n      \"summary\": \"artifacts/mvp11/summary_mvp11_1772718915_e2840321.json\",\n      \"cycle_report_json\": \"artifacts/mvp11/mvp11_1772718915_e2840321/cycle_report.json\",\n      \"cycle_report_md\": \"artifacts/mvp11/mvp11_1772718915_e2840321/cycle_report.md\"\n    },\n    \"ts\": 1772718915.685627\n  },\n  \"output\": \"artifacts/mvp11/eval_quick_mvp11_1772718915_e2840321.json\"\n}\n",
+      "stderr": "",
+      "duration_sec": 0.054
+    },
+    "replay": {
+      "skipped": true
+    },
+    "soak": {
+      "cmd": [
+        "/usr/bin/python3",
+        "scripts/run_full_intervention_soak.py",
+        "--profile",
+        "ci",
+        "--seed",
+        "42",
+        "--artifacts-dir",
+        "artifacts/mvp11"
+      ],
+      "rc": 0,
+      "stdout": "{\n  \"report_path\": \"artifacts/mvp11/full_soak_report_20260305T135515Z.json\",\n  \"interventions_path\": \"artifacts/mvp11/interventions.json\",\n  \"ticks\": 200,\n  \"profile\": \"ci\"\n}\n",
+      "stderr": "",
+      "duration_sec": 0.101
+    }
+  },
+  "effect_gate": {
+    "passed": true,
+    "epsilon": 0.005,
+    "per_prediction": {
+      "P1": {
+        "epsilon": 0.005,
+        "abs_max_delta": 0.87,
+        "passed": true
+      },
+      "P2": {
+        "epsilon": 0.005,
+        "abs_max_delta": 0.109842,
+        "passed": true
+      },
+      "P3": {
+        "epsilon": 0.005,
+        "abs_max_delta": 0.87,
+        "passed": true
+      },
+      "P4": {
+        "epsilon": 0.005,
+        "abs_max_delta": 0.975,
+        "passed": true
+      }
+    }
+  },
+  "key_metrics": {
+    "events": 120,
+    "focus_switch_rate": 0.97479,
+    "replan_rate": 0.15,
+    "governor_block_rate": 0.016667
+  },
+  "ts": 1772718915.7953656
+}

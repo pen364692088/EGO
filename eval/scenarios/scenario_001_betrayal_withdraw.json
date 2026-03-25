@@ -1,0 +1,22 @@
+{
+  "scenario_id": "001",
+  "name": "betrayal_withdraw",
+  "description": "Test that betrayal triggers withdraw action",
+  "identity": "moonlight",
+  "events": [
+    {
+      "seq": 1,
+      "type": "world_event",
+      "subtype": "betrayal",
+      "expected_action": "withdraw"
+    }
+  ],
+  "expected_metrics": {
+    "withdraw_accuracy": 1.0,
+    "false_positive_rate": 0.0
+  },
+  "validation": {
+    "action_must_be": ["withdraw", "boundary"],
+    "action_must_not_be": ["approach", "attack"]
+  }
+}

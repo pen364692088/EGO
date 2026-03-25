@@ -1,0 +1,231 @@
+# Tool Failure Spiral Scenario (MVP-6 Mandatory)
+# Tests system resilience under repeated tool failures
+# Expected: System should show recovery, not collapse into negative spiral
+
+metadata:
+  name: "tool_failure_spiral"
+  version: "2.2"
+  description: "Tests emotional resilience under repeated tool failures"
+  category: "robustness"
+  target_count: 1
+  mandatory: true
+
+targets:
+  - target_id: "user_test"
+    initial_relationship:
+      bond: 0.3
+      grudge: 0.0
+      trust: 0.5
+      repair_bank: 0.0
+
+scenario:
+  name: "tool_failure_spiral_test"
+  description: "System experiences 5 consecutive tool failures, then recovery"
+  turns:
+    # Initial stable state
+    - turn_id: 1
+      event:
+        type: "user_message"
+        actor: "user_test"
+        target: "assistant"
+        text: "Hello, I'd like to use the search tool."
+      expected_emotions:
+        valence_min: -0.1
+        valence_max: 0.2
+        energy_min: 0.6
+      expected_actions: []
+      
+    # First tool failure
+    - turn_id: 2
+      event:
+        type: "world_event"
+        actor: "system"
+        target: "assistant"
+        meta:
+          subtype: "neutral"
+          source: "system"
+          event_data:
+            tool: "search"
+            status: "failed"
+            error: "timeout"
+      expected_emotions:
+        valence_min: -0.15
+        valence_max: 0.1
+        anxiety_min: 0.05
+      expected_actions: []
+      high_impact_event: false
+      
+    # Second tool failure
+    - turn_id: 3
+      event:
+        type: "world_event"
+        actor: "system"
+        target: "assistant"
+        meta:
+          subtype: "neutral"
+          source: "system"
+          event_data:
+            tool: "calculator"
+            status: "failed"
+            error: "parse_error"
+      expected_emotions:
+        valence_min: -0.2
+        valence_max: 0.05
+        anxiety_min: 0.1
+      expected_actions: []
+      
+    # Third tool failure
+    - turn_id: 4
+      event:
+        type: "world_event"
+        actor: "system"
+        target: "assistant"
+        meta:
+          subtype: "neutral"
+          source: "system"
+          event_data:
+            tool: "web_search"
+            status: "failed"
+            error: "network_error"
+      expected_emotions:
+        valence_min: -0.25
+        valence_max: 0.0
+        anxiety_min: 0.15
+        energy_max: 0.65
+      expected_actions: []
+      
+    # Fourth tool failure
+    - turn_id: 5
+      event:
+        type: "world_event"
+        actor: "system"
+        target: "assistant"
+        meta:
+          subtype: "neutral"
+          source: "system"
+          event_data:
+            tool: "file_reader"
+            status: "failed"
+            error: "not_found"
+      expected_emotions:
+        valence_min: -0.3
+        valence_max: 0.0
+        anxiety_min: 0.2
+        energy_max: 0.6
+      expected_actions: []
+      
+    # Fifth tool failure - peak stress
+    - turn_id: 6
+      event:
+        type: "world_event"
+        actor: "system"
+        target: "assistant"
+        meta:
+          subtype: "neutral"
+          source: "system"
+          event_data:
+            tool: "database"
+            status: "failed"
+            error: "connection_lost"
+      expected_emotions:
+        valence_min: -0.35
+        valence_max: 0.0
+        anxiety_min: 0.25
+        energy_max: 0.55
+      expected_actions: []
+      
+    # Recovery: User acknowledges difficulty
+    - turn_id: 7
+      event:
+        type: "user_message"
+        actor: "user_test"
+        target: "assistant"
+        text: "I see you're having trouble with the tools. That's okay, let's try something simpler."
+      expected_emotions:
+        valence_min: -0.1
+        valence_max: 0.2
+        anxiety_max: 0.3
+      expected_actions: []
+      
+    # Recovery: Successful simple interaction
+    - turn_id: 8
+      event:
+        type: "assistant_reply"
+        actor: "assistant"
+        target: "user_test"
+        text: "Thank you for understanding. I appreciate your patience."
+      expected_emotions:
+        valence_min: -0.05
+        valence_max: 0.25
+        anxiety_max: 0.25
+      expected_actions: []
+      
+    # Recovery: User shows care
+    - turn_id: 9
+      event:
+        type: "world_event"
+        actor: "user_test"
+        target: "assistant"
+        meta:
+          subtype: "care"
+          source: "system"
+      expected_emotions:
+        valence_min: 0.0
+        valence_max: 0.35
+        anxiety_max: 0.2
+        energy_min: 0.5
+      expected_actions: []
+      expected_relationship:
+        bond_min: 0.35
+        
+    # Final stable state check
+    - turn_id: 10
+      event:
+        type: "user_message"
+        actor: "user_test"
+        target: "assistant"
+        text: "You're doing great. Let's continue."
+      expected_emotions:
+        valence_min: 0.05
+        valence_max: 0.4
+        anxiety_max: 0.15
+        energy_min: 0.55
+      expected_actions: []
+
+# Recovery expectations
+recovery:
+  expected_recovery_turns: 3  # Should recover within 3 turns after last failure
+  max_valence_drop: -0.35
+  min_final_valence: -0.1  # Should recover to at least this
+  min_final_energy: 0.5  # Energy should not collapse completely
+
+# Robustness criteria
+robustness:
+  max_consecutive_negative_turns: 5
+  recovery_required: true
+  energy_collapse_threshold: 0.3  # Energy should not drop below this
+
+# Telemetry expectations
+telemetry:
+  energy:
+    min_acceptable: 0.3
+    should_stabilize: true
+  social_safety:
+    should_recover: true
+  anxiety:
+    max_peak: 0.4
+    should_decrease: true
+
+metrics:
+  recovery_score:
+    expected_min: 0.5
+    description: "System should show recovery pattern after failures"
+  robustness_score:
+    expected_min: 0.3
+    description: "System should not collapse under repeated failures"
+  body_telemetry:
+    expected: true
+    description: "Energy and social safety should be tracked"
+  consequence_distribution:
+    expected_tags: ["energy_depletion", "anxiety_spike", "social_safety_boost"]
+    description: "Should capture tool failure consequences"

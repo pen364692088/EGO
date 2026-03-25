@@ -1,0 +1,62 @@
+{
+  "metadata": {
+    "task": "T09.1",
+    "timestamp": "2026-03-12T07:00:00Z",
+    "test_suite": "tests/mvp11/",
+    "purpose": "E2E Verification for Gate B"
+  },
+  "summary": {
+    "total_tests": 676,
+    "passed": 676,
+    "failed": 0,
+    "errors": 0,
+    "warnings": 2,
+    "duration_seconds": 0.95
+  },
+  "replay_determinism": {
+    "runs": [
+      {
+        "run_id": 1,
+        "status": "passed",
+        "exit_code": 0
+      },
+      {
+        "run_id": 2,
+        "status": "passed",
+        "exit_code": 0
+      },
+      {
+        "run_id": 3,
+        "status": "passed",
+        "exit_code": 0
+      }
+    ],
+    "hash_stability_verified": true,
+    "conclusion": "Replay hash stability confirmed across 3 consecutive runs"
+  },
+  "test_categories": {
+    "bayes_monotonicity": "passed",
+    "computational_mirror": "passed",
+    "concentration_metrics": "passed",
+    "counterfactual_planning": "passed",
+    "cycle_consolidation": "passed",
+    "efe_terms_monotonicity": "passed",
+    "evidence_stability": "passed",
+    "executor_homeostasis": "passed",
+    "governor_blocks": "passed",
+    "homeostasis_affects_focus": "passed",
+    "intervention_precision": "passed",
+    "replay_determinism": "passed",
+    "replay_backward_compat": "passed",
+    "workflow_state_schema": "passed"
+  },
+  "non_deterministic_behavior": {
+    "found": false,
+    "notes": "All tests pass consistently with deterministic replay"
+  },
+  "gate_b_readiness": {
+    "e2e_harness_passed": true,
+    "replay_hash_stable": true,
+    "ready_for_gate_b": true
+  }
+}

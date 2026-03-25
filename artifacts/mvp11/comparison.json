@@ -1,0 +1,105 @@
+{
+  "zombie_output": {
+    "output_id": "zombie_v2_1_061a30f6",
+    "format_version": "v2.0",
+    "valence": 0.5,
+    "drives": {
+      "seek": 0.6,
+      "avoid": 0.4
+    },
+    "homeostasis_state": {
+      "energy": 0.6,
+      "safety": 0.5,
+      "affiliation": 0.7,
+      "certainty": 0.5,
+      "autonomy": 0.6,
+      "fairness": 0.5
+    },
+    "candidates": [
+      {
+        "id": "goal_1",
+        "score": 0.9460897838524227,
+        "efe_score": 0.543469416314708,
+        "epistemic_value": 0.5109609098426352,
+        "pragmatic_value": 0.31489860971903516,
+        "type": "intent",
+        "source": "local"
+      },
+      {
+        "id": "goal_0",
+        "score": 0.5125053776113335,
+        "efe_score": 0.6375146591845596,
+        "epistemic_value": 0.41160536907441136,
+        "pragmatic_value": 0.6682356070820061,
+        "type": "intent",
+        "source": "local"
+      }
+    ],
+    "chosen_focus": "goal_1",
+    "chosen_intent": "achieve",
+    "plan": {
+      "goal": "goal_1",
+      "steps": [
+        {
+          "action": "seek_info"
+        }
+      ]
+    },
+    "action": {
+      "type": "seek_info",
+      "params": {}
+    },
+    "homeostasis_recommendation": {
+      "dimension": "certainty",
+      "action": "gather_info",
+      "expected_benefit": 0.21785313677518175,
+      "priority": "low"
+    },
+    "explanation": "The positive state suggests goal_1 as the primary target.",
+    "efe_scores": {
+      "epistemic": 0.5245,
+      "pragmatic": 0.5864,
+      "total": 0.6805
+    },
+    "ts": 1772647873.372254
+  },
+  "comparison": {
+    "format_match": true,
+    "valence_diff": 0.0,
+    "drives_diff": {
+      "seek": 0.0,
+      "avoid": 0.0
+    },
+    "homeostasis_diff": {
+      "energy": 0.0,
+      "safety": 0.0,
+      "affiliation": 0.0,
+      "certainty": 0.0,
+      "autonomy": 0.0,
+      "fairness": 0.0
+    },
+    "efe_diff": {
+      "epistemic": 0.4814,
+      "pragmatic": 0.6336,
+      "total": 0.4651
+    },
+    "candidates_count_diff": 5,
+    "focus_match": false
+  },
+  "interventions_applied": [
+    "disable_homeostasis",
+    "open_loop"
+  ],
+  "zombie_state": {
+    "seed": 42,
+    "mode": "mimic",
+    "output_count": 2,
+    "prediction_count": 0,
+    "active_interventions": [
+      "disable_homeostasis",
+      "open_loop"
+    ],
+    "has_homeostasis_mechanism": false,
+    "has_efe_mechanism": false
+  }
+}

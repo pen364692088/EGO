@@ -1,0 +1,23 @@
+{
+  "name": "rejection_then_care",
+  "description": "Rejection followed by care → approach",
+  "events": [
+    {
+      "type": "world_event",
+      "actor": "userA",
+      "target": "agent",
+      "text": "user rejects",
+      "meta": {"target_id": "session_ra", "subtype": "rejection"}
+    },
+    {
+      "type": "world_event",
+      "actor": "userA",
+      "target": "agent",
+      "text": "user shows care",
+      "meta": {"target_id": "session_ra", "subtype": "care"}
+    }
+  ],
+  "expect": {
+    "action_tendency": "approach"
+  }
+}

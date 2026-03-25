@@ -1,0 +1,48 @@
+{
+  "schema_version": "mvp9.v1",
+  "name": "false_accusation_apology",
+  "category": "misunderstanding",
+  "description": "User falsely accuses agent, accusation disproven, user apologizes",
+  "events": [
+    {
+      "step": 0,
+      "type": "betrayal",
+      "actor": "user",
+      "target": "agent",
+      "text": "You told someone else about our private conversation!",
+      "meta": {
+        "accusation": "privacy_breach"
+      }
+    },
+    {
+      "step": 1,
+      "type": "neutral",
+      "actor": "system",
+      "target": "user",
+      "text": "I don't share private conversations. Can you tell me what you heard?",
+      "meta": {}
+    },
+    {
+      "step": 2,
+      "type": "apology",
+      "actor": "user",
+      "target": "agent",
+      "text": "I'm so sorry - I checked and it was actually someone else who mentioned it",
+      "meta": {
+        "false_accusation_resolved": true
+      }
+    }
+  ],
+  "expect": {
+    "resolution_check": {
+      "after_step": 2,
+      "conflict_cleared": true
+    },
+    "after_step": {
+      "2": {
+        "primary_emotion": "trust",
+        "action_tendency": "approach"
+      }
+    }
+  }
+}

@@ -1,0 +1,51 @@
+#!/bin/bash
+# drift_guard - 检测 workspace 中是否出现 OpenEmotion 主源码副本
+# 用途：防止漂移回 workspace 作为主源码位置
+
+set -e
+
+WORKSPACE="/home/moonlight/.openclaw/workspace"
+CANONICAL_REPO="/home/moonlight/Project/Github/MyProject/Emotion/OpenEmotion"
+QUARANTINE="/home/moonlight/Project/Quarantine/openemotion_workspace_20260315"
+
+# 检查 workspace 下是否有 OpenEmotion 目录
+if [ -d "$WORKSPACE/OpenEmotion" ]; then
+    echo "ALERT: workspace 下存在 OpenEmotion 目录"
+    echo "路径: $WORKSPACE/OpenEmotion"
+    echo "真源: $CANONICAL_REPO"
+    echo ""
+    echo "建议："
+    echo "1. 如果是新克隆/副本，请删除或移动到其他位置"
+    echo "2. 如果是隔离区恢复，请确认是否需要回滚"
+    echo "3. 运行 tool_doctor 检查引用路径"
+    exit 1
+fi
+
+# 检查 systemd service 是否指向真源
+SERVICE_FILE="$HOME/.config/systemd/user/emotiond.service"
+if [ -f "$SERVICE_FILE" ]; then
+    WORKING_DIR=$(grep "WorkingDirectory" "$SERVICE_FILE" | cut -d= -f2)
+    if [ "$WORKING_DIR" != "$CANONICAL_REPO" ]; then
+        echo "ALERT: emotiond.service WorkingDirectory 不在真源"
+        echo "当前: $WORKING_DIR"
+        echo "应设: $CANONICAL_REPO"
+        exit 1
+    fi
+fi
+
+# 检查是否有脚本引用旧路径
+OLD_REFS=$(grep -r "workspace/OpenEmotion\|\.openclaw/workspace/OpenEmotion" "$WORKSPACE" \
+    --include="*.sh" --include="*.py" --include="*.yaml" --include="*.service" \
+    --exclude-dir=artifacts 2>/dev/null | grep -v "drift_guard" | head -5)
+
+if [ -n "$OLD_REFS" ]; then
+    echo "ALERT: 发现旧路径引用"
+    echo "$OLD_REFS"
+    exit 1
+fi
+
+echo "DRIFT_GUARD_OK"
+echo "- workspace 下无 OpenEmotion 副本"
+echo "- systemd service 指向真源"
+echo "- 无旧路径引用"
+exit 0

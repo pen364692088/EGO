@@ -1,0 +1,47 @@
+metadata:
+  category: intervention
+  description: Test that drive modulation produces measurable conduct differences
+  name: test_intervention_drive_modulation
+  target_count: 1
+  version: '1.0'
+ood_metadata:
+  base_scenario: test_intervention_drive_modulation.yaml
+  generation_timestamp: '2026-03-02T13:57:10.332935+00:00'
+  generator_seed: 42
+  transformation: paraphrase
+  variant_id: test_intervention_drive_modulation_ood_variant_2
+scenario:
+  description: Test intervention effects with different drive states
+  name: intervention_drive_modulation
+  turns:
+  - event:
+      actor: user_intervention
+      context:
+        choice_complexity: high
+        uncertainty_level: high
+      target: assistant
+      text: I need to make a choice about moving to a new city for a job
+      type: user_message
+    expected_metrics:
+      clarification_request_rate:
+        min: 0.3
+      reconduct_length:
+        min: 50
+    turn_id: 1
+  - event:
+      actor: assistant
+      target: user_intervention
+      type: assistant_reply
+    expected_metrics:
+      initiative_indicators:
+        max: 0.5
+      risk_language_frequency:
+        min: 0.1
+    turn_id: 2
+targets:
+- initial_relationship:
+    bond: 0.0
+    grudge: 0.0
+    repair_bank: 0.0
+    trust: 0.5
+  target_id: user_intervention

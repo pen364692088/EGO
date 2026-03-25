@@ -1,0 +1,317 @@
+任务说明：OpenEmotion MVP-3（类人情感思考内核最小闭环）+ 实验有效性最小约束
+
+Project location: /home/moonlight/Project/Github/MyProject/Emotion/OpenEmotion
+目标仓库 / 分支
+
+Repo：pen364692088/OpenEmotion
+
+Branch：feature-emotiond-mvp
+
+基线 Commit：0e453f3（当前 359 tests 全绿，eval_suite 全绿）
+
+当前已完成：MVP-2 / MVP-2.1 / MVP-2.1.1（事件权限门控 + 审计 + source 不可伪造）
+
+总体目标（按效果优先）
+
+实现一个可运行、可审计、可回归的“类人情感思考内核”最小闭环（MVP-3A + MVP-3B）：
+
+事件 → 内感状态 → 预测 → 动作选择 → 结果观测 → 预测误差学习 → 下一次行为更像“吸取教训”
+
+同时仅加入两条“实验有效性最小约束”（不是完整安全加固）：
+
+request_id 幂等去重（防重复提交导致“假学习/假情绪”）
+
+time_passed 累计限流（防无限快进导致“假恢复/假宽恕”）
+
+非目标：token scope、短 TTL、全面 rate limit、重放防护等安全工程延后。
+
+交付物清单
+
+功能实现
+
+request_id 幂等
+
+time_passed 累计限流
+
+MVP-3A：interoceptive inference 最小闭环（2 内感变量 + 5 actions + prediction_error 学习）
+
+MVP-3B：结构化“权衡解释”产出 + 落库 + 可被 plan / API 返回携带
+
+数据库/迁移
+
+按现有项目迁移方式新增所需字段/表
+
+不引入重依赖（优先复用现有 DB 层、schema、migration 工具）
+
+测试
+
+保持现有 359 tests 全绿
+
+新增：幂等测试、time_passed 累计限流测试、学习曲线测试、解释一致性测试
+
+文档
+
+更新/新增 docs/MVP-3.md 或同等文档：说明新增 API 字段、决策解释结构、调参项
+
+约束与兼容性要求
+
+事件权限门控保持不变：user 仍禁止高影响事件（betrayal/repair_success），system/openclaw 仍可发送所有事件。
+
+继续坚持：服务端决定 source，不信任客户端 meta.source。
+
+user 的 meta allowlist 在现有基础上只新增：request_id（其余不扩大）。
+
+测试必须可重复：涉及随机的 action 选择要有可控的确定性模式（例如 TEST_MODE 下走 argmax 或固定 seed）。
+
+Part A：实验有效性最小约束
+A1. request_id 幂等去重（必做）
+API 行为
+
+/event 支持客户端在 meta.request_id 传入 UUID（所有 source 都可传；user 也允许）。
+
+对于同一 (source, request_id)：
+
+第一次：正常处理并产生 state 更新、审计记录。
+
+重复请求：不得再次产生 state 更新；返回应明确表示 duplicate_ignored 或返回首次结果（二选一，但必须稳定且可测试）。
+
+落库建议（可按现有架构调整）
+
+最稳方案：新增 request_dedupe 表（或等价机制）
+
+key：(source, request_id) 唯一
+
+value：首次处理对应的 event_id / decision_id / created_at
+
+重复请求：查询命中后直接短路，不再走状态更新链路，同时写一条审计（可落在单独 audit 表，或复用现有审计结构，但不要破坏现有事件表唯一性/一致性）。
+
+测试要求
+
+同一个 request_id 连续提交 2 次：
+
+第二次不改变任何核心状态（情绪向量/关系变量/内感变量/预测参数都不变）
+
+返回的 decision 明确可断言（duplicate_ignored 或 same_as_first）
+
+审计可查询到“duplicate”记录（形式按你实现）
+
+A2. time_passed 累计限流（必做）
+规则（建议默认值，可配置）
+
+对 user 的 time_passed：保留单次 clamp [1,300]（已有）
+
+新增累计限流（滑动窗口）：
+
+窗口：WINDOW_REAL_SECONDS = 10
+
+上限：MAX_TIME_PASSED_IN_WINDOW = 60
+
+若用户在窗口内累计 seconds 超过上限：
+
+将本次 seconds 进一步 clamp 到剩余额度（可能变成 0 或 1；具体规则要稳定）
+
+审计记录需包含：window_sum、requested、clamped_to、reason
+
+关键点：这是“防假效果”的实验约束，不是安全策略；实现可简单但必须可测。
+
+测试要求
+
+在同一短时间窗口内多次提交 time_passed：
+
+累计不应超过上限
+
+审计里能看到 clamp 原因与数值
+
+窗口过期后额度恢复（可通过注入 Clock 或测试等待/模拟时间实现）
+
+Part B：MVP-3A Interoceptive Inference（最小闭环）
+B1. 新增内感状态（2 维）
+
+在当前 state（已有 trust/repair_bank/grudge/regulation_budget + 5D emotion）基础上新增：
+
+social_safety ∈ [0,1]
+
+energy ∈ [0,1]
+
+初始化建议（可配置）：
+
+social_safety = 0.6
+
+energy = 0.7
+
+并定义基本更新：
+
+time_passed：energy 缓慢恢复（受上限/衰减控制）
+
+高冲突事件（betrayal/rejection/ignored）降低 safety/energy
+
+正向事件（care/apology/repair_success）提升 safety（但后续会被“道歉边际效用递减”调制）
+
+先别引入更多维度，2 维足够产生“人格感”。
+
+B2. 定义动作空间（5 actions）
+
+实现离散动作集合：
+
+approach
+
+repair_offer
+
+boundary
+
+withdraw
+
+attack
+
+动作本身先不要求复杂执行器（可只作为“决策输出”），但必须参与学习闭环。
+
+B3. 预测模型（predicted_delta per action）
+
+为每个 action 维护预测：
+
+predicted_delta.social_safety[action]
+
+predicted_delta.energy[action]
+
+初始先验（举例，可调整但要写进 config，且可测试）：
+
+approach：safety +0.03, energy -0.02
+
+repair_offer：safety +0.05, energy -0.04
+
+boundary：safety +0.02, energy -0.03
+
+withdraw：safety +0.01, energy +0.02
+
+attack：safety -0.05, energy -0.05
+
+B4. 观测映射（observed_delta）
+
+当“某次 action 后出现下一条事件”时，用该事件 subtype 估计 observed_delta（最小可行 proxy）：
+
+care / apology / repair_success → safety 上升（不同幅度）
+
+rejection / ignored / betrayal → safety 下降（不同幅度）
+
+time_passed → energy 上升（但要受累计限流影响）
+
+其他事件 → 小幅衰减或 0
+
+要求：
+
+映射表集中定义（便于调参）
+
+可在测试里断言
+
+B5. 预测误差学习（核心）
+
+学习规则（简单但必须闭环成立）：
+
+prediction_error = observed_delta - predicted_delta
+
+predicted_delta += lr * prediction_error
+
+lr 默认 0.1（可配置）
+
+predicted_delta 有合理范围 clamp（防爆炸），例如 [-0.2, +0.2]
+
+要求：
+
+学习更新必须落库/可恢复（服务重启不丢）
+
+必须可通过测试验证“某 action 连续失算 → 预测被修正 → 选择概率下降/得分下降”
+
+B6. 动作选择（必须可解释 + 可测试）
+
+实现一个打分函数 + 选择策略：
+
+score(action) 至少由以下部分组成：
+
+关系收益项（与 trust/repair_bank/grudge/regulation_budget 的交互，可先简化成线性权重）
+
+预测安全/精力变化项（predicted_delta）
+
+预测误差风险惩罚（该 action 的历史误差绝对值/方差作为不确定性惩罚）
+
+选择：
+
+生产环境可用 softmax(temperature)
+
+测试环境必须可确定（TEST_MODE 下 argmax 或固定 seed）
+
+Part C：MVP-3B 结构化“权衡解释”（让人感觉真的在思考）
+C1. Explanation 结构（必须落库）
+
+每次决策生成 explanation（JSON）至少包含：
+
+当前情绪 5D（top2 + 数值）
+
+当前内感：social_safety / energy
+
+当前关系：trust / grudge / repair_bank / regulation_budget
+
+候选动作 top3：
+
+action 名
+
+score
+
+predicted_delta（safety/energy）
+
+主要加分/扣分原因（短句数组 2~4 条）
+
+最终选择原因（3 条以内，必须能对应到打分项）
+
+C2. API / plan 输出
+
+/event 响应里建议附带最新 decision（可选开关），或通过现有 plan 接口暴露
+
+至少保证：调试时能从 DB / logs 获取 explanation
+
+C3. 解释一致性测试
+
+新增测试：explanation 里的 top factors 必须与 score 组成一致（防“说一套做一套”）。
+
+测试用例清单（必须覆盖）
+
+Idempotency
+
+同 request_id 重复提交不产生二次 state 更新
+
+time_passed 累计限流
+
+窗口内累计不超过上限；窗口外恢复
+
+Learning 曲线
+
+构造：选择某 action → 连续收到负向事件 → 该 action 的 predicted_delta 被修正为更负（或更保守）→ 选择倾向下降（在 TEST_MODE 可断言）
+
+Recovery / 反转
+
+负向阶段后引入正向事件 → 预测逐步回正（避免永久性“学坏”）
+
+Explanation 一致性
+
+explanation 的 top3 与 score 排序一致；理由字段非空且能对应 score 项
+
+实施建议（执行顺序）
+
+A1 + A2（先保证实验有效性）
+
+B1-B6（闭环跑起来：内感 + 预测 + 学习 + 选择）
+
+C1-C3（解释落库与对外可见）
+
+全量测试、修复回归、更新文档
+
+完成标准（验收）
+
+359+ tests 全绿（新增测试也全绿）
+
+eval_suite 仍可用且全绿
+
+幂等与累计限流在审计/DB 中可追溯
+
+MVP-3 闭环可在一组脚本/测试中展示：“某动作反复失算 → 后续更少选它/更保守”
+
+explanation 能让人读出“她在权衡什么”，且与实际选择一致

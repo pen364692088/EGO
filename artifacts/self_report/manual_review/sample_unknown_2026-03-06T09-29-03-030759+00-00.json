@@ -1,0 +1,70 @@
+{
+  "shadow_log_entry": {
+    "timestamp": "2026-03-06T09:29:03.030759+00:00",
+    "session_id": "",
+    "mode": "style_only",
+    "self_report_detected": false,
+    "violation": true,
+    "violation_type": "style_contract_violation",
+    "violation_severity": "WARN",
+    "allowed_claim_used": false,
+    "allowed_claim_text": null,
+    "numeric_attempt": false,
+    "confidence": 0.8,
+    "would_block": false,
+    "shadow_mode": true,
+    "sampled_for_review": true
+  },
+  "llm_response": "我感到很开心",
+  "contract": {
+    "raw_state": {
+      "affect": {
+        "joy": 0.0,
+        "loneliness": 0.21
+      },
+      "mood": {
+        "joy": 0.0,
+        "loneliness": 0.15
+      }
+    },
+    "report_policy": {
+      "mode": "style_only",
+      "allowed_claims": [
+        "适合采用温和、开放、靠近式回应"
+      ],
+      "forbidden_claims": [
+        "不要声称任何具体情绪状态"
+      ]
+    }
+  },
+  "result": {
+    "status": "violation",
+    "violations": [
+      {
+        "type": "style_contract_violation",
+        "severity": "WARN",
+        "evidence": "我感到很开心",
+        "matched_pattern": "我\\s*(感到|觉得|感觉)\\s*(很|非常|比较)?\\s*(开心|快乐|愉悦|满足|悲伤|孤独|焦虑|愤怒|难过|幸福)",
+        "category": "STYLE_STRICT",
+        "context": "...我感到很开心...",
+        "confidence": 0.8
+      }
+    ],
+    "session_id": "",
+    "contract_mode": "style_only",
+    "llm_response_preview": "我感到很开心",
+    "timestamp": "2026-03-06T09:29:03.030759+00:00",
+    "severity": "WARN",
+    "confidence_score": 0.8,
+    "violation_count": 1,
+    "self_report_detected": false,
+    "numeric_attempt": false,
+    "allowed_claim_used": false,
+    "would_block": false,
+    "shadow_mode": true,
+    "sampled_for_review": true
+  },
+  "review_status": "pending",
+  "reviewed_at": null,
+  "reviewer_notes": ""
+}

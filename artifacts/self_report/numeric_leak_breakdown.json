@@ -1,0 +1,52 @@
+{
+  "schema": "numeric_leak_breakdown.v1",
+  "generated_at": "2026-03-06T13:28:23.182711Z",
+  "source": "artifacts/self_report/shadow_log.jsonl",
+  "summary": {
+    "total_entries": 6031,
+    "numeric_leak_count": 802,
+    "numeric_leak_rate": 0.133,
+    "numeric_leak_rate_percent": "13.30%"
+  },
+  "numeric_leak_by_mode": {
+    "interpreted": 768,
+    "style_only": 17,
+    "numeric": 17
+  },
+  "numeric_leak_by_violation_type": {
+    "fabricated_numeric_state": 802
+  },
+  "numeric_leak_by_severity": {
+    "ERROR": 802
+  },
+  "numeric_leak_by_path": {
+    "_note": "output_path field not available in current shadow_log schema",
+    "_recommendation": "Add output_path to ShadowLogEntry if path tracking is needed"
+  },
+  "numeric_leak_by_template": {
+    "_note": "template field not available in current shadow_log schema",
+    "_recommendation": "Add template field to ShadowLogEntry if template tracking is needed"
+  },
+  "additional_metrics": {
+    "would_block_count": 802,
+    "would_block_rate": 1.0,
+    "sampled_for_review_count": 81,
+    "average_confidence": 0.95,
+    "unique_sessions": 8
+  },
+  "session_distribution": {
+    "sessions_with_leaks": 8,
+    "leaks_with_empty_session_id": 668,
+    "top_sessions": {
+      "empty": 668,
+      "test_would_block_1": 17,
+      "test_shadow_no_block": 17,
+      "test_enforced_block": 17,
+      "test_conf_numeric": 17,
+      "test_viol_conf": 17,
+      "multi_violation": 17,
+      "test_session_123": 16,
+      "test_session": 16
+    }
+  }
+}

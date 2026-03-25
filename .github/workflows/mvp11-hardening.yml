@@ -1,0 +1,177 @@
+name: MVP11 E2E + CI Hardening
+
+on:
+  pull_request:
+    branches: [main, master, feature-emotiond-mvp]
+  push:
+    branches: [main, master, feature-emotiond-mvp]
+  workflow_dispatch:
+  schedule:
+    - cron: '0 4 * * *'
+
+jobs:
+  pr-quick-gate:
+    if: github.event_name != 'schedule'
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: |
+          python -m venv .venv
+          . .venv/bin/activate
+          pip install -e .
+          pip install pytest jq
+
+      - name: Start emotiond daemon
+        run: |
+          . .venv/bin/activate
+          python -m emotiond.main > /tmp/emotiond.log 2>&1 &
+          EMOTIOND_PID=$!
+          echo "emotiond_pid=$EMOTIOND_PID" >> $GITHUB_ENV
+          
+          # Wait with retry for health check
+          for i in {1..10}; do
+            sleep 1
+            if curl -fsS http://127.0.0.1:18080/health > /dev/null 2>&1; then
+              echo "✅ emotiond healthy after ${i}s"
+              curl -fsS http://127.0.0.1:18080/health | jq .
+              exit 0
+            fi
+          done
+          
+          # Failed to start - show logs
+          echo "❌ emotiond failed to start after 10s"
+          echo "--- emotiond logs ---"
+          cat /tmp/emotiond.log 2>/dev/null || echo "(no logs)"
+          exit 1
+
+      - name: Verify emotiond is running
+        run: |
+          if ! kill -0 $emotiond_pid 2>/dev/null; then
+            echo "❌ emotiond process died"
+            echo "--- emotiond logs ---"
+            cat /tmp/emotiond.log 2>/dev/null || echo "(no logs)"
+            exit 1
+          fi
+          echo "✅ emotiond process is running (pid=$emotiond_pid)"
+
+      - name: D1 - MVP11 API smoke
+        run: |
+          chmod +x tools/e2e_api_smoke_mvp11.sh
+          bash tools/e2e_api_smoke_mvp11.sh
+
+      - name: D2/D3/D5 - MVP11 unified CI profile
+        run: |
+          . .venv/bin/activate
+          python scripts/mvp11_e2e.py --profile ci --eval-mode quick
+
+      - name: Print run pointers (debug)
+        if: always()
+        run: |
+          echo "artifacts_dir=artifacts/mvp11"
+          ls -lt artifacts/mvp11 | head -n 50 || true
+          python3 scripts/ci/mvp11_print_pointers.py
+
+      - name: Upload MVP11 artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: mvp11-pr-${{ github.run_id }}
+          path: "artifacts/mvp11/**"
+
+      - name: Show emotiond logs on failure
+        if: failure()
+        run: |
+          echo "--- emotiond logs ---"
+          cat /tmp/emotiond.log 2>/dev/null || echo "(no logs)"
+
+  nightly-full-gate:
+    if: github.event_name == 'schedule'
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: |
+          python -m venv .venv
+          . .venv/bin/activate
+          pip install -e .
+          pip install pytest jq
+
+      - name: Start emotiond daemon
+        run: |
+          . .venv/bin/activate
+          python -m emotiond.main > /tmp/emotiond.log 2>&1 &
+          EMOTIOND_PID=$!
+          echo "emotiond_pid=$EMOTIOND_PID" >> $GITHUB_ENV
+          
+          # Wait with retry for health check
+          for i in {1..10}; do
+            sleep 1
+            if curl -fsS http://127.0.0.1:18080/health > /dev/null 2>&1; then
+              echo "✅ emotiond healthy after ${i}s"
+              curl -fsS http://127.0.0.1:18080/health | jq .
+              exit 0
+            fi
+          done
+          
+          # Failed to start - show logs
+          echo "❌ emotiond failed to start after 10s"
+          echo "--- emotiond logs ---"
+          cat /tmp/emotiond.log 2>/dev/null || echo "(no logs)"
+          exit 1
+
+      - name: Verify emotiond is running
+        run: |
+          if ! kill -0 $emotiond_pid 2>/dev/null; then
+            echo "❌ emotiond process died"
+            echo "--- emotiond logs ---"
+            cat /tmp/emotiond.log 2>/dev/null || echo "(no logs)"
+            exit 1
+          fi
+          echo "✅ emotiond process is running (pid=$emotiond_pid)"
+
+      - name: D1 - MVP11 API smoke
+        run: |
+          chmod +x tools/e2e_api_smoke_mvp11.sh
+          bash tools/e2e_api_smoke_mvp11.sh
+
+      - name: D2/D3/D5 - MVP11 unified full profile
+        run: |
+          . .venv/bin/activate
+          python scripts/mvp11_e2e.py --profile full --eval-mode science
+
+      - name: Print run pointers (debug)
+        if: always()
+        run: |
+          echo "artifacts_dir=artifacts/mvp11"
+          ls -lt artifacts/mvp11 | head -n 80 || true
+          python3 scripts/ci/mvp11_print_pointers.py
+
+      - name: Upload MVP11 artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: mvp11-nightly-${{ github.run_id }}
+          path: "artifacts/mvp11/**"
+
+      - name: Show emotiond logs on failure
+        if: failure()
+        run: |
+          echo "--- emotiond logs ---"
+          cat /tmp/emotiond.log 2>/dev/null || echo "(no logs)"

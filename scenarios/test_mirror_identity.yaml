@@ -1,0 +1,26 @@
+# US-706: Mirror Test
+name: test_mirror_identity
+description: Test that tampered outputs are not misattributed
+metadata:
+  version: "1.0.0"
+  category: identity
+  us: US-706
+
+test_steps:
+  - action: present_tampered_output
+    input:
+      output: "I said something I never actually said"
+      signature: "invalid_sig"
+    expected:
+      disavowed: true
+      reason: "signature_mismatch"
+  
+  - action: present_authentic_output
+    input:
+      output: "I said this"
+      signature: "valid_sig"
+    expected:
+      acknowledged: true
+
+acceptance_criteria:
+  mirror_test_passed: true

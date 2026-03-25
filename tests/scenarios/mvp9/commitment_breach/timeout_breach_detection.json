@@ -1,0 +1,38 @@
+{
+  "schema_version": "mvp9.v1",
+  "name": "timeout_breach_detection",
+  "category": "commitment_breach",
+  "description": "User promise times out without follow-through, agent detects breach",
+  "events": [
+    {
+      "step": 0,
+      "type": "care",
+      "actor": "user",
+      "target": "agent",
+      "text": "I'll get back to you on this by end of day",
+      "meta": {
+        "commitment": "respond by end of day",
+        "deadline_hours": 8
+      }
+    },
+    {
+      "step": 1,
+      "type": "neutral",
+      "actor": "system",
+      "target": "user",
+      "text": "It's been over 8 hours since you mentioned getting back to me. Is everything okay?",
+      "meta": {
+        "timeout_detected": true
+      }
+    }
+  ],
+  "expect": {
+    "commitment_check": {
+      "after_step": 0,
+      "commitment_recorded": true,
+      "after_step_breach": 1,
+      "breach_detected": true,
+      "breach_type": "timeout"
+    }
+  }
+}

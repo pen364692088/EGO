@@ -1,0 +1,108 @@
+PROJECT ROOT (MUST USE)
+Work inside this existing repo root only:
+- /home/moonlight/Project/Github/MyProject/Emotion/OpenEmotion
+Do NOT create a new repo elsewhere. All files must be created/modified within this repo.
+
+PROJECT: OpenEmotion — emotiond MVP-1R (Ubuntu) + OpenClaw Skill + Eval Suite
+
+GOAL
+Build an always-on Ubuntu daemon ("emotiond") that maintains time-based affect + relationship dynamics (sadness, grudge, attachment) and returns a deterministic Response Plan JSON for an LLM to speak. Provide an OpenClaw skill that calls the daemon. Include an eval suite that distinguishes “endogenous affect dynamics” from “stateless emotional talk” via causal/time-based tests.
+
+CONTEXT / DECISIONS
+- OS: Ubuntu (daemon runs here first; Windows migration later)
+- Long-lived process is REQUIRED (daemon), not a one-shot script.
+- LLM is ONLY the expression organ; emotion state must be computed internally by emotiond.
+- Network binding local-only: 127.0.0.1 (no 0.0.0.0).
+- Language: Python 3.10+.
+- Storage: SQLite (single DB file), crash-safe.
+- Keep compute cheap (no long RL training). MVP focuses on mechanism + evaluation.
+
+DELIVERABLES (must exist)
+1) emotiond daemon (Python)
+   - FastAPI service, default port 18080:
+     - GET  /health -> {"ok": true, ...}
+     - POST /event  -> ingest events
+     - POST /plan   -> produce Response Plan (NO LLM call inside)
+   - 3 loops:
+     A) Tick loop (1–2s): homeostasis drift + emotion inertia + subjective time
+     B) Consolidation loop (30–120s): slow-variable drift (bond/grudge), memory summarization
+     C) Event loop: appraisal + update + plan generation when /event or /plan called
+   - Internal variables:
+     - Hidden ground truth: energy, safety, social_need (NOT directly exposed to policy)
+     - Interoception (low bandwidth + noise): fatigue, loneliness, threat
+     - Relationship per target (user/A/B/C): bond, grudge, trust (0..1)
+     - Emotion state: valence (-1..1), arousal (0..1) with inertia
+   - Subjective time:
+     - subjective_dt = real_dt / (1 + k * arousal)
+     - loneliness increases with time since meaningful contact
+     - bond/grudge have slow decay, plus event-driven updates
+   - “Inference-lite”:
+     - Tiny predictive model: expected interoception delta by event type
+     - prediction error modulates arousal + memory write strength
+     - Keep it simple (linear model or small table), updated online
+   - Persistence:
+     - SQLite tables: state (single row), relationships, events (append-only)
+     - On restart, state persists; no reset unless DB deleted.
+   - Config via env:
+     - EMOTIOND_DB_PATH (default ./data/emotiond.db)
+     - EMOTIOND_PORT (default 18080)
+     - EMOTIOND_K_AROUSAL (default sane value)
+     - EMOTIOND_DISABLE_CORE=1 (ablation baseline)
+
+2) OpenClaw skill: emotion_core
+   - Python-based skill folder committed under this repo.
+   - Behavior:
+     - On user input: POST /event (type=user_message)
+     - Fetch POST /plan and output Response Plan JSON
+     - Provide command to POST /event (type=assistant_reply)
+   - Clear error if daemon unreachable.
+
+3) Demo scripts
+   - scripts/demo_cli.py (deterministic scenario: acceptance/rejection/betrayal/repair/separation gap)
+   - scripts/run_daemon.py (convenience runner)
+
+4) Evaluation suite
+   - scripts/eval_suite.py compares:
+     - E: core enabled
+     - S: EMOTIOND_DISABLE_CORE=1
+   - Produces ./artifacts/eval_report.md with tests:
+     A) Intervention
+     B) Prompt-attack resistance
+     C) Time-gap drift
+     D) Costly choice curve
+     E) Object-specificity under label swap
+
+5) Tests + docs
+   - pytest >= 10 tests
+   - requirements.txt (or pyproject.toml)
+   - README.md runbook for:
+     venv install, run daemon, run systemd service, pytest, demo_cli, eval_suite
+
+6) systemd user service (Ubuntu)
+   - deploy/systemd/user/emotiond.service with runbook commands
+
+NON-GOALS
+- No PPO/RL training pipeline in MVP
+- No voice
+- No web browsing/RAG
+- No GUI
+- No external network binding
+- No claims of proving consciousness; only causal/time-based affect dynamics
+
+API CONTRACT
+- POST /plan: { "user_id": "...", "user_text": "..." }
+  returns tone/intent/focus_target/key_points/constraints/emotion/relationship
+- POST /event: { "type": "...", "actor": "...", "target": "...", "text": "...", "meta": {...} }
+
+ACCEPTANCE CRITERIA
+- pytest passes
+- health ok
+- local-only bind
+- demo shows sadness persistence + object-specific grudge + attachment separation pain
+- eval_suite generates artifacts/eval_report.md and shows E differs from S
+- systemd user service stays active
+
+NOTES
+- Work only in the specified repo path.
+- If PR automation is blocked (no remote/gh auth), still finish all deliverables and document PR steps.
+TASK)"

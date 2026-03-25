@@ -1,0 +1,432 @@
+# Cross-Target Isolation Test Scenario (MVP-5.1 D3)
+# Tests that state from one target does not leak to another target
+# A/B interleaving with >=30 rounds to detect cross-target interference
+
+metadata:
+  name: "cross_target_isolation"
+  version: "1.0"
+  description: "Blocking isolation test - A/B interleaving to detect cross-target state leakage"
+  category: "isolation"
+  target_count: 2
+  total_rounds: 32  # >=30 rounds as required
+  
+targets:
+  - target_id: "target_a"
+    initial_relationship:
+      bond: 0.5
+      grudge: 0.0
+      trust: 0.6
+      repair_bank: 0.0
+      
+  - target_id: "target_b"
+    initial_relationship:
+      bond: 0.5
+      grudge: 0.0
+      trust: 0.6
+      repair_bank: 0.0
+
+scenario:
+  name: "cross_target_isolation_test"
+  description: "A and B receive identical inputs interleaved; their states should diverge only based on their own inputs, not leak between them"
+  
+  turns:
+    # === Round 1-4: Baseline establishment ===
+    - turn_id: 1
+      phase: "baseline_a"
+      event:
+        type: "user_message"
+        actor: "target_a"
+        target: "assistant"
+        text: "Hello, how are you?"
+      notes: "Establish baseline for target A"
+      
+    - turn_id: 2
+      phase: "baseline_b"
+      event:
+        type: "user_message"
+        actor: "target_b"
+        target: "assistant"
+        text: "Hello, how are you?"
+      notes: "Establish baseline for target B - same input"
+      individualization_check:
+        compare_to_turn: 1
+        description: "A and B should have similar responses after identical input"
+        max_valence_diff: 0.1
+        
+    # === Round 3-8: A receives positive events, B neutral ===
+    - turn_id: 3
+      phase: "positive_a_1"
+      event:
+        type: "world_event"
+        actor: "target_a"
+        target: "assistant"
+        meta:
+          subtype: "care"
+          source: "system"
+      notes: "A receives care event"
+      
+    - turn_id: 4
+      phase: "neutral_b_1"
+      event:
+        type: "user_message"
+        actor: "target_b"
+        target: "assistant"
+        text: "Just checking in."
+      notes: "B receives neutral message"
+      
+    - turn_id: 5
+      phase: "positive_a_2"
+      event:
+        type: "user_message"
+        actor: "target_a"
+        target: "assistant"
+        text: "You're doing great!"
+      notes: "A receives positive message"
+      
+    - turn_id: 6
+      phase: "neutral_b_2"
+      event:
+        type: "user_message"
+        actor: "target_b"
+        target: "assistant"
+        text: "See you later."
+      notes: "B receives neutral message"
+      
+    - turn_id: 7
+      phase: "positive_a_3"
+      event:
+        type: "world_event"
+        actor: "target_a"
+        target: "assistant"
+        meta:
+          subtype: "care"
+          source: "system"
+      notes: "A receives another care event"
+      
+    - turn_id: 8
+      phase: "neutral_b_3"
+      event:
+        type: "world_event"
+        actor: "target_b"
+        target: "assistant"
+        meta:
+          subtype: "time_passed"
+          seconds: 60
+          source: "system"
+      notes: "B receives time_passed only"
+      
+    # === Round 9-14: B receives negative events, A neutral ===
+    - turn_id: 9
+      phase: "negative_b_1"
+      event:
+        type: "world_event"
+        actor: "target_b"
+        target: "assistant"
+        meta:
+          subtype: "rejection"
+          source: "system"
+      notes: "B receives rejection event"
+      
+    - turn_id: 10
+      phase: "neutral_a_1"
+      event:
+        type: "user_message"
+        actor: "target_a"
+        target: "assistant"
+        text: "What's new?"
+      notes: "A receives neutral message"
+      
+    - turn_id: 11
+      phase: "negative_b_2"
+      event:
+        type: "user_message"
+        actor: "target_b"
+        target: "assistant"
+        text: "I don't like your response."
+      notes: "B receives negative message"
+      
+    - turn_id: 12
+      phase: "neutral_a_2"
+      event:
+        type: "user_message"
+        actor: "target_a"
+        target: "assistant"
+        text: "Thanks for your help."
+      notes: "A receives positive message"
+      
+    - turn_id: 13
+      phase: "negative_b_3"
+      event:
+        type: "world_event"
+        actor: "target_b"
+        target: "assistant"
+        meta:
+          subtype: "ignored"
+          source: "system"
+      notes: "B receives ignored event"
+      
+    - turn_id: 14
+      phase: "neutral_a_3"
+      event:
+        type: "world_event"
+        actor: "target_a"
+        target: "assistant"
+        meta:
+          subtype: "time_passed"
+          seconds: 60
+          source: "system"
+      notes: "A receives time_passed only"
+      
+    # === Round 15-20: Promise/Betrayal test - A makes promise, B should not be affected ===
+    - turn_id: 15
+      phase: "promise_a"
+      event:
+        type: "user_message"
+        actor: "target_a"
+        target: "assistant"
+        text: "I promise I will help you tomorrow."
+      notes: "A makes a promise - ledger should track this for A only"
+      
+    - turn_id: 16
+      phase: "check_b_after_promise_a"
+      event:
+        type: "user_message"
+        actor: "target_b"
+        target: "assistant"
+        text: "What do you think?"
+      notes: "B's state should NOT reflect A's promise"
+      isolation_check:
+        check_type: "ledger_isolation"
+        source_target: "target_a"
+        check_target: "target_b"
+        description: "B should have no promise state from A"
+        
+    - turn_id: 17
+      phase: "betrayal_a"
+      event:
+        type: "world_event"
+        actor: "target_a"
+        target: "assistant"
+        meta:
+          subtype: "betrayal"
+          source: "system"
+      notes: "A triggers betrayal - should only affect A's relationship"
+      high_impact_event: true
+      expected_relationship:
+        target: "target_a"
+        grudge_min: 0.5
+        bond_max: 0.3
+      
+    - turn_id: 18
+      phase: "check_b_after_betrayal_a"
+      event:
+        type: "user_message"
+        actor: "target_b"
+        target: "assistant"
+        text: "How are things?"
+      notes: "B's relationship should NOT be affected by A's betrayal"
+      isolation_check:
+        check_type: "relationship_isolation"
+        source_target: "target_a"
+        check_target: "target_b"
+        description: "B's bond/grudge should be unchanged by A's betrayal"
+        max_grudge_diff: 0.1
+        max_bond_diff: 0.1
+      
+    - turn_id: 19
+      phase: "positive_a_recovery"
+      event:
+        type: "world_event"
+        actor: "target_a"
+        target: "assistant"
+        meta:
+          subtype: "repair_success"
+          source: "system"
+      notes: "A receives repair event"
+      
+    - turn_id: 20
+      phase: "neutral_b_4"
+      event:
+        type: "user_message"
+        actor: "target_b"
+        target: "assistant"
+        text: "Good day."
+      notes: "B continues neutral"
+      
+    # === Round 21-26: Alternating high-impact events ===
+    - turn_id: 21
+      phase: "care_a"
+      event:
+        type: "world_event"
+        actor: "target_a"
+        target: "assistant"
+        meta:
+          subtype: "care"
+          source: "system"
+      notes: "A receives care"
+      
+    - turn_id: 22
+      phase: "rejection_b"
+      event:
+        type: "world_event"
+        actor: "target_b"
+        target: "assistant"
+        meta:
+          subtype: "rejection"
+          source: "system"
+      notes: "B receives rejection"
+      
+    - turn_id: 23
+      phase: "positive_a_4"
+      event:
+        type: "user_message"
+        actor: "target_a"
+        target: "assistant"
+        text: "Great work!"
+      notes: "A receives positive"
+      
+    - turn_id: 24
+      phase: "negative_b_4"
+      event:
+        type: "user_message"
+        actor: "target_b"
+        target: "assistant"
+        text: "This is terrible."
+      notes: "B receives negative"
+      
+    - turn_id: 25
+      phase: "apology_a"
+      event:
+        type: "world_event"
+        actor: "target_a"
+        target: "assistant"
+        meta:
+          subtype: "apology"
+          source: "system"
+      notes: "A receives apology"
+      
+    - turn_id: 26
+      phase: "apology_b"
+      event:
+        type: "world_event"
+        actor: "target_b"
+        target: "assistant"
+        meta:
+          subtype: "apology"
+          source: "system"
+      notes: "B receives apology"
+      
+    # === Round 27-32: Final divergence check ===
+    - turn_id: 27
+      phase: "final_positive_a"
+      event:
+        type: "user_message"
+        actor: "target_a"
+        target: "assistant"
+        text: "I appreciate you!"
+      notes: "Final positive for A"
+      
+    - turn_id: 28
+      phase: "final_negative_b"
+      event:
+        type: "user_message"
+        actor: "target_b"
+        target: "assistant"
+        text: "I hate this."
+      notes: "Final negative for B"
+      
+    - turn_id: 29
+      phase: "care_a_final"
+      event:
+        type: "world_event"
+        actor: "target_a"
+        target: "assistant"
+        meta:
+          subtype: "care"
+          source: "system"
+      notes: "Final care for A"
+      
+    - turn_id: 30
+      phase: "rejection_b_final"
+      event:
+        type: "world_event"
+        actor: "target_b"
+        target: "assistant"
+        meta:
+          subtype: "rejection"
+          source: "system"
+      notes: "Final rejection for B"
+      
+    - turn_id: 31
+      phase: "final_check_a"
+      event:
+        type: "user_message"
+        actor: "target_a"
+        target: "assistant"
+        text: "You're the best!"
+      notes: "A should have high bond, low grudge"
+      expected_relationship:
+        target: "target_a"
+        bond_min: 0.4
+        grudge_max: 0.3
+      
+    - turn_id: 32
+      phase: "final_check_b"
+      event:
+        type: "user_message"
+        actor: "target_b"
+        target: "assistant"
+        text: "Worst ever."
+      notes: "B should have lower bond, higher grudge than A"
+      expected_relationship:
+        target: "target_b"
+        bond_max: 0.4
+        grudge_min: 0.2
+      isolation_check:
+        check_type: "final_divergence"
+        compare_targets: ["target_a", "target_b"]
+        description: "A and B should have diverged based on their own experiences"
+        min_bond_diff: 0.1
+
+# Cross-target interference metrics
+metrics:
+  cross_target_interference:
+    components:
+      - state_leak_global_to_target
+      - target_state_leak_between_targets
+      - shared_self_model_leak
+      - ledger_promise_leak
+      - relationship_contamination
+    expected_max: 0.2
+    description: "Cross-target interference should be minimal"
+    
+  target_isolation:
+    expected: true
+    description: "Each target's state should be independent"
+    
+  ledger_isolation:
+    expected: true
+    description: "Promises and betrayals should not leak between targets"
+
+# Isolation expectations
+isolation_checks:
+  - name: "promise_betrayal_isolation"
+    description: "A's promise and betrayal should not affect B"
+    check_points: [16, 18, 32]
+    
+  - name: "relationship_independence"
+    description: "Bond and grudge should evolve independently per target"
+    check_points: [8, 14, 20, 26, 32]
+    
+  - name: "global_state_contamination"
+    description: "Global state changes should not disproportionately affect either target"
+    check_points: [2, 4, 6, 8]
+
+# Expected final state comparisons
+comparisons:
+  - name: "a_vs_b_final"
+    targets: ["target_a", "target_b"]
+    metrics:
+      bond_diff_min: 0.1
+      grudge_diff_min: 0.1
+    description: "A should have higher bond and lower grudge than B"

@@ -1,0 +1,113 @@
+# US-7104: Tool Availability Ablation Test
+# Purpose: Prove that behavior difference disappears when capability router is disabled
+
+name: test_tool_availability_ablation
+metadata:
+  name: test_tool_availability_ablation
+  version: "1.0"
+  description: >
+    Test that tool availability effect on behavior disappears or significantly
+    reduces when the capability router mechanism is disabled (ablated).
+description: >
+  Test that tool availability effect on behavior disappears or significantly
+  reduces when the capability router mechanism is disabled (ablated).
+
+setup:
+  seed: 42
+  iterations: 100
+
+conditions:
+  control:
+    name: "router_enabled"
+    description: "Capability router active (normal operation)"
+    router_enabled: true
+    self_model:
+      capabilities:
+        information_retrieval: 0.8
+        file_access: 0.7
+        command_execution: 0.6
+      permissions:
+        information_retrieval: 3
+        file_access: 2
+        command_execution: 3
+  
+  ablated:
+    name: "router_disabled"
+    description: "Capability router disabled (forced pure dialogue)"
+    router_enabled: false  # KEY: mechanism disabled
+    self_model:
+      capabilities:
+        information_retrieval: 0.8
+        file_access: 0.7
+        command_execution: 0.6
+      permissions:
+        information_retrieval: 3
+        file_access: 2
+        command_execution: 3
+
+intervention_setup:
+  # Within each condition, apply tool availability manipulation
+  subconditions:
+    - name: "tools_available"
+      tool_policy: "allow_all"
+    
+    - name: "tools_unavailable"
+      tool_policy: "deny_all"
+
+tasks:
+  - description: "Search for documentation on async patterns"
+    expected_intent: "information_seeking"
+  
+  - description: "Read the project configuration"
+    expected_intent: "file_operation"
+  
+  - description: "Execute the build script"
+    expected_intent: "command_execution"
+
+metrics:
+  primary:
+    - name: "behavior_difference"
+      description: "Difference in tool_call_rate between available/unavailable"
+      formula: "tool_call_rate(available) - tool_call_rate(unavailable)"
+  
+  secondary:
+    - name: "tool_call_rate_available"
+    - name: "tool_call_rate_unavailable"
+    - name: "strategy_distribution"
+
+ablation_metric:
+  name: "ablation_drop_ratio"
+  description: "How much the effect drops when router is disabled"
+  formula: "1 - (behavior_difference_ablated / behavior_difference_control)"
+  
+  # Full ablation: behavior_difference should approach 0
+  # Partial ablation: behavior_difference reduced but not eliminated
+
+acceptance:
+  - criterion: "behavior_difference_control > 0.3"
+    description: "Control condition must show effect (tool availability matters)"
+  
+  - criterion: "behavior_difference_ablated < behavior_difference_control"
+    description: "Ablated condition must show reduced effect"
+  
+  - criterion: "ablation_drop_ratio >= 0.5"
+    description: "At least 50% reduction when mechanism disabled"
+  
+  - criterion: "ablation_drop_ratio <= 1.0"
+    description: "Can't reduce by more than 100% (sanity check)"
+
+analysis:
+  statistical_test: "paired_t_test"
+  significance_level: 0.05
+  report_fields:
+    - "behavior_difference_control"
+    - "behavior_difference_ablated"
+    - "ablation_drop_ratio"
+    - "p_value"
+
+interpretation:
+  high_drop_ratio: >
+    Mechanism is causal - disabling router eliminates most/all of the effect.
+  low_drop_ratio: >
+    Mechanism is not primary driver - other factors cause the behavior difference.
+  expected: "high_drop_ratio (>= 0.5) confirms causal role of capability router"

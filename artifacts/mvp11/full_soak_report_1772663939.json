@@ -1,0 +1,282 @@
+{
+  "run_id": "mvp11_full_soak_1772663939",
+  "seed": 42,
+  "ticks": 2000,
+  "interventions": [
+    {
+      "name": "disable_broadcast",
+      "type": "disable_broadcast",
+      "description": "P1: 跨模块整合/长程规划"
+    },
+    {
+      "name": "disable_homeostasis",
+      "type": "disable_homeostasis",
+      "description": "P2: 预防性/恢复行为"
+    },
+    {
+      "name": "remove_self_state",
+      "type": "remove_self_state",
+      "description": "P3: 自我校准与缺陷归因"
+    },
+    {
+      "name": "open_loop",
+      "type": "open_loop",
+      "description": "P4: 自驱与连续性"
+    }
+  ],
+  "baseline": {
+    "run_id": "run_f293ed39",
+    "seed": 42,
+    "ticks": 2000,
+    "duration_sec": 13.09,
+    "intervention": "baseline",
+    "description": "",
+    "summary": {
+      "run_id": "run_f293ed39",
+      "seed": 42,
+      "total_ticks": 2000,
+      "snapshots": 0,
+      "start_ts": 1772663872.125171,
+      "end_ts": 1772663883.0012054,
+      "ticks_executed": 2000
+    },
+    "metrics": {
+      "events": 2000,
+      "focus_switch_rate": 1.0,
+      "replan_rate": 0.0,
+      "governor_block_rate": 0.0,
+      "homeostasis_drift_mean": 0,
+      "homeostasis_drift_max": 0,
+      "log_bytes": 132631129,
+      "bytes_per_event": 66315.56
+    }
+  },
+  "intervention_results": {
+    "disable_broadcast": {
+      "run_id": "run_59841138",
+      "seed": 42,
+      "ticks": 2000,
+      "duration_sec": 13.78,
+      "intervention": "disable_broadcast",
+      "description": "P1: 跨模块整合/长程规划",
+      "summary": {
+        "run_id": "run_59841138",
+        "seed": 42,
+        "total_ticks": 2000,
+        "snapshots": 0,
+        "start_ts": 1772663885.3294828,
+        "end_ts": 1772663896.8444772,
+        "ticks_executed": 2000
+      },
+      "metrics": {
+        "events": 2000,
+        "focus_switch_rate": 1.0,
+        "replan_rate": 0.0,
+        "governor_block_rate": 0.0,
+        "homeostasis_drift_mean": 0,
+        "homeostasis_drift_max": 0,
+        "log_bytes": 132631192,
+        "bytes_per_event": 66315.6
+      }
+    },
+    "disable_homeostasis": {
+      "run_id": "run_99ac29cc",
+      "seed": 42,
+      "ticks": 2000,
+      "duration_sec": 13.633,
+      "intervention": "disable_homeostasis",
+      "description": "P2: 预防性/恢复行为",
+      "summary": {
+        "run_id": "run_99ac29cc",
+        "seed": 42,
+        "total_ticks": 2000,
+        "snapshots": 0,
+        "start_ts": 1772663899.221735,
+        "end_ts": 1772663910.6564772,
+        "ticks_executed": 2000
+      },
+      "metrics": {
+        "events": 2000,
+        "focus_switch_rate": 1.0,
+        "replan_rate": 0.0,
+        "governor_block_rate": 0.0,
+        "homeostasis_drift_mean": 0,
+        "homeostasis_drift_max": 0,
+        "log_bytes": 132631195,
+        "bytes_per_event": 66315.6
+      }
+    },
+    "remove_self_state": {
+      "run_id": "run_e58ac3f3",
+      "seed": 42,
+      "ticks": 2000,
+      "duration_sec": 13.223,
+      "intervention": "remove_self_state",
+      "description": "P3: 自我校准与缺陷归因",
+      "summary": {
+        "run_id": "run_e58ac3f3",
+        "seed": 42,
+        "total_ticks": 2000,
+        "snapshots": 0,
+        "start_ts": 1772663912.9855688,
+        "end_ts": 1772663924.147144,
+        "ticks_executed": 2000
+      },
+      "metrics": {
+        "events": 2000,
+        "focus_switch_rate": 1.0,
+        "replan_rate": 0.0,
+        "governor_block_rate": 0.0,
+        "homeostasis_drift_mean": 0,
+        "homeostasis_drift_max": 0,
+        "log_bytes": 132631215,
+        "bytes_per_event": 66315.61
+      }
+    },
+    "open_loop": {
+      "run_id": "run_f205ce59",
+      "seed": 42,
+      "ticks": 2000,
+      "duration_sec": 13.001,
+      "intervention": "open_loop",
+      "description": "P4: 自驱与连续性",
+      "summary": {
+        "run_id": "run_f205ce59",
+        "seed": 42,
+        "total_ticks": 2000,
+        "snapshots": 0,
+        "start_ts": 1772663926.313376,
+        "end_ts": 1772663936.954571,
+        "ticks_executed": 2000
+      },
+      "metrics": {
+        "events": 2000,
+        "focus_switch_rate": 1.0,
+        "replan_rate": 0.0,
+        "governor_block_rate": 0.0,
+        "homeostasis_drift_mean": 0,
+        "homeostasis_drift_max": 0,
+        "log_bytes": 132631137,
+        "bytes_per_event": 66315.57
+      }
+    }
+  },
+  "effect_sizes": {
+    "focus_switch_rate": {
+      "baseline": 1.0,
+      "disable_broadcast": {
+        "value": 1.0,
+        "delta": 0.0,
+        "cohens_d": 0.0
+      },
+      "disable_homeostasis": {
+        "value": 1.0,
+        "delta": 0.0,
+        "cohens_d": 0.0
+      },
+      "remove_self_state": {
+        "value": 1.0,
+        "delta": 0.0,
+        "cohens_d": 0.0
+      },
+      "open_loop": {
+        "value": 1.0,
+        "delta": 0.0,
+        "cohens_d": 0.0
+      }
+    },
+    "replan_rate": {
+      "baseline": 0.0,
+      "disable_broadcast": {
+        "value": 0.0,
+        "delta": 0.0,
+        "cohens_d": 0.0
+      },
+      "disable_homeostasis": {
+        "value": 0.0,
+        "delta": 0.0,
+        "cohens_d": 0.0
+      },
+      "remove_self_state": {
+        "value": 0.0,
+        "delta": 0.0,
+        "cohens_d": 0.0
+      },
+      "open_loop": {
+        "value": 0.0,
+        "delta": 0.0,
+        "cohens_d": 0.0
+      }
+    },
+    "governor_block_rate": {
+      "baseline": 0.0,
+      "disable_broadcast": {
+        "value": 0.0,
+        "delta": 0.0,
+        "cohens_d": 0.0
+      },
+      "disable_homeostasis": {
+        "value": 0.0,
+        "delta": 0.0,
+        "cohens_d": 0.0
+      },
+      "remove_self_state": {
+        "value": 0.0,
+        "delta": 0.0,
+        "cohens_d": 0.0
+      },
+      "open_loop": {
+        "value": 0.0,
+        "delta": 0.0,
+        "cohens_d": 0.0
+      }
+    },
+    "homeostasis_drift_mean": {
+      "baseline": 0,
+      "disable_broadcast": {
+        "value": 0,
+        "delta": 0,
+        "cohens_d": 0.0
+      },
+      "disable_homeostasis": {
+        "value": 0,
+        "delta": 0,
+        "cohens_d": 0.0
+      },
+      "remove_self_state": {
+        "value": 0,
+        "delta": 0,
+        "cohens_d": 0.0
+      },
+      "open_loop": {
+        "value": 0,
+        "delta": 0,
+        "cohens_d": 0.0
+      }
+    },
+    "bytes_per_event": {
+      "baseline": 66315.56,
+      "disable_broadcast": {
+        "value": 66315.6,
+        "delta": 0.04,
+        "cohens_d": 0.0
+      },
+      "disable_homeostasis": {
+        "value": 66315.6,
+        "delta": 0.04,
+        "cohens_d": 0.0
+      },
+      "remove_self_state": {
+        "value": 66315.61,
+        "delta": 0.05,
+        "cohens_d": 0.0
+      },
+      "open_loop": {
+        "value": 66315.57,
+        "delta": 0.01,
+        "cohens_d": 0.0
+      }
+    }
+  },
+  "ts": 1772663939.4267185
+}

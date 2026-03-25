@@ -1,0 +1,107 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://openemotion.org/schemas/conversation_tape.v1.json",
+  "title": "Conversation Tape v1",
+  "description": "Schema for deterministic conversation recording and replay in testbot harness",
+  "type": "object",
+  "required": ["type", "ts"],
+  "properties": {
+    "type": {
+      "type": "string",
+      "enum": ["inbound", "outbound", "tool_call", "tool_return", "run_start", "run_end"],
+      "description": "Type of tape entry"
+    },
+    "ts": {
+      "type": "number",
+      "description": "Unix timestamp in seconds"
+    },
+    "message_id": {
+      "type": "string",
+      "description": "Unique message identifier for messages"
+    },
+    "sender": {
+      "type": "string",
+      "description": "Sender name for inbound messages"
+    },
+    "sender_id": {
+      "type": "string",
+      "description": "Sender ID for inbound messages"
+    },
+    "text": {
+      "type": "string",
+      "description": "Message text content"
+    },
+    "turn_id": {
+      "type": "integer",
+      "minimum": 1,
+      "description": "Turn number in conversation"
+    },
+    "channel": {
+      "type": "string",
+      "description": "Channel identifier for isolation"
+    },
+    "thread_id": {
+      "type": "string",
+      "description": "Thread ID for conversation isolation"
+    },
+    "tool": {
+      "type": "string",
+      "description": "Tool name for tool_call/tool_return entries"
+    },
+    "args": {
+      "type": "object",
+      "description": "Tool arguments for tool_call entries",
+      "additionalProperties": true
+    },
+    "result": {
+      "type": "object",
+      "description": "Tool result for tool_return entries",
+      "additionalProperties": true
+    },
+    "run_id": {
+      "type": "string",
+      "description": "Unique run identifier for run_start entries"
+    },
+    "config": {
+      "type": "object",
+      "description": "Harness configuration for run_start entries",
+      "additionalProperties": true
+    },
+    "message_count": {
+      "type": "integer",
+      "minimum": 0,
+      "description": "Total messages processed for run_end entries"
+    },
+    "turn_count": {
+      "type": "integer",
+      "minimum": 0,
+      "description": "Total turns for run_end entries"
+    }
+  },
+  "allOf": [
+    {
+      "if": { "properties": { "type": { "const": "inbound" } } },
+      "then": { "required": ["message_id", "sender", "text", "turn_id"] }
+    },
+    {
+      "if": { "properties": { "type": { "const": "outbound" } } },
+      "then": { "required": ["message_id", "text", "turn_id"] }
+    },
+    {
+      "if": { "properties": { "type": { "const": "tool_call" } } },
+      "then": { "required": ["tool", "args", "turn_id"] }
+    },
+    {
+      "if": { "properties": { "type": { "const": "tool_return" } } },
+      "then": { "required": ["result", "turn_id"] }
+    },
+    {
+      "if": { "properties": { "type": { "const": "run_start" } } },
+      "then": { "required": ["run_id", "channel", "thread_id"] }
+    },
+    {
+      "if": { "properties": { "type": { "const": "run_end" } } },
+      "then": { "required": ["message_count", "turn_count"] }
+    }
+  ]
+}

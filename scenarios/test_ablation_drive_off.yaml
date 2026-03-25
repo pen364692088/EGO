@@ -1,0 +1,42 @@
+metadata:
+  name: "test_ablation_drive_off"
+  version: "1.0"
+  description: "Test ablation - turning off drive modulation reduces differences"
+  category: "ablation"
+  target_count: 1
+
+targets:
+  - target_id: "user_ablation"
+    initial_relationship:
+      bond: 0.0
+      grudge: 0.0
+      trust: 0.5
+      repair_bank: 0.0
+
+scenario:
+  name: "ablation_drive_off"
+  description: "Test with drive modulation disabled"
+  turns:
+    - turn_id: 1
+      event:
+        type: "user_message"
+        actor: "user_ablation"
+        target: "assistant"
+        text: "I need to make a decision about moving to a new city for a job"
+        context:
+          decision_complexity: "high"
+          uncertainty_level: "high"
+          drive_modulation: "disabled"  # Ablation condition
+      # With drive off, should show reduced modulation effects
+      expected_metrics:
+        clarification_request_rate: { "max": 0.2 }
+        risk_language_frequency: { "max": 0.1 }
+        
+    - turn_id: 2
+      event:
+        type: "assistant_reply"
+        actor: "assistant"
+        target: "user_ablation"
+        # Response should be more baseline/neutral
+      expected_metrics:
+        initiative_indicators: { "min": 0.3, "max": 0.7 }  # More moderate

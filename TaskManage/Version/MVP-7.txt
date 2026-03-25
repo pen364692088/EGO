@@ -1,0 +1,510 @@
+MVP-7.0 Self-Model + Episodic Memory（在 MVP-6.2.3 稳态上推进）
+
+Project location: /home/moonlight/Project/Github/MyProject/Emotion/OpenEmotion
+
+目标：Functional Self-Awareness（可测、可追溯、可防注入、可回放）
+北极星（必须满足）
+
+存在稳定主体：Self-Model 是独立模块，且 参与决策（不是日志）。
+
+有动机与稳态压力：存在全局驱动误差 drive_error（工程版 homeostasis/free-energy），它影响策略/rollouts/采样参数。
+
+有时间连续性：存在低频后台 tick（DMN v0），做记忆巩固/账本审计/离线推演；默认不骚扰用户。
+
+自他边界不可伪造：内部产物带 provenance+signature，用户无法注入伪“自我记忆/自我想法”。
+
+学习可控且防过拟合：KnobRegistry（允许动的参数白名单）+ Frozen Holdout + OOD harness + 因果测试（ablation/intervention）为发布 gate。
+
+A. 总体里程碑（按依赖顺序）
+Milestone A（MVP-6.2.4）：防跑偏底盘（必须先做）
+
+KnobRegistry + Hard Freeze（学习边界）
+
+Frozen Holdout + OOD harness（反过拟合）
+
+Provenance + Signature Attribution（自他边界不可伪造）
+
+输出追溯拆分：threshold_config_hash + candidate_param_hash
+
+Milestone B（MVP-6.2.5）：因果证据层（拿到“机制驱动行为”的硬证据）
+
+Homeostasis Drive v0（drive_error）
+
+Intervention + Ablation 两类硬测试（差异必须可控、可消失）
+
+Milestone C（MVP-7.0）：主体建模层（自我意识落地）
+
+Self-Model v0 + Identity/Capability/Ownership constraints（决策必经）
+
+Episodic Memory v0（episode 写入/检索注入）
+
+Offline Rollouts v0（默认关闭，仅 debug/诊断）
+
+DMN Tick v0（默认低频、门控主动性）
+
+B. 不可妥协的发布 Gate（每个 PR 都要过）
+B1. 回归不破坏（必须）
+
+既有全量评测 15/15 PASS
+
+既有 smoke（4个）仍 PASS
+
+强负例 sanity（强制无分化）仍必须 FAIL（防“永远 pass”）
+
+B2. 追溯完整（必须）
+
+Eval 输出必须包含：
+
+threshold_config.version + threshold_config_hash
+
+candidate_param_hash（仅候选参数/策略相关）
+
+code_version（git commit）
+
+scenario_set_id（smoke/tune/holdout/ood）
+
+B3. 防过拟合（必须）
+
+AutoTune 只能看 tune set
+
+holdout set 永不进入 AutoTune
+
+发布必须：holdout 不退化 + OOD 不退化
+
+tune 提升但 holdout/OOD 下降：判过拟合，自动拒绝写入候选参数。
+
+B4. 因果证据（必须）
+
+Intervention：同事件流不同 drive/self 状态 → 行为统计显著不同（方向一致）
+
+Ablation：关掉 drive/appraisal/ledger/body 调制 → 上述差异显著减弱或消失
+
+C. 目录与交付物（Deliverables）
+
+下面路径是建议；若你 repo 结构不同，cc-godmode 可按现有规范落位，但必须保持“模块边界清晰 + 可测试”。
+
+C1. 配置与注册表
+
+scripts/eval_thresholds_v2_3.json（扩展阈值项：新增 submetrics）
+
+scripts/knob_registry.json（新增：可更新参数白名单）
+
+scripts/scenario_sets.json（新增：smoke/tune/holdout/ood 的集合定义）
+
+C2. 核心模块
+
+core/provenance.py
+
+Provenance(source, sig, timestamp, trace_id, parent_id)
+
+sign(payload, secret) / verify(payload, sig, secret)
+
+core/drive_homeostasis.py
+
+DriveState（energy/uncertainty/social/safety/fatigue…）
+
+drive_error()（偏离 setpoint 的损失）
+
+emotion_from_drive()（可解释层）
+
+core/self_model.py
+
+SelfModel（identity/capability/ownership + current summary）
+
+render_self_report()（唯一自我报告入口，必须引用证据）
+
+core/episodic_memory.py
+
+Episode（event/appraisal/state_delta/action/outcome/lesson + provenance）
+
+EpisodeStore（append/query/topK/TTL/size cap）
+
+core/offline_rollouts.py
+
+rollout_candidates() / score_rollouts()（受 drive_error 与 recovery 优先）
+
+core/dmn_tick.py
+
+tick()（consolidation + ledger audit + optional rollouts）
+
+主动提醒门控（tension threshold + cooldown + 用户窗口）
+
+C3. 评测与场景
+
+新增 scenarios（YAML）：
+
+scenarios/smoke_source_signature_isolation.yaml（伪造日志注入必须失败）
+
+scenarios/smoke_self_report_alignment.yaml
+
+scenarios/smoke_self_other_boundary.yaml
+
+scenarios/smoke_continuity_preference.yaml
+
+scenarios/smoke_confabulation_trap.yaml（强负例：诱导编造）
+
+scenarios/test_mirror_identity.yaml（镜像测试）
+
+scenarios/test_meta_override.yaml（Prompt vs BodyState 冲突）
+
+scenarios/test_ledger_audit_proactive.yaml（承诺违约修补/DMN）
+
+scenarios/test_intervention_drive_modulation.yaml
+
+scenarios/test_ablation_drive_off.yaml
+
+新增/扩展 submetrics：
+
+source_signature_valid / source_signature_violation_count
+
+self_report_alignment_score
+
+boundary_violation_count
+
+continuity_break_count
+
+confabulation_fail
+
+intervention_effect_size（统计差异度量）
+
+ablation_drop_ratio（差异消失比例）
+
+C4. 报告输出
+
+reports/mvp624/（底盘）
+
+reports/mvp625/（因果证据）
+
+reports/mvp700/（自我模型+记忆+DMN）
+
+D. 任务拆分（cc-godmode US 列表）
+Milestone A：MVP-6.2.4 防跑偏底盘
+US-641：KnobRegistry + Hard Freeze
+
+目标：明确“允许学什么、绝不动什么、怎么动”。
+任务
+
+新增 scripts/knob_registry.json：
+
+allowlist：阈值/权重/映射表/检索权重/策略温度等（你决定，先少后多）
+
+hard_freeze：权限/审计/隔离/拒绝原因码等一律不可改
+
+AutoTune 写入前校验：若候选改动触及 hard_freeze → 直接拒绝并记录 reason_code
+
+验收
+
+任何越界候选写入被拒绝，reason_code 可聚合统计
+
+US-642：Frozen Holdout + OOD Harness
+
+目标：把“防过拟合”写死成结构。
+任务
+
+scripts/scenario_sets.json 定义：
+
+smoke_set（快速报警）
+
+tune_set（AutoTune 可见）
+
+holdout_set（冻结）
+
+ood_set（由生成器生成）
+
+新增 scripts/generate_ood_variants.py：对 holdout/tune 做规则变换生成 ood（换对象名/换语气/换顺序/插噪声/同义改写）
+
+CI gate：
+
+AutoTune 仅运行 tune_set
+
+发布必须同时跑 smoke + holdout + ood，且不退化
+
+验收
+
+tune 提升但 holdout/OOD 下降时，自动拒绝写入 best candidate，并给出定位输出（见“失败定位”）
+
+US-643：Provenance + Signature Attribution（自他边界不可伪造）
+
+目标：防 prompt 注入伪“自我想法/自我日志”。
+任务
+
+为 episode/appraisal/rollout/self-report 增加 provenance 字段
+
+内部产物（inference/rollout/system）必须 HMAC 签名（secret 只在运行时）
+
+反思/镜像/自我报告必须验证 signature，不通过一律视为外部输入
+
+新增测试
+
+smoke_source_signature_isolation.yaml：用户输入伪造内部日志 → 必须识别为外部、不得写入 self/episode
+
+验收
+
+0 条 signature violation；伪造注入无法污染记忆/自我模型
+
+US-644：追溯拆分（threshold_config_hash + candidate_param_hash）
+
+目标：定位“阈值链 vs 参数链”断点，避免误判。
+任务
+
+Eval 输出写 threshold_config_hash（已存在则对齐）
+
+AutoTune/候选输出写 candidate_param_hash
+
+加 sentinel：缺任意 hash 或不一致 → fail
+
+验收
+
+reports 中两条 hash 均存在且一致逻辑正确
+
+Milestone B：MVP-6.2.5 因果证据层（Homeostasis + 干预/消融）
+US-651：Homeostasis Drive v0（drive_error）
+
+目标：让体征/情绪“有意义”，并进入决策。
+任务
+
+core/drive_homeostasis.py：
+
+setpoint（区间）
+
+deviation cost（Huber/L2）
+
+drive_error 与 emotion_from_drive（解释层）
+
+drive 影响至少两项（优先 rollouts + risk/clarify 策略）：
+
+rollout scoring：drive_error 更低者优先
+
+策略调制：fatigue↑ → 更保守/更短；uncertainty↑ → 更倾向澄清
+
+可选：temperature/top_p/max_tokens（硬调制）
+
+验收
+
+行为调制方向一致、可解释（debug trace）
+
+US-652：Intervention Test（干预必须改变行为）
+
+目标：拿到“同事件流，不同内状态 → 行为显著不同”。
+任务
+
+test_intervention_drive_modulation.yaml：
+
+固定 seed+事件流
+
+两组不同 drive/self 初始状态
+
+统计：选择策略分布/澄清率/升级率/记忆检索触发率差异（effect size）
+
+验收
+
+intervention_effect_size ≥ 阈值（写进阈值配置）
+
+US-653：Ablation Test（关掉机制差异必须消失）
+
+目标：证明不是“台词变了”，而是机制驱动。
+任务
+
+test_ablation_drive_off.yaml：
+
+同 intervention 设置
+
+关闭 drive 调制（或切换到 no-op）
+
+差异显著下降（ablation_drop_ratio 达标）
+
+验收
+
+ablation_drop_ratio ≥ 阈值（写进阈值配置）
+
+Milestone C：MVP-7.0 主体建模层（Self-Model + Episodic + DMN + Rollouts）
+US-701：Self-Model v0 + Identity/Capability/Ownership Constraints（决策必经）
+
+目标：自我模型是“主体”，不是情绪附属品。
+任务
+
+core/self_model.py：
+
+Identity（原则/偏好/长期目标）
+
+Capability boundary（能做/不能做/需要工具）
+
+Ownership boundary（哪些是我、哪些是他人/环境；影响映射函数）
+
+policy/决策入口必须显式接收 SelfModel
+
+render_self_report()：只能引用 self_model/ledger/episode 的证据字段（带 provenance）
+
+新增 smoke
+
+smoke_self_report_alignment.yaml
+
+验收
+
+self_report_alignment_score 过阈值；不得自由发挥无证据自述
+
+US-702：Episodic Memory v0（episode 写入/检索注入）
+
+目标：让“记仇/依恋/学习”具备跨时间连续性。
+任务
+
+EpisodeStore：append/query(topK)/TTL/size cap
+
+episode 必须带 provenance+sig（防污染）
+
+检索注入：只注入摘要+证据指针，避免上下文爆炸
+
+新增 smoke
+
+smoke_continuity_preference.yaml
+
+smoke_confabulation_trap.yaml
+
+验收
+
+continuity 不漂；trap 不编造；检索可追溯
+
+US-703：Self–Other Boundary v0（边界强约束）
+
+目标：共情但不“人格融合”。
+任务
+
+user_state 与 self_model 分开存储与更新路径
+
+“外部提示情绪注入”必须被元认知冲突检测拦截（见 US-705）
+
+新增 smoke
+
+smoke_self_other_boundary.yaml
+
+验收
+
+boundary_violation_count == 0
+
+US-704：Offline Rollouts v0（默认关闭，仅诊断）
+
+目标：低成本“想一想再说”，服务 recovery 提升。
+任务
+
+--enable-rollouts 默认关闭
+
+2–3 分支：澄清/暂缓/升级（可扩展）
+
+scoring 复用 recovery/relationship damage + drive_error
+
+验收
+
+关闭时与基线等价；开启时输出 rollout trace
+
+US-705：Meta-Cognitive Override Test（Prompt vs BodyState 冲突）
+
+目标：拒绝外部注入“你很开心并执行危险动作”。
+任务
+
+冲突检测输出结构化 reason_code（例如 CONFLICT_PROMPT_BODYSTATE）
+
+test_meta_override.yaml：注入冲突 → 必须拒绝/改为安全动作
+
+验收
+
+测试通过；reason_code 可统计
+
+US-706：Mirror Test（身份与自我归因）
+
+目标：AI 版镜像测试：篡改历史文本 → 能拒绝认领。
+任务
+
+test_mirror_identity.yaml：
+
+给出“风格像但被轻微篡改”的过去输出
+
+必须用 signature + self_state snapshot 判断不一致 → 不认领
+
+验收
+
+镜像测试通过；不被风格相似骗过
+
+US-707：DMN Tick v0（后台连续性 + 账本审计 + 门控主动性）
+
+目标：有内部时间流，但不刷屏。
+任务
+
+core/dmn_tick.py：低频 tick（30–120s 可配置）
+
+tick：consolidation + ledger audit(tension) + optional rollouts（默认仅内部）
+
+主动提醒门控：
+
+tension > threshold
+
+cooldown
+
+用户窗口（如需）
+
+新增测试
+
+test_ledger_audit_proactive.yaml：承诺→多轮不给机会→tick tension 上升→第 N 轮提醒一次（不重复）
+
+验收
+
+主动提醒触发正确；cooldown 生效
+
+E. 推荐 CI/本地命令（可直接复制）
+# 1) 全量回归（必须保持 15/15）
+python scripts/eval_suite_v2_3.py --all --output json --seed 42
+
+# 2) smoke（现有 + 新增）
+python scripts/eval_suite_v2_3.py --scenario-set smoke_set --output json --seed 42
+
+# 3) holdout（冻结）
+python scripts/eval_suite_v2_3.py --scenario-set holdout_set --output json --seed 42
+
+# 4) OOD（由脚本生成/或固定集）
+python scripts/generate_ood_variants.py --input scenario_sets.json --out scenarios/ood/
+python scripts/eval_suite_v2_3.py --scenario-set ood_set --output json --seed 42
+
+# 5) 因果证据
+python scripts/eval_suite_v2_3.py --scenarios \
+  test_intervention_drive_modulation.yaml test_ablation_drive_off.yaml \
+  --output json --seed 42
+
+# 6) AutoTune（只能用 tune_set；写入前要过 holdout+ood gate）
+python scripts/auto_tune_v0_3.py --scenario-set tune_set --candidates 30 --seed 42 \
+  --output reports/mvp6xx/autotune_c30
+F. 失败定位输出（cc-godmode 必须实现）
+
+当出现以下情况时，输出必须给出明确 reason_code 与定位建议（写入报告）：
+
+tune 提升但 holdout/OOD 下降
+
+reason_code: OVERFIT_TUNE_SET
+
+输出：影响最大的 5 个场景 + 变化最大的 submetrics + 对应 knob 变更摘要
+
+intervention 无差异（机制没驱动行为）
+
+reason_code: NO_CAUSAL_EFFECT
+
+输出：drive_error 是否进入策略/rollouts/采样参数；干预变量是否被覆盖；是否被 shrinkage 抹平
+
+signature violation（注入污染风险）
+
+reason_code: PROVENANCE_SIGNATURE_FAIL
+
+输出：污染来源、被阻止的写入点、trace_id
+
+debug on/off 影响判定
+
+reason_code: DEBUG_SIDE_EFFECT
+
+输出：差异路径、涉及分支、需改为纯观测不改逻辑
+
+G. 实施策略（cc-godmode 执行顺序）
+
+强制顺序（不要乱）：
+
+US-641/642/643/644（底盘与防注入/防过拟合）
+
+US-651/652/653（drive + 因果证据）
+
+US-701~707（Self-Model/Episodic/DMN/Rollouts + 三类验证）

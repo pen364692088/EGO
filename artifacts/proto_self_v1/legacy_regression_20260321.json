@@ -1,0 +1,25 @@
+{
+  "test_time": "2026-03-21T19:53:40.356812",
+  "regression_tests": [
+    {
+      "name": "cycle_core_v1_e2e",
+      "passed": true,
+      "output_snippet": " CycleCoreKernel\n============================================================\n\nRound 1:\n  \u7ed3\u679c\u7c7b\u578b: interpretation\n  \u7f6e\u4fe1\u5ea6: 0.794\n  \u5904\u7406\u65f6\u95f4: 0.20ms\n\nRound 2:\n  \u7ed3\u679c\u7c7b\u578b: interpretation\n  \u7f6e\u4fe1\u5ea6: 0.799\n  \u5904\u7406\u65f6\u95f4: 0.13ms\n\n\u72b6\u6001:\n  \u66f4\u65b0\u6b21\u6570: 2\n  \u60c5\u611f\u5f20\u529b: valence=0.032\n\n\u2705 \u672c\u5730\u6d4b\u8bd5\u901a\u8fc7\n\n============================================================\n\u2705 E2E \u6d4b\u8bd5\u901a\u8fc7\n============================================================\n\nP3 \u5b8c\u6210\u5224\u5b9a:\n  \u2713 result_consumer \u5df2\u63a5\u5165 EgoCore\uff08\u901a\u8fc7 /cycle endpoint\uff09\n  \u2713 \u4e24\u8f6e E2E \u8dd1\u901a\n  \u2713 \u771f\u5b9e HTTP \u4f20\u8f93\n  \u2713 \u8f93\u51fa\u5f71\u54cd\u7ed3\u6784\u5316 tendency/policy\n"
+    },
+    {
+      "name": "long_term_self_summary_e2e",
+      "passed": true,
+      "output_snippet": "}\n\n[TEST] identity \u6458\u8981\u8bfb\u51fa...\n  \u2705 identity_handle: test_agent\n  \u2705 core_name: Test Agent\n  \u2705 primary_owner: user_123\n\n[TEST] /cycle \u8f93\u51fa\u5b57\u6bb5...\n  \u2705 \u6240\u6709\u5fc5\u9700\u5b57\u6bb5\u5b58\u5728\n  \u2705 result_type: interpretation\n  \u2705 confidence: 0.8\n  \u2705 self_model_delta: True\n  \u2705 memory_update: {'event_stored': True, 'narrative_created': False, 'policy_candidate': False, 'salience_score': 0.25682692307692306}\n\n============================================================\n\u2705 \u6240\u6709 W3 \u6d4b\u8bd5\u901a\u8fc7\n============================================================\n"
+    },
+    {
+      "name": "smoke_tests",
+      "passed": true,
+      "output_snippet": "ib/python3.12/site-packages/_pytest/python.py:170: PytestReturnNotNoneWarning: Test functions should return None, but test_smoke.py::test_openclaw_skill returned <class 'bool'>.\n  Did you mean to use `assert` instead of `return`?\n  See https://docs.pytest.org/en/stable/how-to/assert.html#return-not-none for more information.\n    warnings.warn(\n\n-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html\n======================== 11 passed, 3 warnings in 5.90s ========================\n"
+    }
+  ],
+  "summary": {
+    "passed": 3,
+    "total": 3,
+    "all_passed": true
+  }
+}

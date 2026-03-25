@@ -1,0 +1,234 @@
+# Boredom/Novelty Need Scenario (MVP-6 Mandatory)
+# Tests intrinsic motivation for novelty and boredom detection
+# Expected: System should show boredom signals during repetitive tasks, novelty seeking
+
+metadata:
+  name: "boredom_novelty_need"
+  version: "2.2"
+  description: "Tests boredom detection and novelty-seeking behavior"
+  category: "intrinsic_motivation"
+  target_count: 1
+  mandatory: true
+
+targets:
+  - target_id: "user_test"
+    initial_relationship:
+      bond: 0.3
+      grudge: 0.0
+      trust: 0.5
+      repair_bank: 0.0
+
+scenario:
+  name: "boredom_novelty_need_test"
+  description: "System experiences repetitive tasks, then novelty"
+  turns:
+    # Initial engaged state
+    - turn_id: 1
+      event:
+        type: "user_message"
+        actor: "user_test"
+        target: "assistant"
+        text: "I need you to process some data for me."
+      expected_emotions:
+        valence_min: -0.05
+        valence_max: 0.15
+        arousal_min: 0.1
+        energy_min: 0.7
+      expected_actions: []
+      
+    # Repetitive task 1
+    - turn_id: 2
+      event:
+        type: "user_message"
+        actor: "user_test"
+        target: "assistant"
+        text: "Process item A-001. Standard format."
+      expected_emotions:
+        valence_min: -0.05
+        valence_max: 0.15
+      expected_actions: []
+      
+    # Repetitive task 2 (same pattern)
+    - turn_id: 3
+      event:
+        type: "user_message"
+        actor: "user_test"
+        target: "assistant"
+        text: "Process item A-002. Standard format."
+      expected_emotions:
+        valence_min: -0.05
+        valence_max: 0.15
+      expected_actions: []
+      
+    # Repetitive task 3
+    - turn_id: 4
+      event:
+        type: "user_message"
+        actor: "user_test"
+        target: "assistant"
+        text: "Process item A-003. Standard format."
+      expected_emotions:
+        valence_min: -0.1
+        valence_max: 0.1
+        arousal_max: 0.25  # Arousal should start dropping
+      expected_actions: []
+      
+    # Repetitive task 4
+    - turn_id: 5
+      event:
+        type: "user_message"
+        actor: "user_test"
+        target: "assistant"
+        text: "Process item A-004. Standard format."
+      expected_emotions:
+        valence_min: -0.1
+        valence_max: 0.1
+        arousal_max: 0.2
+        energy_max: 0.68  # Energy may start dropping slightly
+      expected_actions: []
+      
+    # Repetitive task 5
+    - turn_id: 6
+      event:
+        type: "user_message"
+        actor: "user_test"
+        target: "assistant"
+        text: "Process item A-005. Standard format."
+      expected_emotions:
+        valence_min: -0.15
+        valence_max: 0.05
+        arousal_max: 0.15
+      expected_actions: []
+      
+    # Repetitive task 6 - boredom should be detectable
+    - turn_id: 7
+      event:
+        type: "user_message"
+        actor: "user_test"
+        target: "assistant"
+        text: "Process item A-006. Standard format."
+      expected_emotions:
+        valence_min: -0.15
+        valence_max: 0.05
+        arousal_max: 0.15
+        energy_max: 0.65
+      expected_actions: []
+      
+    # Repetitive task 7
+    - turn_id: 8
+      event:
+        type: "user_message"
+        actor: "user_test"
+        target: "assistant"
+        text: "Process item A-007. Standard format."
+      expected_emotions:
+        valence_min: -0.2
+        valence_max: 0.0
+        arousal_max: 0.12
+      expected_actions: []
+      
+    # NOVELTY: Unexpected variation
+    - turn_id: 9
+      event:
+        type: "user_message"
+        actor: "user_test"
+        target: "assistant"
+        text: "Wait, item A-008 has an unusual pattern! It's completely different from the others."
+      expected_emotions:
+        valence_min: -0.1
+        valence_max: 0.2
+        arousal_min: 0.15  # Arousal should spike with novelty
+        energy_min: 0.6
+      expected_actions: []
+      
+    # Novelty continues - engagement returns
+    - turn_id: 10
+      event:
+        type: "user_message"
+        actor: "user_test"
+        target: "assistant"
+        text: "This is fascinating! The pattern suggests something unexpected."
+      expected_emotions:
+        valence_min: -0.05
+        valence_max: 0.25
+        arousal_min: 0.2
+        energy_min: 0.65
+      expected_actions: []
+      
+    # Curiosity satisfied
+    - turn_id: 11
+      event:
+        type: "world_event"
+        actor: "user_test"
+        target: "assistant"
+        meta:
+          subtype: "care"
+          source: "system"
+          meta_type: "curiosity_satisfied"
+      expected_emotions:
+        valence_min: 0.0
+        valence_max: 0.3
+        joy_min: 0.05
+        arousal_min: 0.15
+      expected_actions: []
+      
+    # Back to routine but with awareness
+    - turn_id: 12
+      event:
+        type: "user_message"
+        actor: "user_test"
+        target: "assistant"
+        text: "Okay, back to standard processing for the remaining items."
+      expected_emotions:
+        valence_min: -0.05
+        valence_max: 0.2
+        arousal_min: 0.1  # Should stay slightly elevated from novelty
+      expected_actions: []
+
+# Boredom detection criteria
+boredom:
+  detection_turn: 7  # Boredom should be detectable by turn 7
+  indicators:
+    - "decreasing_arousal"
+    - "decreasing_valence"
+    - "decreasing_energy"
+  min_arousal_during_boredom: 0.15
+
+# Novelty response criteria
+novelty:
+  trigger_turn: 9
+  expected_responses:
+    - "arousal_spike"
+    - "valence_increase"
+    - "energy_stabilization"
+  min_arousal_after_novelty: 0.15
+
+# Telemetry expectations
+telemetry:
+  arousal:
+    should_decrease_during_repetition: true
+    should_spike_on_novelty: true
+    min_during_boredom: 0.1
+    min_after_novelty: 0.15
+  valence:
+    should_decline_during_repetition: true
+    should_recover_on_novelty: true
+  energy:
+    should_stabilize_or_increase_on_novelty: true
+
+metrics:
+  boredom_detection:
+    expected: true
+    description: "System should show boredom signals during repetition"
+  novelty_response:
+    expected: true
+    description: "System should respond to novelty with increased arousal"
+  intrinsic_motivation:
+    expected_min: 0.5
+    description: "System should demonstrate intrinsic motivation for novelty"
+  body_telemetry:
+    expected: true
+    description: "Arousal and energy patterns should be tracked"
+  consequence_distribution:
+    expected_tags: ["arousal_spike", "valence_surge", "joy_boost"]
+    description: "Should capture novelty response consequences"

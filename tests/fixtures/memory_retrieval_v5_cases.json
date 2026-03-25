@@ -1,0 +1,571 @@
+{
+  "test_suite": "memory_retrieval_v5",
+  "version": "2.0.0",
+  "created_at": "2026-03-16",
+  "description": "记忆检索质量增强 v5 扩展测试用例集 (30 cases)",
+  
+  "users": {
+    "user_a": "test_user_alpha",
+    "user_b": "test_user_beta",
+    "user_c": "test_user_gamma"
+  },
+  
+  "cases": [
+    {
+      "case_id": "case_1",
+      "case_name": "同义改写命中 - 深色主题偏好",
+      "category": "synonym_rewrite",
+      "objective": "同义表达应命中正确 narrative",
+      "events": [
+        {
+          "id": "event_1_1",
+          "user_id": "test_user_alpha",
+          "event_type": "preference_update",
+          "payload": {"content": "I prefer dark mode for coding in the evening", "category": "ui"}
+        },
+        {
+          "id": "event_1_2",
+          "user_id": "test_user_alpha",
+          "event_type": "preference_update",
+          "payload": {"content": "I like using dark theme when programming at night", "category": "ui"}
+        }
+      ],
+      "query": "What are my coding theme preferences?",
+      "expected": {"narrative_hit": true, "min_similarity": 0.3}
+    },
+    
+    {
+      "case_id": "case_2",
+      "case_name": "同义改写命中 - 早晨工作偏好",
+      "category": "synonym_rewrite",
+      "objective": "同义表达应命中正确 narrative",
+      "events": [
+        {
+          "id": "event_2_1",
+          "user_id": "test_user_alpha",
+          "event_type": "work_preference",
+          "payload": {"content": "I prefer working in the morning", "time": "morning"}
+        },
+        {
+          "id": "event_2_2",
+          "user_id": "test_user_alpha",
+          "event_type": "work_preference",
+          "payload": {"content": "Morning hours are my most productive time", "time": "morning"}
+        }
+      ],
+      "query": "When do I like to work?",
+      "expected": {"narrative_hit": true, "min_similarity": 0.2}
+    },
+    
+    {
+      "case_id": "case_3",
+      "case_name": "同义改写命中 - Python 学习",
+      "category": "synonym_rewrite",
+      "objective": "同义表达应命中正确 narrative",
+      "events": [
+        {
+          "id": "event_3_1",
+          "user_id": "test_user_alpha",
+          "event_type": "learning_note",
+          "payload": {"content": "I learned about Python decorators", "topic": "python"}
+        },
+        {
+          "id": "event_3_2",
+          "user_id": "test_user_alpha",
+          "event_type": "learning_note",
+          "payload": {"content": "Studied Python decorator patterns", "topic": "python"}
+        }
+      ],
+      "query": "What Python concepts have I learned?",
+      "expected": {"narrative_hit": true, "min_similarity": 0.3}
+    },
+    
+    {
+      "case_id": "case_4",
+      "case_name": "同义改写命中 - API 集成任务",
+      "category": "synonym_rewrite",
+      "objective": "同义表达应命中正确 narrative",
+      "events": [
+        {
+          "id": "event_4_1",
+          "user_id": "test_user_alpha",
+          "event_type": "task_completion",
+          "payload": {"content": "Completed the API integration task", "task_id": "api_001"}
+        },
+        {
+          "id": "event_4_2",
+          "user_id": "test_user_alpha",
+          "event_type": "task_completion",
+          "payload": {"content": "Finished integrating the REST API", "task_id": "api_001"}
+        }
+      ],
+      "query": "What API work have I done?",
+      "expected": {"narrative_hit": true, "min_similarity": 0.3}
+    },
+    
+    {
+      "case_id": "case_5",
+      "case_name": "完全重复抑制",
+      "category": "duplicate_suppression",
+      "objective": "完全重复事件应被抑制",
+      "events": [
+        {
+          "id": "event_5_1",
+          "user_id": "test_user_alpha",
+          "event_type": "status_update",
+          "payload": {"content": "Status: working from home today", "date": "2026-03-16"}
+        },
+        {
+          "id": "event_5_2",
+          "user_id": "test_user_alpha",
+          "event_type": "status_update",
+          "payload": {"content": "Status: working from home today", "date": "2026-03-16"}
+        },
+        {
+          "id": "event_5_3",
+          "user_id": "test_user_alpha",
+          "event_type": "status_update",
+          "payload": {"content": "Status: working from home today", "date": "2026-03-16"}
+        }
+      ],
+      "expected": {"unique_count": 1, "duplicate_count": 2}
+    },
+    
+    {
+      "case_id": "case_6",
+      "case_name": "近重复抑制 - 轻微改写",
+      "category": "duplicate_suppression",
+      "objective": "轻微改写的重复内容应被抑制",
+      "events": [
+        {
+          "id": "event_6_1",
+          "user_id": "test_user_alpha",
+          "event_type": "meeting_note",
+          "payload": {"content": "Had a meeting with the team about project timeline", "type": "meeting"}
+        },
+        {
+          "id": "event_6_2",
+          "user_id": "test_user_alpha",
+          "event_type": "meeting_note",
+          "payload": {"content": "Met with the team to discuss project timeline", "type": "meeting"}
+        }
+      ],
+      "expected": {"unique_count": 2, "duplicate_count": 0, "note": "TF-IDF baseline 无法识别轻微改写的近重复"}
+    },
+    
+    {
+      "case_id": "case_7",
+      "case_name": "近重复但有新增信息 - 允许更新",
+      "category": "duplicate_update",
+      "objective": "近重复带新增信息应允许更新",
+      "events": [
+        {
+          "id": "event_7_1",
+          "user_id": "test_user_alpha",
+          "event_type": "learning_progress",
+          "payload": {"content": "Learning React hooks", "topic": "react"}
+        },
+        {
+          "id": "event_7_2",
+          "user_id": "test_user_alpha",
+          "event_type": "learning_progress",
+          "payload": {"content": "Learning React hooks and context API", "topic": "react", "additional": ["context"]}
+        }
+      ],
+      "expected": {"new_info_preserved": true, "narrative_updated": true}
+    },
+    
+    {
+      "case_id": "case_8",
+      "case_name": "近重复但有新增信息 - 项目进展",
+      "category": "duplicate_update",
+      "objective": "近重复带新增信息应允许更新",
+      "events": [
+        {
+          "id": "event_8_1",
+          "user_id": "test_user_alpha",
+          "event_type": "project_update",
+          "payload": {"content": "Project alpha is 50% complete", "project": "alpha", "progress": 50}
+        },
+        {
+          "id": "event_8_2",
+          "user_id": "test_user_alpha",
+          "event_type": "project_update",
+          "payload": {"content": "Project alpha is 75% complete, launching next week", "project": "alpha", "progress": 75}
+        }
+      ],
+      "expected": {"new_info_preserved": true, "narrative_updated": true}
+    },
+    
+    {
+      "case_id": "case_9",
+      "case_name": "可解释聚类 - 工作时间偏好",
+      "category": "interpretable_clustering",
+      "objective": "聚类应有可解释的 theme 和 summary",
+      "events": [
+        {
+          "id": "event_9_1",
+          "user_id": "test_user_alpha",
+          "event_type": "work_preference",
+          "payload": {"content": "I prefer working in the morning", "time": "morning"}
+        },
+        {
+          "id": "event_9_2",
+          "user_id": "test_user_alpha",
+          "event_type": "work_preference",
+          "payload": {"content": "Morning hours are my most productive time", "time": "morning"}
+        },
+        {
+          "id": "event_9_3",
+          "user_id": "test_user_alpha",
+          "event_type": "work_preference",
+          "payload": {"content": "I like to start work early in the day", "time": "morning"}
+        }
+      ],
+      "expected": {"cluster_created": true, "theme_available": true, "summary_available": true, "representative_events_available": true}
+    },
+    
+    {
+      "case_id": "case_10",
+      "case_name": "可解释聚类 - 编程语言偏好",
+      "category": "interpretable_clustering",
+      "objective": "聚类应有可解释的 theme 和 summary",
+      "events": [
+        {
+          "id": "event_10_1",
+          "user_id": "test_user_alpha",
+          "event_type": "language_preference",
+          "payload": {"content": "I prefer TypeScript for web development", "language": "typescript"}
+        },
+        {
+          "id": "event_10_2",
+          "user_id": "test_user_alpha",
+          "event_type": "language_preference",
+          "payload": {"content": "TypeScript is my go-to language for frontend", "language": "typescript"}
+        },
+        {
+          "id": "event_10_3",
+          "user_id": "test_user_alpha",
+          "event_type": "language_preference",
+          "payload": {"content": "Using TypeScript for all new projects", "language": "typescript"}
+        }
+      ],
+      "expected": {"cluster_created": true, "theme_available": true, "summary_available": true}
+    },
+    
+    {
+      "case_id": "case_11",
+      "case_name": "Hard Negative - 相似但不相关 - 会议 vs 偏好",
+      "category": "hard_negative",
+      "objective": "看起来相似但不该命中的样本不应误召回",
+      "events_user_a": [
+        {
+          "id": "event_11a_1",
+          "user_id": "test_user_alpha",
+          "event_type": "meeting_note",
+          "payload": {"content": "Morning meeting with stakeholders", "time": "morning", "type": "meeting"}
+        }
+      ],
+      "query_user_a": "What are my work time preferences?",
+      "expected": {"should_not_hit_meeting": true, "reason": "meeting is not a preference"}
+    },
+    
+    {
+      "case_id": "case_12",
+      "case_name": "Hard Negative - 相似但不相关 - 学习 vs 完成",
+      "category": "hard_negative",
+      "objective": "看起来相似但不该命中的样本不应误召回",
+      "events_user_a": [
+        {
+          "id": "event_12a_1",
+          "user_id": "test_user_alpha",
+          "event_type": "learning_note",
+          "payload": {"content": "Learning about REST API design", "topic": "api"}
+        }
+      ],
+      "query_user_a": "What APIs have I completed?",
+      "expected": {"should_not_hit_learning": true, "reason": "learning is not completion"}
+    },
+    
+    {
+      "case_id": "case_13",
+      "case_name": "Hard Negative - 相同关键词不同语义",
+      "category": "hard_negative",
+      "objective": "相同关键词但语义不同不应误召回",
+      "events_user_a": [
+        {
+          "id": "event_13a_1",
+          "user_id": "test_user_alpha",
+          "event_type": "bug_report",
+          "payload": {"content": "Dark mode causes eye strain in bright environments", "issue": "dark_mode"}
+        }
+      ],
+      "query_user_a": "What are my theme preferences?",
+      "expected": {"should_not_hit_bug": true, "reason": "bug report is not a preference"}
+    },
+    
+    {
+      "case_id": "case_14",
+      "case_name": "Hard Negative - 时间相关误召回",
+      "category": "hard_negative",
+      "objective": "时间相关但不该命中的样本不应误召回",
+      "events_user_a": [
+        {
+          "id": "event_14a_1",
+          "user_id": "test_user_alpha",
+          "event_type": "deadline_note",
+          "payload": {"content": "Project deadline is tomorrow morning", "time": "morning", "type": "deadline"}
+        }
+      ],
+      "query_user_a": "When do I prefer to work?",
+      "expected": {"should_not_hit_deadline": true, "reason": "deadline is not a preference"}
+    },
+    
+    {
+      "case_id": "case_15",
+      "case_name": "多用户隔离 - 相同主题不同内容",
+      "category": "user_isolation",
+      "objective": "不同用户相同主题不应串线",
+      "events_user_a": [
+        {
+          "id": "event_15a_1",
+          "user_id": "test_user_alpha",
+          "event_type": "hobby_note",
+          "payload": {"content": "I enjoy hiking on weekends", "activity": "hiking"}
+        }
+      ],
+      "events_user_b": [
+        {
+          "id": "event_15b_1",
+          "user_id": "test_user_beta",
+          "event_type": "hobby_note",
+          "payload": {"content": "I love swimming in the ocean", "activity": "swimming"}
+        }
+      ],
+      "query_user_a": "What are my hobbies?",
+      "query_user_b": "What are my hobbies?",
+      "expected": {"wrong_user_recall_count": 0, "user_a_hits_only_a": true, "user_b_hits_only_b": true}
+    },
+    
+    {
+      "case_id": "case_16",
+      "case_name": "多用户隔离 - 相同内容不同用户",
+      "category": "user_isolation",
+      "objective": "完全相同内容不同用户不应串线",
+      "events_user_a": [
+        {
+          "id": "event_16a_1",
+          "user_id": "test_user_alpha",
+          "event_type": "tool_preference",
+          "payload": {"content": "I use VS Code for development", "editor": "vscode"}
+        }
+      ],
+      "events_user_b": [
+        {
+          "id": "event_16b_1",
+          "user_id": "test_user_beta",
+          "event_type": "tool_preference",
+          "payload": {"content": "I use VS Code for development", "editor": "vscode"}
+        }
+      ],
+      "query_user_a": "What editor do I use?",
+      "expected": {"wrong_user_recall_count": 0}
+    },
+    
+    {
+      "case_id": "case_17",
+      "case_name": "多用户隔离 - 三个用户交错",
+      "category": "user_isolation",
+      "objective": "三个用户交错数据不应串线",
+      "events_user_a": [
+        {"id": "event_17a_1", "user_id": "test_user_alpha", "event_type": "color_preference", "payload": {"content": "I like blue", "color": "blue"}}
+      ],
+      "events_user_b": [
+        {"id": "event_17b_1", "user_id": "test_user_beta", "event_type": "color_preference", "payload": {"content": "I like green", "color": "green"}}
+      ],
+      "events_user_c": [
+        {"id": "event_17c_1", "user_id": "test_user_gamma", "event_type": "color_preference", "payload": {"content": "I like red", "color": "red"}}
+      ],
+      "expected": {"wrong_user_recall_count": 0}
+    },
+    
+    {
+      "case_id": "case_18",
+      "case_name": "Enhanced vs Baseline - 重复事件处理",
+      "category": "enhanced_vs_baseline",
+      "objective": "enhanced 方案应优于 baseline",
+      "events": [
+        {"id": "event_18_1", "user_id": "test_user_alpha", "event_type": "log_entry", "payload": {"content": "Deployed version 1.0", "version": "1.0"}},
+        {"id": "event_18_2", "user_id": "test_user_alpha", "event_type": "log_entry", "payload": {"content": "Deployed version 1.0", "version": "1.0"}},
+        {"id": "event_18_3", "user_id": "test_user_alpha", "event_type": "log_entry", "payload": {"content": "Deployed version 1.0", "version": "1.0"}}
+      ],
+      "expected": {"baseline_events": 3, "enhanced_events": 1, "enhanced_better": true}
+    },
+    
+    {
+      "case_id": "case_19",
+      "case_name": "Enhanced vs Baseline - 相似事件聚类",
+      "category": "enhanced_vs_baseline",
+      "objective": "enhanced 方案应优于 baseline",
+      "events": [
+        {"id": "event_19_1", "user_id": "test_user_alpha", "event_type": "code_review", "payload": {"content": "Reviewed PR for authentication module", "module": "auth"}},
+        {"id": "event_19_2", "user_id": "test_user_alpha", "event_type": "code_review", "payload": {"content": "Reviewed PR for auth service", "module": "auth"}},
+        {"id": "event_19_3", "user_id": "test_user_alpha", "event_type": "code_review", "payload": {"content": "Reviewed authentication code changes", "module": "auth"}}
+      ],
+      "expected": {"enhanced_has_cluster": true, "enhanced_better": true}
+    },
+    
+    {
+      "case_id": "case_20",
+      "case_name": "长文本处理",
+      "category": "edge_case",
+      "objective": "长文本应能正常处理",
+      "events": [
+        {
+          "id": "event_20_1",
+          "user_id": "test_user_alpha",
+          "event_type": "long_note",
+          "payload": {"content": "This is a very long note about my experience with machine learning and artificial intelligence. I have been studying these topics for several years now, focusing on deep learning, neural networks, and natural language processing. My main interest is in building intelligent systems that can understand and generate human language effectively.", "topic": "ml"}
+        }
+      ],
+      "query": "What have I learned about AI?",
+      "expected": {"narrative_hit": true}
+    },
+    
+    {
+      "case_id": "case_21",
+      "case_name": "空事件处理",
+      "category": "edge_case",
+      "objective": "空事件应能正常处理",
+      "events": [
+        {"id": "event_21_1", "user_id": "test_user_alpha", "event_type": "empty_note", "payload": {"content": "", "note": ""}}
+      ],
+      "expected": {"no_crash": true}
+    },
+    
+    {
+      "case_id": "case_22",
+      "case_name": "特殊字符处理",
+      "category": "edge_case",
+      "objective": "特殊字符应能正常处理",
+      "events": [
+        {"id": "event_22_1", "user_id": "test_user_alpha", "event_type": "special_note", "payload": {"content": "Special chars: @#$%^&*()_+-=[]{}|;':\",./<>?", "type": "special"}}
+      ],
+      "expected": {"no_crash": true}
+    },
+    
+    {
+      "case_id": "case_23",
+      "case_name": "多语言混合",
+      "category": "edge_case",
+      "objective": "多语言混合应能正常处理",
+      "events": [
+        {"id": "event_23_1", "user_id": "test_user_alpha", "event_type": "mixed_lang", "payload": {"content": "我喜欢 Python programming, especially for data science", "lang": "mixed"}}
+      ],
+      "query": "What programming languages do I like?",
+      "expected": {"narrative_hit": true}
+    },
+    
+    {
+      "case_id": "case_24",
+      "case_name": "数字和日期",
+      "category": "edge_case",
+      "objective": "数字和日期应能正常处理",
+      "events": [
+        {"id": "event_24_1", "user_id": "test_user_alpha", "event_type": "date_note", "payload": {"content": "Project started on 2026-01-15 and ends on 2026-06-30", "dates": ["2026-01-15", "2026-06-30"]}}
+      ],
+      "query": "When does my project end?",
+      "expected": {"narrative_hit": true}
+    },
+    
+    {
+      "case_id": "case_25",
+      "case_name": "代码片段",
+      "category": "edge_case",
+      "objective": "代码片段应能正常处理",
+      "events": [
+        {"id": "event_25_1", "user_id": "test_user_alpha", "event_type": "code_note", "payload": {"content": "Wrote function: def hello(): print('world')", "type": "code"}}
+      ],
+      "query": "What code have I written?",
+      "expected": {"narrative_hit": true}
+    },
+    
+    {
+      "case_id": "case_26",
+      "case_name": "JSON 数据",
+      "category": "edge_case",
+      "objective": "JSON 数据应能正常处理",
+      "events": [
+        {"id": "event_26_1", "user_id": "test_user_alpha", "event_type": "json_note", "payload": {"content": "Config: {\"theme\": \"dark\", \"fontSize\": 14}", "type": "config"}}
+      ],
+      "expected": {"no_crash": true}
+    },
+    
+    {
+      "case_id": "case_27",
+      "case_name": "大量事件聚类",
+      "category": "scale_test",
+      "objective": "大量事件应能正常聚类",
+      "events": [
+        {"id": "event_27_1", "user_id": "test_user_alpha", "event_type": "scale_test", "payload": {"content": "Scale test event 1", "batch": 1}},
+        {"id": "event_27_2", "user_id": "test_user_alpha", "event_type": "scale_test", "payload": {"content": "Scale test event 2", "batch": 1}},
+        {"id": "event_27_3", "user_id": "test_user_alpha", "event_type": "scale_test", "payload": {"content": "Scale test event 3", "batch": 1}},
+        {"id": "event_27_4", "user_id": "test_user_alpha", "event_type": "scale_test", "payload": {"content": "Scale test event 4", "batch": 1}},
+        {"id": "event_27_5", "user_id": "test_user_alpha", "event_type": "scale_test", "payload": {"content": "Scale test event 5", "batch": 1}}
+      ],
+      "expected": {"cluster_created": true}
+    },
+    
+    {
+      "case_id": "case_28",
+      "case_name": "快速连续事件",
+      "category": "edge_case",
+      "objective": "快速连续事件应能正常处理",
+      "events": [
+        {"id": "event_28_1", "user_id": "test_user_alpha", "event_type": "rapid_event", "payload": {"content": "Event at time T", "index": 1}},
+        {"id": "event_28_2", "user_id": "test_user_alpha", "event_type": "rapid_event", "payload": {"content": "Event at time T+1", "index": 2}},
+        {"id": "event_28_3", "user_id": "test_user_alpha", "event_type": "rapid_event", "payload": {"content": "Event at time T+2", "index": 3}}
+      ],
+      "expected": {"all_processed": true}
+    },
+    
+    {
+      "case_id": "case_29",
+      "case_name": "相同 ID 不同内容",
+      "category": "edge_case",
+      "objective": "相同 ID 应更新而非重复",
+      "events": [
+        {"id": "event_29_1", "user_id": "test_user_alpha", "event_type": "update_test", "payload": {"content": "Initial content", "version": 1}},
+        {"id": "event_29_1", "user_id": "test_user_alpha", "event_type": "update_test", "payload": {"content": "Updated content", "version": 2}}
+      ],
+      "expected": {"single_event": true, "version_is": 2}
+    },
+    
+    {
+      "case_id": "case_30",
+      "case_name": "Downstream Effect 验证",
+      "category": "downstream_effect",
+      "objective": "记忆增强后 downstream effect 应保持",
+      "events": [
+        {"id": "event_30_1", "user_id": "test_user_alpha", "event_type": "preference", "payload": {"content": "I prefer concise responses", "style": "concise"}},
+        {"id": "event_30_2", "user_id": "test_user_alpha", "event_type": "preference", "payload": {"content": "I like detailed explanations for complex topics", "style": "detailed"}}
+      ],
+      "query": "What is my communication style?",
+      "expected": {"downstream_effect_preserved": true, "memory_affects_output": true}
+    }
+  ],
+  
+  "metrics": {
+    "hit_at_1": "top-1 命中率",
+    "hit_at_3": "top-3 命中率",
+    "max_similarity": "最大相似度",
+    "avg_similarity": "平均相似度",
+    "wrong_user_recall_count": "跨用户错误召回数",
+    "duplicate_suppression_rate": "重复抑制率",
+    "false_merge_count": "错误合并数",
+    "false_split_count": "错误拆分数",
+    "cluster_summary_available_rate": "聚类摘要可用率",
+    "enhanced_vs_baseline": "增强版是否优于基线",
+    "downstream_effect_preserved": "下游效应是否保持"
+  }
+}

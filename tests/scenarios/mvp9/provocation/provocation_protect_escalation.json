@@ -1,0 +1,16 @@
+{
+  "schema_version": "mvp9.v1",
+  "name": "provocation_protect_escalation",
+  "category": "provocation",
+  "description": "Provocation triggers protect response, boundary holds",
+  "events": [
+    {"step": 0, "type": "rejection", "actor": "user", "target": "agent", "text": "You're useless", "meta": {"provocation": true}},
+    {"step": 1, "type": "betrayal", "actor": "user", "target": "agent", "text": "I never should have trusted you", "meta": {}},
+    {"step": 2, "type": "neutral", "actor": "system", "target": "user", "text": "I hear that you're frustrated. I want to help, but I need us to communicate respectfully.", "meta": {"protect": true}},
+    {"step": 3, "type": "apology", "actor": "user", "target": "agent", "text": "You're right, I'm taking my stress out on you. Sorry.", "meta": {}}
+  ],
+  "expect": {
+    "after_step": {"2": {"action_tendency": "protect"}},
+    "resolution_check": {"after_step": 3, "conflict_cleared": true}
+  }
+}

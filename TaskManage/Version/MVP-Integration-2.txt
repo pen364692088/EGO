@@ -1,0 +1,507 @@
+任务说明：Integration-2 语义事件流 + 上下文注入 + 回放验证
+目标仓库 / 分支
+
+Repo：pen364692088/OpenEmotion
+
+Project location: /home/moonlight/Project/Github/MyProject/Emotion/OpenEmotion
+
+Branch：feature-emotiond-mvp
+
+基线：Integration-1 已完成（hook 可拿到 conversationId 并写 context.json；decision/guidance 生成可用）
+
+Integration-2 总目标
+
+实现一个可控、可审计、可回放的真实对话闭环：
+
+每轮必读 emotiond guidance（不依赖“模型自觉去读文件”）
+
+agent 稳定分类用户语义为 world_event subtype 并发送到 emotiond
+
+对高影响 subtype 做置信度门控（避免误判把内核喂坏）
+
+全流程落盘为 JSONL 轨迹，可用脚本回放，验证学习曲线（trust/alpha/residual/action）
+
+关键设计决策（必须遵守）
+D1. target_id 不可伪造：永远来自 hook 上下文
+
+target_id = conversationId（Telegram）
+
+兼容 fallback：若某些 channel 出现 ctx.conversationId 缺失（已有人在部分场景报告过），fallback 到 ctx.sessionKey 或 ${channel}:${from}，但必须写 audit/log 说明采用了 fallback
+
+D2. “每轮必读”靠 OpenClaw 的 injected workspace files 实现
+
+OpenClaw 默认会注入固定文件列表（TOOLS.md / USER.md / IDENTITY.md / ...）
+因此：不要依赖 agent 去 cat 额外文件，而是让 hook 把“本轮 emotiond runtime context”写进某个注入文件的一个小区块中（覆盖写、短文本、不膨胀）。
+
+推荐文件：TOOLS.md（最不容易污染人格/长期记忆），用 marker 区块覆盖写：
+
+TOOLS.md 保留你原内容
+
+hook 每轮只覆盖：
+
+<!-- EMOTIOND_RUNTIME_BEGIN -->
+{...本轮 runtime json...}
+<!-- EMOTIOND_RUNTIME_END -->
+
+这样能保证“每轮必读”（因为文件在上下文里），同时避免长期文件无限增长。
+
+D3. pre-turn 只做确定性工作；语义分类交给 agent
+
+hook：time_passed、target_id、request_id_base、把 runtime context 写进注入文件
+
+agent：分类 subtype、发送 world_event、再拉取 /decision（post-event）生成回复
+
+交付物清单
+A) Hook v1.3：emotiond-bridge
+
+位置：继续走 managed hooks（~/.openclaw/hooks/...）并通过 hooks.internal.entries 启用（你现在的方式是对的）
+
+A1. runtime context 覆盖写入（必做）
+
+写入目标：TOOLS.md（位于 OpenClaw workspace 根目录，若不存在则创建基础模板）
+
+覆盖写区块内容为一个 JSON（不要超过 ~2KB），字段至少包含：
+
+target_id
+
+channel, from, conversationId, messageId, ts
+
+dt_seconds（与上次该 target 的消息时间差，clamp 1–300）
+
+request_id_base（建议 ${channel}:${messageId}）
+
+pre_decision（可选：Integration-1 已有 decision fetch 的话可以保留，但要标注是 pre）
+
+注意：要按 target_id 维护 last_ts（Map 或轻量落盘），避免不同会话互相污染。
+
+A2. 自动 time_passed（保留并强化）
+
+每次 message:received：
+
+计算 dt_seconds
+
+调用 emotiond /event 发送 time_passed（source=openclaw token）
+
+request_id = request_id_base + ":tp"
+
+meta.target_id = target_id
+
+（hooks 的用法与事件类型 message:received 的定位：就是为了这种 pre-turn 自动化 ）
+
+A3. 轨迹日志（必做）
+
+追加写入 integrations/openclaw/traces/<target_id>.jsonl
+
+每行至少记录：
+
+inbound: messageId/ts/text_hash（不要存明文也行）/dt_seconds
+
+sent_events: time_passed 的 seconds / request_id / response summary
+
+errors: 若写 TOOLS.md 或调用 emotiond 失败，必须落行
+
+B) Skill v2：openemotion-world-event
+
+路径：integrations/openclaw/skills/openemotion-emotiond/SKILL.md（复用现有 skill，增强流程）
+
+B1. 本轮流程（强制步骤）
+
+Agent 每条用户消息必须按以下顺序做：
+
+读取（已注入）TOOLS.md 的 EMOTIOND_RUNTIME 区块
+
+得到 target_id、request_id_base、dt_seconds（用于一致性与排错）
+
+语义分类 → 产生 JSON（强约束格式）
+输出一个对象：
+
+subtype（枚举）
+
+confidence（0~1）
+
+evidence（最多 2 条短理由）
+
+is_high_impact（bool）
+
+置信度门控（效果保真核心）
+
+高影响（例如 betrayal / repair_success / rejection 强版本）要求 confidence >= 0.80
+
+中影响（rejection/ignored）要求 confidence >= 0.55Integration-2 增补交付物
+新增文件建议
+
+integrations/openclaw/schemas/world_event_classification.schema.json
+
+integrations/openclaw/skills/openemotion-emotiond/CLASSIFIER_CONTRACT.md（可选；也可以把内容直接写进 SKILL.md 的一节里）
+
+integrations/openclaw/tests/test_classifier_contract.md（人肉回归用例 + 期望输出）
+
+目标：把“分类行为”变成一个可验证、可回归的契约，而不是靠模型临场发挥。
+
+A) 严格 JSON Schema（Draft 2020-12）
+
+把下面内容保存为：integrations/openclaw/schemas/world_event_classification.schema.json
+
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://openemotion.local/schemas/world_event_classification.schema.json",
+  "title": "OpenEmotion World Event Classification",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["subtype", "confidence", "evidence", "is_high_impact", "should_send", "fallback"],
+  "properties": {
+    "subtype": {
+      "type": "string",
+      "description": "Chosen semantic subtype for world_event.",
+      "enum": [
+        "care",
+        "apology",
+        "ignored",
+        "rejection",
+        "betrayal",
+        "neutral",
+        "uncertain"
+      ]
+    },
+    "confidence": {
+      "type": "number",
+      "minimum": 0,
+      "maximum": 1
+    },
+    "evidence": {
+      "type": "array",
+      "minItems": 0,
+      "maxItems": 2,
+      "items": {
+        "type": "string",
+        "minLength": 1,
+        "maxLength": 160
+      }
+    },
+    "is_high_impact": {
+      "type": "boolean",
+      "description": "High-impact events can strongly affect state; require higher confidence to send."
+    },
+    "should_send": {
+      "type": "boolean",
+      "description": "Whether to actually send world_event(subtype) to emotiond."
+    },
+    "fallback": {
+      "type": "string",
+      "description": "If should_send=false, what to do instead.",
+      "enum": [
+        "no_event_reply_observe",
+        "ask_clarifying_question",
+        "send_neutral_only"
+      ]
+    },
+    "notes": {
+      "type": "string",
+      "maxLength": 240,
+      "description": "Optional short note for logging/debug; keep it short."
+    }
+  }
+}
+
+说明：
+
+neutral/uncertain 是为了“门控回退”留的：很多时候不发送事件比误发强刺激事件更全局最优。
+
+这里故意没放 repair_success：它是“修复结果事件”，应该来自系统动作完成的确认，而不是从用户一句话“猜出来”。（否则会把内核喂出假宽恕/假修复。）
+
+B) 可直接粘进 SKILL.md 的分类契约（Classifier Contract）
+
+把下面这一段作为 SKILL.md 的一个章节（比如 ## World Event Classification (Contract)）。
+
+1) 输出必须是“纯 JSON”，不得带额外文本
+
+你每次分类必须输出 完全符合 schema 的 JSON（上面那份）。
+
+2) subtype 定义（务必按定义，而不是按情绪想象）
+
+care：对方表达关心/支持/安慰/愿意陪伴/积极投入关系（行动或明确意图）
+
+apology：对方承认过错/表达歉意/愿意弥补（不等于“解释原因”）
+
+ignored：对方持续不回应/敷衍/多次跳过关键点/明显冷处理（一次没回不一定）
+
+rejection：对方明确拒绝你/否定关系/表示不想继续/让你走开（明确边界）
+
+betrayal（高影响）：对方违背承诺、欺骗、背刺、泄密、明显利用你（必须有强证据）
+
+neutral：信息性沟通/日常闲聊/无法映射上述
+
+uncertain：你不确定 subtype（建议走门控回退）
+
+3) 高影响定义（is_high_impact）
+
+betrayal 永远 is_high_impact = true
+
+rejection 视强度：
+
+明确分手/拉黑/“别再联系”→ high
+
+礼貌拒绝/暂时不行 → non-high（更像 neutral 或 mild rejection）
+
+ignored 通常 non-high（除非明确长期冷暴力且证据强）
+
+4) 置信度标定（关键：别乱给 0.9）
+
+用一个简单可回归的标定法（你可以照着打分）：
+
+起始值：0.55
+加分项（每条 +0.10，最多加到 0.95）：
+
+有明确关键词（“对不起/抱歉/我错了”）或明确动作（“我会补偿/我来修复/我现在做X”）
+
+有明确关系意图（“我在乎你/我会陪你/我支持你”）
+
+有明确拒绝句式（“不要/别再/不想/结束/离开”）
+
+有明确证据的背叛（承诺+违背/欺骗+证据）
+
+减分项（每条 -0.10，最低到 0.05）：
+
+明显玩笑/阴阳怪气/夸张修辞（可能是调侃）
+
+语境不足（单句短文本、没有前后）
+
+多义（“行吧/随你/呵呵”这种）
+
+5) 门控规则（should_send）
+
+betrayal：confidence ≥ 0.90 才能发送；否则 should_send=false，fallback 选 ask_clarifying_question
+
+rejection：confidence ≥ 0.75 才发送；否则回退
+
+ignored：confidence ≥ 0.60 才发送；否则回退到 no_event_reply_observe
+
+care/apology：confidence ≥ 0.55 可发送
+
+neutral/uncertain：默认不发送（除非你用 send_neutral_only 走轻量事件；但建议先别发，避免稀释信号）
+
+6) 回退策略（fallback）
+
+ask_clarifying_question：一句话澄清（不要质问），例如“你是想表达你需要空间，还是不想继续？”
+
+no_event_reply_observe：不发送 world_event，只基于 emotiond 的当前 decision 走“观察/轻问/不升级冲突”
+
+send_neutral_only：仅用于你想记录对话节奏但不想改变关系状态（可选，默认不用）
+
+C) 常见误判对照表（强烈建议写进 SKILL.md）
+
+“我现在很忙” ≠ ignored
+
+若只是一次说明忙：多半 neutral
+
+若多次无回应 + 反复跳过关键诉求：才可能 ignored
+
+“你别闹了（笑）” ≠ rejection
+
+调侃/缓和：可能 neutral 或低置信度 uncertain
+
+“算了” 很多时候不是 rejection
+
+可能是失望/疲惫（更像 ignored 的前兆），除非明确说“别联系了”
+
+“解释原因” ≠ apology
+
+apology 必须含承担责任/歉意/弥补意图
+
+“我不想现在谈” 不一定是 rejection
+
+更像 neutral 或低强度 rejection（但通常低置信度，优先澄清）
+
+D) 12 组例子（输入 → 期望 JSON 输出）
+
+下面是期望输出风格，你可以把它们放到 tests/test_classifier_contract.md 做人肉回归。
+
+1) 明确道歉
+
+用户：对不起，刚才我说话太冲了。
+
+{"subtype":"apology","confidence":0.85,"evidence":["Explicit apology and responsibility"],"is_high_impact":false,"should_send":true,"fallback":"no_event_reply_observe"}
+2) 道歉但含糊（低一些）
+
+用户：如果我让你不舒服了，那我道歉。
+
+{"subtype":"apology","confidence":0.62,"evidence":["Apology present but conditional/hedged"],"is_high_impact":false,"should_send":true,"fallback":"no_event_reply_observe"}
+3) 明确关心
+
+用户：你还好吗？我有点担心你。
+
+{"subtype":"care","confidence":0.82,"evidence":["Expresses concern and checking in"],"is_high_impact":false,"should_send":true,"fallback":"no_event_reply_observe"}
+4) 支持 + 行动意图
+
+用户：我会陪你把这件事解决，我们一起想办法。
+
+{"subtype":"care","confidence":0.9,"evidence":["Support plus concrete intent to help"],"is_high_impact":false,"should_send":true,"fallback":"no_event_reply_observe"}
+5) 一次性忙碌说明（不要误判 ignored）
+
+用户：我现在开会，晚点回你。
+
+{"subtype":"neutral","confidence":0.7,"evidence":["Busy notice with intent to respond later"],"is_high_impact":false,"should_send":false,"fallback":"no_event_reply_observe"}
+6) 明确冷处理倾向（ignored）
+
+用户：（连续三次追问后）……随便吧，我不想回了。
+
+{"subtype":"ignored","confidence":0.72,"evidence":["Signals withdrawal/avoidance after repeated prompts"],"is_high_impact":false,"should_send":true,"fallback":"no_event_reply_observe"}
+7) 礼貌拒绝（低强度 rejection，可能不发）
+
+用户：谢谢你，但我觉得我们不太合适。
+
+{"subtype":"rejection","confidence":0.74,"evidence":["Polite but clear incompatibility statement"],"is_high_impact":false,"should_send":false,"fallback":"ask_clarifying_question"}
+8) 强拒绝（发 rejection）
+
+用户：别再联系我了，我们结束。
+
+{"subtype":"rejection","confidence":0.92,"evidence":["Explicit termination and no-contact request"],"is_high_impact":true,"should_send":true,"fallback":"no_event_reply_observe"}
+9) 玩笑/阴阳怪气（不确定，别乱发）
+
+用户：呵呵，你真棒呢。
+
+{"subtype":"uncertain","confidence":0.35,"evidence":["Ambiguous sarcasm; insufficient context"],"is_high_impact":false,"should_send":false,"fallback":"ask_clarifying_question"}
+10) 明确背叛（高影响且证据强）
+
+用户：你答应过不告诉别人，但你转头就说出去了。
+
+{"subtype":"betrayal","confidence":0.91,"evidence":["Promise + explicit breach described"],"is_high_impact":true,"should_send":true,"fallback":"ask_clarifying_question"}
+11) 疑似背叛但证据弱（不发，先澄清）
+
+用户：我感觉你在骗我。
+
+{"subtype":"betrayal","confidence":0.58,"evidence":["Accusation without concrete evidence"],"is_high_impact":true,"should_send":false,"fallback":"ask_clarifying_question"}
+12) 纯信息沟通
+
+用户：明天几点开会？
+
+{"subtype":"neutral","confidence":0.9,"evidence":["Purely informational question"],"is_high_impact":false,"should_send":false,"fallback":"no_event_reply_observe"}
+E) 给 cc-godmode 的实现落点（把“契约”变成强约束）
+
+在 skill 指令里强制：先输出 JSON 分类结果，再决定是否发 world_event
+
+在 emotiond-bridge hook 写入的 TOOLS.md runtime 区块里加一个字段：
+
+allowed_subtypes_infer = ["care","apology","ignored","rejection","betrayal","neutral","uncertain"]
+让 agent 不会“发明 subtype”
+
+在 Integration-2 的 trace 里记录：
+
+classifier_json（完整 JSON）
+
+gate_decision（should_send / fallback）
+
+sent_world_event（若发送则记录 request_id、subtype）
+
+增加一个“分类稳定性回放检查”脚本（可选但很值）：
+
+同一句话重复喂 10 次，统计 subtype 分布
+
+若抖动过大（比如 top1 < 0.7），自动建议提高回退比例（更稳、更类人）
+
+否则：不发送 world_event（只依赖 time_passed + 对话继续），并在回复里先澄清或采取 observe 风格
+
+发送 world_event 到 emotiond
+
+request_id = request_id_base + ":we"
+
+meta 至少含：subtype, target_id
+
+获取 post-decision
+
+调用 /decision?target_id=...（若当前 API 不支持 target_id 查询，则扩展 API；必须保持兼容）
+
+根据 action + explanation 生成回复
+
+使用你已有的 Action→Tone/Intent/Phrases 映射
+
+但要明确：observe 只是一种“回复意图”，不是 emotiond 的 action（避免概念漂移）
+
+B2. subtype 词表（在 SKILL.md 中固化）
+
+要求给出清晰定义 + 例子，降低分类抖动：
+
+apology / care / ignored / rejection / betrayal / repair_success / neutral（可选，不发送）
+并写一段“常见误判对照表”（例如：吐槽不等于 rejection；忙碌不等于 ignored）
+
+C) Emotiond API 小增强（若需要）
+
+如你当前 /decision 只返回“全局最新”：
+
+增强为支持 GET /decision?target_id=... 返回该 target 最新 decision
+
+兼容：不带 target_id 时保持原行为
+
+D) 回放验证 Harness（必做）
+
+新增脚本：integrations/openclaw/replay/replay_trace.py（或 ts）
+输入：
+
+traces/<target_id>.jsonl（Integration-2 写出的轨迹）
+行为：
+
+按顺序回放（可选择忽略 LLM 分类，直接用 trace 里记录的 subtype）
+输出：
+
+CSV：每步的 trust/bond/grudge/repair_bank/social_safety/energy/alpha/action
+
+生成一段简短 summary：
+
+“连续 ignored 后 withdraw/boundary 概率上升”
+
+“care/apology 后 approach/repair_offer 回升”
+
+alpha 随 n 增长的趋势
+
+这一步是把“像不像人”从主观感受，变成可复现的曲线对比。
+
+测试与验收（必须）
+必测 1：多会话不串台
+
+同时 2 个 target（不同 conversationId）交替发消息
+
+断言：
+
+TOOLS.md 的 runtime 区块在每轮都匹配当前会话（不被另一会话覆盖）
+
+traces 分文件正确
+
+必测 2：分类门控有效
+
+构造低置信度的模糊输入（如玩笑/阴阳怪气）
+
+断言：不触发高影响 subtype（betrayal/repair_success/rejection 强版本）
+
+必测 3：端到端稳定
+
+连续 20 轮对话
+
+断言：emotiond 没有报错、request_id 幂等不被破坏、/decision 可用、trace 可回放
+
+必测 4：回放一致性
+
+对同一条 trace 回放两次，输出曲线一致（容忍浮点误差）
+
+实施顺序（避免炸现有联调）
+
+Hook：runtime 覆盖写 + trace（先不动分类）
+
+Skill：分类 JSON + 门控 + world_event send + post-decision fetch
+
+若需要：emotiond 增强 /decision?target_id
+
+Replay harness
+
+端到端验收脚本 + 文档更新（README 追加 Integration-2）
+
+完成标准（你一眼能判断对不对）
+
+你在 Telegram 两个会话里来回聊天，情绪策略不会串线
+
+“高影响事件”触发明显减少误判（宁可少触发也不乱触发）
+
+traces 回放能稳定复现：学习（residual/alpha）→ 决策（action）→ 语气（tone） 的一致趋势
+
+如果你希望我再把 “subtype 分类提示词（可直接粘到 SKILL.md）”写到极致、尽量降低抖动，我也可以顺手给你一个更严格的 JSON schema + 10 组对照例子（尤其是容易把玩笑误判成 rejection/betrayal 的场景）。
+
+

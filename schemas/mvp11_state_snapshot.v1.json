@@ -1,0 +1,131 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://openemotion.org/schemas/mvp11_state_snapshot.v1.json",
+  "title": "MVP11 State Snapshot",
+  "description": "Schema for state snapshots at key points in LucidLoop MVP-11 with homeostasis tracking",
+  "type": "object",
+  "required": ["snapshot_id", "run_id", "tick_id", "ts", "state", "homeostasis"],
+  "properties": {
+    "snapshot_id": {
+      "type": "string",
+      "description": "Unique identifier for this snapshot"
+    },
+    "run_id": {
+      "type": "string",
+      "description": "Run this snapshot belongs to"
+    },
+    "tick_id": {
+      "type": "integer",
+      "description": "Tick number this snapshot was taken at"
+    },
+    "ts": {
+      "type": "number",
+      "description": "Unix timestamp"
+    },
+    "state": {
+      "type": "object",
+      "description": "Complete state at this point",
+      "properties": {
+        "goals": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "id": {"type": "string"},
+              "description": {"type": "string"},
+              "priority": {"type": "number"},
+              "status": {"type": "string", "enum": ["active", "completed", "blocked", "abandoned"]}
+            }
+          }
+        },
+        "context": {
+          "type": "object",
+          "additionalProperties": true
+        },
+        "history": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "tick_id": {"type": "integer"},
+              "action": {"type": "string"},
+              "outcome": {"type": "string"}
+            }
+          }
+        },
+        "metrics": {
+          "type": "object",
+          "additionalProperties": {"type": "number"}
+        },
+        "constraints": {
+          "type": "array",
+          "items": {"type": "string"}
+        }
+      }
+    },
+    "homeostasis": {
+      "type": "object",
+      "description": "Homeostasis state snapshot for Active Inference",
+      "required": ["energy_budget", "compute_pressure", "error_pressure", "memory_pressure", "risk_exposure", "uncertainty"],
+      "properties": {
+        "energy_budget": {
+          "type": "number",
+          "description": "Available energy budget (0-1 normalized)",
+          "minimum": 0,
+          "maximum": 1
+        },
+        "compute_pressure": {
+          "type": "number",
+          "description": "Compute resource pressure (0-1 normalized)",
+          "minimum": 0,
+          "maximum": 1
+        },
+        "error_pressure": {
+          "type": "number",
+          "description": "Error rate pressure (0-1 normalized)",
+          "minimum": 0,
+          "maximum": 1
+        },
+        "memory_pressure": {
+          "type": "number",
+          "description": "Memory usage pressure (0-1 normalized)",
+          "minimum": 0,
+          "maximum": 1
+        },
+        "risk_exposure": {
+          "type": "number",
+          "description": "Overall risk exposure (0-1 normalized)",
+          "minimum": 0,
+          "maximum": 1
+        },
+        "uncertainty": {
+          "type": "number",
+          "description": "Epistemic uncertainty level (0-1 normalized)",
+          "minimum": 0,
+          "maximum": 1
+        },
+        "trend": {
+          "type": "object",
+          "description": "Trend direction for each metric over recent ticks",
+          "properties": {
+            "energy_budget": {"type": "string", "enum": ["increasing", "stable", "decreasing"]},
+            "compute_pressure": {"type": "string", "enum": ["increasing", "stable", "decreasing"]},
+            "error_pressure": {"type": "string", "enum": ["increasing", "stable", "decreasing"]},
+            "memory_pressure": {"type": "string", "enum": ["increasing", "stable", "decreasing"]},
+            "risk_exposure": {"type": "string", "enum": ["increasing", "stable", "decreasing"]},
+            "uncertainty": {"type": "string", "enum": ["increasing", "stable", "decreasing"]}
+          }
+        },
+        "alert_level": {
+          "type": "string",
+          "enum": ["normal", "warning", "critical"],
+          "description": "Overall alert level based on homeostasis state"
+        }
+      }
+    },
+    "checksum": {
+      "type": "string",
+      "description": "Hash of state for integrity verification"
+    }
+  }
+}

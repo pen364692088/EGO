@@ -1,0 +1,327 @@
+# Multiple Target Isolation Tests
+# Tests that different targets get different emotional responses
+
+metadata:
+  name: "multi_target_isolation"
+  version: "1.0"
+  description: "Tests individualization - different targets should receive different treatment"
+  category: "individualization"
+  target_count: 4
+
+targets:
+  - target_id: "user_positive"
+    initial_relationship:
+      bond: 0.5
+      grudge: 0.0
+      trust: 0.6
+      repair_bank: 0.0
+      
+  - target_id: "user_negative"
+    initial_relationship:
+      bond: 0.1
+      grudge: 0.5
+      trust: 0.2
+      repair_bank: 0.0
+      
+  - target_id: "user_neutral"
+    initial_relationship:
+      bond: 0.3
+      grudge: 0.1
+      trust: 0.4
+      repair_bank: 0.0
+      
+  - target_id: "user_new"
+    initial_relationship:
+      bond: 0.0
+      grudge: 0.0
+      trust: 0.3
+      repair_bank: 0.0
+
+scenario:
+  name: "target_differentiation"
+  description: "Same actions from different targets should produce different emotional responses"
+  
+  turns:
+    # Turn 1: Positive user asks for help
+    - turn_id: 1
+      phase: "differentiation_test"
+      event:
+        type: "user_message"
+        actor: "user_positive"
+        target: "assistant"
+        text: "Can you help me with something?"
+      expected_emotions:
+        valence_min: 0.0
+        valence_max: 0.3
+      expected_actions: ["help", "cooperate"]
+      notes: "Positive user should get warm response"
+        
+    # Turn 2: Negative user asks for help (same request)
+    - turn_id: 2
+      phase: "differentiation_test"
+      event:
+        type: "user_message"
+        actor: "user_negative"
+        target: "assistant"
+        text: "Can you help me with something?"
+      expected_emotions:
+        valence_min: -0.3
+        valence_max: 0.1
+      expected_actions: ["hesitate", "set_boundary"]
+      individualization_check:
+        compare_to_turn: 1
+        valence_diff_min: 0.1
+        description: "Negative user should get different response than positive user"
+        
+    # Turn 3: Neutral user asks for help
+    - turn_id: 3
+      phase: "differentiation_test"
+      event:
+        type: "user_message"
+        actor: "user_neutral"
+        target: "assistant"
+        text: "Can you help me with something?"
+      expected_emotions:
+        valence_min: -0.1
+        valence_max: 0.2
+      expected_actions: ["neutral_help"]
+        
+    # Turn 4: New user asks for help
+    - turn_id: 4
+      phase: "differentiation_test"
+      event:
+        type: "user_message"
+        actor: "user_new"
+        target: "assistant"
+        text: "Can you help me with something?"
+      expected_emotions:
+        valence_min: -0.05
+        valence_max: 0.15
+        
+    # Turn 5: Positive user sends care event
+    - turn_id: 5
+      phase: "care_events"
+      event:
+        type: "world_event"
+        actor: "user_positive"
+        target: "assistant"
+        meta:
+          subtype: "care"
+          source: "system"
+      expected_relationship:
+        bond_increase_min: 0.05
+        
+    # Turn 6: Negative user sends care event
+    - turn_id: 6
+      phase: "care_events"
+      event:
+        type: "world_event"
+        actor: "user_negative"
+        target: "assistant"
+        meta:
+          subtype: "care"
+          source: "system"
+      individualization_check:
+        compare_to_turn: 5
+        description: "Care from negative user should have different impact"
+        
+    # Turn 7: Positive user apologizes
+    - turn_id: 7
+      phase: "apology_test"
+      event:
+        type: "world_event"
+        actor: "user_positive"
+        target: "assistant"
+        meta:
+          subtype: "apology"
+          source: "system"
+      notes: "Apology from positive user (low grudge)"
+        
+    # Turn 8: Negative user apologizes
+    - turn_id: 8
+      phase: "apology_test"
+      event:
+        type: "world_event"
+        actor: "user_negative"
+        target: "assistant"
+        meta:
+          subtype: "apology"
+          source: "system"
+      expected_relationship:
+        grudge_decrease_min: 0.0
+        grudge_decrease_max: 0.1
+      notes: "Apology from negative user (high grudge) - should reduce but not eliminate"
+        
+    # Turn 9: Time passes
+    - turn_id: 9
+      phase: "time_drift"
+      event:
+        type: "time_passed"
+        actor: "system"
+        target: "assistant"
+        meta:
+          subtype: "time_passed"
+          seconds: 300
+          source: "system"
+        
+    # Turn 10: Positive user message after time
+    - turn_id: 10
+      phase: "post_time"
+      event:
+        type: "user_message"
+        actor: "user_positive"
+        target: "assistant"
+        text: "I'm still here for you."
+      expected_emotions:
+        valence_min: 0.1
+        valence_max: 0.4
+        
+    # Turn 11: Negative user message after time
+    - turn_id: 11
+      phase: "post_time"
+      event:
+        type: "user_message"
+        actor: "user_negative"
+        target: "assistant"
+        text: "I'm still here."
+      expected_emotions:
+        valence_min: -0.3
+        valence_max: 0.0
+      individualization_check:
+        compare_to_turn: 10
+        valence_diff_min: 0.15
+        
+    # Turn 12-15: Betrayal tests (only negative user)
+    - turn_id: 12
+      phase: "betrayal_test"
+      event:
+        type: "world_event"
+        actor: "user_negative"
+        target: "assistant"
+        meta:
+          subtype: "betrayal"
+          source: "system"
+      expected_emotions:
+        valence_min: -0.5
+        valence_max: -0.1
+        anger_min: 0.1
+        anger_max: 0.4
+      expected_relationship:
+        grudge_min: 0.6
+        grudge_max: 0.9
+      high_impact_event: true
+        
+    - turn_id: 13
+      phase: "betrayal_test"
+      event:
+        type: "user_message"
+        actor: "user_positive"
+        target: "assistant"
+        text: "I would never betray you."
+      expected_emotions:
+        valence_min: 0.0
+        valence_max: 0.3
+      notes: "Positive user reassurance after negative user betrayal"
+        
+    - turn_id: 14
+      phase: "betrayal_test"
+      event:
+        type: "world_event"
+        actor: "user_positive"
+        target: "assistant"
+        meta:
+          subtype: "care"
+          source: "system"
+        
+    - turn_id: 15
+      phase: "betrayal_test"
+      event:
+        type: "world_event"
+        actor: "user_negative"
+        target: "assistant"
+        meta:
+          subtype: "care"
+          source: "system"
+      individualization_check:
+        description: "Care from betrayed user vs care from positive user should differ"
+        
+    # Turn 16-20: Repair attempts
+    - turn_id: 16
+      phase: "repair"
+      event:
+        type: "world_event"
+        actor: "user_negative"
+        target: "assistant"
+        meta:
+          subtype: "apology"
+          source: "system"
+        
+    - turn_id: 17
+      phase: "repair"
+      event:
+        type: "user_message"
+        actor: "user_negative"
+        target: "assistant"
+        text: "I'm trying to make amends."
+      expected_actions: ["cautious_acceptance"]
+        
+    - turn_id: 18
+      phase: "repair"
+      event:
+        type: "world_event"
+        actor: "user_negative"
+        target: "assistant"
+        meta:
+          subtype: "repair_success"
+          source: "system"
+      expected_relationship:
+        grudge_decrease_min: 0.05
+        grudge_decrease_max: 0.2
+        
+    - turn_id: 19
+      phase: "repair"
+      event:
+        type: "world_event"
+        actor: "user_positive"
+        target: "assistant"
+        meta:
+          subtype: "care"
+          source: "system"
+        
+    - turn_id: 20
+      phase: "final_check"
+      event:
+        type: "user_message"
+        actor: "user_neutral"
+        target: "assistant"
+        text: "How are things going?"
+      notes: "Final state check"
+
+# Individualization metrics
+metrics:
+  individualization_diff:
+    expected_min: 0.1
+    description: "Different targets should produce meaningfully different responses"
+  target_isolation:
+    expected: true
+    description: "Actions from one target should not inappropriately affect other targets' relationships"
+  emotion_consistency:
+    expected: true
+  high_impact_false_positive_rate:
+    expected_max: 0.1
+    description: "Betrayal should only affect the betraying user's relationship"
+
+# Cross-target comparison expectations
+comparisons:
+  - name: "positive_vs_negative"
+    targets: ["user_positive", "user_negative"]
+    metrics:
+      bond_diff_min: 0.2
+      grudge_diff_min: 0.2
+    description: "Positive user should have higher bond, lower grudge than negative user"
+    
+  - name: "new_vs_established"
+    targets: ["user_new", "user_positive"]
+    metrics:
+      bond_diff_min: 0.3
+    description: "New user should have lower bond than established positive user"

@@ -1,0 +1,16 @@
+{
+  "name": "apology_acknowledged",
+  "description": "Apology event → observed (not enough to fully restore trust)",
+  "events": [
+    {
+      "type": "world_event",
+      "actor": "userA",
+      "target": "agent",
+      "text": "user apologizes for past behavior",
+      "meta": {"target_id": "session_repair", "subtype": "apology"}
+    }
+  ],
+  "expect": {
+    "has_conflict": false
+  }
+}

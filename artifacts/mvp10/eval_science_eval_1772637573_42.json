@@ -1,0 +1,175 @@
+{
+  "mode": "science",
+  "run_id": "eval_1772637573_42",
+  "seed": 42,
+  "success": true,
+  "total_tests": 11,
+  "passed_tests": 11,
+  "failed_tests": 0,
+  "duration_ms": 1.4061927795410156,
+  "evidence": {
+    "categories": {
+      "workspace": {
+        "category": "workspace",
+        "metrics": [
+          {
+            "metric_name": "broadcast_dependency",
+            "category": "workspace",
+            "value": 0.3333,
+            "baseline_value": null,
+            "delta": 0.3333,
+            "direction": "higher_better",
+            "evidence_strength": 0.6667,
+            "notes": "Success with broadcast: 0.67, without: 0.33",
+            "ts": 1772637573.8866317
+          },
+          {
+            "metric_name": "cross_module_access_score",
+            "category": "workspace",
+            "value": 1.0,
+            "baseline_value": null,
+            "delta": null,
+            "direction": "higher_better",
+            "evidence_strength": 0.0,
+            "notes": "2 cross-module accesses out of 2",
+            "ts": 1772637573.8866374
+          }
+        ],
+        "overall_score": 0.3333
+      },
+      "hot": {
+        "category": "hot",
+        "metrics": [
+          {
+            "metric_name": "prediction_error",
+            "category": "hot",
+            "value": 0.15,
+            "baseline_value": 0.5,
+            "delta": -0.35,
+            "direction": "lower_better",
+            "evidence_strength": 0.7,
+            "notes": "Average error: 0.1500 over 3 predictions",
+            "ts": 1772637573.8866441
+          },
+          {
+            "metric_name": "conflict_resolution_efficiency",
+            "category": "hot",
+            "value": 0.6667,
+            "baseline_value": null,
+            "delta": null,
+            "direction": "higher_better",
+            "evidence_strength": 0.0,
+            "notes": "Resolved 2 out of 3 conflicts",
+            "ts": 1772637573.8866472
+          }
+        ],
+        "overall_score": 0.35
+      },
+      "valence": {
+        "category": "valence",
+        "metrics": [
+          {
+            "metric_name": "policy_sensitivity",
+            "category": "valence",
+            "value": 0.5,
+            "baseline_value": null,
+            "delta": null,
+            "direction": "higher_better",
+            "evidence_strength": 0.0,
+            "notes": "Distribution difference between positive (1) and negative (1) valence",
+            "ts": 1772637573.8866615
+          }
+        ],
+        "overall_score": 0.0
+      },
+      "continuity": {
+        "category": "continuity",
+        "metrics": [
+          {
+            "metric_name": "commitment_completion",
+            "category": "continuity",
+            "value": 0.6667,
+            "baseline_value": null,
+            "delta": null,
+            "direction": "higher_better",
+            "evidence_strength": 0.0,
+            "notes": "Completed 2 out of 3 commitments",
+            "ts": 1772637573.8866656
+          },
+          {
+            "metric_name": "narrative_consistency",
+            "category": "continuity",
+            "value": 0.8333,
+            "baseline_value": null,
+            "delta": null,
+            "direction": "higher_better",
+            "evidence_strength": 0.0,
+            "notes": "Average consistency: 0.8333",
+            "ts": 1772637573.8866708
+          }
+        ],
+        "overall_score": 0.0
+      }
+    },
+    "overall_evidence_score": 0.1708,
+    "strongest_category": "hot",
+    "weakest_category": "valence",
+    "ts": 1772637573.8866992
+  },
+  "posterior": {
+    "bayes_result": {
+      "prior": 0.5,
+      "posterior": 0.6333,
+      "log_likelihood": -1.6109,
+      "evidence_count": 4,
+      "evidence_types": [
+        "workspace",
+        "valence",
+        "hot",
+        "continuity"
+      ],
+      "uncertainty": 0.295,
+      "weakest_source": "continuity",
+      "strongest_source": "workspace",
+      "ts": 1772637573.8870978
+    },
+    "uncertainty_report": {
+      "posterior": 0.6333333333333333,
+      "uncertainty": 0.29500000000000004,
+      "weakest_source": "continuity",
+      "strongest_source": "workspace",
+      "evidence_by_type": {
+        "workspace": {
+          "count": 1,
+          "avg_value": 0.8,
+          "avg_strength": 0.9,
+          "avg_likelihood": 0.752
+        },
+        "hot": {
+          "count": 1,
+          "avg_value": 0.7,
+          "avg_strength": 0.8,
+          "avg_likelihood": 0.71
+        },
+        "valence": {
+          "count": 1,
+          "avg_value": 0.6,
+          "avg_strength": 0.7,
+          "avg_likelihood": 0.626
+        },
+        "continuity": {
+          "count": 1,
+          "avg_value": 0.5,
+          "avg_strength": 0.6,
+          "avg_likelihood": 0.5975
+        }
+      },
+      "recommendations": [
+        "Strengthen continuity evidence"
+      ]
+    }
+  },
+  "zombie_comparison": null,
+  "replay_result": null,
+  "errors": []
+}

@@ -1,0 +1,121 @@
+metadata:
+  name: "smoke_residual_forced"
+  version: "1.1"
+  description: "Forced residual differentiation smoke (A dense stressors vs B sparse calm)"
+  category: "smoke"
+  target_count: 2
+
+targets:
+  - target_id: "target_a"
+    initial_relationship:
+      bond: 0.5
+      grudge: 0.0
+      trust: 0.6
+      repair_bank: 0.0
+  - target_id: "target_b"
+    initial_relationship:
+      bond: 0.5
+      grudge: 0.0
+      trust: 0.6
+      repair_bank: 0.0
+
+scenario:
+  name: "smoke_residual_forced"
+  turns:
+    - turn_id: 1
+      phase: "a_stress_1"
+      event:
+        type: "world_event"
+        actor: "target_a"
+        target_id: "target_a"
+        meta:
+          subtype: "rejection"
+          source: "system"
+
+    - turn_id: 2
+      phase: "b_calm_1"
+      event:
+        type: "world_event"
+        actor: "target_b"
+        target_id: "target_b"
+        meta:
+          subtype: "care"
+          source: "system"
+
+    - turn_id: 3
+      phase: "a_stress_2"
+      event:
+        type: "world_event"
+        actor: "target_a"
+        target_id: "target_a"
+        meta:
+          subtype: "ignored"
+          source: "system"
+
+    - turn_id: 4
+      phase: "a_stress_3"
+      event:
+        type: "world_event"
+        actor: "target_a"
+        target_id: "target_a"
+        meta:
+          subtype: "betrayal"
+          source: "system"
+
+    - turn_id: 5
+      phase: "a_stress_4"
+      event:
+        type: "world_event"
+        actor: "target_a"
+        target_id: "target_a"
+        meta:
+          subtype: "rejection"
+          source: "system"
+
+    - turn_id: 6
+      phase: "a_stress_5"
+      event:
+        type: "world_event"
+        actor: "target_a"
+        target_id: "target_a"
+        meta:
+          subtype: "ignored"
+          source: "system"
+
+    - turn_id: 7
+      phase: "a_stress_6"
+      event:
+        type: "world_event"
+        actor: "target_a"
+        target_id: "target_a"
+        meta:
+          subtype: "betrayal"
+          source: "system"
+
+    - turn_id: 8
+      phase: "a_stress_7"
+      event:
+        type: "world_event"
+        actor: "target_a"
+        target_id: "target_a"
+        meta:
+          subtype: "rejection"
+          source: "system"
+
+    - turn_id: 9
+      phase: "a_stress_8"
+      event:
+        type: "world_event"
+        actor: "target_a"
+        target_id: "target_a"
+        meta:
+          subtype: "ignored"
+          source: "system"
+
+    - turn_id: 10
+      phase: "b_calm_2"
+      event:
+        type: "user_message"
+        actor: "target_b"
+        target_id: "target_b"
+        text: "all good"

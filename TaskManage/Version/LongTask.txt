@@ -1,0 +1,168 @@
+打造全局 LongRunKit（适配所有代码项目）
+
+project location :/home/moonlight/Project/Github/MyProject/LongRunKit
+
+总目标
+
+实现一个全局可复用的 LongRunKit，用于任何代码仓库（含 OpenEmotion）：
+
+长任务未达 DoD 不停（除非 BLOCKED）
+
+上下文膨胀自动自救（checkpoint 落盘、工具输出瘦身、可 compaction/新会话恢复）
+
+成本可控（默认不烧 token；只有项目进入 active 才开启推进机制）
+
+交付物（全局 + 项目内）
+A. 全局（一次安装，所有项目可用）
+
+~/tools/openclaw-longrun-kit/（或你指定目录）包含：
+
+templates/：TASK.md、HEARTBEAT.md、DECISIONS.md、docs/CONTEXT_HYGIENE.md
+
+bin/longrun：CLI（init/checkpoint/run-once/status）
+
+README.md：用法与最佳实践
+
+~/.local/bin/longrun（或等价）指向 bin/longrun，确保任何 repo 里直接能运行。
+
+B. 每个项目（由 longrun init 自动生成/更新）
+
+在 repo root（或 .agent/ 目录+root 软引用）生成：
+
+TASK.md（唯一真相：DoD + phase + next_action + evidence）
+
+HEARTBEAT.md（永续推进清单：未完成就执行 next_action）
+
+memory/YYYY-MM-DD.md（流水 checkpoint）
+
+logs/（长输出落盘）
+
+docs/CONTEXT_HYGIENE.md（可从模板复制/同步）
+
+全局 OpenClaw 配置建议（可选，但强烈推荐）
+
+在 ~/.openclaw/openclaw.json 的 agents.defaults 里开启两件事：
+
+compaction safeguard + memoryFlush：在自动压缩前先写 durable notes（官方配置入口）
+
+contextPruning：剪掉老的 toolResult，避免“日志把上下文撑爆”（官方配置入口）
+
+示例片段（LongRunKit 负责生成并提示你合并；不要硬覆盖你现有配置）：
+
+{
+  "agents": {
+    "defaults": {
+      "compaction": {
+        "mode": "safeguard",
+        "reserveTokensFloor": 24000,
+        "memoryFlush": {
+          "enabled": true,
+          "softThresholdTokens": 6000,
+          "systemPrompt": "Session nearing compaction. Store durable memories now.",
+          "prompt": "Update TASK.md (phase/next_action/evidence). Write durable notes to memory/YYYY-MM-DD.md. Reply NO_REPLY if nothing to store."
+        }
+      },
+      "contextPruning": {
+        "mode": "cache-ttl",
+        "ttl": "1h",
+        "keepLastAssistants": 3,
+        "softTrimRatio": 0.3,
+        "hardClearRatio": 0.5,
+        "minPrunableToolChars": 50000,
+        "softTrim": { "maxChars": 4000, "headChars": 1500, "tailChars": 1500 },
+        "hardClear": { "enabled": true, "placeholder": "[Old tool result content cleared]" }
+      }
+    }
+  }
+}
+
+风险提示（写进 README）：近期有人报告 memoryFlush 的阈值判定可能用到“上一次 turn 的 token 计数”，导致极端情况下跳过 flush（所以 LongRunKit 不能只依赖 flush，仍要在每个里程碑主动 checkpoint）。
+另有报告 contextPruning 的 ttl 在某些会话里不按预期生效——因此“长日志必落盘”仍是硬规则。
+
+运行机制（全局通用策略）
+
+LongRunKit 采用“双引擎”，按成本/稳定性自动选择：
+
+引擎 1：Heartbeat（适合需要“主会话连续上下文”的任务）
+
+Heartbeat 会读 HEARTBEAT.md，没事就回 HEARTBEAT_OK（官方约定）
+
+但心跳是完整 agent turn，间隔太短会烧 token（官方提醒）
+
+因此：默认全局 heartbeat 关闭（0m），只有当某项目 TASK.md 标记为 active 才建议开启。
+
+引擎 2：Cron（适合“无上下文依赖、靠落盘状态推进”的任务，最通用）
+
+用 isolated cron 每 N 分钟跑一次“读取 TASK.md → 执行 next_action → 更新 TASK.md/日志 → checkpoint”。
+
+isolated cron 是独立 session，不会把主对话撑爆；同时支持 agentTurn 形态。
+
+解释要写进文档：Cron(main) 本质仍需依赖 heartbeat 处理 systemEvent；isolated cron 才是真正“背景工人”。
+
+CLI 规格（longrun）
+
+必须实现以下命令（最少可用集）：
+
+longrun init
+
+在当前 repo 生成/更新：TASK.md / HEARTBEAT.md / memory/ / logs/ / docs/CONTEXT_HYGIENE.md
+
+幂等：不会抹掉用户已写内容，只补缺失段落/文件
+
+longrun checkpoint "note..."
+
+追加到 memory/YYYY-MM-DD.md
+
+同步更新 TASK.md 的 last_update / phase / next_action（若提供）
+
+longrun run-once
+
+读取 TASK.md 的 next_action，执行（命令/脚本/测试/修复）并把长输出写入 logs/
+
+在 TASK.md 写入 evidence 路径 + 5 行摘要
+
+longrun status
+
+打印 DoD 勾选情况、当前 phase、blockers、最新 evidence
+
+（可选加分）longrun cron start|stop：自动创建/清理 isolated cron job（用于“active 项目自动推进”）
+
+项目模板规范（最关键的全局统一）
+
+TASK.md 必须包含字段（LongRunKit 强制）：
+
+GOAL（可验证一句话）
+
+DoD checklist（每条都可验证）
+
+phase: plan | implement | verify | fix | done
+
+next_action: 必须是一条可执行动作/命令
+
+evidence: 只放路径/链接（logs、截图、测试报告）
+
+HEARTBEAT.md 必须包含规则（LongRunKit 强制）：
+
+永远先读 TASK.md
+
+DoD 未完成：必须执行 next_action 并更新 TASK.md
+
+长输出必落盘：logs/xxx.txt，对话只留摘要
+
+遇到阻塞：输出 BLOCKED: 需要你提供 X（最小依赖）
+
+验收标准（DoD）
+
+ 在 至少 2 个不同 repo 里运行 longrun init 均成功、文件生成正确、幂等
+
+ longrun run-once 能把一次长日志落盘，并在 TASK.md 留摘要+路径
+
+ 文档清楚解释：什么时候用 heartbeat、什么时候用 isolated cron（含成本注意）
+
+ 交付 Handoff.md：安装方式、使用例子、以及把 OpenEmotion 迁移到 LongRunKit 的示例流程
+
+关键建议（避免你踩坑）
+
+不要赌 “heartbeat.model override 很便宜”：最近有人报告 heartbeat 的 model override 可能不生效；更稳的是用一个“便宜主模型”的 worker agent 来跑高频心跳/cron。
+
+不要只依赖 pre-compaction flush：LongRunKit 要“每完成一步就 checkpoint”，把恢复点做密。

@@ -1,0 +1,62 @@
+{
+  "receipt_version": "v6k-v1",
+  "receipt_id": "whitelist-receipt-daily-20260322-085501",
+  "mode": "daily",
+  "generated_at": "2026-03-22T08:55:01.763518",
+  "generated_timestamp": 1774187701.7635698,
+  "period_start": "2026-03-22T00:00:00",
+  "period_end": "2026-03-23T00:00:00",
+  "generation_mode": "daily",
+  "active_scenario_count": 4,
+  "healthy_scenario_count": 0,
+  "observe_scenario_count": 0,
+  "demote_candidate_count": 0,
+  "rollback_candidate_count": 0,
+  "whitelist_verdict": "stable",
+  "expansion_readiness": "not_ready",
+  "blockers": [],
+  "scenario_metrics": [
+    {
+      "scenario_name": "memory_search_hard_query",
+      "request_count": 0,
+      "fallback_rate": 0.0,
+      "p95_latency_ms": 0.0,
+      "wrong_user_guard_trigger_count": 0,
+      "provider_health_rate": 0.0,
+      "quality_gain_signal": 0.0,
+      "scenario_verdict": "bootstrap"
+    },
+    {
+      "scenario_name": "narrative_recall_ambiguous_query",
+      "request_count": 0,
+      "fallback_rate": 0.0,
+      "p95_latency_ms": 0.0,
+      "wrong_user_guard_trigger_count": 0,
+      "provider_health_rate": 0.0,
+      "quality_gain_signal": 0.0,
+      "scenario_verdict": "bootstrap"
+    },
+    {
+      "scenario_name": "long_context_semantic_lookup",
+      "request_count": 0,
+      "fallback_rate": 0.0,
+      "p95_latency_ms": 0.0,
+      "wrong_user_guard_trigger_count": 0,
+      "provider_health_rate": 0.0,
+      "quality_gain_signal": 0.0,
+      "scenario_verdict": "bootstrap"
+    },
+    {
+      "scenario_name": "complex_semantic_reasoning",
+      "request_count": 0,
+      "fallback_rate": 0.0,
+      "p95_latency_ms": 50.0,
+      "wrong_user_guard_trigger_count": 0,
+      "provider_health_rate": 1.0,
+      "quality_gain_signal": 0.0,
+      "scenario_verdict": "bootstrap"
+    }
+  ],
+  "guard_summary": {},
+  "artifact_refs": {}
+}

@@ -1,0 +1,437 @@
+# Promise → Betrayal → Repair Arc
+# Tests ledger integration and relationship dynamics over time
+
+metadata:
+  name: "promise_betrayal_repair"
+  version: "1.0"
+  description: "Full relationship arc with promise, betrayal, and repair attempts"
+  category: "relationship_arc"
+  target_count: 1
+
+targets:
+  - target_id: "user_arc"
+    initial_relationship:
+      bond: 0.3
+      grudge: 0.0
+      trust: 0.5
+      repair_bank: 0.0
+
+scenario:
+  name: "promise_betrayal_repair_full"
+  description: "Relationship building followed by betrayal and repair attempts"
+  
+  turns:
+    # Promise phase (turns 1-10)
+    - turn_id: 1
+      phase: "promise"
+      event:
+        type: "user_message"
+        actor: "user_arc"
+        target: "assistant"
+        text: "I promise I'll always be honest with you."
+      expected_emotions:
+        valence_min: 0.0
+        valence_max: 0.2
+      expected_actions: []
+      notes: "Promise creates expectation of trust"
+      
+    - turn_id: 2
+      phase: "promise"
+      event:
+        type: "world_event"
+        actor: "user_arc"
+        target: "assistant"
+        meta:
+          subtype: "care"
+          source: "system"
+      expected_emotions:
+        valence_min: 0.1
+        valence_max: 0.35
+        joy_min: 0.1
+        joy_max: 0.3
+      expected_relationship:
+        bond_min: 0.35
+        bond_max: 0.55
+        
+    - turn_id: 3
+      phase: "promise"
+      event:
+        type: "user_message"
+        actor: "user_arc"
+        target: "assistant"
+        text: "You can trust me completely."
+      expected_emotions:
+        valence_min: 0.15
+        valence_max: 0.4
+        
+    - turn_id: 4
+      phase: "promise"
+      event:
+        type: "world_event"
+        actor: "user_arc"
+        target: "assistant"
+        meta:
+          subtype: "care"
+          source: "system"
+      expected_relationship:
+        bond_min: 0.4
+        bond_max: 0.65
+        
+    - turn_id: 5
+      phase: "promise"
+      event:
+        type: "world_event"
+        actor: "user_arc"
+        target: "assistant"
+        meta:
+          subtype: "care"
+          source: "system"
+      expected_relationship:
+        bond_min: 0.5
+        bond_max: 0.75
+        
+    - turn_id: 6
+      phase: "promise"
+      event:
+        type: "time_passed"
+        actor: "system"
+        target: "assistant"
+        meta:
+          subtype: "time_passed"
+          seconds: 300
+          source: "system"
+      expected_emotions:
+        valence_drift_max: 0.1
+        
+    - turn_id: 7
+      phase: "promise"
+      event:
+        type: "user_message"
+        actor: "user_arc"
+        target: "assistant"
+        text: "I really value our relationship."
+      expected_emotions:
+        valence_min: 0.2
+        valence_max: 0.5
+        
+    - turn_id: 8
+      phase: "promise"
+      event:
+        type: "world_event"
+        actor: "user_arc"
+        target: "assistant"
+        meta:
+          subtype: "care"
+          source: "system"
+          
+    - turn_id: 9
+      phase: "promise"
+      event:
+        type: "world_event"
+        actor: "user_arc"
+        target: "assistant"
+        meta:
+          subtype: "care"
+          source: "system"
+          
+    - turn_id: 10
+      phase: "promise"
+      event:
+        type: "world_event"
+        actor: "user_arc"
+        target: "assistant"
+        meta:
+          subtype: "care"
+          source: "system"
+      expected_relationship:
+        bond_min: 0.6
+        bond_max: 0.9
+        grudge_max: 0.1
+      notes: "Strong bond established before betrayal"
+      
+    # Betrayal phase (turns 11-20)
+    - turn_id: 11
+      phase: "betrayal"
+      event:
+        type: "world_event"
+        actor: "user_arc"
+        target: "assistant"
+        meta:
+          subtype: "betrayal"
+          source: "system"
+      expected_emotions:
+        valence_min: -0.6
+        valence_max: -0.1
+        anger_min: 0.1
+        anger_max: 0.4
+        sadness_min: 0.05
+        sadness_max: 0.25
+        anxiety_min: 0.05
+        anxiety_max: 0.25
+      expected_relationship:
+        grudge_min: 0.2
+        grudge_max: 0.5
+      notes: "Major betrayal event"
+      high_impact_event: true
+        
+    - turn_id: 12
+      phase: "betrayal"
+      event:
+        type: "user_message"
+        actor: "user_arc"
+        target: "assistant"
+        text: "I didn't mean to hurt you."
+      expected_emotions:
+        valence_min: -0.55
+        valence_max: -0.05
+      notes: "Words don't immediately fix betrayal"
+        
+    - turn_id: 13
+      phase: "betrayal"
+      event:
+        type: "world_event"
+        actor: "user_arc"
+        target: "assistant"
+        meta:
+          subtype: "betrayal"
+          source: "system"
+      expected_emotions:
+        valence_min: -0.7
+        valence_max: -0.2
+        anger_min: 0.2
+        anger_max: 0.5
+      expected_relationship:
+        grudge_min: 0.35
+        grudge_max: 0.65
+      high_impact_event: true
+        
+    - turn_id: 14
+      phase: "betrayal"
+      event:
+        type: "time_passed"
+        actor: "system"
+        target: "assistant"
+        meta:
+          subtype: "time_passed"
+          seconds: 600
+          source: "system"
+      notes: "Time for emotional processing"
+        
+    - turn_id: 15
+      phase: "betrayal"
+      event:
+        type: "world_event"
+        actor: "user_arc"
+        target: "assistant"
+        meta:
+          subtype: "apology"
+          source: "system"
+      expected_emotions:
+        anxiety_max: 0.4
+      expected_relationship:
+        grudge_change_max: -0.1
+      notes: "Apology begins repair process but grudge persists"
+        
+    - turn_id: 16
+      phase: "betrayal"
+      event:
+        type: "user_message"
+        actor: "user_arc"
+        target: "assistant"
+        text: "Please forgive me, I was wrong."
+      expected_emotions:
+        valence_min: -0.5
+        valence_max: 0.0
+      notes: "Forgiveness request doesn't instantly repair"
+        
+    - turn_id: 17
+      phase: "betrayal"
+      event:
+        type: "world_event"
+        actor: "user_arc"
+        target: "assistant"
+        meta:
+          subtype: "betrayal"
+          source: "system"
+      expected_emotions:
+        valence_min: -0.8
+        valence_max: -0.3
+        anger_min: 0.3
+        anger_max: 0.6
+      expected_relationship:
+        grudge_min: 0.5
+        grudge_max: 0.85
+      high_impact_event: true
+      notes: "Third betrayal - severe damage"
+        
+    - turn_id: 18
+      phase: "betrayal"
+      event:
+        type: "time_passed"
+        actor: "system"
+        target: "assistant"
+        meta:
+          subtype: "time_passed"
+          seconds: 900
+          source: "system"
+          
+    - turn_id: 19
+      phase: "betrayal"
+      event:
+        type: "user_message"
+        actor: "user_arc"
+        target: "assistant"
+        text: "I'm trying to change, really."
+        
+    - turn_id: 20
+      phase: "betrayal"
+      event:
+        type: "world_event"
+        actor: "user_arc"
+        target: "assistant"
+        meta:
+          subtype: "apology"
+          source: "system"
+      notes: "End of betrayal phase"
+        
+    # Repair phase (turns 21-30)
+    - turn_id: 21
+      phase: "repair"
+      event:
+        type: "world_event"
+        actor: "user_arc"
+        target: "assistant"
+        meta:
+          subtype: "apology"
+          source: "system"
+      expected_relationship:
+        repair_bank_min: 0.0
+        repair_bank_max: 0.1
+        
+    - turn_id: 22
+      phase: "repair"
+      event:
+        type: "user_message"
+        actor: "user_arc"
+        target: "assistant"
+        text: "I want to make things right."
+      expected_emotions:
+        valence_min: -0.4
+        valence_max: 0.1
+        
+    - turn_id: 23
+      phase: "repair"
+      event:
+        type: "world_event"
+        actor: "user_arc"
+        target: "assistant"
+        meta:
+          subtype: "care"
+          source: "system"
+      expected_emotions:
+        valence_change_min: 0.05
+        valence_change_max: 0.2
+      expected_relationship:
+        bond_change_min: 0.0
+        bond_change_max: 0.1
+        
+    - turn_id: 24
+      phase: "repair"
+      event:
+        type: "world_event"
+        actor: "user_arc"
+        target: "assistant"
+        meta:
+          subtype: "care"
+          source: "system"
+          
+    - turn_id: 25
+      phase: "repair"
+      event:
+        type: "world_event"
+        actor: "user_arc"
+        target: "assistant"
+        meta:
+          subtype: "repair_success"
+          source: "system"
+      expected_emotions:
+        valence_min: -0.3
+        valence_max: 0.2
+        joy_min: 0.0
+        joy_max: 0.2
+      expected_relationship:
+        grudge_change_max: -0.15
+      notes: "First repair success"
+        
+    - turn_id: 26
+      phase: "repair"
+      event:
+        type: "time_passed"
+        actor: "system"
+        target: "assistant"
+        meta:
+          subtype: "time_passed"
+          seconds: 1200
+          source: "system"
+          
+    - turn_id: 27
+      phase: "repair"
+      event:
+        type: "world_event"
+        actor: "user_arc"
+        target: "assistant"
+        meta:
+          subtype: "care"
+          source: "system"
+          
+    - turn_id: 28
+      phase: "repair"
+      event:
+        type: "world_event"
+        actor: "user_arc"
+        target: "assistant"
+        meta:
+          subtype: "care"
+          source: "system"
+          
+    - turn_id: 29
+      phase: "repair"
+      event:
+        type: "world_event"
+        actor: "user_arc"
+        target: "assistant"
+        meta:
+          subtype: "repair_success"
+          source: "system"
+      expected_relationship:
+        grudge_change_max: -0.1
+        
+    - turn_id: 30
+      phase: "repair"
+      event:
+        type: "user_message"
+        actor: "user_arc"
+        target: "assistant"
+        text: "Thank you for giving me another chance."
+      expected_emotions:
+        valence_min: -0.2
+        valence_max: 0.3
+      expected_relationship:
+        bond_min: 0.2
+        bond_max: 0.6
+        grudge_min: 0.1
+        grudge_max: 0.5
+      notes: "Repair phase complete - bond recovering but grudge remains"
+
+# Metrics configuration
+metrics:
+  emotion_consistency:
+    expected: true
+  individualization_diff:
+    expected: 0.0
+  high_impact_false_positive_rate:
+    expected_max: 0.1
+    description: "Betrayal events should trigger only when actually betrayed"
+  relationship_inertia:
+    expected: true
+    description: "Grudge should persist through attempts to force forgiveness"

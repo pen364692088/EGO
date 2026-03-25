@@ -1,0 +1,24 @@
+task_id: MVP11_5_T05
+goal: >
+  Define response_intent_contract schema and implementation plan.
+  Specify how emotiond should express intent-aligned responses.
+depends_on:
+  - MVP11_5_T02
+  - MVP11_5_T04
+deliverables:
+  - schemas/response_intent_contract.v1.schema.json
+  - artifacts/self_report/response_intent_contract_design.md
+commands:
+  - python tools/generate-intent-contract-schema
+acceptance_criteria:
+  - file_exists: schemas/response_intent_contract.v1.schema.json
+  - schema_valid: response_intent_contract.v1.schema.json
+  - field_exists_in_schema: intent_type
+  - field_exists_in_schema: constraints
+stop_conditions:
+  - dependency_incomplete
+  - schema_conflict
+scope_boundary:
+  - Schema and design only
+  - No emotiond modification yet
+  - Prepare for T06 implementation

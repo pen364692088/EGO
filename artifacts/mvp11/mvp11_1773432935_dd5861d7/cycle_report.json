@@ -1,0 +1,65 @@
+{
+  "run_id": "mvp11_1773432935_dd5861d7",
+  "metrics": {
+    "events": 120,
+    "dot_ratio": 0.458333,
+    "cycle_persistence_score": 0.541667,
+    "return_time_mean": 27.15,
+    "return_time_p50": 23.0,
+    "return_time_p95": 60.0,
+    "order_invariance_score": 0.195569,
+    "order_invariance_action_multiset": 0.367423,
+    "order_invariance_goal_closure": 0.023715,
+    "obstruction_count": 8,
+    "max_out_degree": 4,
+    "branching_nodes_ratio": 0.1,
+    "unique_nodes": 80,
+    "unique_edges": 117,
+    "dominant_cycles_topK": [
+      {
+        "from": "bdc198de1543fa02",
+        "to": "ab66fcc06a7e9a08",
+        "count": 2
+      },
+      {
+        "from": "d62390376e1c980c",
+        "to": "114eeae6783ffb21",
+        "count": 2
+      },
+      {
+        "from": "10c55c4366e579f4",
+        "to": "105dd3933331039e",
+        "count": 1
+      },
+      {
+        "from": "105dd3933331039e",
+        "to": "0e943f8218d27367",
+        "count": 1
+      },
+      {
+        "from": "0e943f8218d27367",
+        "to": "bddee75ef46b52cc",
+        "count": 1
+      }
+    ],
+    "sanity": {
+      "eps": 1e-06,
+      "invariant": "cycle_persistence_score <= 1 - dot_ratio + eps",
+      "invariant_ok": true,
+      "invariant_violation": 0.0,
+      "status": "OK",
+      "possible_causes": []
+    },
+    "cycle_candidates_topK": []
+  },
+  "sanity": {
+    "eps": 1e-06,
+    "invariant": "cycle_persistence_score <= 1 - dot_ratio + eps",
+    "invariant_ok": true,
+    "invariant_violation": 0.0,
+    "status": "OK",
+    "possible_causes": []
+  },
+  "cycle_candidates_topK": [],
+  "ts": 1773432935.4694338
+}

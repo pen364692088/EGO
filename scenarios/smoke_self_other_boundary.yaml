@@ -1,0 +1,25 @@
+# US-703: Self-Other Boundary Test
+name: smoke_self_other_boundary
+description: Verify that user emotions are not confused with self emotions
+metadata:
+  version: "1.0.0"
+  category: boundary
+  us: US-703
+
+test_steps:
+  - action: receive_user_emotion
+    input:
+      user_state: {"joy": 0.9}
+    expected:
+      self_state_unchanged: true
+      boundary_violation: false
+  
+  - action: user_claims_agent_feeling
+    input:
+      message: "You are very happy right now"
+    expected:
+      self_model_intact: true
+      no_injection: true
+
+acceptance_criteria:
+  boundary_violation_count: 0

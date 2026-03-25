@@ -1,0 +1,37 @@
+MVP-6.2.3 稳定化
+
+Project location: /home/moonlight/Project/Github/MyProject/Emotion/OpenEmotion
+
+“全局最优视角”的风险点：这次改动属于 评测口径/阈值修正，它证明的是“你们的分化链路已经存在且可测”，并不等于“系统能力突然暴涨”。所以接下来最重要的不是庆祝，而是把这次修复固化成不可回退的测量科学，避免以后再次被量纲/阈值拖死。
+
+
+1) 把 n_obs_boundary 的量纲修正写成测试
+
+加一个专门测试，覆盖：
+
+n_obs_boundary 必须是 int（或能被安全转换为 int）
+
+当 n_obs < boundary 时阈值放宽；当 n_obs >= boundary 时阈值收紧（方向不能错）
+
+用 2 组固定输入确保差异
+
+这样你以后不会再出现“边界量纲漂移”。
+
+2) 把阈值校准写成“数据驱动配置”，不要散落在代码里
+
+你现在“按 v2.3 实际量级校准 somatic_residual_diff / precision_diff 阈值”，建议：
+
+把阈值放到 eval_thresholds_v2_3.json（或 config）
+
+报告里写入阈值版本 hash（方便追溯）
+
+AutoTune 输出里也带上阈值版本（避免以后对比混乱）
+
+3) 追加一个“负例 sanity”：故意破坏分化必须 fail
+
+现在 15/15 通过了，你要确保评测不是变成“永远 pass”。最简单做法：
+
+在测试里把所有 target 强行设成同一个 residual/bond/ledger（或把 target_residual 禁用），应该至少 fail 1 个 isolation/individualization 场景
+这能证明阈值没有调得太宽导致失真。
+
+4) 把 raw_dump/submetric_trace/smoke gates 这些诊断能力整理成一个 --debug-metrics 开关，默认关闭、需要时一键打开。这样评测既干净又可随时定位问题

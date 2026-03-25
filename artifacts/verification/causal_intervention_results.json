@@ -1,0 +1,100 @@
+{
+  "timestamp": "2026-03-12 19:42:30",
+  "mode": "verification-only",
+  "experiments": [
+    {
+      "experiment": "self_model_intervention",
+      "hypothesis": "Modifying self-model tension/behavioral tendency affects decision bias",
+      "tests": [
+        {
+          "name": "legacy_self_model_bias",
+          "status": "FAIL",
+          "evidence": "Exception: 'SelfModelV0' object has no attribute 'get'"
+        },
+        {
+          "name": "mvp13_tension_update",
+          "status": "FAIL",
+          "evidence": "Exception: type object 'TensionType' has no attribute 'VALUE_CONFLICT'"
+        },
+        {
+          "name": "mvp13_main_chain_wired",
+          "status": "FAIL",
+          "evidence": "core.py does NOT import SelfModelManager - uses legacy API"
+        }
+      ]
+    },
+    {
+      "experiment": "drives_intervention",
+      "hypothesis": "Modifying drive strength/homeostatic deviation affects candidate scoring",
+      "tests": [
+        {
+          "name": "legacy_drive_modulation",
+          "status": "PASS",
+          "evidence": "Modulation changes: {'risk_aversion': 0.036000000000000004, 'clarification_need': 0.027000000000000003, 'initiative_level': 0.982} -> {'risk_aversion': 0.048, 'clarification_need': 0.036000000000000004, 'initiative_level': 0.976}"
+        },
+        {
+          "name": "mvp14_drive_manager_exists",
+          "status": "PASS",
+          "evidence": "DriveManager exists with state: DriveState"
+        },
+        {
+          "name": "mvp14_main_chain_wired",
+          "status": "FAIL",
+          "evidence": "core.py does NOT import DriveManager - uses legacy drive_homeostasis"
+        },
+        {
+          "name": "drive_error_emotion",
+          "status": "PASS",
+          "evidence": "Drive error produces: 0.024"
+        }
+      ]
+    },
+    {
+      "experiment": "reflection_intervention",
+      "hypothesis": "Approved reflection proposals change future behavior",
+      "tests": [
+        {
+          "name": "legacy_reflection_callable",
+          "status": "FAIL",
+          "evidence": "Exception: run_reflection() missing 2 required positional arguments: 'target_id' and 'counterparty_id'"
+        },
+        {
+          "name": "mvp15_reflection_engine_exists",
+          "status": "FAIL",
+          "evidence": "Exception: cannot access local variable 'get_reflection_engine' where it is not associated with a value"
+        },
+        {
+          "name": "mvp15_main_chain_wired",
+          "status": "FAIL",
+          "evidence": "core.py does NOT import ReflectionEngine - uses legacy reflection.py"
+        },
+        {
+          "name": "proposal_approval_effect",
+          "status": "FAIL",
+          "evidence": "generate_proposal method not found"
+        }
+      ]
+    },
+    {
+      "experiment": "developmental_intervention",
+      "hypothesis": "Developmental state accumulates across operations",
+      "tests": [
+        {
+          "name": "episode_accumulation",
+          "status": "PASS",
+          "evidence": "Episodes: 0 -> 1"
+        },
+        {
+          "name": "metric_update",
+          "status": "FAIL",
+          "evidence": "Metric not updated: 0.825 != 0.9"
+        },
+        {
+          "name": "mvp16_main_chain_wired",
+          "status": "FAIL",
+          "evidence": "core.py does NOT import DevelopmentalManager"
+        }
+      ]
+    }
+  ]
+}

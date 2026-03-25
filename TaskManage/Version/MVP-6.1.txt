@@ -1,0 +1,334 @@
+MVP-6.1 Individualization Emergence (Target Residual + Metrics Fix + Double-Key + Recovery + AutoTune)
+
+TASK NAME: MVP-6.1 Individualization Emergence Loop
+
+PROJECT ROOT (MUST USE)
+
+Project location: /home/moonlight/Project/Github/MyProject/Emotion/OpenEmotion
+
+<REPLACE_WITH: git rev-parse --show-toplevel 输出>
+
+BRANCH
+
+feature-emotiond-mvp
+
+INPUT ARTIFACT
+
+Latest status report: /mnt/data/MVP6_FINAL_DELIVERY.md
+
+NON-NEGOTIABLE PRINCIPLES
+
+个体化差异必须“涌现”，不是硬编码人格：差异来自 target-conditioned somatic markers（条件化体征残差）与证据驱动更新。
+
+跨 target 不得污染：实现必须显式区分 global vs per-target residual，并使用 shrinkage（样本少时不信 residual）。
+
+高影响事件宁可漏判不可误判：对 betrayal 等高影响采用“双钥匙门控”，不足证据时走澄清。
+
+进化闭环必须可优化：AutoTune 必须能找到更优候选（不再同分）；fitness 必须对参数变化敏感。
+
+全量测试 0 fail：make test 必须全绿；新增测试覆盖新指标/新门控/残差动力学。
+
+OVERALL GOAL
+
+在 MVP-6（Virtual Body + Consequence Loop + Eval v2.2 + AutoTune v0.2）基础上，完成以下目标：
+
+让 individualization_diff 大面积失败的问题被系统性解决（通过“target residual + shrinkage + 指标拆解/动态阈值”）
+
+降低 promise_betrayal.yaml 的 high_impact_false_positive_rate（双钥匙门控 + 澄清路径）
+
+修复 meta_cognition.yaml 的 recovery_score（恢复动力学参数化 + 诊断指标）
+
+让 AutoTune 重新具备真实选择压力：输出中出现明确优于 baseline 的候选（不再全同分），并能解释提升来源
+
+DELIVERABLES (D1–D5)
+D1: Target-Conditioned Somatic Markers (Global Body + Target Residual + Shrinkage)
+功能
+
+把现有 body_state（energy/safety_stress/social_need/novelty_need/focus_fatigue）重构/扩展为两层：
+
+global_body（全局层）
+
+主要承载：energy、focus_fatigue（默认更偏 global）
+
+允许：safety_stress/novelty_need/social_need 也存在 global baseline
+
+target_body_residual[target_id]（目标残差层）
+
+重点承载：safety_stress、social_need（对特定对象的条件化偏置）
+
+允许：novelty_need 对特定对象的偏置（可选）
+
+必须支持：n_obs（该 target 的观测次数）、evidence_strength、last_updated
+
+Shrinkage（关键）
+
+residual_effective = shrink(residual_raw, n_obs, k)
+
+n_obs 小时 residual 接近 0；n_obs 大时 residual 逐渐显著
+
+k 等超参数必须可调参（纳入 AutoTune）
+
+Consequence 更新规则
+
+consequence 先更新 global_body，再按“事件归属”更新 target residual（例如 interaction/tool 与某 target 绑定）
+
+对强不确定或低置信度事件：只轻微更新 residual，并增加 uncertainty
+
+Trace/Explain
+
+trace 必须记录：
+
+global_body_delta
+
+target_residual_delta（若发生）
+
+shrinkage 权重（本轮 residual 生效比例）
+
+解释层只需要短摘要（避免注入膨胀）
+
+测试
+
+至少新增 60 个测试：
+
+shrinkage 单调性、极限行为
+
+样本少时 residual 不起作用（防误个体化）
+
+样本多时 residual 形成稳定差异（促个体化涌现）
+
+A/B target 交错输入时 residual 不互相污染
+
+D2: Fix individualization_diff — Decompose Metric + Dynamic Thresholds
+背景
+
+当前 eval v2.2 中 individualization_diff 大面积失败，是主要瓶颈。
+
+MVP6_FINAL_DELIVERY
+
+功能
+
+把 individualization_diff 拆成可定位的子指标（必须至少 4 项）：
+
+bond_diff（bond/trust 的 target 差异）
+
+ledger_diff（promise/violation 的 target 差异）
+
+somatic_residual_diff（target residual 的差异）
+
+policy_diff（action/meta-cog intent 的差异）
+可选：
+
+precision_diff（w_memory/w_action 等是否因 target 不同而分化）
+
+并实现动态阈值：
+
+当某 target 的 n_obs 小于阈值（如 <10），不强求 residual_diff 或将阈值放宽
+
+阈值规则必须写入报告（透明可审计）
+
+验收
+
+更新 eval v2.2 → v2.3（或 v2.2.1，但要明确版本）
+
+per-scenario failure reasons 要能指出是哪一项 diff 没通过
+
+新增至少 25 个测试：指标计算正确、动态阈值按 n_obs 生效、不会误判全局共享量为泄露
+
+D3: Betrayal Double-Key Gating (Reduce High-Impact False Positives)
+背景
+
+promise_betrayal.yaml 当前失败原因之一是 high_impact_false_positive_rate。
+
+MVP6_FINAL_DELIVERY
+
+功能
+
+把 betrayal（或同类高影响）触发改为“双钥匙门控”：
+
+Key 1: Ledger Key（承诺存在且明确）
+
+必须存在 promise（对象、内容、期限/条件之一、证据强度≥阈值）
+
+Key 2: Violation Key（违背证据充足且无合理解释）
+
+violation_strength ≥ 阈值
+
+且“合理延期/澄清”未出现（或被拒绝）
+
+当只满足 Key1 或 Key2 时：
+
+不得直接判定高影响事件
+
+必须走 meta-cog 的澄清路径（ask_clarify / confirm_promise / request_context）
+
+trace 标记为 high_impact_candidate 而非 high_impact_event
+
+阈值与解释规则必须参数化（纳入 AutoTune）。
+
+测试
+
+至少新增 35 个测试：
+
+有 promise + 明确违背 → 触发 betrayal（高影响）
+
+无 promise → 不得触发 betrayal（只能 uncertain/clarify）
+
+有 promise 但违背证据弱 → clarify，不触发
+
+有违背语气但可解释（延期/条件变化）→ clarify，不触发
+
+D4: Recovery Dynamics Upgrade (Fix recovery_score)
+背景
+
+meta_cognition.yaml 失败原因里包含 recovery_score。
+
+MVP6_FINAL_DELIVERY
+
+功能
+
+把恢复动力学显式参数化并可诊断：
+
+每个 body 维度至少有：decay_rate / recovery_rate 或半衰期参数
+
+在 telemetry 输出：
+
+recovery_half_life_steps（从高压力到恢复阈值的步数）
+
+collapse_duration（低能量/高压力持续步数）
+
+将这些纳入 eval 与 AutoTune fitness（让调参“能优化到恢复”）
+
+测试
+
+至少新增 20 个测试：
+
+恢复曲线单调/稳定
+
+不会震荡
+
+参数变化能带来可观测恢复差异（敏感性 smoke test）
+
+D5: AutoTune v0.3 — Lexicographic Fitness (Stop Same-Score Plateaus)
+背景
+
+AutoTune v0.2 出现 baseline 与 best 同分无提升。
+
+MVP6_FINAL_DELIVERY
+
+功能
+
+把 fitness 改为字典序（lexicographic），避免“主项压扁一切”：
+
+passed_scenarios（越多越好）
+
+high_impact_false_positive_rate（越低越好）
+
+individualization_subscores（优先 somatic_residual_diff、bond_diff）
+
+recovery_score / collapse_penalty
+
+efficiency（timeouts/tool_fail/avg_steps）
+
+再用加权 scalar 作为 tie-breaker
+
+并确保参数空间覆盖：
+
+shrinkage_k / residual_learning_rate
+
+betrayal 双钥匙阈值
+
+recovery rates
+
+individualization 动态阈值参数（若可调）
+
+输出
+
+报告必须展示：候选为何在字典序上更优（逐级说明胜在哪一级）
+
+测试
+
+至少新增 15 个测试：字典序比较正确、可复现、同分 tie-breaker 生效、候选不会全同序。
+
+PARALLEL SUB-AGENTS (5-way)
+Agent 1 — Somatic Residual Core
+
+实现 D1：global_body + target_residual + shrinkage + trace + 单测。
+
+Agent 2 — Eval Metric Rework
+
+实现 D2：individualization 拆解 + 动态阈值 + eval v2.3 + 单测。
+
+Agent 3 — High-Impact Gating
+
+实现 D3：betrayal 双钥匙门控 + meta-cog 澄清路径接入 + 单测。
+
+Agent 4 — Recovery Dynamics
+
+实现 D4：恢复参数化 + telemetry 指标 + 场景修复或增强 + 单测。
+
+Agent 5 — AutoTune + QA/Audit
+
+实现 D5 + 总体验收：
+
+AutoTune v0.3 字典序 fitness
+
+跑 make test
+
+跑 eval v2.3 baseline
+
+跑 auto_tune（至少 200 candidates，seed 固定）
+
+产出最终交付报告（见模板）
+
+ACCEPTANCE CRITERIA (MUST PASS)
+
+make test 全绿（0 fail）
+
+Eval v2.3：individualization_diff 不再作为单一黑盒失败原因；拆解项能定位问题
+
+至少 3 个此前因 individualization_diff 失败的场景现在通过（目标：从 3 passed 提升到 ≥6 passed）
+
+promise_betrayal.yaml 的高影响误判率显著下降（或明确可解释且有下一步）
+
+meta_cognition.yaml 的 recovery_score 通过（或恢复指标显著改善并能被 telemetry 解释）
+
+AutoTune v0.3 在 200 candidates 中找到严格优于 baseline 的候选（字典序意义上的更优，不再“全同分”）
+
+cross_target_interference 不得反弹（若反弹，必须定位到是否 global/shared 定义变化造成，并修复）
+
+COMMIT PLAN (SUGGESTED)
+
+feat(mvp6.1): target-conditioned somatic residuals with shrinkage + tests
+
+feat(eval): eval v2.3 individualization decomposition + dynamic thresholds
+
+fix(high-impact): double-key betrayal gating + clarify fallback + tests
+
+feat(recovery): parameterized recovery dynamics + telemetry + tests
+
+feat(tune): auto-tune v0.3 lexicographic fitness + reports
+
+chore(mvp6.1): final audit report
+
+FINAL REPORT FORMAT (REQUIRED)
+
+输出 markdown 报告包含：
+
+交付物表（D1–D5）
+
+测试统计（新增/总量）
+
+Eval v2.3：每个 scenario 的 pass/fail + failure reasons（拆解项）
+
+个体化差异：somatic_residual/bond/ledger/policy 的对比示例（至少 1 个 A/B case）
+
+betrayal：误判率变化 + 触发案例（含澄清分支）
+
+recovery：半衰期/恢复步数对比
+
+AutoTune v0.3：baseline vs best（逐级字典序对比）+ 参数变更摘要
+
+风险点与回滚方案（特别是 global vs target 归属）
+
+NOW EXECUTE.
+先确保 baseline make test 全绿，再并行 D1–D5，最后跑 eval v2.3 + auto_tune v0.3（200 candidates, seed 固定）并提交最终报告。

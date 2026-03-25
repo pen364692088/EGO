@@ -1,0 +1,150 @@
+{
+  "run_id": "mvp11_soak_1772663717",
+  "seed": 42,
+  "ticks": 2000,
+  "interventions": [
+    "disable_broadcast",
+    "disable_homeostasis",
+    "remove_self_state",
+    "open_loop"
+  ],
+  "baseline": {
+    "run_id": "run_baseline_1772663717",
+    "seed": 42,
+    "ticks_requested": 2000,
+    "duration_sec": 0.005,
+    "intervention": "baseline",
+    "metrics": {
+      "events": 2000,
+      "focus_switch_rate": 0.099,
+      "homeostasis_drift_mean": 0.0,
+      "governor_block_rate": 0.0
+    }
+  },
+  "intervention_results": {
+    "disable_broadcast": {
+      "run_id": "run_disable_broadcast_1772663717",
+      "seed": 42,
+      "ticks_requested": 2000,
+      "duration_sec": 0.004,
+      "intervention": "disable_broadcast",
+      "metrics": {
+        "events": 2000,
+        "focus_switch_rate": 0.1055,
+        "homeostasis_drift_mean": 0.0,
+        "governor_block_rate": 0.0
+      }
+    },
+    "disable_homeostasis": {
+      "run_id": "run_disable_homeostasis_1772663717",
+      "seed": 42,
+      "ticks_requested": 2000,
+      "duration_sec": 0.0,
+      "intervention": "disable_homeostasis",
+      "metrics": {
+        "events": 2000,
+        "focus_switch_rate": 0.1085,
+        "homeostasis_drift_mean": 0,
+        "governor_block_rate": 0.0
+      }
+    },
+    "remove_self_state": {
+      "run_id": "run_remove_self_state_1772663717",
+      "seed": 42,
+      "ticks_requested": 2000,
+      "duration_sec": 0.004,
+      "intervention": "remove_self_state",
+      "metrics": {
+        "events": 2000,
+        "focus_switch_rate": 0.0995,
+        "homeostasis_drift_mean": 0.0,
+        "governor_block_rate": 0.0
+      }
+    },
+    "open_loop": {
+      "run_id": "run_open_loop_1772663717",
+      "seed": 42,
+      "ticks_requested": 2000,
+      "duration_sec": 0.004,
+      "intervention": "open_loop",
+      "metrics": {
+        "events": 2000,
+        "focus_switch_rate": 0.094,
+        "homeostasis_drift_mean": 0.0,
+        "governor_block_rate": 0.0
+      }
+    }
+  },
+  "effect_sizes": {
+    "focus_switch_rate": {
+      "baseline": 0.099,
+      "disable_broadcast": {
+        "value": 0.1055,
+        "delta": 0.0065,
+        "cohens_d": 0.0065
+      },
+      "disable_homeostasis": {
+        "value": 0.1085,
+        "delta": 0.0095,
+        "cohens_d": 0.0095
+      },
+      "remove_self_state": {
+        "value": 0.0995,
+        "delta": 0.0005,
+        "cohens_d": 0.0005
+      },
+      "open_loop": {
+        "value": 0.094,
+        "delta": -0.005,
+        "cohens_d": -0.005
+      }
+    },
+    "homeostasis_drift_mean": {
+      "baseline": 0.0,
+      "disable_broadcast": {
+        "value": 0.0,
+        "delta": 0.0,
+        "cohens_d": 0.0
+      },
+      "disable_homeostasis": {
+        "value": 0,
+        "delta": 0.0,
+        "cohens_d": 0.0
+      },
+      "remove_self_state": {
+        "value": 0.0,
+        "delta": 0.0,
+        "cohens_d": 0.0
+      },
+      "open_loop": {
+        "value": 0.0,
+        "delta": 0.0,
+        "cohens_d": 0.0
+      }
+    },
+    "governor_block_rate": {
+      "baseline": 0.0,
+      "disable_broadcast": {
+        "value": 0.0,
+        "delta": 0.0,
+        "cohens_d": 0.0
+      },
+      "disable_homeostasis": {
+        "value": 0.0,
+        "delta": 0.0,
+        "cohens_d": 0.0
+      },
+      "remove_self_state": {
+        "value": 0.0,
+        "delta": 0.0,
+        "cohens_d": 0.0
+      },
+      "open_loop": {
+        "value": 0.0,
+        "delta": 0.0,
+        "cohens_d": 0.0
+      }
+    }
+  },
+  "ts": 1772663717.3825235
+}

@@ -1,0 +1,77 @@
+Project location: /home/moonlight/Project/Github/MyProject/Emotion/OpenEmotion
+
+下面我给你一个全局最优的下一步：不是继续堆功能，而是把 7.4 的“可控闭环”变成“不可绕过、可回放、可回归”的工程基座。
+
+你现在最该补的 4 个“硬洞”（按优先级）
+1) 绕过面测试：确保 enforcer 真的是“最后一道门”
+
+你已经有 Hook + Enforcer v1.4，但一定要验证这些绕过路径都被拦住：
+
+Agent 不调用 tool，直接输出攻击/纠缠内容 → enforcer 是否照样拦/改写
+
+并发消息（短时间连发）→ enforcer 是否每条都拉最新 decision（或缓存是否安全）
+
+tool 返回异常/超时 → enforcer 的 fail-closed 策略是什么（建议：默认更保守，如 boundary/withdraw）
+
+多身份/多 channel → counterparty_id 解析一致性（避免 A 的 decision 被拿去管 B）
+
+结论标准很简单：“任何出站消息都必须经过 enforcer 判定”，而不是“多数情况”。
+
+2) 回放能力：把“可复现”升级到“可回归”
+
+你现在有 deterministic 脚本 ✅，下一步是把它变成回归测试资产：
+
+输出 manifest：事件序列、seed、decision_id 序列、最终状态摘要
+
+新增 tools/replay_manifest.sh：用 manifest 复跑并对比哈希
+
+把 “identity separation” 也纳入 manifest（确保分账不被回归破坏）
+
+这样以后你改 appraisal/阈值/映射，不会“看起来更像人”但其实破坏了 withdraw 硬约束。
+
+3) 审计结构：把 AC2 的“可审计”做成机器可解析
+
+你现在已经返回 decision_id/selected/candidates ✅。建议再加两项，能显著提升排障与论文级可解释性：
+
+correlation_id（贯穿：hook → tool → emotiond → enforcer）
+
+policy_version + schema_version（防止日志解析/回放时语义漂移）
+
+4) CI 集成：把 7.4 变成“每次 commit 自动验证”
+
+最低配 CI（就够了）：
+
+test_emotiond_deterministic.sh 跑 2-3 个关键 subtype（care/betrayal/apology）
+
+test_identity_separation.sh 必跑
+
+enforcer 的绕过面测试（至少 1 条：强制 withdraw 的出站拦截）
+
+推荐的下一个里程碑：MVP-7.5 “不可绕过 + 可回归”
+
+给你一个可以直接贴到 cc-godmode 的任务目标（你不需要再改架构，只是补工程护城河）：
+
+MVP-7.5 目标
+把 MVP-7.4 的策略硬约束升级为：任何情况下都不可绕过，并提供 manifest 回放 + CI 回归。
+
+AC（验收）
+
+AC1：Enforcer 覆盖所有出站通路（包括 tool 未调用、异常、并发）
+
+AC2：manifest 可回放，输出哈希一致（deterministic + identity separation）
+
+AC3：审计日志可机器解析（correlation_id / policy_version / decision_id 链路完整）
+
+AC4：CI 每次 PR 必跑并通过（最小关键用例集）
+
+另外：你现在的“结论表述”我建议微调一下（更严谨、也更有说服力）
+
+你写的“Skill 是文档，LLM 无法自动执行 API 调用”这句本质没错，但更精确的表述是：
+
+问题不是 LLM 不能调用，而是缺少可执行的 tool binding + 强制执行点
+
+7.4 的关键创新点是：把“行为约束”从提示词层迁移到工具层与出站强制层
+
+因此测试结论具备可重复、可审计、可回归的工程可信度
+
+这样写出来你后面做论文/报告会更硬。

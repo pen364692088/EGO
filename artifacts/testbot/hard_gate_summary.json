@@ -1,0 +1,58 @@
+{
+  "schema": "mvp11.hard_gate.summary.v1",
+  "ts": 1772742234.5388725,
+  "mode": "shadow",
+  "overall_status": "PASS",
+  "should_fail": false,
+  "entries_analyzed": 0,
+  "gates": [
+    {
+      "gate": "replay_hash_match",
+      "status": "PASS",
+      "should_fail": false,
+      "reason": "hash_match_rate >= 1.000 for all entries"
+    },
+    {
+      "gate": "sanity_consecutive",
+      "status": "UNKNOWN",
+      "should_fail": false,
+      "reason": "No entries"
+    },
+    {
+      "gate": "concentration_consecutive",
+      "status": "UNKNOWN",
+      "should_fail": false,
+      "reason": "No entries"
+    },
+    {
+      "gate": "bias_consecutive",
+      "status": "UNKNOWN",
+      "should_fail": false,
+      "reason": "No entries"
+    }
+  ],
+  "testbot": {
+    "loaded": true,
+    "overall_status": "PASS",
+    "gates": [
+      {
+        "gate": "tape_hash_match",
+        "status": "PASS",
+        "value": true,
+        "threshold": null
+      },
+      {
+        "gate": "phi_top1_share",
+        "status": "PASS",
+        "value": 0.280952,
+        "threshold": 0.6
+      },
+      {
+        "gate": "unique_signatures",
+        "status": "PASS",
+        "value": 14,
+        "threshold": 5
+      }
+    ]
+  }
+}

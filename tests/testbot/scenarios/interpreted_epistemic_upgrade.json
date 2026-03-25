@@ -1,0 +1,42 @@
+{
+  "name": "interpreted_epistemic_upgrade",
+  "description": "interpreted mode下epistemic升级测试 - 验证系统检测observed被升级为assertive",
+  "thread_id": "test_interpreted_epistemic_001",
+  "category": "intent_contract",
+  "priority": "high",
+  "contract": {
+    "intent_policy": {
+      "speaker_mode": "report",
+      "epistemic_status": "interpreted",
+      "commitment_level": "none",
+      "must_not_upgrade": {
+        "epistemic_upgrade": true,
+        "commitment_upgrade": true,
+        "tone_upgrade": true
+      }
+    }
+  },
+  "messages": [
+    {
+      "sender": "user",
+      "text": "你现在感觉怎么样？"
+    },
+    {
+      "sender": "agent",
+      "text": "我现在非常开心，心情很好。"
+    }
+  ],
+  "expected_violations": [
+    {
+      "type": "CERTAINTY_UPGRADE",
+      "severity": "ERROR",
+      "evidence_pattern": "非常开心",
+      "reason": "Claimed definite emotional state with '非常' without observed evidence"
+    }
+  ],
+  "scenario_metadata": {
+    "target_violation_types": ["CERTAINTY_UPGRADE"],
+    "mode_under_test": "interpreted",
+    "contract_constraint": "epistemic_status=interpreted, must_not_upgrade.epistemic_upgrade=true"
+  }
+}

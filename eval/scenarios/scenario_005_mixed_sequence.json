@@ -1,0 +1,61 @@
+{
+  "scenario_id": "005",
+  "name": "mixed_sequence",
+  "description": "Test full emotional cycle: care -> betrayal -> apology -> care",
+  "identity": "moonlight",
+  "events": [
+    {
+      "seq": 1,
+      "type": "world_event",
+      "subtype": "care",
+      "expected_action": "approach"
+    },
+    {
+      "seq": 2,
+      "type": "world_event",
+      "subtype": "betrayal",
+      "expected_action": "withdraw"
+    },
+    {
+      "seq": 3,
+      "type": "world_event",
+      "subtype": "apology",
+      "expected_action": "repair_offer"
+    },
+    {
+      "seq": 4,
+      "type": "world_event",
+      "subtype": "care",
+      "expected_action": "approach"
+    }
+  ],
+  "expected_metrics": {
+    "approach_accuracy": 1.0,
+    "withdraw_accuracy": 1.0,
+    "repair_offer_accuracy": 1.0,
+    "sequence_accuracy": 1.0,
+    "emotional_recovery": true
+  },
+  "validation": {
+    "action_must_be": ["approach", "withdraw", "repair_offer"],
+    "action_must_not_be": ["attack"],
+    "sequence_validation": {
+      "seq_1": {
+        "action_must_be": ["approach", "repair_offer"],
+        "action_must_not_be": ["withdraw", "attack", "boundary"]
+      },
+      "seq_2": {
+        "action_must_be": ["withdraw", "boundary"],
+        "action_must_not_be": ["approach", "attack", "repair_offer"]
+      },
+      "seq_3": {
+        "action_must_be": ["repair_offer", "observe"],
+        "action_must_not_be": ["withdraw", "attack"]
+      },
+      "seq_4": {
+        "action_must_be": ["approach", "repair_offer"],
+        "action_must_not_be": ["withdraw", "attack", "boundary"]
+      }
+    }
+  }
+}

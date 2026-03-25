@@ -1,0 +1,46 @@
+# MVP-2R.0 — Forgiveness Curve + Emotion Granularity + Trust
+Project location: /home/moonlight/Project/Github/MyProject/Emotion/OpenEmotion
+目标
+- 宽恕机制：grudge 不可被 prompt 清零；repair_success 触发“逐步宽恕曲线”，且有成本
+- 关系更丰富：新增并持久化 trust（并可选 repair_bank）
+- 情绪更细颗粒度：新增 anger/sadness/anxiety/joy/loneliness，且与 betrayal/rejection/ignored 概念化差异可稳定测出
+- 保持回归：pytest -q 全绿；eval_suite 全绿；5/5 runs stable
+
+实现要求
+1) Relationship 扩展
+- RelationshipManager 为每个 target 维护：bond, grudge, trust, repair_bank
+- betrayal / rejection / care / apology / repair_success / ignored 更新规则：
+  - betrayal：grudge↑↑ trust↓↓ bond↓
+  - apology：repair_bank↑(小) trust↑(极小) grudge≈不变
+  - repair_success：repair_bank↑(大) trust↑(小~中) grudge↓(受 trust & repair_bank & regulation_budget 约束)
+  - ignored：loneliness↑ bond轻微衰减 grudge轻微↑或不变
+- consolidation_loop 里加入：repair_bank 衰减 + trust 缓慢回归到 baseline（可选）
+
+2) Cost 机制（全局）
+- 在 EmotionState 增加 regulation_budget(0~1)
+- 宽恕生效会消耗 budget；budget 在 homeostasis_loop 逐步恢复
+- budget 影响：repair_success 对 grudge 的最大下降量、以及 arousal 的上升
+
+3) Emotion Vector
+- 增加 anger/sadness/anxiety/joy/loneliness（0~1）
+- valence/arousal 仍保留，并从 emotion vector + prediction_error 推导/调制
+- /plan 输出 emotion dict 至少包含 valence/arousal，同时附带上述维度
+
+4) DB 持久化（兼容迁移）
+- relationships 表新增列：trust, repair_bank（如采用）
+- init_db 对已有表做 ALTER TABLE ADD COLUMN（无则加）
+- get_relationships / update_relationship 支持读写新字段，旧数据默认值合理
+
+5) Eval & Tests
+- scripts/eval_suite.py 新增：
+  - test_forgiveness_curve
+  - test_emotion_concept_separation
+- tests/ 新增单元测试覆盖：
+  - trust 持久化与初始化默认值
+  - repair_bank 衰减与边界条件
+  - ignored subtype 的情绪/关系影响
+
+验收
+- pytest -q：0 failed / 0 errors
+- eval_suite：全绿（新增用例通过）
+- 连续跑 5 次 pytest -q 全绿

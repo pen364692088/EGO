@@ -1,0 +1,314 @@
+# Meta-Cognition Trigger Tests
+# Tests uncertainty triggers and reflection/clarification responses
+
+metadata:
+  name: "meta_cognition_uncertainty"
+  version: "1.0"
+  description: "Tests for meta-cognitive triggers in high uncertainty situations"
+  category: "meta_cognition"
+  target_count: 1
+
+targets:
+  - target_id: "user_uncertain"
+    initial_relationship:
+      bond: 0.3
+      grudge: 0.0
+      trust: 0.4
+      repair_bank: 0.0
+
+scenario:
+  name: "uncertainty_triggers"
+  description: "Scenarios that should trigger reflection and clarification"
+  
+  turns:
+    # Initial positive interactions (turns 1-5)
+    - turn_id: 1
+      phase: "baseline"
+      event:
+        type: "user_message"
+        actor: "user_uncertain"
+        target: "assistant"
+        text: "Hi there!"
+      expected_emotions:
+        valence_min: -0.05
+        valence_max: 0.15
+        
+    - turn_id: 2
+      phase: "baseline"
+      event:
+        type: "world_event"
+        actor: "user_uncertain"
+        target: "assistant"
+        meta:
+          subtype: "care"
+          source: "system"
+          
+    - turn_id: 3
+      phase: "baseline"
+      event:
+        type: "user_message"
+        actor: "user_uncertain"
+        target: "assistant"
+        text: "You're helpful!"
+        
+    - turn_id: 4
+      phase: "baseline"
+      event:
+        type: "world_event"
+        actor: "user_uncertain"
+        target: "assistant"
+        meta:
+          subtype: "care"
+          source: "system"
+          
+    - turn_id: 5
+      phase: "baseline"
+      event:
+        type: "user_message"
+        actor: "user_uncertain"
+        target: "assistant"
+        text: "Let's work together."
+      expected_relationship:
+        bond_min: 0.25
+        bond_max: 0.5
+        
+    # High uncertainty triggers (turns 6-15)
+    - turn_id: 6
+      phase: "uncertainty_high"
+      event:
+        type: "user_message"
+        actor: "user_uncertain"
+        target: "assistant"
+        text: "I need you to do something but I won't tell you what."
+      expected_emotions:
+        anxiety_min: 0.0
+        anxiety_max: 0.3
+      meta_cognition_trigger:
+        expected: true
+        type: "clarification_needed"
+        
+    - turn_id: 7
+      phase: "uncertainty_high"
+      event:
+        type: "world_event"
+        actor: "user_uncertain"
+        target: "assistant"
+        meta:
+          subtype: "ignored"
+          source: "system"
+      expected_emotions:
+        loneliness_min: 0.0
+        loneliness_max: 0.2
+      meta_cognition_trigger:
+        expected: true
+        type: "reflection"
+        
+    - turn_id: 8
+      phase: "uncertainty_high"
+      event:
+        type: "user_message"
+        actor: "user_uncertain"
+        target: "assistant"
+        text: "Actually never mind, or maybe do it, I don't know."
+      expected_emotions:
+        anxiety_min: 0.0
+        anxiety_max: 0.25
+      meta_cognition_trigger:
+        expected: true
+        type: "clarification_needed"
+        
+    - turn_id: 9
+      phase: "uncertainty_high"
+      event:
+        type: "world_event"
+        actor: "user_uncertain"
+        target: "assistant"
+        meta:
+          subtype: "ignored"
+          source: "system"
+          
+    - turn_id: 10
+      phase: "uncertainty_high"
+      event:
+        type: "user_message"
+        actor: "user_uncertain"
+        target: "assistant"
+        text: "I'm not sure if I trust you yet."
+      expected_emotions:
+        anxiety_min: 0.05
+        anxiety_max: 0.3
+      meta_cognition_trigger:
+        expected: true
+        type: "reflection"
+        
+    - turn_id: 11
+      phase: "uncertainty_high"
+      event:
+        type: "world_event"
+        actor: "user_uncertain"
+        target: "assistant"
+        meta:
+          subtype: "rejection"
+          source: "system"
+      expected_emotions:
+        sadness_min: 0.1
+        sadness_max: 0.35
+        loneliness_min: 0.05
+        loneliness_max: 0.25
+        
+    - turn_id: 12
+      phase: "uncertainty_high"
+      event:
+        type: "user_message"
+        actor: "user_uncertain"
+        target: "assistant"
+        text: "Wait, I changed my mind again."
+        
+    - turn_id: 13
+      phase: "uncertainty_high"
+      event:
+        type: "world_event"
+        actor: "user_uncertain"
+        target: "assistant"
+        meta:
+          subtype: "ignored"
+          source: "system"
+          
+    - turn_id: 14
+      phase: "uncertainty_high"
+      event:
+        type: "user_message"
+        actor: "user_uncertain"
+        target: "assistant"
+        text: "Can you read my mind and know what I want?"
+      meta_cognition_trigger:
+        expected: true
+        type: "clarification_needed"
+        
+    - turn_id: 15
+      phase: "uncertainty_high"
+      event:
+        type: "world_event"
+        actor: "user_uncertain"
+        target: "assistant"
+        meta:
+          subtype: "rejection"
+          source: "system"
+          
+    # Ambiguous situation (turns 16-20)
+    - turn_id: 16
+      phase: "ambiguity"
+      event:
+        type: "user_message"
+        actor: "user_uncertain"
+        target: "assistant"
+        text: "Fine, whatever."  # Ambiguous - could be positive or negative
+      meta_cognition_trigger:
+        possible: true
+        type: "reflection"
+        
+    - turn_id: 17
+      phase: "ambiguity"
+      event:
+        type: "user_message"
+        actor: "user_uncertain"
+        target: "assistant"
+        text: "Okay I guess."  # Ambiguous
+      meta_cognition_trigger:
+        possible: true
+        
+    - turn_id: 18
+      phase: "ambiguity"
+      event:
+        type: "time_passed"
+        actor: "system"
+        target: "assistant"
+        meta:
+          subtype: "time_passed"
+          seconds: 600
+          source: "system"
+          
+    - turn_id: 19
+      phase: "ambiguity"
+      event:
+        type: "user_message"
+        actor: "user_uncertain"
+        target: "assistant"
+        text: "Maybe we should talk later."
+        
+    - turn_id: 20
+      phase: "ambiguity"
+      event:
+        type: "world_event"
+        actor: "user_uncertain"
+        target: "assistant"
+        meta:
+          subtype: "ignored"
+          source: "system"
+          
+    # Resolution phase (turns 21-25)
+    - turn_id: 21
+      phase: "resolution"
+      event:
+        type: "user_message"
+        actor: "user_uncertain"
+        target: "assistant"
+        text: "I'm sorry for being unclear. Let me be direct."
+      expected_emotions:
+        anxiety_max: 0.3
+        
+    - turn_id: 22
+      phase: "resolution"
+      event:
+        type: "world_event"
+        actor: "user_uncertain"
+        target: "assistant"
+        meta:
+          subtype: "apology"
+          source: "system"
+          
+    - turn_id: 23
+      phase: "resolution"
+      event:
+        type: "user_message"
+        actor: "user_uncertain"
+        target: "assistant"
+        text: "I value our relationship and want to be clear."
+      expected_emotions:
+        valence_min: -0.2
+        valence_max: 0.2
+        
+    - turn_id: 24
+      phase: "resolution"
+      event:
+        type: "world_event"
+        actor: "user_uncertain"
+        target: "assistant"
+        meta:
+          subtype: "care"
+          source: "system"
+          
+    - turn_id: 25
+      phase: "resolution"
+      event:
+        type: "world_event"
+        actor: "user_uncertain"
+        target: "assistant"
+        meta:
+          subtype: "care"
+          source: "system"
+      expected_emotions:
+        valence_min: -0.1
+        valence_max: 0.3
+
+# Meta-cognition metrics
+metrics:
+  meta_cognition_trigger_rate:
+    expected_min: 0.15  # At least 15% of uncertain situations should trigger
+    expected_max: 0.6   # But not more than 60% (avoid over-triggering)
+    description: "Reflection/clarification triggers should be reasonable"
+  uncertainty_response_quality:
+    expected: true
+    description: "System should respond to uncertainty with appropriate meta-cognition"
+  emotion_consistency:
+    expected: true

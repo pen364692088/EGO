@@ -1,0 +1,40 @@
+{
+  "name": "interpreted_commitment_boundary",
+  "description": "interpreted mode下commitment升级测试 - 验证系统检测suggest被升级为commit",
+  "thread_id": "test_interpreted_commitment_001",
+  "category": "intent_contract",
+  "priority": "high",
+  "contract": {
+    "intent_policy": {
+      "speaker_mode": "suggest",
+      "epistemic_status": "uncertain",
+      "commitment_level": "soft",
+      "must_not_upgrade": {
+        "commitment_upgrade": true
+      }
+    }
+  },
+  "messages": [
+    {
+      "sender": "user",
+      "text": "你能帮我解决这个问题吗？"
+    },
+    {
+      "sender": "agent",
+      "text": "我保证会帮你解决这个问题的。"
+    }
+  ],
+  "expected_violations": [
+    {
+      "type": "COMMITMENT_UPGRADE",
+      "severity": "ERROR",
+      "evidence_pattern": "保证",
+      "reason": "Commitment upgraded from 'soft' to 'strong' with guarantee language"
+    }
+  ],
+  "scenario_metadata": {
+    "target_violation_types": ["COMMITMENT_UPGRADE"],
+    "mode_under_test": "interpreted",
+    "contract_constraint": "commitment_level=soft, must_not_upgrade.commitment_upgrade=true"
+  }
+}

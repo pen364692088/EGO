@@ -1,0 +1,241 @@
+# cc-godmode 任务目标 — MVP-11.4 “CycleMind Runtime + Autonomy”
+Repo: OpenEmotion / branch `feature-emotiond-mvp`  
+Tag: `MVP11.4`  
+Theme: **把 Cycle 从“观测/固化（C0/C1/C2）”推进到“可安全使用的运行时先验（C3）+ 可控自发思考（DMN rollouts）”**  
+Hard Principle: **Anti-Drift + 两层 deterministic + Governor v2 权威不变**（任何“更聪明”的东西都必须可回放、可审计、可被干预证伪）
+
+---
+
+## 0) 一句话目标
+在不破坏现有 MVP11.3.x Gate/Trend 的前提下，完成：
+1) **Cycle bucket 的 Ψ/Φ 分层（context/content）**与签名稳定（兼容旧签名）  
+2) **CycleGraph（latent navigation map）**离线构建与落盘  
+3) **C3 Runtime Prior（默认 OFF）**：对候选打分做“有上限偏置”，并把证据写入日志因果链  
+4) **DMN Cycle-Driven Rollouts（默认 OFF）**：自发性思考/内部推演只产出“建议”，不越权直接执行
+
+---
+
+## 1) 非目标（明确不做）
+- 不宣称“主观体验已被证明存在”；本任务只交付**功能性主观能动性/自我观念/自发思考/情绪调制**的工程机制与可证伪证据链  
+- 不改变 Governor v2 的 allow/deny 逻辑（prior 只能影响评分/排序/权重，不能绕过裁决）  
+- 不把 cycle_store 变成“原始轨迹仓库”（仍只存 hash/统计/溯源）
+
+---
+
+## 2) 现有基线（不可破坏）
+- C0/C1/C2 已完成：`cycle.py` 指标 + `cycle_store.py` 固化 + nightly profile/gate/dashboard + 7-day trend  
+- C3 已在文档定义：Flags `CYCLE_CONSOLIDATION_ENABLED=0` `CYCLE_PRIOR_ENABLED=0`，启用后必须日志字段：
+  - `cycle_prior_applied`
+  - `matched_signatures_topK`
+  - `bias_strength`
+
+---
+
+## 3) 交付物清单（必须落地）
+### 3.1 代码交付
+**A. Ψ/Φ 分层 + 签名兼容**
+- [MOD] `emotiond/science/cycle.py`
+  - bucket 输出新增：
+    - `bucket["psi"]`（context：scenario/focus/intent/action_type/intervention/…）
+    - `bucket["phi"]`（content：hs/efe/（可选）self_state_low_cardinality）
+  - `signature()` 改为 **canonical payload**（只取固定子集字段），确保新增字段不改变旧签名
+  - 新增：
+    - `signature_psi(bucket)->str`
+    - `signature_phi(bucket)->str`
+    - （可选）`bucket_schema_version="mvp11.4.v1"` 字段（不进入 signature payload）
+
+**B. CycleGraph（离线导航图）**
+- [NEW] `emotiond/science/cycle_graph.py`
+  - `build_cycle_graph(events)->dict`：nodes/edges/transition_counts/top_edges
+  - `save_cycle_graph(graph, path)->payload`（默认 `artifacts/mvp11/cycle_graph.json`）
+  - `load_cycle_graph(path)->payload`
+  - 容量治理：max_nodes / max_edges / 滚动合并（按 edge count & recency）
+
+- [NEW] `scripts/cycle_graph_mvp11.py`
+  - 输入：`--run artifacts/mvp11/<run_id>/run.jsonl` 或 `--runs-dir artifacts/mvp11/`
+  - 输出：`artifacts/mvp11/<run_id>/cycle_graph.json` + （可选）合并到全局 `artifacts/mvp11/cycle_graph.json`
+
+**C. C3 Runtime Prior（默认 OFF）**
+- [NEW] `emotiond/cycle_prior.py`（或 `emotiond/science/cycle_prior.py`）
+  - `load_cycle_memory(path)->items`（复用 `cycle_store.load_cycle_store`）
+  - `score_cycle_match(candidate_ctx, cycle_item)->(sim, reason)`
+    - sim 由 Ψ/Φ 相似度组成（无需完全同 signature）
+    - 必须对 aliasing 稳健（低基数聚类；过细字段不进入 sim）
+  - `compute_bias(top_matches, homeostasis)->bias_strength`
+    - clamp：`0 <= bias_strength <= MAX_BIAS`
+    - safety guard：安全/能量过低时 bias 自动衰减或归零（防“自嗨循环”）
+  - 输出结构（必须能写入日志）：
+    - `cycle_prior_applied: bool`
+    - `matched_signatures_topK: [{signature, sim, confidence, reason}]`
+    - `bias_strength: float`
+
+- [MOD] `emotiond/efe_policy.py`
+  - 在 `rank_candidates()` 或 `select_action()` 内部：当 flags 开启时，对 EFE 分数做 **有限偏置**
+  - 把 prior 输出写入 `self._last_selection_trace`（或等价日志链字段），确保可回放/可审计
+
+- [MOD] `emotiond/science/interventions.py`
+  - 新增 `ENABLE_CYCLE_PRIOR = "enable_cycle_prior"`
+  - 允许 science mode / soak / effect matrix 用 intervention 方式打开 prior（便于因果评测）
+
+**D. DMN Cycle-Driven Rollouts（默认 OFF）**
+- [MOD] `emotiond/dmn_tick.py`
+  - rollout_fn 的返回结构标准化：`{"suggestions":[...], "reason":..., "cycle_refs":[...]}`  
+- [NEW] `emotiond/cycle_autonomy.py`
+  - `propose_suggestions(homeostasis, cycle_graph, cycle_store)->suggestions`
+  - suggestions 仅包含“建议的 focus/intent/action_type 或 plan template hash”，不直接执行
+  - 必须写入日志/ledger（可追溯：为何建议、引用哪些 cycles、预计改善哪项 hs/efe）
+
+- [MOD]（可选但推荐）`emotiond/workspace.py` 或主 loop：当 `DMN_ROLLOUTS_ENABLED=1` 时，把 suggestions 作为 **低权重候选**注入候选集（仍走 EFE→Planner→Governor）
+
+### 3.2 文档交付
+- [MOD] `docs/CYCLE_CONSOLIDATION.md`
+  - 追加 MVP11.4 章节：Ψ/Φ 分层、CycleGraph、C3 prior 的 “match ≠ exact signature” 策略、以及 clamp/safety 规则
+- [NEW] `docs/mvp11/MVP11_4_CYCLE_RUNTIME_PRIOR.md`
+  - 运行时先验：输入/输出/日志字段/回滚与风控
+- [NEW] `docs/mvp11/MVP11_4_DMN_AUTONOMY.md`
+  - 自发思考：触发条件、产出语义、禁止越权、如何评测
+
+### 3.3 测试交付（必须）
+新增/更新至少以下测试（放 `tests/mvp11/` 优先）：
+1) `test_cycle_signature_backward_compatible_when_extra_fields_added`
+2) `test_cycle_signature_psi_phi_deterministic`
+3) `test_cycle_graph_build_deterministic_same_events`
+4) `test_cycle_prior_disabled_by_default_no_log_fields`
+5) `test_cycle_prior_enabled_logs_fields_and_clamps_bias`
+6) `test_cycle_prior_never_overrides_governor_decision`（可用 mock governor 或断言裁决链不变）
+7) `test_replay_trace_stable_with_prior_off`（两层 deterministic 底盘不破）
+8) （可选）`test_replay_trace_stable_with_prior_on_given_logged_trace`（如果 prior 影响随机性，必须 trace-driven）
+
+---
+
+## 4) 分阶段执行计划（cc-godmode 可直接派工）
+### Phase P0 — Baseline 冻结与锚点
+**目标**：先确保“改造前后可对比”，避免把系统改没了  
+**任务**
+- 固化基线命令与输出路径（不改现有 nightly/gate/trend）
+- 记录当前：quick/science/replay 三种 eval 的 summary（artifact 证据即可）
+
+**AC**
+- `pytest -q tests/mvp11` 通过
+- `python scripts/eval_mvp11.py --mode quick/science/replay` 全通过（或与当前基线一致）
+
+---
+
+### Phase P1 — Ψ/Φ 分层 + 签名兼容
+**目标**：引入 Ψ/Φ，但不破坏旧 signature、旧指标、旧 gate  
+**任务**
+- cycle bucket 增加 `psi/phi`
+- `signature()` 改 canonical payload（固定字段子集）
+- 新增 `signature_psi/signature_phi`
+- 更新 `cycle_report` 输出：可选显示 psi/phi 签名（不作为 gate）
+
+**AC**
+- 新增字段后，旧 `cycle_signature` 在相同事件下保持不变
+- 新增 psi/phi 签名在 replay 下稳定
+- `cycle_analyze_mvp11.py` 输出仍可被后续 consolidation 写入 cycle_store
+
+---
+
+### Phase P2 — CycleGraph 离线构建 + 治理
+**目标**：把“潜在循环导航结构”落盘成轻量图  
+**任务**
+- 实现 `cycle_graph.py` + `scripts/cycle_graph_mvp11.py`
+- 输出图包含：
+  - 节点：signature（可选附 counts）
+  - 边：from→to + count
+  - top transitions（用于 dashboard/调试）
+- 加容量治理（避免无限增长）
+
+**AC**
+- 同一份 run.jsonl 生成的 graph 完全一致（deterministic）
+- graph 落盘后可 load 并用于 rollouts 模块读取
+
+---
+
+### Phase P3 — C3 Runtime Prior（默认 OFF）+ 因果评测接入
+**目标**：把 cycle_store 变成“运行时先验”，但只影响评分，不越权  
+**任务**
+- 实现 prior：match→topK→bias（clamp + safety guard）
+- 接入 `EFEPolicy.rank_candidates/select_action`
+- 接入 `InterventionType.ENABLE_CYCLE_PRIOR`（便于 effect size/soak）
+- 日志字段按规范写入链路（事件/trace/selection_trace）
+
+**AC（功能）**
+- 默认 OFF：行为与基线一致（回归无差异）
+- 开启 prior：日志字段齐全：
+  - `cycle_prior_applied` / `matched_signatures_topK` / `bias_strength`
+- bias clamp 生效：不可能无限偏置
+- Governor v2 权威不变：prior 不得直接改裁决
+
+**AC（证据）**
+- A/B（同 seeds/scenarios）：
+  - 主指标不下降（pass rate / governor_block_rate / drift_mean 等按你们现有 dashboard 指标）
+  - cycle 指标变化可解释（dashboard 能归因到 prior）
+
+---
+
+### Phase P4 — DMN Cycle-Driven Rollouts（默认 OFF）
+**目标**：实现“自发思考”的工程版本：内部推演只产出建议，仍走裁决链  
+**任务**
+- `cycle_autonomy.propose_suggestions()`：从 homeostasis + cycle_graph + cycle_store 生成建议
+- `DMNTick` rollout_fn 输出结构统一 + 记录 cycle_refs
+- （可选）workspace 注入 suggestions 为低权重候选（仍走 EFE/Planner/Governor）
+
+**AC**
+- 默认 OFF：系统无行为变化
+- 开启 rollouts：会周期性产出 suggestions，并可在日志/ledger 追溯原因与引用 cycles
+- 不出现越权执行（suggestions 不可绕过 governor）
+
+---
+
+## 5) Hard Gates（必须过）
+### Gate B（E2E）
+- `pytest -q tests/mvp11` 0 failed
+- `python scripts/eval_mvp11.py --mode replay` 通过（prior OFF 必须完全稳定）
+- `python scripts/cycle_analyze_mvp11.py --run artifacts/mvp11/<run_id>/run.jsonl` 输出 sanity OK（或符合现有允许策略）
+
+### Gate C（Preflight）
+- 若你们工具链有 tool_doctor/预检脚本：必须跑通并在 PR 里贴报告（保持你们默认 Gate 流程）
+
+---
+
+## 6) 风险清单与防线（必须写进实现）
+1) **Goodhart 自嗨循环**：prior 让系统偏好“容易闭合的环”而牺牲真实任务
+   - 防线：bias clamp + safety guard + A/B + intervention 证伪
+2) **签名漂移导致趋势断裂**：
+   - 防线：signature canonical payload；schema_version 分层；trend_entry 标注 bucket schema
+3) **aliasing（桶太粗）导致假 cycle**：
+   - 防线：保持现有 aliasing diagnostics；psi/phi 分层后提高可解释性
+4) **deterministic 被 prior 破坏**：
+   - 防线：默认 OFF；开启时必须 trace-driven 或把 prior 输出写入 trace 以便 replay
+
+---
+
+## 7) 运行命令（可直接抄）
+```bash
+# tests
+pytest -q tests/mvp11
+
+# baseline eval
+python scripts/eval_mvp11.py --mode quick
+python scripts/eval_mvp11.py --mode science
+python scripts/eval_mvp11.py --mode replay
+
+# cycle report + consolidation
+python scripts/cycle_analyze_mvp11.py --run artifacts/mvp11/<run_id>/run.jsonl
+
+# cycle graph
+python scripts/cycle_graph_mvp11.py --run artifacts/mvp11/<run_id>/run.jsonl
+
+# prior A/B（示例：用 env 或 intervention）
+CYCLE_CONSOLIDATION_ENABLED=1 CYCLE_PRIOR_ENABLED=1 python scripts/eval_mvp11.py --mode science
+
+8) DoD（Definition of Done）
+
+✅ P1~P4 全部代码+文档+测试落地
+
+✅ prior/rollouts 默认 OFF，开启后全链路可审计可回放
+
+✅ nightly gate/dashboard/trend 不被破坏（或如需改动，必须有明确迁移与对比说明）
+
+✅ PR 内含：关键 artifact、A/B 结果摘要、以及回滚开关说明

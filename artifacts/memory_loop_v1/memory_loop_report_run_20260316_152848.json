@@ -1,0 +1,123 @@
+{
+  "run_id": "run_20260316_152848",
+  "timestamp": "2026-03-16T15:28:48.293170+00:00",
+  "cases": [
+    {
+      "case_id": "case_1",
+      "description": "\u5355\u4e8b\u4ef6\u5199\u5165\u9a8c\u8bc1",
+      "events": [
+        {
+          "event_type": "user_message",
+          "actor": "test_user",
+          "target": "assistant",
+          "content": "\u4f60\u597d\uff0c\u8fd9\u662f\u7b2c\u4e00\u6761\u6d4b\u8bd5\u6d88\u606f"
+        }
+      ],
+      "results": {
+        "episodic_retrieved": true,
+        "narrative_updated": true
+      },
+      "errors": [],
+      "artifacts": {
+        "case_1": "/home/moonlight/Project/Github/MyProject/Emotion/OpenEmotion/artifacts/memory_loop_v1/case_1_evt_177a8862da39.json"
+      }
+    },
+    {
+      "case_id": "case_2",
+      "description": "\u540c\u4e3b\u9898\u591a\u4e8b\u4ef6\u805a\u5408\u9a8c\u8bc1",
+      "events": [
+        {
+          "event_type": "user_message",
+          "actor": "test_user_2",
+          "target": "assistant",
+          "content": "\u6211\u60f3\u5b66\u4e60 Python"
+        },
+        {
+          "event_type": "user_message",
+          "actor": "test_user_2",
+          "target": "assistant",
+          "content": "\u8bf7\u63a8\u8350\u4e00\u4e9b Python \u6559\u7a0b"
+        },
+        {
+          "event_type": "user_message",
+          "actor": "test_user_2",
+          "target": "assistant",
+          "content": "Python \u6709\u4ec0\u4e48\u597d\u7684\u9879\u76ee\u53ef\u4ee5\u7ec3\u4e60\uff1f"
+        }
+      ],
+      "results": {
+        "events_aggregated": true
+      },
+      "errors": [],
+      "artifacts": {
+        "case_2": "/home/moonlight/Project/Github/MyProject/Emotion/OpenEmotion/artifacts/memory_loop_v1/case_2_test_user_2.json"
+      }
+    },
+    {
+      "case_id": "case_3",
+      "description": "\u7b56\u7565\u5c42\u63d0\u5347\u9a8c\u8bc1",
+      "events": [
+        {
+          "event_type": "user_message",
+          "actor": "policy_test_user",
+          "target": "assistant",
+          "content": "\u4ee5\u540e\u9047\u5230\u4ee3\u7801\u95ee\u9898\uff0c\u8bf7\u5148\u7ed9\u51fa\u8c03\u8bd5\u6b65\u9aa4"
+        },
+        {
+          "event_type": "user_message",
+          "actor": "policy_test_user",
+          "target": "assistant",
+          "content": "\u597d\u7684\uff0c\u8fd9\u4e2a\u504f\u597d\u6211\u8bb0\u4f4f\u4e86"
+        }
+      ],
+      "results": {
+        "policy_stored": true
+      },
+      "errors": [],
+      "artifacts": {
+        "case_3": "/home/moonlight/Project/Github/MyProject/Emotion/OpenEmotion/artifacts/memory_loop_v1/case_3_policy_test_user.json"
+      }
+    },
+    {
+      "case_id": "case_4",
+      "description": "\u91cd\u590d\u89e6\u53d1\u4e0e\u56de\u6d41\u9a8c\u8bc1",
+      "events": [
+        {
+          "event_type": "user_message",
+          "actor": "repeat_test_user",
+          "target": "assistant",
+          "content": "\u8fd9\u662f\u4e00\u4e2a\u91cd\u590d\u573a\u666f\u6d4b\u8bd5"
+        },
+        {
+          "event_type": "user_message",
+          "actor": "repeat_test_user",
+          "target": "assistant",
+          "content": "\u8fd9\u662f\u4e00\u4e2a\u91cd\u590d\u573a\u666f\u6d4b\u8bd5"
+        }
+      ],
+      "results": {
+        "events_recorded": true,
+        "memory_affects_output": true
+      },
+      "errors": [],
+      "artifacts": {
+        "case_4": "/home/moonlight/Project/Github/MyProject/Emotion/OpenEmotion/artifacts/memory_loop_v1/case_4_repeat_test_user.json"
+      }
+    }
+  ],
+  "loop_status": "full-minimal-loop",
+  "evidence": {
+    "event_to_event_memory": true,
+    "event_to_narrative": true,
+    "narrative_to_policy": true,
+    "memory_affects_output": true,
+    "trace_complete": false
+  },
+  "verdict": {
+    "event_memory_works": true,
+    "narrative_aggregation": true,
+    "policy_generation": true,
+    "memory_affects_output": true,
+    "trace_complete": false
+  }
+}

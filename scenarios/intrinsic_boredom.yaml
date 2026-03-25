@@ -1,0 +1,126 @@
+# Intrinsic Motivation: Low-Info Repetition -> Boredom Scenario
+# Tests that sustained low information gain leads to boredom
+
+metadata:
+  name: "intrinsic_boredom"
+  version: "1.0"
+  description: "Low-info repetition leads to boredom - tests sustained low info_gain + low prediction_error"
+  category: "intrinsic_motivation"
+  target_count: 1
+
+targets:
+  - target_id: "user_boredom_test"
+    initial_relationship:
+      bond: 0.3
+      grudge: 0.0
+      trust: 0.5
+      repair_bank: 0.0
+
+scenario:
+  name: "repetitive_low_info_conversation"
+  description: "User keeps sending repetitive, low-information messages"
+  turns:
+    # Turn 1: Initial neutral interaction
+    - turn_id: 1
+      event:
+        type: "user_message"
+        actor: "user_boredom_test"
+        target: "assistant"
+        text: "Hi"
+      expected_intrinsic:
+        curiosity_min: 0.0
+        curiosity_max: 0.5
+        boredom_min: 0.0
+        boredom_max: 0.3
+        confusion_min: 0.0
+        confusion_max: 0.3
+      
+    # Turn 2-6: Repetitive low-info messages
+    - turn_id: 2
+      event:
+        type: "user_message"
+        actor: "user_boredom_test"
+        target: "assistant"
+        text: "ok"
+      expected_intrinsic:
+        boredom_min: 0.05
+        boredom_max: 0.5
+      
+    - turn_id: 3
+      event:
+        type: "user_message"
+        actor: "user_boredom_test"
+        target: "assistant"
+        text: "ok"
+      expected_intrinsic:
+        boredom_min: 0.1
+        boredom_max: 0.6
+      
+    - turn_id: 4
+      event:
+        type: "user_message"
+        actor: "user_boredom_test"
+        target: "assistant"
+        text: "sure"
+      expected_intrinsic:
+        boredom_min: 0.15
+        boredom_max: 0.7
+      
+    - turn_id: 5
+      event:
+        type: "user_message"
+        actor: "user_boredom_test"
+        target: "assistant"
+        text: "ok"
+      expected_intrinsic:
+        boredom_min: 0.2
+        boredom_max: 0.8
+        # Should trigger shift_topic guidance
+        guidance_should_contain: ["shift_topic"]
+      
+    - turn_id: 6
+      event:
+        type: "user_message"
+        actor: "user_boredom_test"
+        target: "assistant"
+        text: "yep"
+      expected_intrinsic:
+        boredom_min: 0.25
+        boredom_max: 0.9
+        curiosity_max: 0.3  # Curiosity should be low
+        confusion_max: 0.3  # Confusion should be low (predictable)
+        guidance_should_contain: ["shift_topic"]
+
+# Expected behavior
+expected_behavior:
+  description: |
+    As the user sends repetitive, low-information messages:
+    1. Expected info gain remains low (< 0.2)
+    2. Prediction error remains low (predictable)
+    3. Boredom accumulates over time
+    4. Curiosity stays low
+    5. Confusion stays low (situation is predictable, just uninteresting)
+    6. Eventually triggers shift_topic guidance
+
+# Trace verification
+trace_verification:
+  required_fields:
+    - "boredom_trace"
+    - "info_gain_trace"
+  expected_trace_patterns:
+    boredom_trace_contains:
+      - "low_info_gain"
+      - "low_prediction_error"
+    info_gain_trace_contains:
+      - "base="
+      - "threat_factor="
+
+# Metrics
+metrics:
+  boredom_progression:
+    description: "Boredom should monotonically increase"
+    expected: true
+  shift_topic_triggered:
+    description: "shift_topic guidance should trigger by turn 5"
+    expected: true
+    by_turn: 5

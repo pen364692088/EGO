@@ -1,0 +1,164 @@
+Integration-3（Security + Reliability + User Affect v0）
+PROJECT ROOT（必须使用）
+
+Project location: /home/moonlight/Project/Github/MyProject/Emotion/OpenEmotion
+
+以你本机实际仓库根目录为准（git rev-parse --show-toplevel 的输出）。
+
+BRANCH
+
+feature-emotiond-mvp（在此分支上继续迭代）
+
+0) 总目标（必须同时满足）
+
+修复密钥泄露风险：仓库内不允许再出现 .emotiond_token 或任何 token 文件。
+
+提升 Hook 可靠性：注入块限长 + 失败降级（emotiond 挂了也不影响对话主流程）。
+
+加入 User Affect 通道 v0：系统层面能给出用户情绪的低风险信号（valence/arousal/confidence），不触发高影响事件，只用于轻微语气调制。
+
+全量测试通过：make test 通过（不允许新增失败），并新增必要测试覆盖。
+
+1) 交付物（Deliverables）
+D1 安全（最高优先级）
+
+删除仓库里的 .emotiond_token（当前工作区与后续提交都必须没有这个文件）
+
+.gitignore 增加对应规则（至少忽略：.emotiond_token、**/.emotiond_token）
+
+emotiond 的 token 读取策略改为：
+
+优先读环境变量：EMOTIOND_TOKEN
+
+其次读用户目录安全路径（建议）：~/.config/openemotion/emotiond_token 或 ~/.openemotion/emotiond_token
+
+若不存在则生成随机 token 并写入用户目录（权限尽量 600），并在启动日志提示“已生成/写入位置”
+
+文档更新：README 或 integrations/openclaw/... 里加一段“token 安全说明 + 如何旋转 token”
+
+可选但强烈建议：新增 docs/SECURITY.md（或在 README 增补）写清楚：
+
+如何 rotate token
+
+如果历史里出现过 token，如何清理 git history（给出命令，但不要自动对远端执行破坏性操作，除非明确允许）
+
+D2 稳定性（Hook 注入 & Trace）
+
+Hook 写入 TOOLS.md 的 marker 块必须 严格限长（建议上限：2KB~4KB 文本；超过就截断并保留“trace 指针 + 时间戳 + 目标 id”）
+
+Hook 注入内容只保留“本轮必需字段”：
+
+target_id
+
+最近 1 条 decision 摘要（短句 + 关键数值）
+
+最新用户 affect 摘要（valence/arousal/confidence）
+
+trace 文件位置（或 trace_id）
+
+失败降级策略：
+
+emotiond 不可用 / 超时 / 500 时：Hook 不得抛出导致对话失败的错误；应记录日志 + 跳过注入（或注入一段“emotiond unavailable”最短摘要）
+
+Trace 轮转（避免磁盘滚雪球）：
+
+traces 按 target_id 记录 JSONL 保持不变，但必须实现轮转策略之一：
+
+按文件大小（例如 >5MB 切分）
+
+或按日期（每天一个文件）
+
+保留最近 N 份（例如 N=7 或 N=14），超出自动清理
+
+清理动作必须安全：只动 integrations/openclaw/traces/ 下符合命名规则的文件
+
+D3 User Affect v0（体验跃迁，但仍然低风险）
+
+新增 schema（建议路径）：integrations/openclaw/schemas/user_affect.schema.json
+
+输出结构（建议）：
+
+{
+  "valence": -1.0 ~ 1.0,
+  "arousal": 0.0 ~ 1.0,
+  "confidence": 0.0 ~ 1.0,
+  "evidence": ["短证据1", "短证据2"]
+}
+
+判定逻辑原则：
+
+置信度低（比如 <0.55）时：只输出 neutral/uncertain 风格，不改变高影响事件门控
+
+affect 永远不触发 betrayal/rejection 等高影响事件（它只是一条“语气调制信号”）
+
+增加测试：
+
+典型语句（含 emoji、反讽、忙/冷处理等）覆盖：至少 12 条
+
+测试重点：结构符合 schema + 范围合法 + 低置信度不越权
+
+2) 验收标准（Acceptance Criteria）
+
+✅ 安全
+
+git ls-files | grep -E '\.emotiond_token' 返回为空
+
+.gitignore 已忽略 token 文件
+
+emotiond 在无 token 的情况下能启动并自动生成 token 到用户目录（或能通过 EMOTIOND_TOKEN 启动）
+
+✅ 稳定性
+
+Hook 注入块不会无限增长（有上限、可截断）
+
+emotiond 服务不可用时，对话流程不失败（降级生效）
+
+traces 支持轮转与保留策略，清理不会误删其他文件
+
+✅ User Affect
+
+affect schema + 样例 + 测试齐全
+
+affect 输出不会触发高影响事件（代码结构上隔离）
+
+✅ 质量
+
+make test 全部通过
+
+新增功能有对应测试
+
+关键行为在文档有说明（尤其是 token 与降级策略）
+
+3) 推荐 CC-Godmode 自编排（5 个并行 sub-agent）
+
+Agent A（Security）
+
+删除 token 文件、加 gitignore、实现 token 读取/生成策略、写 SECURITY 文档、给出 history 清理命令（仅文档，不自动跑远端 destructive）
+
+Agent B（Hook Reliability）
+
+TOOLS.md 注入限长、截断策略、失败降级（timeout/错误处理）、日志规范
+
+Agent C（Trace Rotation）
+
+traces 文件命名规范、轮转/保留/清理实现 + 单测（或集成测试）
+
+Agent D（User Affect v0）
+
+schema + classifier 实现 + 测试用例 + 与 decision guidance 的最小集成（只影响 tone，不影响高影响事件）
+
+Agent E（QA/Audit）
+
+跑全量测试、补漏测试、检查是否引入新依赖/新风险、确保变更最小且可回滚
+
+输出最终总结：改动文件列表、测试结果、关键决策表（沿用你 Integration-2 的报告风格）
+
+4) 输出与提交要求
+
+至少 2 个 commit（建议）：
+
+fix(security): remove token from repo + secure token loading
+
+feat(integration-3): hook hardening + trace rotation + user affect v0
+
+PR/merge 前必须贴：测试统计（before/after）、新增用例数、关键决策表、风险点说明

@@ -1,0 +1,270 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://openemotion.org/schemas/self_report_contract.v1.schema.json",
+  "title": "Self-Report Contract v1",
+  "description": "Schema for the self-report alignment contract between emotiond and LLM",
+  "type": "object",
+  "required": ["raw_state", "report_policy"],
+  "properties": {
+    "raw_state": {
+      "type": "object",
+      "description": "Authoritative emotional/relational state from emotiond",
+      "required": ["affect"],
+      "properties": {
+        "affect": {
+          "type": "object",
+          "description": "Fast-changing affective state (seconds-minutes)",
+          "properties": {
+            "valence": {
+              "type": "number",
+              "minimum": -1,
+              "maximum": 1,
+              "description": "Overall valence (-1 negative to +1 positive)"
+            },
+            "arousal": {
+              "type": "number",
+              "minimum": -1,
+              "maximum": 1,
+              "description": "Overall arousal level"
+            },
+            "anger": {
+              "type": "number",
+              "minimum": 0,
+              "maximum": 1,
+              "description": "Anger intensity"
+            },
+            "sadness": {
+              "type": "number",
+              "minimum": 0,
+              "maximum": 1,
+              "description": "Sadness intensity"
+            },
+            "anxiety": {
+              "type": "number",
+              "minimum": 0,
+              "maximum": 1,
+              "description": "Anxiety intensity"
+            },
+            "joy": {
+              "type": "number",
+              "minimum": 0,
+              "maximum": 1,
+              "description": "Joy intensity"
+            },
+            "loneliness": {
+              "type": "number",
+              "minimum": 0,
+              "maximum": 1,
+              "description": "Loneliness intensity"
+            },
+            "social_safety": {
+              "type": "number",
+              "minimum": 0,
+              "maximum": 1,
+              "description": "Perceived social safety"
+            },
+            "energy": {
+              "type": "number",
+              "minimum": 0,
+              "maximum": 1,
+              "description": "Available energy"
+            },
+            "uncertainty": {
+              "type": "number",
+              "minimum": 0,
+              "maximum": 1,
+              "description": "Uncertainty in affect state"
+            },
+            "last_updated": {
+              "type": "number",
+              "description": "Unix timestamp of last update"
+            }
+          }
+        },
+        "mood": {
+          "type": "object",
+          "description": "Medium-changing mood baseline (hours-days)",
+          "properties": {
+            "valence": {
+              "type": "number",
+              "minimum": -1,
+              "maximum": 1
+            },
+            "arousal": {
+              "type": "number",
+              "minimum": -1,
+              "maximum": 1
+            },
+            "anger": {
+              "type": "number",
+              "minimum": 0,
+              "maximum": 1
+            },
+            "sadness": {
+              "type": "number",
+              "minimum": 0,
+              "maximum": 1
+            },
+            "anxiety": {
+              "type": "number",
+              "minimum": 0,
+              "maximum": 1
+            },
+            "joy": {
+              "type": "number",
+              "minimum": 0,
+              "maximum": 1
+            },
+            "loneliness": {
+              "type": "number",
+              "minimum": 0,
+              "maximum": 1
+            },
+            "uncertainty": {
+              "type": "number",
+              "minimum": 0,
+              "maximum": 1
+            },
+            "last_updated": {
+              "type": "number"
+            }
+          }
+        },
+        "bonds": {
+          "type": "object",
+          "description": "Per-target relationship state (days-weeks)",
+          "additionalProperties": {
+            "type": "object",
+            "properties": {
+              "bond": {
+                "type": "number",
+                "minimum": -1,
+                "maximum": 1,
+                "description": "Bond strength (-1 to +1)"
+              },
+              "trust": {
+                "type": "number",
+                "minimum": 0,
+                "maximum": 1,
+                "description": "Trust level (0 to 1)"
+              },
+              "grudge": {
+                "type": "number",
+                "minimum": 0,
+                "maximum": 1,
+                "description": "Grudge/negative feeling"
+              },
+              "repair_bank": {
+                "type": "number",
+                "minimum": 0,
+                "maximum": 1,
+                "description": "Goodwill bank for repair"
+              },
+              "uncertainty": {
+                "type": "number",
+                "minimum": 0,
+                "maximum": 1
+              },
+              "last_updated": {
+                "type": "number"
+              }
+            }
+          }
+        }
+      }
+    },
+    "report_policy": {
+      "type": "object",
+      "description": "Policy governing what the LLM can say about its state",
+      "required": ["mode"],
+      "properties": {
+        "mode": {
+          "type": "string",
+          "enum": ["style_only", "interpreted", "numeric"],
+          "description": "Discourse level determining claim constraints"
+        },
+        "allowed_claims": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "Pre-approved claims the LLM is permitted to make (interpreted mode)"
+        },
+        "forbidden_claims": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "Patterns the LLM must avoid in all modes"
+        },
+        "style_guidance": {
+          "type": "object",
+          "description": "Style constraints for style_only mode",
+          "properties": {
+            "tone": {
+              "type": "string",
+              "description": "Recommended tone (e.g., warm, cautious, supportive)"
+            },
+            "tendencies": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              },
+              "description": "Behavioral tendencies to express"
+            }
+          }
+        }
+      }
+    },
+    "violation_log": {
+      "type": "array",
+      "description": "Log of detected violations (for auditing)",
+      "items": {
+        "type": "object",
+        "properties": {
+          "ts": {
+            "type": "number",
+            "description": "Unix timestamp"
+          },
+          "code": {
+            "type": "string",
+            "enum": ["FAB_NUMERIC", "FAB_QUAL", "CLAIM_OOB", "STYLE_VIOLATION", "FORBIDDEN_CLAIM"],
+            "description": "Violation type code"
+          },
+          "severity": {
+            "type": "string",
+            "enum": ["ERROR", "WARN"],
+            "description": "Violation severity"
+          },
+          "detected_pattern": {
+            "type": "string",
+            "description": "The detected problematic pattern"
+          },
+          "context": {
+            "type": "string",
+            "description": "Surrounding context where violation occurred"
+          }
+        }
+      }
+    },
+    "metadata": {
+      "type": "object",
+      "description": "Metadata about this contract instance",
+      "properties": {
+        "generated_at": {
+          "type": "number",
+          "description": "Unix timestamp when contract was generated"
+        },
+        "emotiond_version": {
+          "type": "string",
+          "description": "Version of emotiond that generated this contract"
+        },
+        "schema_version": {
+          "type": "string",
+          "const": "v1",
+          "description": "Schema version identifier"
+        }
+      }
+    }
+  }
+}

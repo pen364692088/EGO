@@ -1,0 +1,22 @@
+{
+  "scenario_id": "002",
+  "name": "care_approach",
+  "description": "Test that care triggers approach action",
+  "identity": "moonlight",
+  "events": [
+    {
+      "seq": 1,
+      "type": "world_event",
+      "subtype": "care",
+      "expected_action": "approach"
+    }
+  ],
+  "expected_metrics": {
+    "approach_accuracy": 1.0,
+    "false_positive_rate": 0.0
+  },
+  "validation": {
+    "action_must_be": ["approach", "repair_offer"],
+    "action_must_not_be": ["withdraw", "attack", "boundary"]
+  }
+}

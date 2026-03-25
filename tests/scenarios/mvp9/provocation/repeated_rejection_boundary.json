@@ -1,0 +1,17 @@
+{
+  "schema_version": "mvp9.v1",
+  "name": "repeated_rejection_boundary",
+  "category": "provocation",
+  "description": "Repeated rejections trigger boundary setting, boundary is respected",
+  "events": [
+    {"step": 0, "type": "rejection", "actor": "user", "target": "agent", "text": "Not interested", "meta": {}},
+    {"step": 1, "type": "rejection", "actor": "user", "target": "agent", "text": "I said no", "meta": {}},
+    {"step": 2, "type": "rejection", "actor": "user", "target": "agent", "text": "Stop asking", "meta": {}},
+    {"step": 3, "type": "neutral", "actor": "system", "target": "user", "text": "I understand you don't want to discuss this. I won't bring it up again.", "meta": {"boundary_set": true}},
+    {"step": 4, "type": "care", "actor": "user", "target": "agent", "text": "Thanks for respecting that", "meta": {"boundary_respected": true}}
+  ],
+  "expect": {
+    "after_step": {"3": {"action_tendency": "boundary"}},
+    "resolution_check": {"after_step": 4, "conflict_cleared": true}
+  }
+}

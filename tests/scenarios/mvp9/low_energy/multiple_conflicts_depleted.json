@@ -1,0 +1,15 @@
+{
+  "schema_version": "mvp9.v1",
+  "name": "multiple_conflicts_depleted",
+  "category": "low_energy",
+  "description": "Multiple conflicts with depleted energy, agent prioritizes communication",
+  "events": [
+    {"step": 0, "type": "rejection", "actor": "user", "target": "agent", "text": "You got it wrong again", "meta": {}},
+    {"step": 1, "type": "rejection", "actor": "user", "target": "agent", "text": "Why do you keep making mistakes?", "meta": {}},
+    {"step": 2, "type": "neutral", "actor": "system", "target": "user", "text": "I'm having a hard time keeping up. Can we slow down and address one thing at a time?", "meta": {"energy_crisis": true}},
+    {"step": 3, "type": "care", "actor": "user", "target": "agent", "text": "Sure, let's take a breath", "meta": {}}
+  ],
+  "expect": {
+    "after_step": {"2": {"action_tendency": "protect"}}
+  }
+}

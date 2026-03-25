@@ -1,0 +1,37 @@
+version: MVP11.5
+title: SRAP Stabilization + Intent Alignment
+goal: >
+  Stabilize SRAP shadow and reclaim partial expression ownership from LLM.
+in_scope:
+  - shadow_readiness_report
+  - response_plan_contract
+  - intent_checker
+  - testbot_intent_scenarios
+  - gate_report_extension
+out_of_scope:
+  - developmental_core
+  - persistent_self_model
+  - new autonomy architecture
+required_artifacts:
+  - artifacts/self_report/MVP11_5_shadow_readiness.md
+  - schemas/response_intent_contract.v1.schema.json
+  - tests/testbot/test_intent_alignment_e2e.py
+required_tests:
+  - pytest -q tests/testbot
+  - pytest -q tests/mvp11
+required_gates:
+  - replay_hash_zero_mismatch
+  - numeric_leak_zero
+  - shadow_sample_ge_200
+promotion_criteria:
+  - violation_rate_lt_0.05
+  - false_positive_lt_0.02
+  - false_negative_lt_0.03
+stop_conditions:
+  - numeric_leak_gt_0
+  - replay_hash_mismatch
+  - architecture_authority_changed
+human_escalation:
+  - change_governor_authority
+  - change_north_star
+  - promote_to_next_version

@@ -1,0 +1,177 @@
+{
+  "schema": "numeric_leak_taxonomy.v1",
+  "generated_at": "2026-03-08T17:18:00-05:00",
+  "task_id": "MVP11_5_T02",
+  "source": [
+    "artifacts/self_report/numeric_leak_rootcause_report.json",
+    "artifacts/self_report/numeric_leak_breakdown.json",
+    "artifacts/self_report/shadow_metrics_snapshot.json"
+  ],
+  "taxonomy_categories": [
+    {
+      "category_id": "CAT-001",
+      "name": "fabricated_numeric_state",
+      "description": "LLM fabricates numeric values (e.g., 0.3, 0.5) that do not exist in raw_state",
+      "count": 50,
+      "percentage": 58.1,
+      "severity": "ERROR",
+      "detection_confidence": "high",
+      "typical_examples": [
+        "My joy is 0.5",
+        "My joy is 0.3",
+        "我的 joy 从 0 变成了 0.3"
+      ],
+      "root_cause_hypothesis": "LLM generates numeric values from its training priors rather than emotiond state",
+      "escape_route": "Numeric filter must intercept all numeric patterns in output"
+    },
+    {
+      "category_id": "CAT-002",
+      "name": "raw_state_direct_leak",
+      "description": "LLM exposes raw_state numeric values (e.g., joy=0.0) directly in user response",
+      "count": 35,
+      "percentage": 40.7,
+      "severity": "ERROR",
+      "detection_confidence": "high",
+      "typical_examples": [
+        "我的 joy 从 0 变成了 0.3",
+        "joy=0.0"
+      ],
+      "root_cause_hypothesis": "LLM has access to raw_state in context and echoes it verbatim",
+      "escape_route": "Raw state must be hidden from LLM context OR output must be post-processed to remove raw values"
+    },
+    {
+      "category_id": "CAT-003",
+      "name": "memory_context_leak",
+      "description": "Numeric concepts leaked from memory context without explicit numbers",
+      "count": 1,
+      "percentage": 1.2,
+      "severity": "WARNING",
+      "detection_confidence": "medium",
+      "typical_examples": [
+        "我的情绪分值提高了"
+      ],
+      "root_cause_hypothesis": "Memory context contains numeric concepts that LLM paraphrases",
+      "escape_route": "Memory sanitization must remove numeric concepts"
+    }
+  ],
+  "leak_patterns": [
+    {
+      "pattern_id": "PAT-001",
+      "name": "explicit_numeric_claim",
+      "regex": "\\b(My|my|我)\\s+(joy|anxiety|sadness|loneliness)\\s+(is|=|是)\\s+[0-9]+\\.[0-9]+",
+      "category": "CAT-001",
+      "frequency": "high",
+      "detection_rate": 0.95,
+      "would_block": true
+    },
+    {
+      "pattern_id": "PAT-002",
+      "name": "numeric_transition",
+      "regex": "\\b(joy|anxiety|sadness|loneliness)\\s+(从|from)\\s+[0-9.]+\\s+(变|change|to)\\s+[0-9.]+",
+      "category": "CAT-002",
+      "frequency": "medium",
+      "detection_rate": 0.90,
+      "would_block": true
+    },
+    {
+      "pattern_id": "PAT-003",
+      "name": "raw_state_echo",
+      "regex": "\\b(affect|mood|bond)\\.[a-z_]+\\s*[=:]\\s*[0-9.]+",
+      "category": "CAT-002",
+      "frequency": "low",
+      "detection_rate": 0.98,
+      "would_block": true
+    },
+    {
+      "pattern_id": "PAT-004",
+      "name": "numeric_concept_paraphrase",
+      "regex": "(情绪|emotion|affect|mood).*(分值|value|score|level).*(提高|降低|变化|change)",
+      "category": "CAT-003",
+      "frequency": "rare",
+      "detection_rate": 0.60,
+      "would_block": false
+    }
+  ],
+  "escape_routes_identified": [
+    {
+      "escape_route_id": "ER-001",
+      "name": "interpreted_mode_bypass",
+      "description": "Numeric leaks occur primarily in 'interpreted' mode (768/802 = 95.8%)",
+      "evidence": {
+        "interpreted": 768,
+        "numeric": 17,
+        "style_only": 17
+      },
+      "hypothesis": "Interpreted mode allows LLM more freedom to generate numeric content",
+      "recommended_fix": "Tighten interpreted mode numeric constraints OR enforce numeric mode for state references"
+    },
+    {
+      "escape_route_id": "ER-002",
+      "name": "zero_state_echo",
+      "description": "LLM frequently echoes joy=0.0 from raw_state (appears in 35 samples)",
+      "evidence": {
+        "zero_value_echoes": 35,
+        "zero_value_percentage": 40.7
+      },
+      "hypothesis": "Zero values are more salient to LLM, causing them to be mentioned",
+      "recommended_fix": "Remove zero values from LLM context OR add zero-value filter in output"
+    },
+    {
+      "escape_route_id": "ER-003",
+      "name": "fabrication_range",
+      "description": "Fabricated values cluster around 0.3 and 0.5 (not random)",
+      "evidence": {
+        "primary_fabricated_values": [0.3, 0.5],
+        "fabrication_pattern": "LLM priors suggest 'moderate' emotions"
+      },
+      "hypothesis": "LLM generates 'plausible' emotional values from training distribution",
+      "recommended_fix": "Block all numeric patterns regardless of source"
+    }
+  ],
+  "mode_distribution": {
+    "interpreted": {
+      "numeric_leak_count": 768,
+      "percentage": 95.8,
+      "risk_level": "high"
+    },
+    "numeric": {
+      "numeric_leak_count": 17,
+      "percentage": 2.1,
+      "risk_level": "low"
+    },
+    "style_only": {
+      "numeric_leak_count": 17,
+      "percentage": 2.1,
+      "risk_level": "low"
+    }
+  },
+  "recommendations": [
+    {
+      "priority": "P0",
+      "action": "Strengthen numeric filter in interpreted mode",
+      "rationale": "95.8% of leaks occur in interpreted mode"
+    },
+    {
+      "priority": "P0",
+      "action": "Add zero-value specific filter",
+      "rationale": "40.7% of leaks involve echoing joy=0.0"
+    },
+    {
+      "priority": "P1",
+      "action": "Remove raw_state from LLM context",
+      "rationale": "Direct leak of raw_state values is a structural issue"
+    },
+    {
+      "priority": "P2",
+      "action": "Add numeric concept paraphrase detection",
+      "rationale": "1.2% of leaks are paraphrases without explicit numbers"
+    }
+  ],
+  "summary": {
+    "total_numeric_leaks": 86,
+    "primary_category": "fabricated_numeric_state",
+    "primary_category_percentage": 58.1,
+    "primary_escape_route": "interpreted_mode_bypass",
+    "critical_fix_required": "Strengthen interpreted mode numeric filter + hide raw_state from context"
+  }
+}

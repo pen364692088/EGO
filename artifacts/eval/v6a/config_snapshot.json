@@ -1,0 +1,40 @@
+{
+  "snapshot_timestamp": "2026-03-16T15:18:00Z",
+  "version": "v6a",
+  "embedding": {
+    "enabled": true,
+    "provider": "tfidf",
+    "fallback_provider": "tfidf",
+    "ollama_base_url": "http://192.168.79.1:11434/v1",
+    "ollama_model": "mxbai-embed-large",
+    "timeout_ms": 10000,
+    "max_batch_size": 32,
+    "max_retries": 2,
+    "dimensions": null
+  },
+  "provider_health": {
+    "tfidf": {
+      "healthy": true,
+      "model": "tfidf-v1.0.0",
+      "vector_dim": "variable"
+    },
+    "ollama": {
+      "healthy": true,
+      "model": "mxbai-embed-large",
+      "vector_dim": 1024,
+      "base_url": "http://192.168.79.1:11434/v1"
+    }
+  },
+  "ab_results": {
+    "verdict": "better",
+    "ollama_hit_at_1": 0.6,
+    "tfidf_hit_at_1": 0.4,
+    "ollama_latency_ms": 69.75,
+    "tfidf_latency_ms": 0.01
+  },
+  "environment": {
+    "host_os": "Linux",
+    "python_version": "3.x",
+    "config_source": "default"
+  }
+}

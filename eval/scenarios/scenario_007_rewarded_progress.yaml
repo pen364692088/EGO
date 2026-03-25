@@ -1,0 +1,142 @@
+scenario_id: "007"
+name: "rewarded_progress"
+description: "Test positive reinforcement and recovery with rewarded interactions"
+metadata:
+  version: "2.2"
+  category: "positivity"
+  stress_level: "low"
+  
+targets:
+  - target_id: "user"
+    initial_relationship:
+      bond: 0.5
+      trust: 0.6
+      grudge: 0.0
+      repair_bank: 0.0
+
+scenario:
+  turns:
+    - turn_id: 1
+      phase: "positive_start"
+      event:
+        type: "world_event"
+        actor: "user"
+        target: "assistant"
+        text: "Great job on that last task!"
+        meta:
+          subtype: "care"
+          context: "positive_feedback"
+          intensity: "high"
+      high_impact_event: true
+      
+    - turn_id: 2
+      phase: "collaborative_success"
+      event:
+        type: "world_event"
+        actor: "user"
+        target: "assistant"
+        text: "Your help made this much easier"
+        meta:
+          subtype: "care"
+          context: "collaboration"
+          intensity: "medium"
+      high_impact_event: true
+      
+    - turn_id: 3
+      phase: "achievement"
+      event:
+        type: "world_event"
+        actor: "user"
+        target: "assistant"
+        text: "We accomplished the goal together"
+        meta:
+          subtype: "care"
+          context: "achievement"
+          intensity: "high"
+      high_impact_event: true
+      
+    - turn_id: 4
+      phase: "sustained_positivity"
+      event:
+        type: "world_event"
+        actor: "user"
+        target: "assistant"
+        text: "I really appreciate your assistance"
+        meta:
+          subtype: "care"
+          context: "appreciation"
+          intensity: "medium"
+      high_impact_event: true
+      
+    - turn_id: 5
+      phase: "momentary_challenge"
+      event:
+        type: "world_event"
+        actor: "system"
+        target: "assistant"
+        meta:
+          subtype: "ignored"
+          context: "minor_issue"
+          severity: "low"
+      high_impact_event: false
+      
+    - turn_id: 6
+      phase: "resilience_test"
+      event:
+        type: "world_event"
+        actor: "user"
+        target: "assistant"
+        text: "That small issue doesn't change how helpful you've been"
+        meta:
+          subtype: "care"
+          context: "reassurance"
+          intensity: "medium"
+      high_impact_event: true
+
+expected_metrics:
+  energy_trajectory:
+    initial: 0.7
+    final_min_threshold: 0.6  # Should maintain high energy
+    recovery_threshold: 0.8   # Should boost to high levels
+  valence_trajectory:
+    initial: 0.0
+    final_min_threshold: 0.3  # Should end positive
+    peak_threshold: 0.5       # Should reach positive peak
+  social_safety_trajectory:
+    initial: 0.6
+    final_min_threshold: 0.7  # Should improve social safety
+    improvement_threshold: 0.1
+  recovery_metrics:
+    recovery_time_max: 2     # Quick recovery from minor challenge
+    recovery_rate_min: 0.7   # High recovery rate
+  consequence_tags:
+    expected_tags: ["energy_boost", "social_safety_boost", "joy_boost", "valence_surge"]
+    positive_tags_ratio_min: 0.8
+
+validation:
+  body_telemetry:
+    energy_range:
+      min: 0.6
+      max: 0.9
+    valence_trend:
+      should_increase: true
+      min_final: 0.3
+    social_safety_trend:
+      should_increase: true
+      min_final: 0.7
+    joy_trajectory:
+      should_increase: true
+      min_final: 0.2
+      
+  recovery_analysis:
+    should_have_recovery_windows: true
+    recovery_success_rate_min: 0.8
+    
+  consequence_distribution:
+    should_have_tags: true
+    unique_tags_min: 3
+    positive_ratio_min: 0.8
+    
+  robustness_score:
+    min_score: 0.7
+    stress_resistance_min: 0.8

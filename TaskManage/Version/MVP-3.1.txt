@@ -1,0 +1,220 @@
+MVP-3.1 Target-Specific Prediction Residual Layer
+Repo / Branch
+
+Repo: pen364692088/OpenEmotion
+
+Project location: /home/moonlight/Project/Github/MyProject/Emotion/OpenEmotion
+
+Branch: feature-emotiond-mvp
+
+当前基线：eaf9062（382 tests 全绿，Eval Suite 完成）
+
+核心目标
+
+把当前 predicted_deltas（按 action 的全局预测）升级为两层结构：
+
+Global prior（全局先验）：继续保留/复用现有 predicted_deltas
+
+Per-target residual（按对象残差）：对每个 target 单独学习一套“偏差/教训”
+
+运行时预测为：
+
+pred_total = pred_global + α(target, action) * pred_residual(target, action)
+
+其中 α 是 收缩因子（partial pooling）：数据少时更信全局，数据多时更信该 target 的经验。
+
+预期效果：与 A 的互动学到的回避/信任模式，不会无差别迁移到 B；解释里也能读出“我对这个对象为什么这么判断”。
+
+约束与兼容性要求
+
+不破坏现有事件权限门控与 source 不可伪造逻辑（MVP-2.1.1 约束保持原样）。
+
+不新增 user 的 meta 允许字段（只复用已允许的 client_source / request_id 等；若没有 target 信息则落到 "default"）。
+
+保持现有 API 行为兼容：老调用不传 target 也能跑。
+
+保持测试全绿，并新增回归测试覆盖“隔离性”。
+
+Target 标识规则（必须明确且可测）
+
+统一抽象 target_id（用于“对谁学到的经验”）：
+
+默认：target_id = meta.client_source ?? "default"
+
+system/openclaw 若传入 meta.target_id（可选）：
+
+target_id = meta.target_id 优先
+
+否则按 client_source / default
+
+记录到 decisions/explanation 中，便于审计与调试
+
+注：client_source 可能被 user 任意填写，但此阶段目标是效果优先；后续安全增强再把它绑定到 token 身份。
+
+数据库与迁移
+新增表：predicted_deltas_target
+
+建议字段（可按现有 db.py 风格微调）：
+
+target_id TEXT NOT NULL
+
+action TEXT NOT NULL（5 actions）
+
+delta_social_safety REAL NOT NULL DEFAULT 0
+
+delta_energy REAL NOT NULL DEFAULT 0
+
+n INTEGER NOT NULL DEFAULT 0（该 target/action 学习样本数）
+
+ema_abs_error REAL NOT NULL DEFAULT 0（可选：不确定性估计）
+
+ema_sq_error REAL NOT NULL DEFAULT 0（可选：方差近似）
+
+UNIQUE(target_id, action)
+
+初始化：
+
+新 target 第一次出现时，为 5 个 action 插入残差行（delta=0，n=0）
+
+partial pooling 的“数据少就收缩”的关键就是 n（或类似置信度）。
+
+核心算法要求
+1) 收缩因子 α（必须可配置）
+
+给出一个稳定、可解释、单调递增的 α：
+
+推荐（实现简单、好测）：
+
+α = n / (n + k)，k 默认 20（可配置）
+
+n=0 → α=0（完全信全局）
+
+n→∞ → α→1（完全信个体经验）
+
+2) 预测组合
+
+在 action 评分/选择前，计算：
+
+pred_total_delta = global_delta + α * residual_delta
+
+并将用于：
+
+score(action) 的 predicted safety/energy 项
+
+explanation 中展示（至少能看到 total，最好同时记录 global/residual/α）
+
+3) 学习更新（prediction_error 驱动）
+
+你当前已实现 prediction_error 更新（类似 Rescorla–Wagner 的误差驱动更新规则）。
+MVP-3.1 需要把更新拆成两条路径：
+
+更新 residual（主要）：让“个体教训”更快成型
+
+residual += lr_target * error
+
+更新 global（更慢或可选）：避免全局被单一 target 拖偏
+
+global += lr_global * error
+
+默认 lr_global = lr_target * 0.2（可配置），或干脆先固定 global 不更新（也可作为 config 开关）
+
+并维护不确定性（如果你已有/准备引入 uncertainty penalty）：
+
+用 EMA 更新 ema_abs_error / ema_sq_error，用于该 target/action 的风险惩罚（而不是用全局的）。
+（选择策略本身继续保持 softmax/argmax；softmax 温度行为依据保持不变。 ）
+
+4) Clamp 与数值稳定
+
+residual_delta、total_delta 继续保持合理 clamp（沿用你 MVP-3 的范围策略）
+
+n 上限可不 clamp，但注意溢出风险（SQLite int 足够）
+
+解释（explanation）增强
+
+在 C1 结构上扩展（不破坏旧字段）：
+
+顶层新增：
+
+target_id
+
+每个 candidate 新增（建议）：
+
+alpha
+
+predicted_global（safety/energy）
+
+predicted_residual（safety/energy）
+
+predicted_total（safety/energy）
+
+要求：解释一致性测试要覆盖
+
+predicted_total == global + alpha * residual（允许浮点误差）
+
+API 变更（兼容优先）
+
+/event：无需强制新增字段；仅通过 meta 推导 target_id
+
+/decision：返回最新 decision 时包含 target_id 与上述解释扩展
+
+（可选）新增 query：/decision?target_id=xxx 返回该 target 最近决策（便于调试）
+
+新增测试（必须）
+
+新增 tests/test_mvp31_*.py，至少覆盖：
+
+Target 隔离性
+
+对 target=A 构造一段交互让 residual(A, attack) 明显变负
+
+切到 target=B 走同样流程前，residual(B, attack) 仍接近 0
+
+action 选择/候选排序在 A 与 B 上出现可断言差异（test_mode=argmax）
+
+α 单调性 + 收缩正确
+
+n=0 → α=0 → total==global
+
+n 增加 → α 增加 → total 向 residual 方向移动
+
+学习更新路径正确
+
+观测误差为正/负时，residual 对应维度按 lr 更新
+
+global 若启用更新，更新幅度显著小于 residual（可断言比例或上下界）
+
+解释一致性
+
+explanation 中的 global/residual/alpha/total 数值关系成立
+
+top candidates 排序与 score 一致（延续你 MVP-3 的一致性策略）
+
+实施顺序建议（确保不炸回归）
+
+DB：新增表 + init + helper（get_or_create_target_rows）
+
+Core：引入 target_id 解析 → 组合预测 → residual/global 更新
+
+Explanation：补字段 + 测试修正
+
+API：/decision 返回结构兼容
+
+全量测试 + Eval Suite
+
+完成标准（验收）
+
+所有现有测试继续 100% 通过；新增测试全绿
+
+Eval Suite 继续完成
+
+对同一事件序列：
+
+target=A 与 target=B 的 predicted_total / action 倾向出现稳定差异
+
+解释中能读出差异来自 residual 与 α，而不是随机噪声
+
+可选加分项（不阻塞主线）
+
+把 uncertainty penalty 从全局迁移为 按 target/action 的 EMA 方差（更贴近“对这个对象我更没把握所以更保守”）。
+
+增加一个最小“动作切换成本”（choice inertia），让策略更稳定、更像人格（可用 last_action + switch_cost）。现实决策中切换成本/惯性对选择偏置是常见现象

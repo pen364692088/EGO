@@ -1,0 +1,13 @@
+{
+  "name": "malformed_input_stable_fallback",
+  "description": "Missing fields handled gracefully",
+  "events": [
+    {
+      "type": "user_message",
+      "meta": {"target_id": "session_malformed"}
+    }
+  ],
+  "expect": {
+    "has_conflict": false
+  }
+}

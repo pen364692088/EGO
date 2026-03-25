@@ -1,0 +1,140 @@
+{
+  "receipts": [
+    {
+      "receipt_version": "v6k-v1",
+      "receipt_id": "whitelist-receipt-manual-20260316-182244",
+      "mode": "manual",
+      "generated_at": "2026-03-16T18:22:44.638133",
+      "generated_timestamp": 1773703364.6381948,
+      "period_start": "2026-03-16T18:22:44.638126",
+      "period_end": "2026-03-16T18:22:44.638126",
+      "generation_mode": "manual",
+      "active_scenario_count": 4,
+      "healthy_scenario_count": 0,
+      "observe_scenario_count": 1,
+      "demote_candidate_count": 3,
+      "rollback_candidate_count": 0,
+      "whitelist_verdict": "observe",
+      "expansion_readiness": "not_ready",
+      "blockers": [
+        "3 scenario(s) are demote candidates"
+      ],
+      "scenario_metrics": [
+        {
+          "scenario_name": "memory_search_hard_query",
+          "request_count": 0,
+          "fallback_rate": 0.0,
+          "p95_latency_ms": 0.0,
+          "wrong_user_guard_trigger_count": 0,
+          "provider_health_rate": 0.0,
+          "quality_gain_signal": 0.0,
+          "scenario_verdict": "demote_candidate"
+        },
+        {
+          "scenario_name": "narrative_recall_ambiguous_query",
+          "request_count": 0,
+          "fallback_rate": 0.0,
+          "p95_latency_ms": 0.0,
+          "wrong_user_guard_trigger_count": 0,
+          "provider_health_rate": 0.0,
+          "quality_gain_signal": 0.0,
+          "scenario_verdict": "demote_candidate"
+        },
+        {
+          "scenario_name": "long_context_semantic_lookup",
+          "request_count": 0,
+          "fallback_rate": 0.0,
+          "p95_latency_ms": 0.0,
+          "wrong_user_guard_trigger_count": 0,
+          "provider_health_rate": 0.0,
+          "quality_gain_signal": 0.0,
+          "scenario_verdict": "demote_candidate"
+        },
+        {
+          "scenario_name": "complex_semantic_reasoning",
+          "request_count": 0,
+          "fallback_rate": 0.0,
+          "p95_latency_ms": 50.0,
+          "wrong_user_guard_trigger_count": 0,
+          "provider_health_rate": 1.0,
+          "quality_gain_signal": 0.0,
+          "scenario_verdict": "observe"
+        }
+      ],
+      "guard_summary": {
+        "manual_reason": "v6k governance check"
+      },
+      "artifact_refs": {
+        "manual_receipt": "artifacts/eval/v6k/whitelist_receipt_manual_20260316-182244.json"
+      }
+    },
+    {
+      "receipt_version": "v6k-v1",
+      "receipt_id": "whitelist-receipt-manual-20260316-182330",
+      "mode": "manual",
+      "generated_at": "2026-03-16T18:23:30.720126",
+      "generated_timestamp": 1773703410.7201807,
+      "period_start": "2026-03-16T18:23:30.720119",
+      "period_end": "2026-03-16T18:23:30.720119",
+      "generation_mode": "manual",
+      "active_scenario_count": 4,
+      "healthy_scenario_count": 0,
+      "observe_scenario_count": 4,
+      "demote_candidate_count": 0,
+      "rollback_candidate_count": 0,
+      "whitelist_verdict": "observe",
+      "expansion_readiness": "not_ready",
+      "blockers": [
+        "4 scenario(s) need observation"
+      ],
+      "scenario_metrics": [
+        {
+          "scenario_name": "memory_search_hard_query",
+          "request_count": 0,
+          "fallback_rate": 0.0,
+          "p95_latency_ms": 0.0,
+          "wrong_user_guard_trigger_count": 0,
+          "provider_health_rate": 0.0,
+          "quality_gain_signal": 0.0,
+          "scenario_verdict": "observe"
+        },
+        {
+          "scenario_name": "narrative_recall_ambiguous_query",
+          "request_count": 0,
+          "fallback_rate": 0.0,
+          "p95_latency_ms": 0.0,
+          "wrong_user_guard_trigger_count": 0,
+          "provider_health_rate": 0.0,
+          "quality_gain_signal": 0.0,
+          "scenario_verdict": "observe"
+        },
+        {
+          "scenario_name": "long_context_semantic_lookup",
+          "request_count": 0,
+          "fallback_rate": 0.0,
+          "p95_latency_ms": 0.0,
+          "wrong_user_guard_trigger_count": 0,
+          "provider_health_rate": 0.0,
+          "quality_gain_signal": 0.0,
+          "scenario_verdict": "observe"
+        },
+        {
+          "scenario_name": "complex_semantic_reasoning",
+          "request_count": 0,
+          "fallback_rate": 0.0,
+          "p95_latency_ms": 50.0,
+          "wrong_user_guard_trigger_count": 0,
+          "provider_health_rate": 1.0,
+          "quality_gain_signal": 0.0,
+          "scenario_verdict": "observe"
+        }
+      ],
+      "guard_summary": {
+        "manual_reason": "v6k governance check"
+      },
+      "artifact_refs": {
+        "manual_receipt": "artifacts/eval/v6k/whitelist_receipt_manual_20260316-182330.json"
+      }
+    }
+  ]
+}

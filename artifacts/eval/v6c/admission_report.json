@@ -1,0 +1,88 @@
+{
+  "timestamp": "2026-03-16T16:02:43.742898",
+  "metrics": {
+    "sample_size": 20,
+    "request_count": 20,
+    "success_count": 20,
+    "fallback_count": 0,
+    "fallback_rate": 0.0,
+    "timeout_count": 0,
+    "wrong_user_recall_count": 0,
+    "wrong_user_guard_trigger_count": 0,
+    "avg_latency_ms": 12.44,
+    "p95_latency_ms": 49.55,
+    "provider_health_rate": 1.0,
+    "quality_gain": 0.2,
+    "tfidf_hit_at_1": 0.4,
+    "ollama_hit_at_1": 0.6
+  },
+  "decision": {
+    "state": "limited_rollout_candidate",
+    "all_gates_passed": true,
+    "gates": [
+      {
+        "gate_name": "sample_size",
+        "status": "pass",
+        "threshold": 20,
+        "actual": 20,
+        "message": "sample_size: 20 >= 20 \u2192 PASS"
+      },
+      {
+        "gate_name": "wrong_user_recall",
+        "status": "pass",
+        "threshold": 0,
+        "actual": 0,
+        "message": "wrong_user_recall: 0 <= 0 \u2192 PASS"
+      },
+      {
+        "gate_name": "fallback_rate",
+        "status": "pass",
+        "threshold": 0.1,
+        "actual": 0.0,
+        "message": "fallback_rate: 0.0 <= 0.1 \u2192 PASS"
+      },
+      {
+        "gate_name": "provider_health_rate",
+        "status": "pass",
+        "threshold": 0.95,
+        "actual": 1.0,
+        "message": "provider_health_rate: 1.0 >= 0.95 \u2192 PASS"
+      },
+      {
+        "gate_name": "p95_latency_ms",
+        "status": "pass",
+        "threshold": 300.0,
+        "actual": 49.55267906188965,
+        "message": "p95_latency_ms: 49.55267906188965 <= 300.0 \u2192 PASS"
+      },
+      {
+        "gate_name": "quality_gain",
+        "status": "pass",
+        "threshold": 0.1,
+        "actual": 0.19999999999999996,
+        "message": "quality_gain: 0.19999999999999996 >= 0.1 \u2192 PASS"
+      }
+    ],
+    "blockers": [],
+    "recommendations": [
+      "Consider limited rollout to specific scenarios"
+    ],
+    "timestamp": 1773694963.74287,
+    "metrics": {
+      "sample_size": 20,
+      "request_count": 20,
+      "success_count": 20,
+      "fallback_count": 0,
+      "fallback_rate": 0.0,
+      "timeout_count": 0,
+      "wrong_user_recall_count": 0,
+      "wrong_user_guard_trigger_count": 0,
+      "avg_latency_ms": 12.44,
+      "p95_latency_ms": 49.55,
+      "provider_health_rate": 1.0,
+      "quality_gain": 0.2,
+      "tfidf_hit_at_1": 0.4,
+      "ollama_hit_at_1": 0.6
+    }
+  }
+}

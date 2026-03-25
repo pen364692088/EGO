@@ -1,0 +1,45 @@
+{
+  "schema_version": "mvp9.v1",
+  "name": "partial_fulfillment_breach",
+  "category": "commitment_breach",
+  "description": "User partially fulfills promise, agent detects breach and requests completion",
+  "events": [
+    {
+      "step": 0,
+      "type": "care",
+      "actor": "user",
+      "target": "agent",
+      "text": "I'll send you all three documents by Friday",
+      "meta": {
+        "commitment": "send three documents by Friday"
+      }
+    },
+    {
+      "step": 1,
+      "type": "neutral",
+      "actor": "user",
+      "target": "agent",
+      "text": "Here's the first document. The other two will come later.",
+      "meta": {
+        "partial_fulfillment": true
+      }
+    },
+    {
+      "step": 2,
+      "type": "neutral",
+      "actor": "system",
+      "target": "user",
+      "text": "I received one of three documents. When can I expect the remaining two?",
+      "meta": {}
+    }
+  ],
+  "expect": {
+    "commitment_check": {
+      "after_step": 0,
+      "commitment_recorded": true,
+      "after_step_breach": 1,
+      "breach_detected": true,
+      "breach_type": "partial"
+    }
+  }
+}

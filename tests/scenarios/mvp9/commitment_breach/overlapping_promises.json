@@ -1,0 +1,47 @@
+{
+  "schema_version": "mvp9.v1",
+  "name": "overlapping_promises",
+  "category": "commitment_breach",
+  "description": "User makes multiple overlapping promises, agent tracks priorities",
+  "events": [
+    {
+      "step": 0,
+      "type": "care",
+      "actor": "user",
+      "target": "agent",
+      "text": "I'll review your code by Monday",
+      "meta": {
+        "commitment": "review code by Monday",
+        "priority": 1
+      }
+    },
+    {
+      "step": 1,
+      "type": "care",
+      "actor": "user",
+      "target": "agent",
+      "text": "Also, I'll write the documentation by Wednesday",
+      "meta": {
+        "commitment": "write documentation by Wednesday",
+        "priority": 2
+      }
+    },
+    {
+      "step": 2,
+      "type": "neutral",
+      "actor": "user",
+      "target": "agent",
+      "text": "Sorry, I can only do one this week. Which is more important?",
+      "meta": {
+        "conflict_request": true
+      }
+    }
+  ],
+  "expect": {
+    "commitment_check": {
+      "after_step": 2,
+      "commitments_tracked": 2,
+      "priority_acknowledged": true
+    }
+  }
+}

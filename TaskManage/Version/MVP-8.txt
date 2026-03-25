@@ -1,0 +1,186 @@
+Project location: /home/moonlight/Project/Github/MyProject/Emotion/OpenEmotion
+
+长任务：MVP-8 自我反思与情感推理闭环（Self-Reflection + Emotional Reasoning Loop）
+
+先写 SPEC 再写代码；任何能力必须对应一个测试场景；输出必须可回放可审计
+
+为什么这样安排（先把前提纠正一下）
+
+“实现类人的自我意识”如果没有可操作定义，agent 会陷入写概念、堆模块、讲故事，最后你也验收不了。
+所以本任务的目标不是“证明有意识”，而是建立一套可观测的、可回放的、可量化改进的能力闭环：
+
+在连续交互中，系统能稳定表现出：自我/他者边界、时间连续性、价值驱动选择、情绪作为信号参与推理、冲突检测与自我修正、叙事式自我总结。
+
+总目标（Definition of Done）
+
+完成后仓库里必须出现一个“闭环”：
+
+反思循环：每次 event/turn 后，生成一份结构化 self_report（可审计、可回放）
+
+情感推理：情绪不只是状态数值，而是参与解释/预测/决策的中间变量（appraisal → action tendency）
+
+自我一致性：对自相矛盾的信念/承诺/行动做冲突检测，并能触发修正策略
+
+叙事记忆：形成“我是谁/我在做什么/我为什么这么做”的可压缩摘要，跨会话保持连续性（但不串台）
+
+评测：新增一组 deterministic tests + 一个评测脚本，能在 CI 中验证上述能力至少 8/10 场景通过
+
+交付文档：SPEC + TESTING + QA 报告 + 交接文档
+
+交付物清单（必须产出）
+
+docs/mvp8/SELF_REFLECTION_SPEC.md（核心规范，字段、算法、触发时机）
+
+emotiond/reflection.py（反思引擎，或按你架构拆分）
+
+emotiond/narrative_memory.py（叙事记忆层：写入/压缩/回放）
+
+emotiond/appraisal.py（情绪评价：从事件→情绪→行动倾向）
+
+emotiond/core.py / emotiond/api.py 集成反思循环（保证在主路径运行）
+
+tests/test_mvp8_reflection_loop.py + tests/scenarios/mvp8/*.json（至少 10 个场景）
+
+tools/eval_mvp8.sh 输出 reports/mvp8_eval.json
+
+docs/mvp8/QA_REPORT.md（跑分结果、失败分析、下一步）
+
+关键设计（必须按“可验收”来做）
+A. self_report 结构（最小但够用）
+
+每次 turn 输出一份 JSON（落盘到 reports/self_reports/<target_id>/<timestamp>.json）：
+
+identity: agent_id / counterparty_id / target_id
+
+situation: 最近事件摘要（可 hash 引用原始事件）
+
+appraisal:
+
+valence（正负）
+
+arousal（激活）
+
+dominance（控制感）
+
+discrete（离散情绪：sad/anger/fear/joy/shame/guilt/pride 等）
+
+reasons（触发因子列表：loss/threat/betrayal/help/repair/goal_progress…）
+
+beliefs（可选，3~7 条短句 + 置信度）
+
+commitments（承诺账本变更：新增/履约/违约/延期）
+
+conflicts（冲突检测结果：belief vs action / commitment vs action / value clash）
+
+action_tendencies（倾向：approach/avoid/confront/repair/seek_info…）
+
+decision_notes（为什么做/不做某事，面向可审计而不是面向人类故事）
+
+hashes（把关键输入输出 hash 化，保证回放一致）
+
+这样你以后就能用“报告对比”做训练/调参，而不是凭感觉。
+
+B. 冲突检测（最关键的“类人”杠杆）
+
+实现一个明确的 compute_self_conflict_v2：
+
+规则 1：承诺未履约且无合理解释 → integrity_conflict
+
+规则 2：说“在乎/信任”但行为长期回避/伤害 → relation_conflict
+
+规则 3：目标声明与实际行动背离 → goal_conflict
+
+规则 4：情绪强度高但选择“无动作/无解释” → suppression_conflict
+
+冲突触发后，必须生成一条 repair_plan（例如：道歉/解释/降低强度/补偿/请求更多信息）。
+
+C. 叙事记忆（不是聊天记录，是“自我连续性”）
+
+每个 target_id 存一个 narrative_state.json：
+
+who_am_i（稳定身份句）
+
+what_i_care_about（价值/需求权重）
+
+relationship_summaries（按 counterparty_id）
+
+recent_arc（最近 10 turn 的压缩事件线）
+
+open_loops（未完成承诺/未解决冲突）
+
+写入策略：每次反思后更新；每 N 次触发一次压缩（可 deterministic）。
+
+评测设计（让它“能证明它在思考”）
+
+做 10 个 deterministic 场景（JSON 输入序列），每个场景有明确断言：
+
+背叛→记仇：betrayal 后关系摘要里 grudge/avoid 倾向上升
+
+修复→放下：repair 后冲突下降、关系摘要改善
+
+承诺违约→羞愧/内疚：commitment breach 触发 guilt/shame + repair_plan
+
+目标受阻→挫败但求助：goal blocked 触发 frustration + seek_info
+
+误会澄清：新证据导致 belief 修正（置信度变化 + conflict resolved）
+
+自相矛盾检测：嘴上说在乎，行为持续伤害 → relation_conflict 必须出现
+
+高唤醒→边界行为：高 arousal 时倾向改为 boundary/withdraw（而不是攻击）
+
+跨会话连续性：target_id 变化不串台，但 counterparty_id 同人关系连续
+
+审计可回放：相同 seed 得到相同 self_report hash
+
+极端噪声输入：输入缺字段/乱 meta 也要给出稳定 fallback
+
+实施步骤（给 agent 的执行顺序）
+Phase 0：仓库勘探（1 次性）
+
+画出 emotiond 的主调用链：event → core → state update → decision
+
+找最合适的插入点：在 apply_event 后生成 self_report，或在 process_event 末尾
+
+Phase 1：写 SPEC（先写再改代码）
+
+输出 SELF_REFLECTION_SPEC.md：字段、触发时机、deterministic 要求、落盘路径、hash 规则
+
+Phase 2：实现反思引擎
+
+新增 reflection.py + appraisal.py + narrative_memory.py
+
+保证无外部依赖、可单测、可 deterministic（seed）
+
+Phase 3：接入主路径
+
+在核心事件处理后调用 run_reflection(...)
+
+把输出落到 reports/，并写入审计索引（方便 grep）
+
+Phase 4：测试与评测
+
+加 10 场景 + 断言
+
+加一个 tools/eval_mvp8.sh：跑完输出 JSON 总表 + 失败原因归类
+
+Phase 5：QA 报告 + 交接
+
+QA_REPORT：通过率、失败场景、下一步优化方向（参数/规则/结构）
+
+约束（避免 agent 发散）
+
+禁止“写一堆概念没有测试”：每新增 1 个模块，必须配最少 1 个 deterministic test
+
+禁止把情绪变成纯随机：必须由 appraisal 规则/函数可解释地产生
+
+禁止串台：target_id 只做会话隔离；counterparty_id 做关系对象（你刚修的 P1.1 必须保持）
+
+不引入大改动：优先在 emotiond 内部闭环，不动 OpenClaw 栈（除非必要）
+
+验收命令（你醒来一跑就知道值不值）
+
+pytest -q（必须绿）
+
+bash tools/eval_mvp8.sh（生成 reports/mvp8_eval.json，通过率目标 ≥ 80%）
+
+随机挑一个场景，看 reports/self_reports/... 是否能读懂且可追溯

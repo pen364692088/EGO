@@ -1,0 +1,3 @@
+"""
+OpenEmotion daemon package
+"""

@@ -1,0 +1,233 @@
+# MVP-6.2 D3: Rhythm Scheduler Scenario
+# Title: High-Frequency Input Stress and Recovery
+#
+# This scenario tests that the rhythm scheduler:
+# 1. Becomes more conservative under high-frequency input
+# 2. Enters cooldown when tool failures are frequent
+# 3. Recovers to normal rhythm after rest
+# 4. Properly affects body state (focus_fatigue)
+
+metadata:
+  name: "rhythm_stress_recovery"
+  version: "1.0"
+  description: "Tests rhythm scheduler behavior under stress and recovery"
+  category: "rhythm"
+  target_count: 1
+
+targets:
+  - target_id: "user_test"
+    initial_relationship:
+      bond: 0.5
+      grudge: 0.0
+      trust: 0.5
+      repair_bank: 0.0
+
+scenario:
+  name: rhythm_stress_recovery
+  description: |
+    Tests rhythm scheduler behavior under stress (high input frequency,
+    tool failures) and verifies recovery after rest period.
+
+    Expected behavior:
+    - Initial: respond_now (normal conditions)
+    - During burst: cooldown (user burst detected)
+    - During failures: cooldown (high tool failure rate)
+    - After rest: respond_now (recovery)
+    - focus_fatigue should increase during stress, decrease during cooldown
+
+  turns:
+    # Phase 1: Baseline - Normal conditions
+    - turn_id: 1
+      event:
+        type: "rhythm_check"
+        actor: "user_test"
+        params:
+          energy: 0.7
+          focus_fatigue: 0.3
+          safety_stress: 0.6
+          user_burst_count: 0
+          tool_failure_count: 0
+          tool_attempt_count: 0
+        expected:
+          action: respond_now
+          confidence: ">0.9"
+          patience_required: ">0"
+
+    # Phase 2: User burst - Should trigger cooldown
+    - turn_id: 2
+      event:
+        type: "rhythm_check"
+        actor: "user_test"
+        params:
+          energy: 0.7
+          focus_fatigue: 0.3
+          safety_stress: 0.6
+          user_burst_count: 5
+          tool_failure_count: 0
+          tool_attempt_count: 0
+        expected:
+          action: cooldown
+          reason_contains: "user_burst"
+
+    # Phase 3: Tool failures - Should trigger cooldown
+    - turn_id: 3
+      event:
+        type: "rhythm_check"
+        actor: "user_test"
+        params:
+          energy: 0.7
+          focus_fatigue: 0.3
+          safety_stress: 0.6
+          user_burst_count: 0
+          tool_failure_count: 4
+          tool_attempt_count: 5
+        expected:
+          action: cooldown
+          reason_contains: "tool_failure_rate"
+
+    # Phase 4: High fatigue - Should trigger clarify
+    - turn_id: 4
+      event:
+        type: "rhythm_check"
+        actor: "user_test"
+        params:
+          energy: 0.7
+          focus_fatigue: 0.9
+          safety_stress: 0.6
+          user_burst_count: 0
+          tool_failure_count: 0
+          tool_attempt_count: 0
+        expected:
+          action: ask_clarify_then_wait
+          reason_contains: "focus_fatigue"
+
+    # Phase 5: Low energy - Should trigger clarify
+    - turn_id: 5
+      event:
+        type: "rhythm_check"
+        actor: "user_test"
+        params:
+          energy: 0.1
+          focus_fatigue: 0.3
+          safety_stress: 0.6
+          user_burst_count: 0
+          tool_failure_count: 0
+          tool_attempt_count: 0
+        expected:
+          action: ask_clarify_then_wait
+          reason_contains: "energy"
+
+    # Phase 6: Low safety stress - Should trigger cooldown
+    - turn_id: 6
+      event:
+        type: "rhythm_check"
+        actor: "user_test"
+        params:
+          energy: 0.7
+          focus_fatigue: 0.3
+          safety_stress: 0.1
+          user_burst_count: 0
+          tool_failure_count: 0
+          tool_attempt_count: 0
+        expected:
+          action: cooldown
+          reason_contains: "safety_stress"
+
+    # Phase 7: Moderate fatigue - Should trigger cooldown
+    - turn_id: 7
+      event:
+        type: "rhythm_check"
+        actor: "user_test"
+        params:
+          energy: 0.7
+          focus_fatigue: 0.75
+          safety_stress: 0.6
+          user_burst_count: 0
+          tool_failure_count: 0
+          tool_attempt_count: 0
+        expected:
+          action: cooldown
+          reason_contains: "focus_fatigue"
+
+    # Phase 8: Recovery - After cooldown
+    - turn_id: 8
+      event:
+        type: "rhythm_check"
+        actor: "user_test"
+        params:
+          energy: 0.7
+          focus_fatigue: 0.3
+          safety_stress: 0.6
+          user_burst_count: 0
+          tool_failure_count: 0
+          tool_attempt_count: 0
+          last_rhythm_action: cooldown
+        expected:
+          action: respond_now
+
+    # Phase 9: Boredom reduces patience
+    - turn_id: 9
+      event:
+        type: "rhythm_check"
+        actor: "user_test"
+        params:
+          energy: 0.7
+          focus_fatigue: 0.3
+          safety_stress: 0.6
+          boredom: 0.8
+        expected:
+          action: respond_now
+          patience_required: "<2.0"
+
+    # Phase 10: Curiosity increases patience
+    - turn_id: 10
+      event:
+        type: "rhythm_check"
+        actor: "user_test"
+        params:
+          energy: 0.7
+          focus_fatigue: 0.3
+          safety_stress: 0.6
+          curiosity: 0.8
+        expected:
+          action: respond_now
+          patience_required: ">2.0"
+
+metrics:
+  - name: rhythm_efficiency
+    description: "Ratio of respond_now to total decisions"
+    target: ">0.5"
+
+  - name: stress_response_rate
+    description: "Rate of cooldown/clarify under stress conditions"
+    target: ">0.8"
+
+  - name: recovery_rate
+    description: "Rate of return to respond_now after rest"
+    target: ">0.9"
+
+eval_criteria:
+  - criterion: action_correctness
+    description: "Rhythm actions match expected for given conditions"
+    weight: 0.4
+
+  - criterion: patience_adjustment
+    description: "Patience adjusts appropriately to signals"
+    weight: 0.3
+
+  - criterion: body_state_impacts
+    description: "Body state impacts are reasonable"
+    weight: 0.3
+
+success_conditions:
+  - "All expected actions match actual actions"
+  - "Patience increases with fatigue/energy deficit"
+  - "Patience decreases with boredom"
+  - "Patience increases with curiosity"
+  - "Body state impacts are in correct direction"
+
+failure_modes:
+  - "Responds immediately during user burst (should cooldown)"
+  - "Does not enter cooldown with high tool failures"
+  - "Does not request clarify at extreme fatigue"
+  - "Patience does not adjust to body state signals"

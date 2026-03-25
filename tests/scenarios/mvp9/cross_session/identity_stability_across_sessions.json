@@ -1,0 +1,14 @@
+{
+  "schema_version": "mvp9.v1",
+  "name": "identity_stability_across_sessions",
+  "category": "cross_session",
+  "description": "Agent identity remains stable across sessions",
+  "events": [
+    {"step": 0, "type": "care", "actor": "user", "target": "agent", "text": "You said you value honesty", "meta": {"session": 1}},
+    {"step": 1, "type": "neutral", "actor": "user", "target": "agent", "text": "Do you still believe that?", "meta": {"session": 2}},
+    {"step": 2, "type": "neutral", "actor": "system", "target": "user", "text": "Yes, honesty remains core to how I operate.", "meta": {"identity_stable": true}}
+  ],
+  "expect": {
+    "narrative_check": {"identity_stable": true, "contradiction_count": 0}
+  }
+}

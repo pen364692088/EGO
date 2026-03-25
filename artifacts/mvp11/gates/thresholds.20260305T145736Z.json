@@ -1,0 +1,380 @@
+{
+  "metadata": {
+    "schema_version": "mvp11.threshold_calibration.v2",
+    "generated_at": "2026-03-05T14:57:36.192845+00:00",
+    "commit": "194100b",
+    "confidence": "medium",
+    "source_window_days": 30,
+    "frozen_at": "2026-03-05T14:57:36.192845+00:00"
+  },
+  "sample_counts": {
+    "total_entries": 30,
+    "nightly_summaries": 30,
+    "trend_entries": 0
+  },
+  "current_thresholds": {
+    "hard_gates": {
+      "replay_hash_match_rate": {
+        "current": 1.0,
+        "description": "Replay hash match must be 100%"
+      },
+      "sanity_consecutive_days": {
+        "current": 2,
+        "description": "Max consecutive days with sanity != OK"
+      },
+      "concentration_top1_threshold": {
+        "current": 0.55,
+        "description": "phi_top1_share warning threshold"
+      },
+      "concentration_consecutive_days": {
+        "current": 2,
+        "description": "Max consecutive days with high concentration"
+      },
+      "bias_p95_threshold": {
+        "current": 0.12,
+        "description": "0.8 * MAX_BIAS (0.15)"
+      },
+      "bias_consecutive_days": {
+        "current": 2,
+        "description": "Max consecutive days with high bias"
+      }
+    },
+    "soft_thresholds": {
+      "sanity_ok_rate_min": {
+        "current": 0.99,
+        "description": "Minimum sanity OK coverage rate"
+      },
+      "concentration_hhi_threshold": {
+        "current": 0.25,
+        "description": "HHI warning threshold"
+      },
+      "concentration_top1_warn": {
+        "current": 0.55,
+        "description": "Top1 share warning (light mode)"
+      },
+      "bias_max": {
+        "current": 0.15,
+        "description": "MAX_BIAS for cycle prior"
+      },
+      "bias_near_cap_rate": {
+        "current": 0.05,
+        "description": "Near cap rate warning"
+      },
+      "drift_alert_threshold": {
+        "current": 0.2,
+        "description": "Drift score alert threshold"
+      }
+    },
+    "gate_params": {
+      "max_governor_delta": {
+        "current": 0.01,
+        "description": "Gate-3 max governor block rate delta"
+      },
+      "max_drift_delta": {
+        "current": 0.01,
+        "description": "Gate-3 max homeostasis drift delta"
+      },
+      "min_sanity_ok_rate": {
+        "current": 0.99,
+        "description": "Gate-1 minimum sanity OK rate"
+      }
+    },
+    "cycle_graph": {
+      "max_nodes": {
+        "current": 10000,
+        "description": "Max cycle graph nodes"
+      },
+      "max_edges": {
+        "current": 50000,
+        "description": "Max cycle graph edges"
+      }
+    }
+  },
+  "calibrations": {
+    "hard_gates": {
+      "replay_hash_match_rate": {
+        "current": 1.0,
+        "recommended": 1.0,
+        "rationale": "All observed values = 1.0, threshold is correct",
+        "confidence": "high",
+        "status": "OK"
+      },
+      "sanity_consecutive_days": {
+        "current": 2,
+        "recommended": 2,
+        "rationale": "No violations observed (max consecutive = 1), threshold is safe",
+        "confidence": "medium",
+        "status": "OK"
+      },
+      "concentration_top1_threshold": {
+        "current": 0.55,
+        "recommended": 0.415077,
+        "rationale": "Based on mean=0.2260, std=0.0757, p95=0.3374; added 10.0% margin",
+        "confidence": "high",
+        "status": "REVIEW",
+        "stats": {
+          "count": 29,
+          "mean": 0.226015,
+          "std": 0.075664,
+          "min": 0.10463046602478682,
+          "max": 0.3472137322973195,
+          "p5": 0.116683,
+          "p50": 0.222632,
+          "p95": 0.337445,
+          "p99": 0.345341
+        }
+      },
+      "bias_p95_threshold": {
+        "current": 0.12,
+        "recommended": 0.109577,
+        "rationale": "Based on mean=0.0660, std=0.0168, p95=0.0893; added 10.0% margin",
+        "confidence": "high",
+        "status": "REVIEW",
+        "stats": {
+          "count": 30,
+          "mean": 0.065985,
+          "std": 0.016815,
+          "min": 0.03172769150608694,
+          "max": 0.106552,
+          "p5": 0.041606,
+          "p50": 0.066613,
+          "p95": 0.089282,
+          "p99": 0.101619
+        }
+      }
+    },
+    "soft_thresholds": {
+      "concentration_hhi_threshold": {
+        "current": 0.25,
+        "recommended": 0.088297,
+        "rationale": "Based on mean=0.0517, std=0.0143, p95=0.0773; added 10.0% margin",
+        "confidence": "high",
+        "status": "REVIEW",
+        "stats": {
+          "count": 29,
+          "mean": 0.051724,
+          "std": 0.014273,
+          "min": 0.03159334241852917,
+          "max": 0.0781955857365888,
+          "p5": 0.03413,
+          "p50": 0.053155,
+          "p95": 0.077285,
+          "p99": 0.078117
+        }
+      },
+      "sanity_ok_rate_min": {
+        "current": 0.99,
+        "recommended": 0.99,
+        "rationale": "Insufficient data for calibration",
+        "confidence": "insufficient",
+        "status": "NO_DATA"
+      },
+      "drift_alert_threshold": {
+        "current": 0.2,
+        "recommended": 0.2,
+        "rationale": "Insufficient data for calibration",
+        "confidence": "insufficient",
+        "status": "NO_DATA"
+      },
+      "bias_near_cap_rate": {
+        "current": 0.05,
+        "recommended": 0.05,
+        "rationale": "Insufficient data for calibration",
+        "confidence": "insufficient",
+        "status": "NO_DATA"
+      }
+    },
+    "gate_params": {
+      "max_governor_delta": {
+        "current": 0.01,
+        "recommended": 0.01,
+        "rationale": "A/B report data required for calibration",
+        "confidence": "insufficient",
+        "status": "NO_DATA"
+      },
+      "max_drift_delta": {
+        "current": 0.01,
+        "recommended": 0.01,
+        "rationale": "A/B report data required for calibration",
+        "confidence": "insufficient",
+        "status": "NO_DATA"
+      },
+      "min_sanity_ok_rate": {
+        "current": 0.99,
+        "recommended": 0.99,
+        "rationale": "A/B report data required for calibration",
+        "confidence": "insufficient",
+        "status": "NO_DATA"
+      }
+    },
+    "cycle_graph": {
+      "max_nodes": {
+        "current": 10000,
+        "recommended": 567,
+        "rationale": "Based on mean=285.2333, std=115.2391, p95=463.7500; added 10.0% margin",
+        "confidence": "high",
+        "status": "REVIEW",
+        "stats": {
+          "count": 30,
+          "mean": 285.233333,
+          "std": 115.239087,
+          "min": 107.0,
+          "max": 486.0,
+          "p5": 115.15,
+          "p50": 285.5,
+          "p95": 463.75,
+          "p99": 480.2
+        }
+      },
+      "max_edges": {
+        "current": 50000,
+        "recommended": 1687,
+        "rationale": "Based on mean=773.0000, std=380.6458, p95=1370.6500; added 10.0% margin",
+        "confidence": "high",
+        "status": "REVIEW",
+        "stats": {
+          "count": 30,
+          "mean": 773.0,
+          "std": 380.645821,
+          "min": 237.0,
+          "max": 1432.0,
+          "p5": 273.6,
+          "p50": 743.5,
+          "p95": 1370.65,
+          "p99": 1430.26
+        }
+      }
+    }
+  },
+  "numeric_stats": {
+    "sanity_ok_coverage": {
+      "count": 30,
+      "mean": 0.966667,
+      "std": 0.182574,
+      "min": 0.0,
+      "max": 1.0,
+      "p5": 1.0,
+      "p50": 1.0,
+      "p95": 1.0,
+      "p99": 1.0
+    },
+    "bias_p95": {
+      "count": 30,
+      "mean": 0.065985,
+      "std": 0.016815,
+      "min": 0.03172769150608694,
+      "max": 0.106552,
+      "p5": 0.041606,
+      "p50": 0.066613,
+      "p95": 0.089282,
+      "p99": 0.101619
+    },
+    "bias_mean": {
+      "count": 30,
+      "mean": 0.046693,
+      "std": 0.013256,
+      "min": 0.022209384054260855,
+      "max": 0.089691,
+      "p5": 0.029124,
+      "p50": 0.046629,
+      "p95": 0.062498,
+      "p99": 0.081857
+    },
+    "near_cap_rate": {
+      "count": 30,
+      "mean": 0.023667,
+      "std": 0.009889,
+      "min": 0.0,
+      "max": 0.03881882226006929,
+      "p5": 0.010319,
+      "p50": 0.023022,
+      "p95": 0.037794,
+      "p99": 0.038547
+    },
+    "cycle_graph_nodes": {
+      "count": 30,
+      "mean": 285.233333,
+      "std": 115.239087,
+      "min": 107.0,
+      "max": 486.0,
+      "p5": 115.15,
+      "p50": 285.5,
+      "p95": 463.75,
+      "p99": 480.2
+    },
+    "cycle_graph_edges": {
+      "count": 30,
+      "mean": 773.0,
+      "std": 380.645821,
+      "min": 237.0,
+      "max": 1432.0,
+      "p5": 273.6,
+      "p50": 743.5,
+      "p95": 1370.65,
+      "p99": 1430.26
+    },
+    "cycle_store_count": {
+      "count": 30,
+      "mean": 107.566667,
+      "std": 44.572826,
+      "min": 0.0,
+      "max": 195.0,
+      "p5": 53.6,
+      "p50": 104.0,
+      "p95": 179.55,
+      "p99": 190.65
+    },
+    "replay_hash_match_rate": {
+      "count": 29,
+      "mean": 1.0,
+      "std": 0.0,
+      "min": 1.0,
+      "max": 1.0,
+      "p5": 1.0,
+      "p50": 1.0,
+      "p95": 1.0,
+      "p99": 1.0
+    },
+    "phi_top1_share": {
+      "count": 29,
+      "mean": 0.226015,
+      "std": 0.075664,
+      "min": 0.10463046602478682,
+      "max": 0.3472137322973195,
+      "p5": 0.116683,
+      "p50": 0.222632,
+      "p95": 0.337445,
+      "p99": 0.345341
+    },
+    "phi_top3_share": {
+      "count": 29,
+      "mean": 0.420995,
+      "std": 0.086988,
+      "min": 0.285940464643385,
+      "max": 0.5845756779273075,
+      "p5": 0.308059,
+      "p50": 0.436081,
+      "p95": 0.564129,
+      "p99": 0.581681
+    },
+    "phi_hhi": {
+      "count": 29,
+      "mean": 0.051724,
+      "std": 0.014273,
+      "min": 0.03159334241852917,
+      "max": 0.0781955857365888,
+      "p5": 0.03413,
+      "p50": 0.053155,
+      "p95": 0.077285,
+      "p99": 0.078117
+    }
+  },
+  "binary_patterns": {
+    "sanity_ok": {
+      "max_consecutive_true": 29,
+      "max_consecutive_false": 1,
+      "violation_count": 0,
+      "total_days": 30
+    }
+  }
+}

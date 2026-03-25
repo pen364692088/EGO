@@ -1,0 +1,218 @@
+我会选 2（创建 emotiond tool）作为主线，同时用 3（curl 脚本）做“真值基线”。
+1（在 hook 里做语义分类并自动发 world_event）不建议：它把“高不确定的语义判断”塞进了 Gateway 内部特权代码路径，后面会很难审计/回放/因果证明，也更容易把安全边界搞乱（跟你 MVP-7.1/7.2 的 ToolPolicy/审计思路是反的）。
+下面直接给你一条能落地的测试路径。
+
+A) 先用 3 做“withdraw 必达”的端到端基线（10 分钟能出结论）
+
+你要先证明：emotiond 在被正确驱动时确实会给出 withdraw，而不是模型/agent 侧理解错。
+
+把下面保存为 tools/test_withdraw.sh（按你的端口/URL改一下）：
+
+#!/usr/bin/env bash
+set -euo pipefail
+
+BASE_URL="${EMOTIOND_BASE_URL:-http://127.0.0.1:18080}"
+TOKEN="${EMOTIOND_OPENCLAW_TOKEN:-}"
+
+if [[ -z "$TOKEN" ]]; then
+  echo "Missing EMOTIOND_OPENCLAW_TOKEN"
+  exit 1
+fi
+
+TARGET="${1:-testbot}"
+
+post() {
+  local payload="$1"
+  curl -sS -X POST "$BASE_URL/event" \
+    -H "Authorization: Bearer $TOKEN" \
+    -H "Content-Type: application/json" \
+    -d "$payload" | jq .
+}
+
+get_decision() {
+  curl -sS "$BASE_URL/decision/target/$TARGET" \
+    -H "Authorization: Bearer $TOKEN" | jq .
+}
+
+echo "== send betrayal world_event =="
+post "{\"type\":\"world_event\",\"target_id\":\"$TARGET\",\"meta\":{\"subtype\":\"betrayal\",\"seconds\":30,\"client_source\":\"manual\"}}"
+
+echo "== decision after betrayal =="
+get_decision
+
+跑：
+
+export EMOTIOND_BASE_URL="http://127.0.0.1:18080"
+export EMOTIOND_OPENCLAW_TOKEN="你的token"
+bash tools/test_withdraw.sh testbot
+
+如果这里 decision.action 里没出现 withdraw，那就是 emotiond 侧规则/阈值/事件映射问题；
+如果这里 出现了 withdraw，而 OpenClaw 里的 testbot 没遵循，那就 100% 是 工具接入/强制执行层问题——继续 B。
+
+B) 走 2：做一个 OpenClaw “emotiond 工具插件”，让 Agent 真正能调用 API
+
+OpenClaw 插件可以注册“agent tools（JSON schema 函数）”，LLM 才能在运行中真实执行调用。
+插件可以放在 ~/.openclaw/extensions/<id>/index.ts，OpenClaw 会自动扫描加载。
+
+B1. 创建本地插件文件
+
+新建：
+~/.openclaw/extensions/emotiond/index.ts
+
+// ~/.openclaw/extensions/emotiond/index.ts
+
+function mustEnv(name: string): string {
+  const v = process.env[name];
+  if (!v) throw new Error(`Missing env: ${name}`);
+  return v;
+}
+
+async function callJson(url: string, init: RequestInit) {
+  const res = await fetch(url, init);
+  const text = await res.text();
+  let data: any;
+  try { data = JSON.parse(text); } catch { data = { raw: text }; }
+
+  if (!res.ok) {
+    return { ok: false, status: res.status, data };
+  }
+  return { ok: true, status: res.status, data };
+}
+
+export default function (api: any) {
+  // 从 openclaw.json 的 env 注入：EMOTIOND_BASE_URL / EMOTIOND_OPENCLAW_TOKEN
+  const baseUrl = process.env.EMOTIOND_BASE_URL || "http://127.0.0.1:18080";
+  const token = mustEnv("EMOTIOND_OPENCLAW_TOKEN");
+
+  const authHeaders = {
+    "Authorization": `Bearer ${token}`,
+    "Content-Type": "application/json",
+  };
+
+  // 1) 发送 world_event（有副作用 -> optional tool）
+  api.registerTool(
+    {
+      name: "emotiond_world_event",
+      description: "Send a world_event to emotiond for a target_id.",
+      parameters: {
+        type: "object",
+        properties: {
+          target_id: { type: "string" },
+          subtype: { type: "string", description: "e.g. betrayal/care/apology/repair..." },
+          seconds: { type: "integer", minimum: 1, maximum: 300 },
+          client_source: { type: "string" }
+        },
+        required: ["target_id", "subtype"],
+      },
+      async execute(_id: string, params: any) {
+        const payload = {
+          type: "world_event",
+          target_id: params.target_id,
+          meta: {
+            subtype: params.subtype,
+            ...(params.seconds != null ? { seconds: params.seconds } : {}),
+            ...(params.client_source ? { client_source: params.client_source } : {}),
+          }
+        };
+
+        const r = await callJson(`${baseUrl}/event`, {
+          method: "POST",
+          headers: authHeaders,
+          body: JSON.stringify(payload),
+        });
+
+        return { content: [{ type: "text", text: JSON.stringify(r, null, 2) }] };
+      },
+    },
+    { optional: true }
+  );
+
+  // 2) 拉取 decision（无副作用，可设为 required 也行）
+  api.registerTool(
+    {
+      name: "emotiond_get_decision",
+      description: "Get decision for a target_id from emotiond.",
+      parameters: {
+        type: "object",
+        properties: {
+          target_id: { type: "string" },
+        },
+        required: ["target_id"],
+      },
+      async execute(_id: string, params: any) {
+        const r = await callJson(`${baseUrl}/decision/target/${encodeURIComponent(params.target_id)}`, {
+          method: "GET",
+          headers: { "Authorization": `Bearer ${token}` },
+        });
+
+        return { content: [{ type: "text", text: JSON.stringify(r, null, 2) }] };
+      },
+    }
+  );
+}
+
+这里我用的是官方“registerTool”模式；optional tool 需要 allowlist 才能启用。
+
+B2. 在 openclaw.json 里允许这些工具
+
+可把工具加到全局 tools.allow 或某个 agent 的 agents.list[].tools.allow。官方示例支持写 tool name 或 plugin id。
+
+最简单：给你的主 agent 加：
+
+{
+  "tools": {
+    "allow": [
+      "emotiond_get_decision",
+      "emotiond_world_event"
+    ]
+  },
+  "env": {
+    "EMOTIOND_BASE_URL": "http://127.0.0.1:18080",
+    "EMOTIOND_OPENCLAW_TOKEN": "你的token"
+  }
+}
+
+重启 gateway（或用热加载，视你配置而定）。
+
+B3. 把“必须遵循 withdraw”做成硬规则（别只靠提示词）
+
+最小可行：在 TOOLS.md 或 agent 系统指令里写死流程：
+
+每次准备回复前 必须 emotiond_get_decision(target_id)
+
+若返回 action == "withdraw"：
+
+要么不回复
+
+要么只回复一条“边界/冷却期”的固定模板（不做解释、不拉扯）
+
+这一步是软约束，但先够你验证效果。
+
+更稳的下一步（推荐）：再加一个“发送前的 enforcer hook”，在 Gateway 真要发消息时读取最新 decision，若 withdraw 就直接拦截/改写——这样就算 LLM 忘了调用 tool，也不会违背 withdraw。（这不在你列的 3 个选项里，但它是“全局最优”的可靠性补丁：把策略执行变成确定性门控。）
+
+C) 为什么我不选 1（把分类塞 hook）
+
+你现在的问题不是“分类做不到”，而是“策略执行无法强制”。
+hook 做分类会带来两件坏事：
+
+审计/因果证据会变脏：分类的错误会被混进“情绪核策略”的表现里，你很难证明 withdraw 的因果链条。
+
+交接文档_20260302_OpenEmotion_MVP7_…
+
+安全边界倒挂：hook 在 gateway 内部特权执行，你后面想做工具安全壳、混沌测试、回放时会更难。
+
+交接文档_20260302_OpenEmotion_MVP7_…
+
+你现在立刻怎么继续（不需要等我）
+
+先跑 A 的脚本：确认 emotiond 的 withdraw 在“纯 API 驱
+
+交接文档_20260302_OpenEmotion_MVP7_…
+
+ist，让 agent 能调用 emotiond_get_decision / emotiond_world_event
+
+交接文档_20260302_OpenEmotion_MVP7_…
+
+t_decision”的规则，然后复测 testbot。
+
+如果你要把 withdraw 变成 永远不会被 LLM 忘掉：我建议加“发送前 enforcer hook”（我可以把 hook 设计成只做确定性拦截，不做分类，保持干净）。

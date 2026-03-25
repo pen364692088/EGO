@@ -1,0 +1,58 @@
+# Progress Log
+Run: d6ac2162-33a2-4340-8e8b-e2f3f607fdfc
+Task: OpenEmotion MVP-1 (Ubuntu) — emotiond daemon + OpenClaw skill
+Started: 2026-02-26 17:00:00
+
+## Codebase Patterns
+- This is a FastAPI Python project with emotiond daemon structure
+- Project uses pyproject.toml for configuration
+- Virtual environment is already set up in venv/
+- Testing uses pytest framework
+- Type checking uses mypy
+- Consolidation loop runs every 30 seconds for slow relationship decay
+- Relationship decay: bond decays at 0.995, grudge decays slower at 0.998
+- Database configuration uses EMOTIOND_DB_PATH environment variable (not OPENEMOTION_DB_PATH)
+- Default database path is ./data/emotiond.db (not ./data/openemotion.db)
+- Async tests require @pytest.mark.asyncio decorator
+
+---
+
+## 2026-02-26 17:00 - US-022: Fix database schema test failures
+- Fixed environment variable name mismatch in tests: OPENEMOTION_DB_PATH → EMOTIOND_DB_PATH
+- Fixed default database path expectation: ./data/openemotion.db → ./data/emotiond.db
+- Added @pytest.mark.asyncio decorators to all async test methods in test_us002_database_schema.py
+- All database schema tests now pass successfully including:
+  - Environment variable DB path test
+  - Table creation test
+  - Single row state table test
+  - Target-specific relationship tests
+- Type checking passes for database-related files
+- **Learnings:** Test environment variables must match actual implementation, async tests require proper decorators, database schema tests verify core database initialization and operations
+
+---
+
+## 2026-02-26 17:50 - US-023: Fix comprehensive test suite failures
+- Fixed database test fixture compatibility issues by using temporary databases instead of setup_db fixture
+- Updated test assertions to match actual database field names (last_meaningful_contact not meaningful_contact_time)
+- Fixed update_state function calls to match actual parameter signature (removed unsupported parameters)
+- Fixed add_event calls to use dict format instead of Event objects
+- Fixed environment variable test to ensure clean state by reloading config module
+- All 21 comprehensive tests now pass successfully including:
+  - Database initialization and persistence tests
+  - Emotion state management tests
+  - Relationship manager tests
+  - API endpoint tests
+  - Configuration and model validation tests
+- Type checking passes for main codebase
+- **Learnings:** Test assertions must match actual implementation, async fixture compatibility requires careful handling, temporary databases provide clean test isolation
+---
+
+## 2026-02-26 19:06 - US-024: Fix API endpoint test failures
+- Verified all API endpoint tests are currently passing:
+  - FastAPI service tests (health endpoint, configuration, all endpoints exist)
+  - Event endpoint tests (valid event types, validation, state updates, database storage)
+  - Plan endpoint tests (response structure, required fields, emotion ranges)
+  - Plan API tests (JSON validation, field completeness, different users)
+- Confirmed type checking passes for main codebase (emotiond/ directory)
+- All 22 API endpoint tests pass successfully
+- **Learnings:** API endpoint tests are already working correctly after previous fixes, no additional changes needed for this story

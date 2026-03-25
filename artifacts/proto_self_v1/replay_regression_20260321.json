@@ -1,0 +1,32 @@
+{
+  "test_time": "2026-03-21T19:50:47.533873",
+  "tests": [
+    {
+      "name": "same_input_same_trace",
+      "passed": true,
+      "keys_compared": [
+        "event_id",
+        "perceived",
+        "cycle_delta",
+        "policy_hint"
+      ]
+    },
+    {
+      "name": "replay_uses_trace_not_store",
+      "passed": true,
+      "trace_event_id": "event-000",
+      "trace_cycle_id": "1d0c2498a9b9d2dc"
+    },
+    {
+      "name": "deterministic_output",
+      "passed": true,
+      "run_count": 10,
+      "unique_hashes": 1
+    }
+  ],
+  "summary": {
+    "passed": 3,
+    "total": 3,
+    "all_passed": true
+  }
+}

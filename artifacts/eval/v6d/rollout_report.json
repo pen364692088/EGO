@@ -1,0 +1,33 @@
+{
+  "timestamp": "2026-03-16T16:10:39.629229",
+  "config": {
+    "enabled": true,
+    "default_mode": "tfidf",
+    "allowed_scenarios": [
+      "memory_search_hard_query",
+      "narrative_recall_ambiguous_query",
+      "long_context_semantic_lookup"
+    ],
+    "rollout_percentage": 100,
+    "fallback_to_tfidf": true,
+    "shadow_compare_enabled": false
+  },
+  "metrics": {
+    "whitelist_requests": 12,
+    "non_whitelist_requests": 12,
+    "ollama_success_count": 12,
+    "ollama_fallback_count": 0,
+    "tfidf_count": 12,
+    "avg_latency_ms": 12.74,
+    "p95_latency_ms": 27.01,
+    "wrong_user_guard_trigger_count": 0,
+    "fallback_rate": 0.0
+  },
+  "verdict": "expand_same_scope",
+  "whitelist_verification": {
+    "whitelist_correct": 12,
+    "whitelist_total": 12,
+    "non_whitelist_correct": 12,
+    "non_whitelist_total": 12
+  }
+}

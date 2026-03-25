@@ -1,0 +1,141 @@
+name: MVP11.3 Cycle Gate Nightly
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '35 5 * * *'
+
+jobs:
+  cycle-gate-nightly:
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: |
+          python -m venv .venv
+          . .venv/bin/activate
+          pip install -e .
+          pip install pytest
+
+      - name: Run distribution soak profile (Gate-1 baseline)
+        run: |
+          . .venv/bin/activate
+          python scripts/soak_profile_mvp11.py \
+            --artifacts-dir artifacts/mvp11 \
+            --scenarios baseline,focused,wide \
+            --seeds 41,42,43,44,45 \
+            --ticks 10000 \
+            --sentinel-ticks 100000 \
+            --sentinel-seeds 42 \
+            --sentinel-scenarios baseline,focused,wide \
+            --sentinel-rotation-mode weekday \
+            --cleanup-logs 1 \
+            --output artifacts/mvp11/profiles/nightly_soak_profile.json
+
+      - name: Run intervention effect matrix (Gate-2)
+        run: |
+          . .venv/bin/activate
+          python scripts/effect_size_mvp11.py \
+            --profile full \
+            --runs 5 \
+            --ticks 10000 \
+            --seed 42 \
+            --artifacts-dir artifacts/mvp11 \
+            --out artifacts/mvp11/effects/nightly_cycle_effects.json \
+            --out-md artifacts/mvp11/effects/nightly_cycle_effects.md
+
+      - name: Evaluate cycle gates
+        run: |
+          . .venv/bin/activate
+          python scripts/cycle_gate_mvp11.py \
+            --profile artifacts/mvp11/profiles/nightly_soak_profile.json \
+            --effects artifacts/mvp11/effects/nightly_cycle_effects.json \
+            --output artifacts/mvp11/profiles/nightly_cycle_gate_report.json \
+            --markdown artifacts/mvp11/profiles/nightly_cycle_gate_report.md \
+            --min-sanity-ok-rate 0.99 \
+            --require-gate3 0
+
+      - name: Render nightly dashboard
+        if: always()
+        run: |
+          . .venv/bin/activate
+          python scripts/render_mvp11_cycle_dashboard.py \
+            --profile artifacts/mvp11/profiles/nightly_soak_profile.json \
+            --effects artifacts/mvp11/effects/nightly_cycle_effects.json \
+            --gate artifacts/mvp11/profiles/nightly_cycle_gate_report.json \
+            --out-json artifacts/mvp11/dashboard/nightly_dashboard.json \
+            --out-md artifacts/mvp11/dashboard/nightly_dashboard.md
+
+      - name: Export trend entry
+        if: always()
+        run: |
+          . .venv/bin/activate
+          python scripts/export_mvp11_trend_entry.py \
+            --dashboard artifacts/mvp11/dashboard/nightly_dashboard.json \
+            --profile artifacts/mvp11/profiles/nightly_soak_profile.json \
+            --gate artifacts/mvp11/profiles/nightly_cycle_gate_report.json \
+            --effects artifacts/mvp11/effects/nightly_cycle_effects.json \
+            --out artifacts/mvp11/trends/trend_entry.json
+
+      - name: Fetch last 7 trend entries from artifacts (API)
+        if: always()
+        run: |
+          mkdir -p /tmp/mvp11_trend_entries
+          . .venv/bin/activate
+          python scripts/fetch_mvp11_trend_entries.py \
+            --repo "$GITHUB_REPOSITORY" \
+            --workflow-file mvp11-cycle-gate-nightly.yml \
+            --branch feature-emotiond-mvp \
+            --out-dir /tmp/mvp11_trend_entries \
+            --max-runs 20 \
+            --max-entries 7 || true
+
+          # Ensure today's entry is included.
+          if [ -f artifacts/mvp11/trends/trend_entry.json ]; then
+            cp artifacts/mvp11/trends/trend_entry.json /tmp/mvp11_trend_entries/today-${GITHUB_RUN_ID}.json
+          fi
+
+      - name: Build 7-day trend summary
+        if: always()
+        run: |
+          . .venv/bin/activate
+          python scripts/build_mvp11_trend_7d.py \
+            --entries-dir /tmp/mvp11_trend_entries \
+            --out-json artifacts/mvp11/trends/trend_7d.json \
+            --out-md artifacts/mvp11/trends/trend_7d.md \
+            --window 7 \
+            --drift-alert-threshold 0.2
+
+      - name: Publish dashboard + 7-day trend to job summary
+        if: always()
+        run: |
+          if [ -f artifacts/mvp11/dashboard/nightly_dashboard.md ]; then
+            cat artifacts/mvp11/dashboard/nightly_dashboard.md >> "$GITHUB_STEP_SUMMARY"
+          else
+            echo "# MVP11 Nightly Cycle Dashboard" >> "$GITHUB_STEP_SUMMARY"
+            echo "dashboard file not generated" >> "$GITHUB_STEP_SUMMARY"
+          fi
+
+          echo "" >> "$GITHUB_STEP_SUMMARY"
+
+          if [ -f artifacts/mvp11/trends/trend_7d.md ]; then
+            cat artifacts/mvp11/trends/trend_7d.md >> "$GITHUB_STEP_SUMMARY"
+          else
+            echo "## 7-Day Trend" >> "$GITHUB_STEP_SUMMARY"
+            echo "trend_7d.md not generated" >> "$GITHUB_STEP_SUMMARY"
+          fi
+
+      - name: Upload cycle gate artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: mvp11-cycle-gate-nightly-${{ github.run_id }}
+          path: artifacts/mvp11/**

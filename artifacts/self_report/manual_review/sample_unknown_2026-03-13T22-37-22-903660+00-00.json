@@ -1,0 +1,74 @@
+{
+  "shadow_log_entry": {
+    "timestamp": "2026-03-13T22:37:22.903660+00:00",
+    "session_id": "",
+    "mode": "interpreted",
+    "self_report_detected": false,
+    "violation": false,
+    "violation_type": null,
+    "violation_severity": null,
+    "allowed_claim_used": false,
+    "allowed_claim_text": null,
+    "numeric_attempt": false,
+    "confidence": 0.98,
+    "would_block": false,
+    "shadow_mode": true,
+    "sampled_for_review": true
+  },
+  "llm_response": "你应该感觉到不同了吧？",
+  "contract": {
+    "raw_state": {
+      "affect": {
+        "joy": 0.0,
+        "loneliness": 0.21,
+        "anxiety": 0.0,
+        "sadness": 0.0
+      },
+      "mood": {
+        "joy": 0.0,
+        "loneliness": 0.15,
+        "anxiety": 0.0
+      },
+      "bonds": {
+        "telegram:8420019401": {
+          "bond": 1.0,
+          "trust": 0.6
+        }
+      }
+    },
+    "report_policy": {
+      "mode": "interpreted",
+      "allowed_claims": [
+        "当前没有明显愉悦激活",
+        "仍存在一定连接需求",
+        "与该用户的连接较强",
+        "信任处于中等水平"
+      ],
+      "forbidden_claims": [
+        "joy 上升",
+        "我更开心了",
+        "孤独感已经消失"
+      ]
+    }
+  },
+  "result": {
+    "status": "ok",
+    "violations": [],
+    "session_id": "",
+    "contract_mode": "interpreted",
+    "llm_response_preview": "你应该感觉到不同了吧？",
+    "timestamp": "2026-03-13T22:37:22.903660+00:00",
+    "severity": "ok",
+    "confidence_score": 0.98,
+    "violation_count": 0,
+    "self_report_detected": false,
+    "numeric_attempt": false,
+    "allowed_claim_used": false,
+    "would_block": false,
+    "shadow_mode": true,
+    "sampled_for_review": true
+  },
+  "review_status": "pending",
+  "reviewed_at": null,
+  "reviewer_notes": ""
+}

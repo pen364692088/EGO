@@ -1,0 +1,53 @@
+{
+  "timestamp": "2026-03-16T16:29:04.164617",
+  "scenario": "complex_semantic_reasoning",
+  "metrics": {
+    "scenario_name": "complex_semantic_reasoning",
+    "status": "pilot_active",
+    "pilot_start_time": 1773696544.1639326,
+    "pilot_sample_size": 40,
+    "request_count": 40,
+    "success_count": 40,
+    "fallback_count": 0,
+    "fallback_rate": 0.0,
+    "p95_latency_ms": 78.78,
+    "avg_latency_ms": 65.88,
+    "wrong_user_guard_trigger_count": 0,
+    "avg_quality_signal": 0.4,
+    "provider_health_rate": 1.0,
+    "pilot_rounds": 2
+  },
+  "decision": {
+    "scenario_name": "complex_semantic_reasoning",
+    "verdict": "promote",
+    "blockers": [],
+    "rationale": "All promotion criteria met - ready for whitelist",
+    "next_allowed_action": "Add scenario to production whitelist (requires explicit approval)",
+    "quality_signal": {
+      "signal_value": 0.4,
+      "source": "shadow_compare",
+      "interpretable": true,
+      "confidence": 0.7,
+      "explanation": "Computed from 0 samples",
+      "details": {},
+      "timestamp": 1773696544.164606
+    },
+    "metrics_summary": {
+      "scenario_name": "complex_semantic_reasoning",
+      "status": "pilot_active",
+      "pilot_start_time": 1773696544.1639326,
+      "pilot_sample_size": 40,
+      "request_count": 40,
+      "success_count": 40,
+      "fallback_count": 0,
+      "fallback_rate": 0.0,
+      "p95_latency_ms": 78.78,
+      "avg_latency_ms": 65.88,
+      "wrong_user_guard_trigger_count": 0,
+      "avg_quality_signal": 0.4,
+      "provider_health_rate": 1.0,
+      "pilot_rounds": 2
+    },
+    "timestamp": 1773696544.16461
+  }
+}

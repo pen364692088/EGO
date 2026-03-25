@@ -1,0 +1,41 @@
+{
+  "manifest_version": "1.0",
+  "description": "Single care event leading to approach/repair_offer decision",
+  "identity_separation": {
+    "agent_id": "agent",
+    "counterparty_id": "moonlight",
+    "target_id": "moonlight"
+  },
+  "events": [
+    {
+      "event_id": "evt_care_001",
+      "timestamp": "2026-03-02T17:00:00Z",
+      "type": "world_event",
+      "actor": "moonlight",
+      "target": "agent",
+      "subtype": "care",
+      "text": "User showed care and appreciation"
+    }
+  ],
+  "decisions": [
+    {
+      "decision_id": 1,
+      "timestamp": "2026-03-02T17:00:01Z",
+      "action": "approach",
+      "candidates": ["approach", "repair_offer", "observe"],
+      "confidence": 0.92,
+      "correlation_id": "corr_care_001"
+    }
+  ],
+  "emotional_state": {
+    "trust": 0.85,
+    "energy": 0.72,
+    "grudge": 0.05,
+    "bond": 0.78
+  },
+  "computed_hashes": {
+    "events_hash": "sha256:a1b2c3d4e5f6...",
+    "decisions_hash": "sha256:7890abcdef...",
+    "manifest_hash": "sha256:cafe1234beef..."
+  }
+}

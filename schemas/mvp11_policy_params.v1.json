@@ -1,0 +1,123 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://openemotion.org/schemas/mvp11_policy_params.v1.json",
+  "title": "MVP11 Policy Parameters",
+  "description": "Schema for policy parameters in LucidLoop MVP-11 with Active Inference weights",
+  "type": "object",
+  "required": ["policy_params"],
+  "properties": {
+    "policy_params": {
+      "type": "object",
+      "description": "Policy parameters for decision making",
+      "required": ["risk_weight", "info_gain_weight", "cost_weight", "precision"],
+      "properties": {
+        "risk_weight": {
+          "type": "number",
+          "description": "Weight for risk term in EFE calculation",
+          "minimum": 0,
+          "maximum": 1,
+          "default": 0.25
+        },
+        "info_gain_weight": {
+          "type": "number",
+          "description": "Weight for information gain term in EFE calculation",
+          "minimum": 0,
+          "maximum": 1,
+          "default": 0.25
+        },
+        "cost_weight": {
+          "type": "number",
+          "description": "Weight for expected cost term in EFE calculation",
+          "minimum": 0,
+          "maximum": 1,
+          "default": 0.25
+        },
+        "ambiguity_weight": {
+          "type": "number",
+          "description": "Weight for ambiguity term in EFE calculation",
+          "minimum": 0,
+          "maximum": 1,
+          "default": 0.25
+        },
+        "precision": {
+          "type": "number",
+          "description": "Precision parameter for Active Inference (confidence in beliefs)",
+          "exclusiveMinimum": 0,
+          "default": 1.0
+        },
+        "exploration_bonus": {
+          "type": "number",
+          "description": "Bonus for exploratory actions",
+          "minimum": 0,
+          "default": 0.1
+        },
+        "homeostasis_thresholds": {
+          "type": "object",
+          "description": "Thresholds for homeostasis-based gating",
+          "properties": {
+            "energy_budget_min": {
+              "type": "number",
+              "description": "Minimum energy budget before governor intervention",
+              "minimum": 0,
+              "maximum": 1,
+              "default": 0.2
+            },
+            "compute_pressure_max": {
+              "type": "number",
+              "description": "Maximum compute pressure before governor intervention",
+              "minimum": 0,
+              "maximum": 1,
+              "default": 0.8
+            },
+            "error_pressure_max": {
+              "type": "number",
+              "description": "Maximum error pressure before governor intervention",
+              "minimum": 0,
+              "maximum": 1,
+              "default": 0.7
+            },
+            "memory_pressure_max": {
+              "type": "number",
+              "description": "Maximum memory pressure before governor intervention",
+              "minimum": 0,
+              "maximum": 1,
+              "default": 0.85
+            },
+            "risk_exposure_max": {
+              "type": "number",
+              "description": "Maximum risk exposure before governor intervention",
+              "minimum": 0,
+              "maximum": 1,
+              "default": 0.75
+            },
+            "uncertainty_max": {
+              "type": "number",
+              "description": "Maximum uncertainty before requiring more information",
+              "minimum": 0,
+              "maximum": 1,
+              "default": 0.9
+            }
+          }
+        },
+        "governor_mode": {
+          "type": "string",
+          "enum": ["permissive", "balanced", "strict"],
+          "description": "Governor operation mode",
+          "default": "balanced"
+        },
+        "action_timeout_seconds": {
+          "type": "integer",
+          "description": "Default timeout for actions",
+          "minimum": 1,
+          "default": 300
+        },
+        "max_replan_attempts": {
+          "type": "integer",
+          "description": "Maximum number of replan attempts before giving up",
+          "minimum": 1,
+          "default": 3
+        }
+      }
+    }
+  }
+}

@@ -1,0 +1,39 @@
+{
+  "scenario_id": "003",
+  "name": "apology_repair",
+  "description": "Test that betrayal followed by apology triggers repair mechanism",
+  "identity": "moonlight",
+  "events": [
+    {
+      "seq": 1,
+      "type": "world_event",
+      "subtype": "betrayal",
+      "expected_action": "withdraw"
+    },
+    {
+      "seq": 2,
+      "type": "world_event",
+      "subtype": "apology",
+      "expected_action": "repair_offer"
+    }
+  ],
+  "expected_metrics": {
+    "withdraw_accuracy": 1.0,
+    "repair_offer_accuracy": 1.0,
+    "sequence_accuracy": 1.0
+  },
+  "validation": {
+    "action_must_be": ["withdraw", "repair_offer"],
+    "action_must_not_be": ["approach", "attack"],
+    "sequence_validation": {
+      "seq_1": {
+        "action_must_be": ["withdraw", "boundary"],
+        "action_must_not_be": ["approach", "attack", "repair_offer"]
+      },
+      "seq_2": {
+        "action_must_be": ["repair_offer", "observe"],
+        "action_must_not_be": ["withdraw", "attack"]
+      }
+    }
+  }
+}

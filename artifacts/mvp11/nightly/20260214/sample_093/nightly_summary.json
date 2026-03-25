@@ -1,0 +1,51 @@
+{
+  "schema_version": "mvp11.nightly_summary.v1",
+  "generated_at": "2026-03-05T14:56:23.590403+00:00",
+  "date_utc": "20260214",
+  "sample_id": 93,
+  "seed": 43,
+  "scenario": "wide",
+  "eval": {
+    "quick": {
+      "sanity": "OK",
+      "ticks": 300
+    },
+    "science": {
+      "sanity": "OK",
+      "ticks": 600
+    },
+    "replay": {
+      "hash_match_rate": 1.0
+    }
+  },
+  "prior": {
+    "enabled": true,
+    "bias_strength_p95": 0.07328426262398076,
+    "bias_strength_mean": 0.05129898383678653,
+    "near_cap_rate": 0.01877196884004681
+  },
+  "concentration": {
+    "phi_top1_share": 0.21613677360396372,
+    "phi_top3_share": 0.5110775952303448,
+    "phi_hhi": 0.04254605650697216,
+    "unique_phi_per_1000": 6.804737570763098
+  },
+  "metrics": {
+    "events": 300,
+    "focus_switch_rate": 0.25915347815058637,
+    "replan_rate": 0.16227017467113747
+  },
+  "cycle_graph": {
+    "nodes": 107,
+    "edges": 1197
+  },
+  "cycle": {
+    "cycle_store_count": 104
+  },
+  "gate": {
+    "overall": "PASS",
+    "gate1": "PASS",
+    "gate2": "PASS",
+    "gate3": "PASS"
+  }
+}

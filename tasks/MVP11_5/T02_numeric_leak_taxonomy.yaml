@@ -1,0 +1,23 @@
+task_id: MVP11_5_T02
+goal: >
+  Build taxonomy of numeric leak patterns from shadow_log.jsonl.
+  Identify which numeric claims slip through and why.
+depends_on:
+  - MVP11_5_T01
+deliverables:
+  - artifacts/self_report/numeric_leak_taxonomy.json
+  - artifacts/self_report/numeric_leak_taxonomy.md
+commands:
+  - python tools/analyze-numeric-leak --taxonomy
+acceptance_criteria:
+  - file_exists: artifacts/self_report/numeric_leak_taxonomy.json
+  - field_exists: taxonomy_categories
+  - field_exists: leak_patterns
+  - field_exists: escape_routes_identified
+stop_conditions:
+  - shadow_log_missing
+  - insufficient_samples
+scope_boundary:
+  - ANALYZE only, do not modify emotiond code
+  - Document patterns, do not fix yet
+  - Output taxonomy, not patches

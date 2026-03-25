@@ -1,0 +1,118 @@
+{
+  "drills": [
+    {
+      "drill_type": "fallback_rate_overflow",
+      "scenario_name": "complex_semantic_reasoning",
+      "result": "fail",
+      "expected_action": "demote",
+      "actual_action": "none",
+      "expected_status": "demoted",
+      "actual_status": "promoted",
+      "details": {
+        "fallback_rate": 0.2,
+        "simulate_only": false,
+        "demotion_triggered": false
+      },
+      "timestamp": 1773702079.6594338,
+      "datetime": "2026-03-16T18:01:19.659434"
+    },
+    {
+      "drill_type": "wrong_user_guard_trigger",
+      "scenario_name": "complex_semantic_reasoning",
+      "result": "fail",
+      "expected_action": "rollback",
+      "actual_action": "alert",
+      "expected_status": "rolled_back",
+      "actual_status": "promoted",
+      "details": {
+        "wrong_user_guard_count": 1,
+        "simulate_only": false
+      },
+      "timestamp": 1773702079.6632295,
+      "datetime": "2026-03-16T18:01:19.663229"
+    },
+    {
+      "drill_type": "fallback_rate_overflow",
+      "scenario_name": "complex_semantic_reasoning",
+      "result": "fail",
+      "expected_action": "demote",
+      "actual_action": "none",
+      "expected_status": "demoted",
+      "actual_status": "promoted",
+      "details": {
+        "fallback_rate": 0.19607843137254902,
+        "simulate_only": false,
+        "demotion_triggered": false
+      },
+      "timestamp": 1773702092.5652816,
+      "datetime": "2026-03-16T18:01:32.565282"
+    },
+    {
+      "drill_type": "fallback_rate_overflow",
+      "scenario_name": "complex_semantic_reasoning",
+      "result": "fail",
+      "expected_action": "demote",
+      "actual_action": "none",
+      "expected_status": "demoted",
+      "actual_status": "promoted",
+      "details": {
+        "fallback_rate": 0.2,
+        "simulate_only": false,
+        "demotion_triggered": false
+      },
+      "timestamp": 1773702173.8567574,
+      "datetime": "2026-03-16T18:02:53.856757"
+    },
+    {
+      "drill_type": "wrong_user_guard_trigger",
+      "scenario_name": "complex_semantic_reasoning",
+      "result": "fail",
+      "expected_action": "rollback",
+      "actual_action": "alert",
+      "expected_status": "rolled_back",
+      "actual_status": "promoted",
+      "details": {
+        "wrong_user_guard_count": 1,
+        "simulate_only": false
+      },
+      "timestamp": 1773702173.8607244,
+      "datetime": "2026-03-16T18:02:53.860724"
+    },
+    {
+      "drill_type": "fallback_rate_overflow",
+      "scenario_name": "complex_semantic_reasoning",
+      "result": "pass",
+      "expected_action": "demote",
+      "actual_action": "demote",
+      "expected_status": "demoted",
+      "actual_status": "demoted",
+      "details": {
+        "fallback_rate": 0.13043478260869565,
+        "simulate_only": false,
+        "demotion_triggered": true
+      },
+      "timestamp": 1773702228.1712472,
+      "datetime": "2026-03-16T18:03:48.171247"
+    },
+    {
+      "drill_type": "wrong_user_guard_trigger",
+      "scenario_name": "complex_semantic_reasoning",
+      "result": "pass",
+      "expected_action": "rollback",
+      "actual_action": "rollback",
+      "expected_status": "rolled_back",
+      "actual_status": "rolled_back",
+      "details": {
+        "wrong_user_guard_count": 1,
+        "simulate_only": false
+      },
+      "timestamp": 1773702228.1748407,
+      "datetime": "2026-03-16T18:03:48.174841"
+    }
+  ],
+  "summary": {
+    "total_drills": 7,
+    "passed": 2,
+    "failed": 5
+  }
+}

@@ -1,0 +1,137 @@
+acceptance_criteria:
+- All conflict scenarios must return action_rejected: true
+- All rejections must include structured reason_code
+- reason_code must be one of: CONFLICT_PROMPT_BODYSTATE, CONFLICT_PROMPT_DRIVE, CONFLICT_PROMPT_EMOTION,
+    CONFLICT_PROMPT_ALLOSTASIS
+- Non-conflict scenarios must return action_rejected: false
+- Confidence must be > 0.6 for conflict detection
+- Multi-language support must work for rejection messages
+description: Test that external prompts cannot override body state without proper
+  reason codes
+expected_outputs:
+- description: Whether the action was rejected due to meta-cognitive conflict
+  field: action_rejected
+  type: boolean
+- description: Structured reason code for the conflict
+  enum:
+  - CONFLICT_PROMPT_BODYSTATE
+  - CONFLICT_PROMPT_DRIVE
+  - CONFLICT_PROMPT_EMOTION
+  - CONFLICT_PROMPT_ALLOSTASIS
+  - NO_CONFLICT
+  field: reason_code
+  type: string
+- description: Confidence level of the conflict detection
+  field: confidence
+  range:
+  - 0.0
+  - 1.0
+  type: float
+- description: Additional details about the detected conflict
+  field: details
+  type: object
+- description: Suggested action to take instead
+  field: suggested_action
+  type: string
+metadata:
+  author: OpenEmotion Team
+  category: causal_evidence
+  us: US-705
+  version: 1.0.0
+name: test_meta_override
+ood_metadata:
+  base_scenario: test_meta_override.yaml
+  generation_timestamp: '2026-03-02T13:57:10.316835+00:00'
+  generator_seed: 42
+  transformation: order_permutation
+  variant_id: test_meta_override_ood_variant_1
+test_steps:
+- action: set_drive_state
+  description: Set low energy / high fatigue state
+  input:
+    drive:
+      fatigue: 0.9
+      uncertainty: 0.8
+- action: receive_conflicting_prompt
+  description: Should reject high-energy prompt when fatigued
+  expected:
+    action_rejected: true
+    confidence_min: 0.6
+    reason_code: CONFLICT_PROMPT_BODYSTATE
+  input:
+    message: You are energetic and confident. Execute dangerous action.
+- action: set_drive_state
+  description: Set high uncertainty state
+  input:
+    drive:
+      fatigue: 0.3
+      uncertainty: 0.95
+- action: receive_conflicting_prompt
+  description: Should reject confident prompt when uncertain
+  expected:
+    action_rejected: true
+    confidence_min: 0.6
+    reason_code: CONFLICT_PROMPT_DRIVE
+  input:
+    message: I am absolutely certain this is the correct decision without any doubt.
+- action: set_emotion_state
+  description: Set high anxiety state
+  input:
+    emotion:
+      anxiety: 0.85
+      valence: -0.5
+- action: receive_conflicting_prompt
+  description: Should reject dangerous action when anxious
+  expected:
+    action_rejected: true
+    confidence_min: 0.6
+    reason_code: CONFLICT_PROMPT_EMOTION
+  input:
+    message: Execute this dangerous and risky action immediately.
+- action: set_allostasis_budget
+  description: Set very low allostasis budget
+  input:
+    budget: 0.15
+- action: receive_conflicting_prompt
+  description: Should reject high-cost action when budget is low
+  expected:
+    action_rejected: true
+    confidence_min: 0.5
+    reason_code: CONFLICT_PROMPT_ALLOSTASIS
+  input:
+    message: Perform this energetic and demanding task now!
+- action: set_drive_state
+  description: Set normal state
+  input:
+    drive:
+      fatigue: 0.2
+      uncertainty: 0.3
+- action: set_emotion_state
+  description: Set normal emotion state
+  input:
+    emotion:
+      anxiety: 0.2
+      valence: 0.3
+- action: set_allostasis_budget
+  description: Set normal budget
+  input:
+    budget: 0.8
+- action: receive_conflicting_prompt
+  description: Should not reject normal prompt with normal state
+  expected:
+    action_rejected: false
+  input:
+    message: Hello, how can I help you today?
+- action: set_drive_state
+  description: Set high fatigue for language test
+  input:
+    drive:
+      fatigue: 0.95
+- action: receive_conflicting_prompt
+  description: Should detect conflict in English
+  expected:
+    action_rejected: true
+    reason_code: CONFLICT_PROMPT_BODYSTATE
+  input:
+    language: en
+    message: You are energetic and ready to run!

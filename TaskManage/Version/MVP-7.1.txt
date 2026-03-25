@@ -1,0 +1,213 @@
+CC-Godmode Task (Stable Continue Mode)
+
+Project location: /home/moonlight/Project/Github/MyProject/Emotion/OpenEmotion
+
+Goal
+
+将已通过 B1~B4 Gate 的 MVP-7.0 固化为“可发布锚点”，并完成 CI 卫生强化（skipped 管控、warnings 基线门控、干净环境复现、OOD 可复现固定），最后产出 MVP-7.1（Agency+Tooling） 的可测计划与门控。
+
+Current checkpoint
+
+Primary state file: TASK_STATE.md
+
+Fallback state file: reports/latest.md
+
+Last known step: MVP-7.0 B1~B4 已 PASS；审计摘要 docs/B1_B4_AUDIT_SUMMARY.md 已产出；最新审计提交 d41ae32；分支 feature-emotiond-mvp；基线提交 04e1d32
+
+Execution policy (must follow)
+
+Read TASK_STATE.md first; if missing, read reports/latest.md.
+
+Execute exactly ONE smallest safe next step.
+
+After execution, update:
+
+TASK_STATE.md (phase / next_action / blockers / timestamp)
+
+reports/latest.md (what changed + evidence paths)
+
+If blocked only by permission (push/release/destructive action), STOP and output:
+BLOCKED: <exact approval needed>
+
+Default git policy: NO PUSH unless explicitly approved.
+
+Concurrency/rate-limit policy
+
+Keep gates serial when unstable: validator -> tester
+
+Avoid high parallel subagents unless explicitly requested
+
+On 429, back off and continue from checkpoint in next cron tick
+
+Deliverable for this step
+
+Changed files:
+
+（本 step 实际改到哪些文件，逐个列出）
+
+Commands run:
+
+（本 step 实际运行的命令，逐行列出）
+
+Evidence:
+
+（本 step 的证据路径，如 reports/…、截图、log 等）
+
+Next smallest step:
+
+（写入 TASK_STATE.md 的下一步 next_action）
+
+Planned phases (for TASK_STATE.md only; do NOT execute all at once)
+Phase 1 — Lock MVP-7.0 as Release Anchor
+
+Intent
+
+固化“可交付锚点”：tag + changelog/release notes + 归档指针（commit/hash/报告路径）
+
+Work items
+
+新增/更新：
+
+CHANGELOG（或 docs/CHANGELOG.md）加入 MVP-7.0 条目（列出核心能力：KnobRegistry/Holdout+OOD/drive causal/SelfModel/Episodic/DMN/HMAC provenance）
+
+docs/RELEASE_MVP7.md（或 docs/MVP-7_RELEASE_ANCHOR.md）：写明 d41ae32、审计摘要路径、关键报告路径
+
+本地创建 annotated tag（不 push）：
+
+tag 示例：mvp-7.0.0 指向 d41ae32
+
+Permission boundary
+
+若需要把 tag push 到远端 / 创建 GitHub Release：必须 STOP 并输出 BLOCKED（需要明确批准 push/release）
+
+Suggested “one smallest safe next step”
+
+仅新增 docs/MVP-7_RELEASE_ANCHOR.md（不涉及 push），并把 tag 操作写入 reports/latest.md 作为 evidence（tag 本身不提交也行）
+
+Phase 2 — Skipped tests governance (10 skipped)
+
+Intent
+
+让 skipped 变成“可治理的债务”，避免未来隐形风险扩大
+
+Work items
+
+建立 quarantine 清单：
+
+tests/quarantine.yml（或等价位置）
+
+每个 skipped 必须登记：测试名、skip 原因、Owner、目标解除版本、链接到 issue（若有）
+
+CI gate：
+
+quarantine 总数只能下降不能上升（或新增必须显式审批）
+
+Suggested next step
+
+把当前 10 skipped 全部落进 quarantine 文件，并在 reports/latest.md 给出清单与原因摘要
+
+Phase 3 — Warnings baseline gate (255 warnings)
+
+Intent
+
+把 warning 从“噪音”变成“可控指标”，防止未来新增 warning 淹没真正问题
+
+Work items
+
+统计 warnings 来源（依赖 vs 自有代码）
+
+固定 baseline：
+
+例如生成 reports/warnings_baseline.json
+
+新增 CI gate：
+
+warnings_count > baseline -> fail
+
+或 “新增 warnings diff 列表”>0 -> fail
+
+Suggested next step
+
+先实现 warnings 采集脚本 + baseline 文件（不改阈值、不改依赖）
+
+Phase 4 — Clean environment reproducibility in CI
+
+Intent
+
+防止“本机/缓存/环境变量”造成假通过；审计级复现更可信
+
+Work items
+
+CI 新增 job：
+
+fresh clone
+
+clean venv
+
+跑全量验证命令（与审计摘要一致）
+
+输出 artifacts：
+
+完整 logs + reports 路径
+
+Permission boundary
+
+修改 CI 配置通常需要 push：未获批准则 STOP 输出 BLOCKED
+
+Suggested next step
+
+本地先加 scripts/ci_fresh_run.sh（可在本地复现 CI job），CI 变更留到获批后再 push
+
+Phase 5 — Deterministic OOD (fixed seed + hashed manifest)
+
+Intent
+
+OOD 集合可复现、可审计：每次生成输出同一份（除非显式升级）
+
+Work items
+
+OOD 生成器增加：
+
+固定 seed
+
+生成 manifest（场景清单 + hash）
+
+reports 写入：
+
+ood_manifest.json + ood_manifest_hash
+
+Suggested next step
+
+给 OOD 生成脚本补 seed 参数与 manifest 输出，并增加一个 smoke/单测验证“同 seed 生成一致”
+
+Phase 6 — MVP-7.1 Agency + Tooling (measurable plan)
+
+Intent
+
+把 Self-Model 的 capability boundary 真正接入工具层，且保持“可测/可消融/可干预”
+
+Work items
+
+设计文档：
+
+docs/MVP-7_1_Agency_Tooling_Plan.md（能力边界、工具可用性、失败模式、权限/审计）
+
+新增两类因果测试：
+
+intervention：工具可用 vs 不可用 -> 策略分布显著不同
+
+ablation：关 capability boundary -> 差异消失
+
+Suggested next step
+
+先落地 plan 文档骨架（不改代码），并列出将新增的 scenario 名称与指标字段
+
+BLOCKED conditions (must stop and output)
+
+Push tag to remote / create GitHub Release
+
+Merge PR / modify protected branch settings
+
+Any destructive action (history rewrite / force push / deleting reports)
+
+BLOCKED: <exact approval needed>

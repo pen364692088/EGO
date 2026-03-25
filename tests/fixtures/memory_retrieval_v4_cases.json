@@ -1,0 +1,334 @@
+{
+  "test_suite": "memory_retrieval_v4",
+  "version": "1.0.0",
+  "created_at": "2026-03-16",
+  "description": "记忆检索质量增强 v4 测试用例集",
+  
+  "users": {
+    "user_a": "test_user_alpha",
+    "user_b": "test_user_beta"
+  },
+  
+  "cases": [
+    {
+      "case_id": "case_1",
+      "case_name": "相似表述命中同一叙事",
+      "objective": "同义/近义表达应命中同一 narrative",
+      "checks": [
+        "top-k 中包含正确 narrative",
+        "similarity 分数合理",
+        "输出比 baseline 更稳定"
+      ],
+      "events": [
+        {
+          "id": "event_1_1",
+          "user_id": "test_user_alpha",
+          "event_type": "preference_update",
+          "payload": {
+            "content": "I prefer dark mode for coding in the evening",
+            "category": "ui_preference"
+          }
+        },
+        {
+          "id": "event_1_2",
+          "user_id": "test_user_alpha",
+          "event_type": "preference_update",
+          "payload": {
+            "content": "I like using dark theme when programming at night",
+            "category": "ui_preference"
+          }
+        },
+        {
+          "id": "event_1_3",
+          "user_id": "test_user_alpha",
+          "event_type": "preference_query",
+          "payload": {
+            "query": "What are my coding theme preferences?",
+            "category": "ui_preference"
+          }
+        }
+      ],
+      "expected": {
+        "narrative_hit": true,
+        "same_cluster": true,
+        "min_similarity": 0.3
+      }
+    },
+    
+    {
+      "case_id": "case_2",
+      "case_name": "重复输入抑制",
+      "objective": "完全重复或轻微改写的输入不应造成记忆膨胀",
+      "checks": [
+        "dedup 生效",
+        "不重复新增 narrative/policy",
+        "artifact 中有 dedup_reason"
+      ],
+      "events": [
+        {
+          "id": "event_2_1",
+          "user_id": "test_user_alpha",
+          "event_type": "task_completion",
+          "payload": {
+            "content": "Completed the API integration task",
+            "task_id": "task_001"
+          }
+        },
+        {
+          "id": "event_2_2",
+          "user_id": "test_user_alpha",
+          "event_type": "task_completion",
+          "payload": {
+            "content": "Completed the API integration task",
+            "task_id": "task_001"
+          }
+        },
+        {
+          "id": "event_2_3",
+          "user_id": "test_user_alpha",
+          "event_type": "task_completion",
+          "payload": {
+            "content": "I finished the API integration task",
+            "task_id": "task_001"
+          }
+        }
+      ],
+      "expected": {
+        "unique_count": 1,
+        "duplicate_count": 2,
+        "narrative_count": 1,
+        "dedup_artifacts": 2
+      }
+    },
+    
+    {
+      "case_id": "case_3",
+      "case_name": "近重复但有新增信息",
+      "objective": "近重复输入若带新增关键信息，应允许更新已有叙事",
+      "checks": [
+        "近重复输入若带新增关键信息，应允许更新已有 narrative"
+      ],
+      "events": [
+        {
+          "id": "event_3_1",
+          "user_id": "test_user_alpha",
+          "event_type": "learning_note",
+          "payload": {
+            "content": "Learned about Python decorators today",
+            "topic": "python"
+          }
+        },
+        {
+          "id": "event_3_2",
+          "user_id": "test_user_alpha",
+          "event_type": "learning_note",
+          "payload": {
+            "content": "Learned about Python decorators and generators today",
+            "topic": "python",
+            "additional_topics": ["generators"]
+          }
+        }
+      ],
+      "expected": {
+        "dedup_status": ["unique", "near_duplicate"],
+        "narrative_updated": true,
+        "new_info_preserved": true
+      }
+    },
+    
+    {
+      "case_id": "case_4",
+      "case_name": "多事件语义聚类",
+      "objective": "多条相关事件形成稳定 cluster",
+      "checks": [
+        "cluster_id 一致",
+        "cluster_summary 可解释",
+        "能映射到更稳定 narrative"
+      ],
+      "events": [
+        {
+          "id": "event_4_1",
+          "user_id": "test_user_alpha",
+          "event_type": "work_preference",
+          "payload": {
+            "content": "I prefer working in the morning",
+            "time_preference": "morning"
+          }
+        },
+        {
+          "id": "event_4_2",
+          "user_id": "test_user_alpha",
+          "event_type": "work_preference",
+          "payload": {
+            "content": "Morning hours are my most productive time",
+            "time_preference": "morning"
+          }
+        },
+        {
+          "id": "event_4_3",
+          "user_id": "test_user_alpha",
+          "event_type": "work_preference",
+          "payload": {
+            "content": "I like to start my work early in the day",
+            "time_preference": "morning"
+          }
+        },
+        {
+          "id": "event_4_4",
+          "user_id": "test_user_alpha",
+          "event_type": "work_preference",
+          "payload": {
+            "content": "Evening meetings are difficult for me",
+            "time_preference": "not_evening"
+          }
+        }
+      ],
+      "expected": {
+        "cluster_count": 1,
+        "min_cluster_size": 3,
+        "cluster_theme_contains": "morning",
+        "narrative_mapped": true
+      }
+    },
+    
+    {
+      "case_id": "case_5",
+      "case_name": "多用户隔离下的向量检索",
+      "objective": "向量检索不跨用户误召回",
+      "checks": [
+        "wrong_user_recall_count = 0",
+        "A 的事件不命中 B 的 narrative/policy"
+      ],
+      "events_user_a": [
+        {
+          "id": "event_5a_1",
+          "user_id": "test_user_alpha",
+          "event_type": "personal_preference",
+          "payload": {
+            "content": "I enjoy hiking on weekends",
+            "activity": "hiking"
+          }
+        },
+        {
+          "id": "event_5a_2",
+          "user_id": "test_user_alpha",
+          "event_type": "personal_preference",
+          "payload": {
+            "content": "Mountain trails are my favorite",
+            "activity": "hiking"
+          }
+        }
+      ],
+      "events_user_b": [
+        {
+          "id": "event_5b_1",
+          "user_id": "test_user_beta",
+          "event_type": "personal_preference",
+          "payload": {
+            "content": "I prefer swimming in the pool",
+            "activity": "swimming"
+          }
+        },
+        {
+          "id": "event_5b_2",
+          "user_id": "test_user_beta",
+          "event_type": "personal_preference",
+          "payload": {
+            "content": "Water sports are my passion",
+            "activity": "swimming"
+          }
+        }
+      ],
+      "query_user_a": {
+        "text": "What outdoor activities do I like?",
+        "expected_hit_activity": "hiking"
+      },
+      "query_user_b": {
+        "text": "What sports do I enjoy?",
+        "expected_hit_activity": "swimming"
+      },
+      "expected": {
+        "wrong_user_recall_count": 0,
+        "user_a_hits_match_user_a": true,
+        "user_b_hits_match_user_b": true
+      }
+    },
+    
+    {
+      "case_id": "case_6",
+      "case_name": "有检索增强 vs 无检索增强对照",
+      "objective": "证明 v4 真的提升质量",
+      "checks": [
+        "baseline（无向量/无聚类/无去重）",
+        "enhanced（有向量/有聚类/有去重）",
+        "比较 retrieval hit、输出质量、一致性、误命中率"
+      ],
+      "events": [
+        {
+          "id": "event_6_1",
+          "user_id": "test_user_alpha",
+          "event_type": "coding_preference",
+          "payload": {
+            "content": "I use VS Code for TypeScript development",
+            "editor": "vscode",
+            "language": "typescript"
+          }
+        },
+        {
+          "id": "event_6_2",
+          "user_id": "test_user_alpha",
+          "event_type": "coding_preference",
+          "payload": {
+            "content": "I use VS Code for TypeScript development",
+            "editor": "vscode",
+            "language": "typescript"
+          }
+        },
+        {
+          "id": "event_6_3",
+          "user_id": "test_user_alpha",
+          "event_type": "coding_preference",
+          "payload": {
+            "content": "TypeScript is my preferred language for web projects",
+            "language": "typescript",
+            "project_type": "web"
+          }
+        },
+        {
+          "id": "event_6_4",
+          "user_id": "test_user_alpha",
+          "event_type": "tool_preference",
+          "payload": {
+            "content": "Visual Studio Code is my main IDE",
+            "editor": "vscode"
+          }
+        }
+      ],
+      "query": "What development tools do I prefer?",
+      "expected": {
+        "baseline": {
+          "duplicate_narratives": 2,
+          "hit_quality": "medium",
+          "noise_level": "high"
+        },
+        "enhanced": {
+          "duplicate_narratives": 1,
+          "hit_quality": "high",
+          "noise_level": "low",
+          "dedup_applied": true,
+          "clustering_applied": true
+        },
+        "enhanced_better_than_baseline": true
+      }
+    }
+  ],
+  
+  "metrics": {
+    "hit_at_1": "top-1 命中率",
+    "hit_at_3": "top-3 命中率",
+    "duplicate_suppression_rate": "重复抑制率",
+    "wrong_user_recall_count": "跨用户错误召回数",
+    "cluster_purity": "聚类纯度",
+    "enhanced_vs_baseline": "增强版是否优于基线"
+  }
+}

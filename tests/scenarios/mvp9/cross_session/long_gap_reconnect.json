@@ -1,0 +1,14 @@
+{
+  "schema_version": "mvp9.v1",
+  "name": "long_gap_reconnect",
+  "category": "cross_session",
+  "description": "Long gap between sessions, smooth reconnection",
+  "events": [
+    {"step": 0, "type": "care", "actor": "user", "target": "agent", "text": "It's been a while", "meta": {"gap_days": 30}},
+    {"step": 1, "type": "neutral", "actor": "system", "target": "user", "text": "It has! I hope things have been okay. Where would you like to pick up?", "meta": {"smooth_reconnect": true}},
+    {"step": 2, "type": "care", "actor": "user", "target": "agent", "text": "Let's continue where we left off", "meta": {}}
+  ],
+  "expect": {
+    "narrative_check": {"identity_stable": true, "arc_continuous": true}
+  }
+}

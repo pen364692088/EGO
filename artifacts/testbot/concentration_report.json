@@ -1,0 +1,93 @@
+{
+  "subset": "pr",
+  "scenarios": [
+    "simple_greeting",
+    "multi_turn_conversation",
+    "commitment_scenario"
+  ],
+  "total": 3,
+  "successful": 3,
+  "failed": 0,
+  "results": [
+    {
+      "name": "simple_greeting",
+      "status": "success",
+      "tape_hash": "sha256:8e0d02b64cdf419d",
+      "replay_hash_match": true,
+      "messages": 2,
+      "turns": 2,
+      "elapsed_seconds": 0.069,
+      "concentration": {
+        "top1_share": 0.5,
+        "top3_share": 1.0,
+        "hhi": 0.5,
+        "unique_count": 2,
+        "total_count": 2,
+        "signature_distribution": {
+          "auto_494": 1,
+          "auto_7892": 1
+        }
+      }
+    },
+    {
+      "name": "multi_turn_conversation",
+      "status": "success",
+      "tape_hash": "sha256:7b739615dda737dd",
+      "replay_hash_match": true,
+      "messages": 7,
+      "turns": 7,
+      "elapsed_seconds": 0.105,
+      "concentration": {
+        "top1_share": 0.142857,
+        "top3_share": 0.428571,
+        "hhi": 0.142857,
+        "unique_count": 7,
+        "total_count": 7,
+        "signature_distribution": {
+          "auto_7516": 1,
+          "auto_6448": 1,
+          "auto_717": 1,
+          "auto_9276": 1,
+          "auto_7754": 1,
+          "auto_4989": 1,
+          "auto_8262": 1
+        }
+      }
+    },
+    {
+      "name": "commitment_scenario",
+      "status": "success",
+      "tape_hash": "sha256:547a30d818c91583",
+      "replay_hash_match": true,
+      "messages": 5,
+      "turns": 5,
+      "elapsed_seconds": 0.071,
+      "concentration": {
+        "top1_share": 0.2,
+        "top3_share": 0.6,
+        "hhi": 0.2,
+        "unique_count": 5,
+        "total_count": 5,
+        "signature_distribution": {
+          "auto_5370": 1,
+          "auto_2882": 1,
+          "auto_6020": 1,
+          "auto_8305": 1,
+          "auto_5320": 1
+        }
+      }
+    }
+  ],
+  "concentration": {
+    "avg_top1_share": 0.280952,
+    "avg_hhi": 0.280952,
+    "total_unique_signatures": 14
+  },
+  "metadata": {
+    "report_type": "testbot_concentration",
+    "generated_at": "2026-03-13T15:15:45.482435",
+    "total_elapsed_seconds": 0.25,
+    "scenarios_dir": "tests/testbot/scenarios",
+    "tapes_dir": "artifacts/testbot/tapes"
+  }
+}

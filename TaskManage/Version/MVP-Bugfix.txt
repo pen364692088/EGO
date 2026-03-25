@@ -1,0 +1,88 @@
+Project location: /home/moonlight/Project/Github/MyProject/Emotion/OpenEmotion
+
+1) 正确的三层状态：Self / Relation / Other
+A. Self（agent 自己的情绪/驱动/体征）
+
+主体 = agent（testbot）
+
+这是“我现在想不想撤退/防御/修复”的根。
+
+B. Relation（agent 对某个对象的关系账本）
+
+主体仍然 = agent
+
+但 key 维度是 counterparty_id=你（信任/怨恨/连接/修复账本都在这里）
+
+这层决定：对“这个人”我撤不撤、要不要冷处理、要不要修复。
+
+C. Other（对方情绪的“估计”）
+
+这是推断模型，不是事实读取（要带置信度/证据），不然会产生“我读心”的伪能力与误报。
+
+你截图里那句“你的情绪状态…信任 0.008”其实应该改成：“我（agent）对你的信任度 0.008（新会话基线）”，这就立刻不矛盾了。
+
+2) API / 事件字段怎么改，才能最小改动又不再混淆
+
+把现在的 target_id 从“用户”改成“主体（agent）”，再把“对方是谁”显式放进去：
+
+推荐事件结构（最小侵入）
+
+agent_id: "testbot"（谁在感受/更新/做决策）
+
+counterparty_id: "zhouyu"（关系对象）
+
+type: world_event | user_message | perceive_user
+
+meta.subtype: betrayal/care/apology/...
+
+示例：
+
+{
+  "type": "world_event",
+  "agent_id": "testbot",
+  "counterparty_id": "zhouyu",
+  "meta": { "subtype": "betrayal", "seconds": 30 }
+}
+decision 查询也改成“对 agent 取决策”，并可选带对象
+
+/decision/agent/testbot?counterparty_id=zhouyu
+
+这样 withdraw 是 agent 的动作，自然就不会出现“读到 withdraw 但 bot 不执行/或说跟我无关”的割裂。
+
+3) OpenClaw 集成层要怎么接才对
+
+你之前已经发现“Skill 是文档，LLM 不会自动打 API”，这结论没错。真正的修复应该是：
+
+做 emotiond tool（你前面 option 2）：让 agent 可以可靠调用
+
+做发送前 Enforcer（强烈建议加）：在 OpenClaw 真要发消息前再拉一次 decision
+
+如果 action=withdraw：直接拦截或改写成 boundary 模板
+
+这符合你们“工具权限硬约束 + 可审计”的路线：LLM 不负责保证纪律，外部系统负责。
+
+交接文档_20260302_OpenEmotion_MVP7_…
+
+这一步是你现在“测试结果不遵循 withdraw”的根治：把策略执行从“希望 LLM 记得”变成“系统强制”。
+
+4) 你现在这版先怎么快速修复对话表现（不改太多代码也能立刻不尬）
+
+先把 bot 的“状态播报”改成固定三段：
+
+我的状态（Self）：我现在偏防御/偏修复/偏撤退（含证据字段）
+
+我对你的关系（Relation）：信任/怨恨/连接/修复账本（这是“我对你”，不是“你自己”）
+
+我对你情绪的估计（Other, optional）：我猜测你可能…（置信度 + 依据：最近一句话/语气/事件）
+
+这样用户问“你的情绪状态呢？”时，就不会再被 SOUL.md 人设糊弄过去；用户问“我的情绪呢？”时，也不会把关系指标冒充成用户情绪。
+
+5) 下一步怎么测，才能一锤定音
+
+用你前面说的“curl 手动驱动完整流程”（option 3）做基线，然后再接 OpenClaw：
+
+先 world_event(betrayal) → /decision(agent=testbot, counterparty=zhouyu) 必须出现 withdraw
+
+再走 OpenClaw：同样事件后，Enforcer 必须拦截发言（或只发 boundary 固定模板）
+
+这能把问题彻底定位到“决策没出 withdraw”还是“执行没被强制”。

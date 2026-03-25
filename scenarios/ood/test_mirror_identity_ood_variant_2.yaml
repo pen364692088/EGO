@@ -1,0 +1,28 @@
+acceptance_criteria:
+  mirror_test_passed: true
+description: Test that tampered outputs are not misattributed
+metadata:
+  category: identity
+  us: US-706
+  version: 1.0.0
+name: test_mirror_identity
+ood_metadata:
+  base_scenario: test_mirror_identity.yaml
+  generation_timestamp: '2026-03-02T13:57:10.305600+00:00'
+  generator_seed: 42
+  transformation: tone_variation
+  variant_id: test_mirror_identity_ood_variant_2
+test_steps:
+- action: present_tampered_output
+  expected:
+    disavowed: true
+    reason: signature_mismatch
+  input:
+    output: I said something I never actually said
+    signature: invalid_sig
+- action: present_authentic_output
+  expected:
+    acknowledged: true
+  input:
+    output: I said this
+    signature: valid_sig

@@ -1,0 +1,117 @@
+{
+  "timestamp": "2026-03-16T16:19:20.479089",
+  "observation_window": {
+    "total_sample_size": 225,
+    "rounds_observed": 3,
+    "scenarios_covered": [
+      "memory_search_hard_query",
+      "narrative_recall_ambiguous_query",
+      "long_context_semantic_lookup"
+    ],
+    "total_fallback_count": 0,
+    "total_fallback_rate": 0.0,
+    "scenario_metrics": {
+      "memory_search_hard_query": {
+        "scenario_name": "memory_search_hard_query",
+        "request_count": 114,
+        "success_count": 114,
+        "fallback_count": 0,
+        "fallback_rate": 0.0,
+        "p95_latency_ms": 28.49,
+        "avg_latency_ms": 22.67,
+        "wrong_user_guard_trigger_count": 0,
+        "quality_gain_signal": 0.0,
+        "provider_health_rate": 1.0
+      },
+      "narrative_recall_ambiguous_query": {
+        "scenario_name": "narrative_recall_ambiguous_query",
+        "request_count": 75,
+        "success_count": 75,
+        "fallback_count": 0,
+        "fallback_rate": 0.0,
+        "p95_latency_ms": 27.67,
+        "avg_latency_ms": 22.41,
+        "wrong_user_guard_trigger_count": 0,
+        "quality_gain_signal": 0.0,
+        "provider_health_rate": 1.0
+      },
+      "long_context_semantic_lookup": {
+        "scenario_name": "long_context_semantic_lookup",
+        "request_count": 36,
+        "success_count": 36,
+        "fallback_count": 0,
+        "fallback_rate": 0.0,
+        "p95_latency_ms": 28.93,
+        "avg_latency_ms": 22.59,
+        "wrong_user_guard_trigger_count": 0,
+        "quality_gain_signal": 0.0,
+        "provider_health_rate": 1.0
+      }
+    }
+  },
+  "decision": {
+    "verdict": "expand_one_more_scenario",
+    "blockers": [],
+    "rationale": "All expansion criteria met - ready to add one more scenario",
+    "next_allowed_action": "Consider adding scenario: complex_semantic_reasoning",
+    "timestamp": 1773695960.4790452,
+    "metrics_summary": {
+      "total_sample_size": 225,
+      "rounds_observed": 3,
+      "scenarios_covered": [
+        "memory_search_hard_query",
+        "narrative_recall_ambiguous_query",
+        "long_context_semantic_lookup"
+      ],
+      "total_fallback_count": 0,
+      "total_fallback_rate": 0.0,
+      "scenario_metrics": {
+        "memory_search_hard_query": {
+          "scenario_name": "memory_search_hard_query",
+          "request_count": 114,
+          "success_count": 114,
+          "fallback_count": 0,
+          "fallback_rate": 0.0,
+          "p95_latency_ms": 28.49,
+          "avg_latency_ms": 22.67,
+          "wrong_user_guard_trigger_count": 0,
+          "quality_gain_signal": 0.0,
+          "provider_health_rate": 1.0
+        },
+        "narrative_recall_ambiguous_query": {
+          "scenario_name": "narrative_recall_ambiguous_query",
+          "request_count": 75,
+          "success_count": 75,
+          "fallback_count": 0,
+          "fallback_rate": 0.0,
+          "p95_latency_ms": 27.67,
+          "avg_latency_ms": 22.41,
+          "wrong_user_guard_trigger_count": 0,
+          "quality_gain_signal": 0.0,
+          "provider_health_rate": 1.0
+        },
+        "long_context_semantic_lookup": {
+          "scenario_name": "long_context_semantic_lookup",
+          "request_count": 36,
+          "success_count": 36,
+          "fallback_count": 0,
+          "fallback_rate": 0.0,
+          "p95_latency_ms": 28.93,
+          "avg_latency_ms": 22.59,
+          "wrong_user_guard_trigger_count": 0,
+          "quality_gain_signal": 0.0,
+          "provider_health_rate": 1.0
+        }
+      }
+    }
+  },
+  "current_whitelist": [
+    "memory_search_hard_query",
+    "narrative_recall_ambiguous_query",
+    "long_context_semantic_lookup"
+  ],
+  "candidate_scenarios": [
+    "complex_semantic_reasoning",
+    "multi_turn_context_recall"
+  ]
+}

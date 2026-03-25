@@ -1,0 +1,14 @@
+task_id: MVP11_5_T01
+goal: Build shadow readiness snapshot from SRAP logs
+depends_on: []
+deliverables:
+  - artifacts/self_report/shadow_metrics_snapshot.json
+commands:
+  - python tools/srap-daily-report --snapshot
+acceptance_criteria:
+  - file_exists: artifacts/self_report/shadow_metrics_snapshot.json
+  - field_exists: violation_rate
+  - field_exists: numeric_leak
+stop_conditions:
+  - shadow_log_missing
+  - parse_error

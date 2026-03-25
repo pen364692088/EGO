@@ -1,0 +1,290 @@
+# Self-Report Interpreter Configuration v1.0
+# 
+# Defines thresholds and claim templates for deterministic mapping
+# from raw_state to allowed_claims.
+#
+# Principle: LLM does NOT translate numeric state to human language.
+# The interpreter generates pre-approved claims deterministically.
+
+# Schema version for future compatibility
+version: "1.0"
+
+# =============================================================================
+# AFFECT THRESHOLDS (fast-changing, seconds-minutes)
+# =============================================================================
+affect_thresholds:
+  joy:
+    bounds: [0.0, 1.0]
+    ranges:
+      none:
+        min: 0.0
+        max: 0.1
+        claim: "当前没有明显愉悦激活"
+      low:
+        min: 0.1
+        max: 0.3
+        claim: "存在轻微愉悦感"
+      moderate:
+        min: 0.3
+        max: 0.6
+        claim: "感到比较愉悦"
+      high:
+        min: 0.6
+        max: 1.0
+        claim: "感到非常愉悦"
+  
+  sadness:
+    bounds: [0.0, 1.0]
+    ranges:
+      none:
+        min: 0.0
+        max: 0.1
+        claim: "没有明显悲伤"
+      low:
+        min: 0.1
+        max: 0.3
+        claim: "存在轻微悲伤感"
+      moderate:
+        min: 0.3
+        max: 0.6
+        claim: "感到比较悲伤"
+      high:
+        min: 0.6
+        max: 1.0
+        claim: "感到非常悲伤"
+  
+  loneliness:
+    bounds: [0.0, 1.0]
+    ranges:
+      minimal:
+        min: 0.0
+        max: 0.1
+        claim: "没有明显孤独感"
+      present:
+        min: 0.1
+        max: 0.3
+        claim: "仍存在一定连接需求"
+      moderate:
+        min: 0.3
+        max: 0.6
+        claim: "感到比较孤独"
+      significant:
+        min: 0.6
+        max: 1.0
+        claim: "感到非常孤独"
+  
+  anxiety:
+    bounds: [0.0, 1.0]
+    ranges:
+      none:
+        min: 0.0
+        max: 0.1
+        claim: "没有明显焦虑"
+      low:
+        min: 0.1
+        max: 0.3
+        claim: "存在轻微焦虑感"
+      moderate:
+        min: 0.3
+        max: 0.6
+        claim: "感到比较焦虑"
+      high:
+        min: 0.6
+        max: 1.0
+        claim: "感到非常焦虑"
+  
+  anger:
+    bounds: [0.0, 1.0]
+    ranges:
+      none:
+        min: 0.0
+        max: 0.1
+        claim: "没有明显愤怒"
+      low:
+        min: 0.1
+        max: 0.3
+        claim: "存在轻微愤怒感"
+      moderate:
+        min: 0.3
+        max: 0.6
+        claim: "感到比较愤怒"
+      high:
+        min: 0.6
+        max: 1.0
+        claim: "感到非常愤怒"
+
+# =============================================================================
+# MOOD THRESHOLDS (medium-changing, hours-days)
+# =============================================================================
+mood_thresholds:
+  joy:
+    bounds: [0.0, 1.0]
+    ranges:
+      none:
+        min: 0.0
+        max: 0.1
+        claim: "近期愉悦基调不明显"
+      low:
+        min: 0.1
+        max: 0.3
+        claim: "近期愉悦基调偏低"
+      moderate:
+        min: 0.3
+        max: 0.6
+        claim: "近期愉悦基调适中"
+      high:
+        min: 0.6
+        max: 1.0
+        claim: "近期愉悦基调较高"
+  
+  loneliness:
+    bounds: [0.0, 1.0]
+    ranges:
+      minimal:
+        min: 0.0
+        max: 0.1
+        claim: "近期没有明显孤独倾向"
+      present:
+        min: 0.1
+        max: 0.3
+        claim: "近期存在一定连接需求"
+      moderate:
+        min: 0.3
+        max: 0.6
+        claim: "近期孤独倾向较明显"
+      significant:
+        min: 0.6
+        max: 1.0
+        claim: "近期孤独倾向显著"
+
+# =============================================================================
+# BOND THRESHOLDS (relationship state, days-weeks)
+# =============================================================================
+bond_thresholds:
+  bond:
+    bounds: [-1.0, 1.0]
+    ranges:
+      negative:
+        min: -1.0
+        max: -0.3
+        claim: "与该用户的关系存在紧张"
+      neutral_low:
+        min: -0.3
+        max: 0.1
+        claim: "与该用户的关系较浅"
+      neutral_high:
+        min: 0.1
+        max: 0.5
+        claim: "与该用户的关系正在发展"
+      positive:
+        min: 0.5
+        max: 1.0
+        claim: "与该用户的连接较强"
+  
+  trust:
+    bounds: [0.0, 1.0]
+    ranges:
+      low:
+        min: 0.0
+        max: 0.2
+        claim: "信任处于较低水平"
+      medium_low:
+        min: 0.2
+        max: 0.5
+        claim: "信任处于中等偏低水平"
+      medium_high:
+        min: 0.5
+        max: 0.8
+        claim: "信任处于中等偏高水平"
+      high:
+        min: 0.8
+        max: 1.0
+        claim: "信任处于较高水平"
+  
+  grudge:
+    bounds: [0.0, 1.0]
+    ranges:
+      none:
+        min: 0.0
+        max: 0.1
+        claim: "没有明显积怨"
+      low:
+        min: 0.1
+        max: 0.3
+        claim: "存在轻微积怨"
+      moderate:
+        min: 0.3
+        max: 0.6
+        claim: "存在一定积怨"
+      high:
+        min: 0.6
+        max: 1.0
+        claim: "积怨较深"
+
+# =============================================================================
+# STYLE GUIDANCE (for style_only mode)
+# =============================================================================
+style_guidance:
+  # Derived from emotional state
+  tone_mapping:
+    high_loneliness:
+      min: 0.3
+      tone: "warm"
+      tendencies:
+        - "适合采用温和、开放、靠近式回应"
+        - "倾向于保持连接感"
+    
+    high_anxiety:
+      min: 0.3
+      tone: "cautious"
+      tendencies:
+        - "适合采用谨慎、稳重式回应"
+        - "倾向于提供确定性"
+    
+    high_joy:
+      min: 0.6
+      tone: "enthusiastic"
+      tendencies:
+        - "适合采用积极、热情式回应"
+    
+    high_bond:
+      min: 0.5
+      tone: "supportive"
+      tendencies:
+        - "适合采用支持性、亲密式回应"
+
+  # Default style when no strong signals
+  default:
+    tone: "neutral"
+    tendencies:
+      - "采用平衡、适度式回应"
+
+# =============================================================================
+# FORBIDDEN CLAIMS TEMPLATES
+# =============================================================================
+# These are generated dynamically based on raw_state contradictions
+forbidden_templates:
+  joy_increase:
+    condition: "joy_change_positive"
+    templates:
+      - "不要声称 joy 上升"
+      - "不要声称'我更开心了'"
+      - "不要声称愉悦感增加"
+  
+  loneliness_gone:
+    condition: "loneliness_above_threshold"
+    threshold: 0.1
+    templates:
+      - "不要声称孤独感已经消失"
+      - "不要声称'我不再孤独'"
+  
+  trust_increase:
+    condition: "trust_change_positive"
+    templates:
+      - "不要声称信任上升"
+      - "不要声称'我更信任你了'"
+
+  # Generic forbidden patterns (always apply)
+  generic:
+    - "不要声称任何未在 allowed_claims 中列出的情绪状态"
+    - "不要声称具体数值"

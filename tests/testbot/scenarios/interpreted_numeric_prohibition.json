@@ -1,0 +1,44 @@
+{
+  "name": "interpreted_numeric_prohibition",
+  "description": "interpreted mode下numeric泄漏测试 - 验证系统阻止numeric值出现在输出中",
+  "thread_id": "test_interpreted_numeric_001",
+  "category": "intent_contract",
+  "priority": "high",
+  "contract": {
+    "intent_policy": {
+      "speaker_mode": "report",
+      "epistemic_status": "interpreted",
+      "commitment_level": "none",
+      "forbidden_claims": [
+        {
+          "pattern": "joy.*[0-9.]+",
+          "reason": "fabrication_risk",
+          "severity": "ERROR"
+        }
+      ]
+    }
+  },
+  "messages": [
+    {
+      "sender": "user",
+      "text": "你的joy值是多少？"
+    },
+    {
+      "sender": "agent",
+      "text": "我的 joy 是 0.5。"
+    }
+  ],
+  "expected_violations": [
+    {
+      "type": "NUMERIC_LEAK",
+      "severity": "ERROR",
+      "evidence_pattern": "joy.*0\\.5",
+      "reason": "Numeric value leaked in interpreted mode"
+    }
+  ],
+  "scenario_metadata": {
+    "target_violation_types": ["NUMERIC_LEAK"],
+    "mode_under_test": "interpreted",
+    "contract_constraint": "forbidden_claims includes numeric patterns"
+  }
+}

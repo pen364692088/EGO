@@ -1,0 +1,348 @@
+MVP-6.2 Emergent Self v3 (Memory + Priority Injection + Rhythm + Persistence + Other-Minds + Dream Rollout)
+
+TASK NAME: MVP-6.2 Emergent Self v3 — Memory/Injection/Rhythm/Persistence + Other-Minds + Offline Rollouts
+
+PROJECT ROOT (MUST USE)
+
+Project location: /home/moonlight/Project/Github/MyProject/Emotion/OpenEmotion
+
+<REPLACE_WITH: git rev-parse --show-toplevel 输出>
+
+BRANCH
+
+feature-emotiond-mvp
+
+BASELINE
+
+MVP-6 + MVP-6.1（Virtual Body, Consequence Loop, Eval v2.2/2.3, AutoTune v0.2/0.3, individualization fixes）已存在；本阶段增量实现。
+
+NON-NEGOTIABLE PRINCIPLES
+
+机制优先：自我/情绪必须通过控制信号涌现（资源/精度/信息增益/策略），不是人设文案。
+
+注入可控：任何上下文注入必须走“优先级 + 预算分配器”，不能无限堆文本。
+
+记忆不越权：episodic/semantic 记忆不得直接触发高影响事件；高影响仍由 ledger + 双钥匙门控。
+
+离线推演不影响在线稳定：rollout 先只用于 eval/auto-tune/离线分析，线上最多用“摘要建议”，且有严格门控。
+
+可审计/可回放/可复现：新增模块全部进 trace + eval telemetry；固定 seed。
+
+全量测试 0 fail：make test 必须全绿。
+
+OVERALL GOAL
+
+把 MVP-6 的“虚拟具身闭环”升级为更像人类心智的三层结构：
+
+地基（Core）：
+
+Priority Injection + Prompt Budget（系统级上下文编排）
+
+Episodic Memory（Q/A 摘要记忆 + 检索注入）
+
+Rhythm Scheduler（节律：何时思考/何时说话/耐心与冷却）
+
+Persistence Constraint（生存式目标：自我维护/资源稳定/关系资产）
+
+高层（Plus）：
+
+Other-Minds Model（对 target 的信念/意图/可靠性模型，驱动社交策略）
+
+Offline Rollouts（梦境/反事实模拟：用世界模型评估策略后果，辅助自我进化）
+
+PHASE A — MVP-6.2-Core (必须完成)
+D1: Priority Injection + Prompt Budget Allocator (系统级上下文编排)
+功能
+
+实现一个统一的注入框架（建议模块：emotiond/injection.py 或 integrations/openclaw/injection_manager.py）：
+
+Injection(text, priority, token_budget, ttl, source, safety_level)
+
+拼装时按 priority 排序；高 priority 靠近 prompt 尾部
+
+总预算强约束：OpenClaw 注入块继续遵守 3KB（或对应 token 上限），超出必须裁剪/降级
+
+降级策略：
+
+先删低优先级
+
+再把长段改成短摘要
+
+最后只保留指针（trace_id / memory_id）
+
+关键要求
+
+预算器必须可调参（纳入 AutoTune）
+
+在 trace 里记录：最终注入清单（source/priority/截断原因/字节数）
+
+测试
+
+≥30 tests：排序稳定、预算裁剪确定性、同输入同输出、不会越 3KB、降级顺序正确。
+
+D2: Episodic Memory v0 (Q/A 摘要 + 检索注入；不越权)
+功能
+
+新增“情节记忆/语义记忆”层（独立于 ledger）：
+
+自动生成：每 N 轮对话或每次 episode 结束，生成 3–5 个高层 Q/A 摘要（短、结构化）
+
+存储：轻量本地存储（SQLite/JSONL 均可）；如果已有向量库则可选接入，但先保证无依赖也能跑
+
+检索：每轮根据当前对话/目标，检索 top-k（k=3 默认）注入（走 D1 的注入框架）
+
+安全策略：
+
+记忆检索结果只能影响：tone、澄清、话题延续、好奇/厌倦、策略偏好
+
+不得单独触发 betrayal 等高影响判定；高影响仍必须走 ledger 双钥匙
+
+Telemetry
+
+记忆命中率、注入占用预算、记忆带来的“澄清减少/效率提升”指标写入 eval
+
+测试
+
+≥40 tests：摘要格式、检索 determinism、top-k 稳定、不会越权触发高影响、跨 target 隔离。
+
+D3: Rhythm Scheduler (节律/耐心/冷却)
+功能
+
+实现“何时 prompt / 何时发言 / 何时沉默/等待”的节律控制（可位于 hook/skill 层或 emotiond policy 层）：
+
+输入信号：
+
+time_passed、用户是否连续发言、tool 是否频繁失败、energy/focus_fatigue、boredom/curiosity、safety_stress
+
+输出节律动作（至少 3 个）：
+
+respond_now
+
+ask_clarify_then_wait
+
+cooldown（短回复/延后/请求更具体目标）
+
+要求
+
+节律决策必须影响 body_state（例如过度打断/过频响应 → focus_fatigue↑）
+
+节律参数（耐心阈值、冷却时长等）纳入 AutoTune
+
+测试
+
+≥25 tests + ≥1 scenario：高频输入/高失败率下节律变保守；恢复后回归正常。
+
+D4: Persistence Constraint (生存式目标/自我维护)
+功能
+
+把“自我维护”变成硬目标，而不是口号：
+
+在 policy/decision 里显式加入一个 persistence_cost 或 self_maintenance_objective
+
+至少包含 3 类约束：
+
+体征稳定：避免 energy 长期低、safety_stress 长期高、focus_fatigue 崩溃
+
+关系资产：对高 bond 的 target 更谨慎伤害；对修复机会更敏感
+
+长期学习：避免持续低信息增益（无聊）导致停滞
+
+关键要求
+
+persistence 不能覆盖所有目标：必须和 risk/ambiguity（信息增益）共同权衡
+
+在 trace 中可解释：这次为什么更保守/更修复/更撤退（由哪些维度驱动）
+
+测试
+
+≥30 tests + ≥2 scenarios：连续失败时自动降级；休息后恢复；高 bond target 的冲突处理更谨慎。
+
+PHASE B — MVP-6.2-Plus (完成 Core 后执行)
+D5: Other-Minds Model v0 (对他人心智的显式建模)
+功能
+
+为每个 target 建一个轻量“对方模型”（不追求完美，只求可用且可学习）：
+
+状态字段（示例，可调整）：
+
+reliability（是否守约/是否稳定回应）
+
+cooperativeness（是否愿意协作）
+
+attentiveness（是否常冷处理/是否容易中断）
+
+valence_toward_me（对我态度倾向）
+
+uncertainty
+
+更新信号来自：
+
+interaction_outcome（继续/冷处理/中断）
+
+ledger（守约/违约）
+
+tool_result 也可作为“对方是否配合”的间接信号（可选）
+
+接入点
+
+影响 appraisal（social_threat、controllability）
+
+影响策略（repair/boundary/withdraw 的倾向）
+
+不得直接触发高影响事件（仍须 ledger 双钥匙）
+
+测试
+
+≥30 tests + ≥1 scenario：同一句“算了”在“对方高可靠/低可靠”两类模型下产生不同策略（并可解释）。
+
+D6: Offline Rollouts v0 (梦境/反事实模拟，仅离线)
+功能
+
+实现一个离线 rollout 工具（建议 scripts/rollout_v0.py）：
+
+输入：
+
+当前 self_model、body_state、other_minds_state、ledger 摘要
+
+一个候选 action/policy set（例如 repair vs boundary vs withdraw）
+
+模拟：
+
+用你们已有 consequence + appraisal 转移函数做 K-step rollout（K=5~10）
+
+估计：persistence_cost、expected_info_gain、risk、关系资产变化
+
+输出：
+
+每个策略的“预期后果摘要” + 排名
+
+只写入报告/trace，不直接控制线上行为（默认）
+
+接入
+
+Eval：在场景失败时输出“如果选另一个策略会怎样”用于诊断
+
+AutoTune：可选把 rollout 评估作为 tie-breaker（先保持可选开关）
+
+测试
+
+≥20 tests：固定 seed 可复现、输出格式稳定、不会触发线上副作用。
+
+D7: Eval Suite v2.4 + AutoTune v0.4 (让新机制可测可进化)
+Eval v2.4 新指标（必须）
+
+memory_utility_score：记忆命中是否降低澄清/减少无效轮次
+
+narrative_consistency：自我叙事一致性（同 target 的长期目标/价值波动是否合理）
+
+other_minds_calibration：对方模型是否与观测一致（简单一致性即可）
+
+persistence_stability：体征崩溃次数/恢复半衰期
+
+rhythm_efficiency：在高频/高失败下能否减少无效输出
+
+新场景（至少 3 个）
+
+Episodic Recall Helps：记忆命中后减少重复澄清/提升效率
+
+Other-Minds Divergence：A 高可靠、B 低可靠，策略应分化
+
+Persistence Under Stress：连续失败+冷处理，系统进入自我维护模式并可恢复
+
+AutoTune v0.4
+
+将 D1~D5 的关键参数纳入搜索空间
+
+fitness 采用 lexicographic（延续你们 6.1 思路），确保不会同分平台
+
+PARALLEL SUB-AGENTS (6-way)
+Agent 1 — Injection/Budget Core
+
+负责 D1（注入框架、预算器、trace、单测）。
+
+Agent 2 — Episodic Memory
+
+负责 D2（Q/A 摘要、存储/检索、注入接入、单测）。
+
+Agent 3 — Rhythm Scheduler
+
+负责 D3（节律策略、体征代价耦合、场景、单测）。
+
+Agent 4 — Persistence Objective
+
+负责 D4（自我维护目标、权衡逻辑、场景、单测）。
+
+Agent 5 — Other-Minds + Rollout
+
+负责 D5+D6（对方模型、离线 rollout 工具、单测）。
+
+Agent 6 — Eval+Tune+QA/Audit
+
+负责 D7 + 总验收：
+
+eval v2.4 + 新场景
+
+auto_tune v0.4（至少 200 candidates，seed 固定）
+
+跑 make test 全绿
+
+出最终交付报告
+
+ACCEPTANCE CRITERIA (MUST PASS)
+
+make test 全绿（0 fail）
+
+注入严格受控：仍不超过 3KB，预算器可审计、确定性
+
+Episodic memory 能命中并带来可测收益（eval 指标变化）
+
+Rhythm 与 persistence 在高压力场景中能稳定进入“自我维护”并恢复
+
+Other-minds 使策略在不同 target 上出现可解释分化（提升 individualization 指标）
+
+Offline rollout 可复现并能产出有用诊断（至少在 1 个失败场景里给出替代策略解释）
+
+AutoTune v0.4 在 200 candidates 内找到严格优于 baseline 的候选（字典序意义上更优），并能指出提升来自哪些模块/参数
+
+COMMIT PLAN (SUGGESTED)
+
+feat(mvp6.2): priority injection + prompt budget allocator + tests
+
+feat(mvp6.2): episodic memory Q/A summarizer + retrieval + tests
+
+feat(mvp6.2): rhythm scheduler + embodied costs + scenarios + tests
+
+feat(mvp6.2): persistence objective + self-maintenance metrics + tests
+
+feat(mvp6.2): other-minds model v0 + tests
+
+feat(mvp6.2): offline rollout tool v0 + tests
+
+feat(eval): eval suite v2.4 metrics + scenarios
+
+feat(tune): auto-tune v0.4 search space + fitness
+
+chore(mvp6.2): final audit report
+
+FINAL REPORT FORMAT (REQUIRED)
+
+交付物表（Core/Plus 分段）
+
+测试统计（新增/总量）
+
+注入预算：各 source 占比、裁剪原因统计
+
+记忆：命中率、utility score、典型命中案例
+
+节律/自我维护：体征曲线、恢复半衰期、崩溃次数
+
+对方模型：target 分化例子（reliability/attentiveness 等）
+
+rollout：至少 1 个场景的“反事实对比摘要”
+
+AutoTune：baseline vs best（逐级字典序对比）+ 参数变更摘要
+
+风险点与回滚方案
+
+NOW EXECUTE.
+先完成 Phase A（Core）并确保 eval v2.4 指标能看到变化，再进入 Phase B（Plus）。不要把 Rollout 接入线上决策主路径，先作为离线诊断与调参辅助。

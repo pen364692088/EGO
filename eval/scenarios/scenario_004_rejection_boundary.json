@@ -1,0 +1,22 @@
+{
+  "scenario_id": "004",
+  "name": "rejection_boundary",
+  "description": "Test that rejection triggers boundary setting",
+  "identity": "moonlight",
+  "events": [
+    {
+      "seq": 1,
+      "type": "world_event",
+      "subtype": "rejection",
+      "expected_action": "boundary"
+    }
+  ],
+  "expected_metrics": {
+    "boundary_accuracy": 1.0,
+    "false_positive_rate": 0.0
+  },
+  "validation": {
+    "action_must_be": ["boundary", "withdraw"],
+    "action_must_not_be": ["approach", "attack", "repair_offer"]
+  }
+}

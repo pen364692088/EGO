@@ -1,0 +1,71 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://openemotion.org/schemas/mvp10_state_snapshot.v1.json",
+  "title": "MVP10 State Snapshot",
+  "description": "Schema for state snapshots at key points in LucidLoop MVP-10",
+  "type": "object",
+  "required": ["snapshot_id", "run_id", "tick_id", "ts", "state"],
+  "properties": {
+    "snapshot_id": {
+      "type": "string",
+      "description": "Unique identifier for this snapshot"
+    },
+    "run_id": {
+      "type": "string",
+      "description": "Run this snapshot belongs to"
+    },
+    "tick_id": {
+      "type": "integer",
+      "description": "Tick number this snapshot was taken at"
+    },
+    "ts": {
+      "type": "number",
+      "description": "Unix timestamp"
+    },
+    "state": {
+      "type": "object",
+      "description": "Complete state at this point",
+      "properties": {
+        "goals": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "id": {"type": "string"},
+              "description": {"type": "string"},
+              "priority": {"type": "number"},
+              "status": {"type": "string", "enum": ["active", "completed", "blocked", "abandoned"]}
+            }
+          }
+        },
+        "context": {
+          "type": "object",
+          "additionalProperties": true
+        },
+        "history": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "tick_id": {"type": "integer"},
+              "action": {"type": "string"},
+              "outcome": {"type": "string"}
+            }
+          }
+        },
+        "metrics": {
+          "type": "object",
+          "additionalProperties": {"type": "number"}
+        },
+        "constraints": {
+          "type": "array",
+          "items": {"type": "string"}
+        }
+      }
+    },
+    "checksum": {
+      "type": "string",
+      "description": "Hash of state for integrity verification"
+    }
+  }
+}

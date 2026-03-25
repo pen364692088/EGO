@@ -1,0 +1,293 @@
+{
+  "metadata": {
+    "schema_version": "mvp11.threshold_calibration.v2",
+    "generated_at": "2026-03-05T14:46:01.242711+00:00",
+    "commit": "194100b",
+    "confidence": "insufficient",
+    "source_window_days": 1,
+    "frozen_at": "2026-03-05T14:46:01.242711+00:00"
+  },
+  "sample_counts": {
+    "total_entries": 1,
+    "nightly_summaries": 1,
+    "trend_entries": 0
+  },
+  "current_thresholds": {
+    "hard_gates": {
+      "replay_hash_match_rate": {
+        "current": 1.0,
+        "description": "Replay hash match must be 100%"
+      },
+      "sanity_consecutive_days": {
+        "current": 2,
+        "description": "Max consecutive days with sanity != OK"
+      },
+      "concentration_top1_threshold": {
+        "current": 0.55,
+        "description": "phi_top1_share warning threshold"
+      },
+      "concentration_consecutive_days": {
+        "current": 2,
+        "description": "Max consecutive days with high concentration"
+      },
+      "bias_p95_threshold": {
+        "current": 0.12,
+        "description": "0.8 * MAX_BIAS (0.15)"
+      },
+      "bias_consecutive_days": {
+        "current": 2,
+        "description": "Max consecutive days with high bias"
+      }
+    },
+    "soft_thresholds": {
+      "sanity_ok_rate_min": {
+        "current": 0.99,
+        "description": "Minimum sanity OK coverage rate"
+      },
+      "concentration_hhi_threshold": {
+        "current": 0.25,
+        "description": "HHI warning threshold"
+      },
+      "concentration_top1_warn": {
+        "current": 0.55,
+        "description": "Top1 share warning (light mode)"
+      },
+      "bias_max": {
+        "current": 0.15,
+        "description": "MAX_BIAS for cycle prior"
+      },
+      "bias_near_cap_rate": {
+        "current": 0.05,
+        "description": "Near cap rate warning"
+      },
+      "drift_alert_threshold": {
+        "current": 0.2,
+        "description": "Drift score alert threshold"
+      }
+    },
+    "gate_params": {
+      "max_governor_delta": {
+        "current": 0.01,
+        "description": "Gate-3 max governor block rate delta"
+      },
+      "max_drift_delta": {
+        "current": 0.01,
+        "description": "Gate-3 max homeostasis drift delta"
+      },
+      "min_sanity_ok_rate": {
+        "current": 0.99,
+        "description": "Gate-1 minimum sanity OK rate"
+      }
+    },
+    "cycle_graph": {
+      "max_nodes": {
+        "current": 10000,
+        "description": "Max cycle graph nodes"
+      },
+      "max_edges": {
+        "current": 50000,
+        "description": "Max cycle graph edges"
+      }
+    }
+  },
+  "calibrations": {
+    "hard_gates": {
+      "sanity_consecutive_days": {
+        "current": 2,
+        "recommended": 2,
+        "rationale": "Insufficient data (1 days)",
+        "confidence": "insufficient",
+        "status": "OK"
+      },
+      "bias_p95_threshold": {
+        "current": 0.12,
+        "recommended": 0.12,
+        "rationale": "Insufficient data (1 samples), keeping current threshold",
+        "confidence": "insufficient",
+        "status": "OK",
+        "stats": {
+          "count": 1,
+          "mean": 0.106552,
+          "std": 0.0,
+          "min": 0.106552,
+          "max": 0.106552,
+          "p5": 0.106552,
+          "p50": 0.106552,
+          "p95": 0.106552,
+          "p99": 0.106552
+        }
+      }
+    },
+    "soft_thresholds": {
+      "sanity_ok_rate_min": {
+        "current": 0.99,
+        "recommended": 0.99,
+        "rationale": "Insufficient data for calibration",
+        "confidence": "insufficient",
+        "status": "NO_DATA"
+      },
+      "drift_alert_threshold": {
+        "current": 0.2,
+        "recommended": 0.2,
+        "rationale": "Insufficient data for calibration",
+        "confidence": "insufficient",
+        "status": "NO_DATA"
+      },
+      "bias_near_cap_rate": {
+        "current": 0.05,
+        "recommended": 0.05,
+        "rationale": "Insufficient data for calibration",
+        "confidence": "insufficient",
+        "status": "NO_DATA"
+      }
+    },
+    "gate_params": {
+      "max_governor_delta": {
+        "current": 0.01,
+        "recommended": 0.01,
+        "rationale": "A/B report data required for calibration",
+        "confidence": "insufficient",
+        "status": "NO_DATA"
+      },
+      "max_drift_delta": {
+        "current": 0.01,
+        "recommended": 0.01,
+        "rationale": "A/B report data required for calibration",
+        "confidence": "insufficient",
+        "status": "NO_DATA"
+      },
+      "min_sanity_ok_rate": {
+        "current": 0.99,
+        "recommended": 0.99,
+        "rationale": "A/B report data required for calibration",
+        "confidence": "insufficient",
+        "status": "NO_DATA"
+      }
+    },
+    "cycle_graph": {
+      "max_nodes": {
+        "current": 10000,
+        "recommended": 10000,
+        "rationale": "Insufficient data (1 samples), keeping current threshold",
+        "confidence": "insufficient",
+        "status": "OK",
+        "stats": {
+          "count": 1,
+          "mean": 231.0,
+          "std": 0.0,
+          "min": 231.0,
+          "max": 231.0,
+          "p5": 231.0,
+          "p50": 231.0,
+          "p95": 231.0,
+          "p99": 231.0
+        }
+      },
+      "max_edges": {
+        "current": 50000,
+        "recommended": 50000,
+        "rationale": "Insufficient data (1 samples), keeping current threshold",
+        "confidence": "insufficient",
+        "status": "OK",
+        "stats": {
+          "count": 1,
+          "mean": 592.0,
+          "std": 0.0,
+          "min": 592.0,
+          "max": 592.0,
+          "p5": 592.0,
+          "p50": 592.0,
+          "p95": 592.0,
+          "p99": 592.0
+        }
+      }
+    }
+  },
+  "numeric_stats": {
+    "sanity_ok_coverage": {
+      "count": 1,
+      "mean": 0.0,
+      "std": 0.0,
+      "min": 0.0,
+      "max": 0.0,
+      "p5": 0.0,
+      "p50": 0.0,
+      "p95": 0.0,
+      "p99": 0.0
+    },
+    "bias_p95": {
+      "count": 1,
+      "mean": 0.106552,
+      "std": 0.0,
+      "min": 0.106552,
+      "max": 0.106552,
+      "p5": 0.106552,
+      "p50": 0.106552,
+      "p95": 0.106552,
+      "p99": 0.106552
+    },
+    "bias_mean": {
+      "count": 1,
+      "mean": 0.089691,
+      "std": 0.0,
+      "min": 0.089691,
+      "max": 0.089691,
+      "p5": 0.089691,
+      "p50": 0.089691,
+      "p95": 0.089691,
+      "p99": 0.089691
+    },
+    "near_cap_rate": {
+      "count": 1,
+      "mean": 0.0,
+      "std": 0.0,
+      "min": 0.0,
+      "max": 0.0,
+      "p5": 0.0,
+      "p50": 0.0,
+      "p95": 0.0,
+      "p99": 0.0
+    },
+    "cycle_graph_nodes": {
+      "count": 1,
+      "mean": 231.0,
+      "std": 0.0,
+      "min": 231.0,
+      "max": 231.0,
+      "p5": 231.0,
+      "p50": 231.0,
+      "p95": 231.0,
+      "p99": 231.0
+    },
+    "cycle_graph_edges": {
+      "count": 1,
+      "mean": 592.0,
+      "std": 0.0,
+      "min": 592.0,
+      "max": 592.0,
+      "p5": 592.0,
+      "p50": 592.0,
+      "p95": 592.0,
+      "p99": 592.0
+    },
+    "cycle_store_count": {
+      "count": 1,
+      "mean": 0.0,
+      "std": 0.0,
+      "min": 0.0,
+      "max": 0.0,
+      "p5": 0.0,
+      "p50": 0.0,
+      "p95": 0.0,
+      "p99": 0.0
+    }
+  },
+  "binary_patterns": {
+    "sanity_ok": {
+      "max_consecutive_true": 0,
+      "max_consecutive_false": 1,
+      "violation_count": 0,
+      "total_days": 1
+    }
+  }
+}

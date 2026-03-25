@@ -1,0 +1,47 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://openclaw.ai/schemas/event.schema.json",
+  "title": "Event",
+  "description": "事件 - 不可变原始记录",
+  "type": "object",
+  "required": ["id", "event_type", "timestamp", "content"],
+  "properties": {
+    "id": {
+      "type": "string",
+      "description": "事件唯一标识"
+    },
+    "event_type": {
+      "type": "string",
+      "enum": [
+        "session_start", "session_end",
+        "user_message", "agent_response", "tool_call", "tool_result",
+        "decision_made", "goal_set", "goal_completed",
+        "reflection_triggered", "policy_candidate",
+        "error", "milestone", "boundary_crossing"
+      ],
+      "description": "事件类型"
+    },
+    "timestamp": {
+      "type": "string",
+      "format": "date-time",
+      "description": "事件时间戳"
+    },
+    "content": {
+      "type": "string",
+      "description": "事件内容"
+    },
+    "metadata": {
+      "type": "object",
+      "description": "元数据"
+    },
+    "session_id": {
+      "type": ["string", "null"],
+      "description": "关联会话ID"
+    },
+    "related_event_ids": {
+      "type": "array",
+      "items": {"type": "string"},
+      "description": "关联事件ID列表"
+    }
+  }
+}

@@ -1,0 +1,187 @@
+{
+  "run_id": "run_20260316_160101",
+  "timestamp": "2026-03-16T16:01:01.640661+00:00",
+  "session_epoch": "epoch_20260316_160101",
+  "cases": [
+    {
+      "case_id": "case_1",
+      "description": "\u5355\u4e8b\u4ef6 trace \u8d2f\u901a\u9a8c\u8bc1",
+      "events": [
+        {
+          "event_type": "user_message",
+          "actor": "trace_test_user",
+          "target": "assistant",
+          "content": "\u8fd9\u662f\u4e00\u6761 trace \u6d4b\u8bd5\u6d88\u606f"
+        }
+      ],
+      "trace_context": {
+        "trace_id": "trace_epoch_20260316_160101_case_1",
+        "case_id": "case_1",
+        "memory_chain_id": "chain_95676857",
+        "session_epoch": "epoch_20260316_160101",
+        "created_at": "2026-03-16T16:01:01.640046+00:00"
+      },
+      "results": {
+        "trace_complete": true
+      },
+      "errors": [],
+      "artifacts": {
+        "trace_chain": "/home/moonlight/Project/Github/MyProject/Emotion/OpenEmotion/artifacts/memory_loop_v2/traces/trace_epoch_20260316_160101_case_1.json"
+      }
+    },
+    {
+      "case_id": "case_2",
+      "description": "\u540c\u4e3b\u9898\u591a\u4e8b\u4ef6 trace \u805a\u5408\u9a8c\u8bc1",
+      "events": [
+        {
+          "event_type": "user_message",
+          "actor": "multi_event_user",
+          "target": "assistant",
+          "content": "\u6211\u60f3\u5b66\u4e60 Python \u7f16\u7a0b"
+        },
+        {
+          "event_type": "user_message",
+          "actor": "multi_event_user",
+          "target": "assistant",
+          "content": "Python \u6709\u4ec0\u4e48\u597d\u7684\u6559\u7a0b\uff1f"
+        }
+      ],
+      "trace_context": {
+        "trace_id": "trace_epoch_20260316_160101_case_2",
+        "case_id": "case_2",
+        "memory_chain_id": "chain_f544d1b4",
+        "session_epoch": "epoch_20260316_160101",
+        "created_at": "2026-03-16T16:01:01.640200+00:00"
+      },
+      "results": {
+        "events_aggregated": true,
+        "trace_complete": false
+      },
+      "errors": [],
+      "artifacts": {
+        "trace_chain": "/home/moonlight/Project/Github/MyProject/Emotion/OpenEmotion/artifacts/memory_loop_v2/traces/trace_epoch_20260316_160101_case_2.json"
+      }
+    },
+    {
+      "case_id": "case_3",
+      "description": "\u7b56\u7565\u5c42\u63d0\u5347\u53ef\u8ffd\u8e2a\u9a8c\u8bc1",
+      "events": [
+        {
+          "event_type": "user_message",
+          "actor": "policy_user",
+          "target": "assistant",
+          "content": "\u4ee5\u540e\u9047\u5230\u590d\u6742\u95ee\u9898\u8bf7\u5148\u5206\u6790"
+        }
+      ],
+      "trace_context": {
+        "trace_id": "trace_epoch_20260316_160101_case_3",
+        "case_id": "case_3",
+        "memory_chain_id": "chain_ace557d4",
+        "session_epoch": "epoch_20260316_160101",
+        "created_at": "2026-03-16T16:01:01.640310+00:00"
+      },
+      "results": {
+        "policy_traceable": true,
+        "trace_complete": false
+      },
+      "errors": [],
+      "artifacts": {
+        "trace_chain": "/home/moonlight/Project/Github/MyProject/Emotion/OpenEmotion/artifacts/memory_loop_v2/traces/trace_epoch_20260316_160101_case_3.json"
+      }
+    },
+    {
+      "case_id": "case_4",
+      "description": "\u91cd\u542f\u6062\u590d\u9a8c\u8bc1",
+      "events": [
+        {
+          "event_type": "user_message",
+          "actor": "restart_test_user",
+          "target": "assistant",
+          "content": "\u8fd9\u662f\u91cd\u542f\u524d\u7684\u6d88\u606f"
+        }
+      ],
+      "trace_context": {
+        "trace_id": "trace_epoch_20260316_160101_case_4",
+        "case_id": "case_4",
+        "memory_chain_id": "chain_7786b615",
+        "session_epoch": "epoch_20260316_160101",
+        "created_at": "2026-03-16T16:01:01.640405+00:00"
+      },
+      "results": {
+        "restart_persistence": true,
+        "trace_complete": false
+      },
+      "errors": [],
+      "artifacts": {
+        "trace_chain": "/home/moonlight/Project/Github/MyProject/Emotion/OpenEmotion/artifacts/memory_loop_v2/traces/trace_epoch_20260316_160101_case_4.json"
+      }
+    },
+    {
+      "case_id": "case_5",
+      "description": "\u65e0\u8bb0\u5fc6\u5bf9\u7167\u7ec4\u9a8c\u8bc1",
+      "events": [
+        {
+          "event_type": "user_message",
+          "actor": "no_memory_user",
+          "target": "assistant",
+          "content": "\u8fd9\u662f\u65e0\u8bb0\u5fc6\u6761\u4ef6\u4e0b\u7684\u6d88\u606f"
+        }
+      ],
+      "trace_context": {
+        "trace_id": "trace_epoch_20260316_160101_case_5",
+        "case_id": "case_5",
+        "memory_chain_id": "chain_0a01f91e",
+        "session_epoch": "epoch_20260316_160101",
+        "created_at": "2026-03-16T16:01:01.640649+00:00"
+      },
+      "results": {
+        "memory_affects_output": true
+      },
+      "errors": [],
+      "artifacts": {
+        "comparison": {
+          "no_memory": {
+            "prior_narratives": [],
+            "prior_policies": [],
+            "memory_enabled": false,
+            "output": {
+              "confidence": 0.5,
+              "decision": "default_respond"
+            }
+          },
+          "with_memory": {
+            "prior_narratives": 1,
+            "prior_policies": 0,
+            "memory_enabled": true,
+            "output": {
+              "confidence": 0.85,
+              "decision": "contextual_respond"
+            }
+          },
+          "difference_detected": true
+        }
+      }
+    }
+  ],
+  "trace_complete": true,
+  "restart_persistence": true,
+  "memory_affects_output": true,
+  "loop_status": "persistent_traceable_minimal_loop",
+  "evidence": {
+    "trace_complete": true,
+    "restart_persistence": true,
+    "memory_affects_output": true,
+    "trace_layers": {
+      "event_memory": true,
+      "narrative_memory": true,
+      "policy_memory": true,
+      "downstream_effect": true
+    }
+  },
+  "verdict": {
+    "trace_complete": true,
+    "restart_persistence": true,
+    "memory_affects_output": true,
+    "all_layers_touched": true
+  }
+}

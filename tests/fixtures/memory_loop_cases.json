@@ -1,0 +1,109 @@
+{
+  "schema_version": "1.0",
+  "description": "记忆环路验证测试用例 v1",
+  "created_at": "2026-03-16T15:20:49Z",
+  "cases": [
+    {
+      "case_id": "case_1",
+      "description": "单事件写入验证",
+      "objective": "验证事件能正确存储到 EpisodicMemory 并被检索",
+      "input": {
+        "event_type": "user_message",
+        "actor": "test_user",
+        "target": "assistant",
+        "content": "你好，这是第一条测试消息"
+      },
+      "expected": {
+        "episodic_retrieved": true,
+        "narrative_updated": true
+      },
+      "required_artifacts": [
+        "case_1_{event_id}.json"
+      ]
+    },
+    {
+      "case_id": "case_2",
+      "description": "同主题多事件聚合验证",
+      "objective": "验证多个相关事件能聚合到同一叙事",
+      "input": [
+        {
+          "event_type": "user_message",
+          "actor": "test_user_2",
+          "target": "assistant",
+          "content": "我想学习 Python"
+        },
+        {
+          "event_type": "user_message",
+          "actor": "test_user_2",
+          "target": "assistant",
+          "content": "请推荐一些 Python 教程"
+        },
+        {
+          "event_type": "user_message",
+          "actor": "test_user_2",
+          "target": "assistant",
+          "content": "Python 有什么好的项目可以练习？"
+        }
+      ],
+      "expected": {
+        "events_aggregated": true,
+        "event_count": 3
+      }
+    },
+    {
+      "case_id": "case_3",
+      "description": "策略层提升验证",
+      "objective": "验证能从叙事中生成承诺/偏好",
+      "input": [
+        {
+          "event_type": "user_message",
+          "actor": "policy_test_user",
+          "target": "assistant",
+          "content": "以后遇到代码问题，请先给出调试步骤"
+        },
+        {
+          "event_type": "user_message",
+          "actor": "policy_test_user",
+          "target": "assistant",
+          "content": "好的，这个偏好我记住了"
+        }
+      ],
+      "expected": {
+        "policy_stored": true
+      }
+    },
+    {
+      "case_id": "case_4",
+      "description": "重复触发与回流验证",
+      "objective": "验证记忆能影响后续处理",
+      "input": [
+        {
+          "event_type": "user_message",
+          "actor": "repeat_test_user",
+          "target": "assistant",
+          "content": "这是一个重复场景测试"
+        },
+        {
+          "event_type": "user_message",
+          "actor": "repeat_test_user",
+          "target": "assistant",
+          "content": "这是一个重复场景测试"
+        }
+      ],
+      "expected": {
+        "events_recorded": true,
+        "memory_affects_output": true
+      }
+    }
+  ],
+  "verdict_levels": {
+    "storage-only": "只有存储，无影响",
+    "partial-loop": "部分环路，未完全贯通",
+    "full-minimal-loop": "三层贯通，对后续有影响"
+  },
+  "red_lines": [
+    "不宣称 WS-C/C1 completed",
+    "不进入 WS-C/C2",
+    "不宣称 MVP13-15 completed"
+  ]
+}

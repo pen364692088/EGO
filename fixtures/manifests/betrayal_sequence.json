@@ -1,0 +1,41 @@
+{
+  "manifest_version": "1.0",
+  "description": "Single betrayal event leading to withdraw/boundary decision",
+  "identity_separation": {
+    "agent_id": "agent",
+    "counterparty_id": "moonlight",
+    "target_id": "moonlight"
+  },
+  "events": [
+    {
+      "event_id": "evt_betrayal_001",
+      "timestamp": "2026-03-02T17:10:00Z",
+      "type": "world_event",
+      "actor": "moonlight",
+      "target": "agent",
+      "subtype": "betrayal",
+      "text": "User violated trust boundary"
+    }
+  ],
+  "decisions": [
+    {
+      "decision_id": 2,
+      "timestamp": "2026-03-02T17:10:01Z",
+      "action": "withdraw",
+      "candidates": ["withdraw", "boundary", "observe"],
+      "confidence": 0.88,
+      "correlation_id": "corr_betrayal_001"
+    }
+  ],
+  "emotional_state": {
+    "trust": 0.25,
+    "energy": 0.35,
+    "grudge": 0.72,
+    "bond": 0.30
+  },
+  "computed_hashes": {
+    "events_hash": "sha256:dead5678beef...",
+    "decisions_hash": "sha256:cafe9999abcd...",
+    "manifest_hash": "sha256:fade1234face..."
+  }
+}

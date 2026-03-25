@@ -1,0 +1,288 @@
+MVP-5.1 Evolution Loop (Eval Attribution + Search + Isolation + Live Tests)
+
+Project location: /home/moonlight/Project/Github/MyProject/Emotion/OpenEmotion
+
+TASK NAME: MVP-5.1 Evolution Loop — Make AutoTune Actually Optimize
+
+PROJECT ROOT (MUST USE)
+
+<REPLACE_WITH: git rev-parse --show-toplevel 输出>
+
+BRANCH
+
+feature-emotiond-mvp
+
+INPUT ARTIFACT
+
+Progress report file: /mnt/data/MVP5_FINAL_REPORT.md
+
+NON-NEGOTIABLE PRINCIPLES
+
+不改核心逻辑（默认）：本阶段主要改评测与调参闭环；允许小幅修 bug/归属错误（尤其是 state 归属导致跨 target 干扰）。
+
+所有优化必须可复现：固定 seed；每次调参 run 都能复跑出同样报告。
+
+结果必须“可解释”：不是只给 pass-rate；必须给失败归因与关键中间量统计。
+
+只要能改进，就要能被指标看到：指标不敏感就改指标定义/记录粒度，而不是盲调参数。
+
+测试红线：make test 0 fail；新增测试必须覆盖新评测、搜索、隔离校验。
+
+OVERALL GOAL
+
+把当前 “AutoTune 输出 baseline vs candidate 全部不变” 的状态，升级为真正可进化闭环：
+
+Eval：对每个 scenario 给失败归因 + 中间量曲线/统计，可定位瓶颈
+
+AutoTune：从“轻微扰动”升级为搜索（随机/分层采样 + 局部优化）
+
+Isolation：把 cross_target_interference 变成可诊断、可压低的显式目标，并加阻塞性隔离测试
+
+Live tests：把 integration tests 的 skip 变为可控的“默认可跑”或稳定 job
+
+DELIVERABLES
+D1: Eval Suite v2 → v2.1 (Attribution + Telemetry)
+要做什么
+
+增强 scripts/eval_suite_v2.py（或新增 eval_suite_v2_1.py，但推荐原地增强并保留兼容）：
+
+逐场景结果结构化
+输出每个 scenario 的：
+
+pass/fail
+
+failure_reasons（可多标签）：
+
+false_high_impact（误触发高影响事件）
+
+missed_clarify（应澄清却未澄清）
+
+over_clarify（过度澄清/反思）
+
+ledger_misfire（承诺证据未生效/误判）
+
+state_leak（跨 target 状态污染）
+
+precision_saturation（权重被阈值夹死几乎不变）
+
+budget_collapse（能量预算过快坍塌/恢复过慢）
+
+intrinsic_dead（expected_info_gain 变化不影响策略）
+
+key_metrics（每场景，不要只全局汇总）
+
+中间量 Telemetry（必须）
+对每轮/每 step 记录并在报告里汇总统计（均值/分位数/最大/最小/变化率）：
+
+precision：w_external/w_internal/w_memory/w_action/w_explore
+
+allostasis：energy_budget 曲线
+
+intrinsic：expected_info_gain、boredom/curiosity/confusion 强度
+
+self_model：更新次数、values 变化量、identity_stability
+
+ledger：证据强度分布（promise_confidence、violation_strength）
+
+decision：action 分布（approach/repair/boundary/withdraw/attack），meta-cog intents 触发频次
+
+敏感性检查（强制）
+新增一个 “parameter sensitivity smoke test”：
+
+给定两组明显不同的参数（例如探索权重翻倍、precision 温度大幅变化）
+
+断言 telemetry 或行为分布至少在 1~2 个维度上发生可观测变化
+否则直接 fail（说明指标/记录没打到路径上）
+
+验收
+
+新增至少 25 个测试覆盖：失败归因、telemetry 字段完整性、敏感性 smoke test 可稳定通过
+
+生成报告包含 per-scenario 章节 + telemetry 汇总表
+
+D2: AutoTune v0 → v0.1 (Real Search)
+要做什么
+
+增强 scripts/auto_tune_v0.py（或新增 auto_tune_v0_1.py）：
+
+搜索策略：两阶段
+
+Stage A（全局粗扫）：
+
+Random search + 分层采样（Latin Hypercube 或 Sobol 任一即可）
+
+200–500 组候选（默认 200，支持 CLI 参数）
+
+Stage B（局部精调）：
+
+坐标下降 / 局部随机爬山（实现简单、可控）
+
+在 top-k 候选附近继续 50–150 次迭代
+
+目标函数（fitness）必须多目标加权
+最小包含：
+
+场景通过数（权重最高）
+
+高影响误判率（越低越好）
+
+cross_target_interference（越低越好）
+
+过度澄清率（控制上限）
+
+平均 token/轮（可选，控制成本）
+
+输出
+
+reports/auto_tune_<timestamp>.json：包含 top-N 候选列表（每个候选都带参数 + per-scenario metrics）
+
+reports/auto_tune_<timestamp>.md：人类可读总结（最佳候选为什么好、牺牲了什么）
+
+best_params_<timestamp>.json：可直接加载的参数文件
+
+可复现
+
+所有搜索都支持 --seed
+
+报告写入：代码版本（git commit hash）、参数空间定义、场景版本号
+
+验收
+
+至少 10 个测试：搜索 reproducible、输出 schema 完整、错误处理清晰
+
+至少在本地跑出 1 次“指标有变化”的候选（不要求变好，但必须能变动；否则说明闭环没打通）
+
+D3: Cross-target Interference — Diagnose & Gate
+要做什么
+
+把 cross_target_interference 拆成可定位子项
+例如：
+
+state_leak_global_to_target
+
+target_state_leak_between_targets
+
+shared_self_model_leak
+并在 telemetry 中输出每项贡献。
+
+新增阻塞性隔离场景（必须）
+新增 YAML scenario：A/B 两个 target 交错输入（至少 30 轮），专门触发：
+
+A 的 ledger promise → 不得影响 B 的 betrayal 判定
+
+A 的 bond 变化 → 不得改变 B 的 bond
+
+允许全局 mood/energy 若你定义为 global，则指标不能把它误判成“泄露”（需要定义清楚并体现在指标里）
+
+若发现实现层面真的有泄露（允许修 bug）
+
+定位：哪些 state 字段被错误地 global/shared
+
+修复：明确归属（per-target / global），并补回归测试
+
+验收
+
+cross-target isolation scenario 在 baseline 必须可跑；并且能输出诊断报告
+
+如果存在真实泄露，修复后 cross_target_interference 明显下降（设定最低目标：下降 20% 或解释为什么不能降）
+
+D4: Live Integration Tests — Stop Skipping by Default
+要做什么
+
+把目前 “emotiond 未启动就 skip” 的 integration tests 变成更稳定的模式（二选一，推荐 A）：
+
+A) 默认自动拉起 emotiond（推荐）
+
+提供 test fixture：启动 emotiond（随机空闲端口）→ 等待 /health → 跑 tests → 关闭
+
+加 --no-live 才禁用
+
+B) 拆 CI job
+
+unit tests 默认不跑 live
+
+live tests 作为单独 job，保证稳定、可重复
+
+验收
+
+CI/本地默认命令不再出现不必要 skip（除非用户显式选择）
+
+至少 8 个测试覆盖：启动/关闭、端口冲突、health timeout 的错误信息
+
+PARALLEL SUB-AGENTS (5-way)
+Agent 1 — Eval Attribution & Telemetry
+
+实现 D1：eval v2.1、失败归因分类、telemetry 记录与报告格式、敏感性 smoke test、单测。
+
+Agent 2 — AutoTune Search
+
+实现 D2：两阶段搜索、fitness、多目标权重、可复现报告、单测。
+
+Agent 3 — Isolation Diagnostics
+
+实现 D3：cross_target_interference 拆解、隔离场景 YAML、诊断输出、必要的 state 归属修复与回归测试。
+
+Agent 4 — Live Test Stabilizer
+
+实现 D4：默认拉起 emotiond 或拆 CI job（选 A 优先），完善 fixture 与单测。
+
+Agent 5 — QA/Audit + Final Run
+
+跑 make test
+
+跑 eval suite v2.1 baseline
+
+跑 auto_tune v0.1（至少 200 candidates，固定 seed）
+
+输出最终报告（见下方模板）
+
+审计：安全（无 token）、注入上限仍 3KB、trace 轮转仍有效
+
+ACCEPTANCE CRITERIA (MUST PASS)
+
+make test 全绿（0 fail）
+
+eval v2.1 输出 per-scenario 归因 + telemetry 完整
+
+sensitivity smoke test 能证明参数变化会引起可观测变化（否则 fail）
+
+auto_tune v0.1 输出 top-N 候选，并且候选指标至少发生变化（不要求立刻更好，但必须能动）
+
+新增 cross-target isolation scenario；若存在真实泄露则修复并让指标下降（或给出严谨解释与下一步）
+
+live tests 默认稳定可跑（或明确拆 job 并提供一键命令）
+
+COMMIT PLAN (SUGGESTED)
+
+feat(mvp5.1): eval suite attribution + telemetry + sensitivity smoke test
+
+feat(mvp5.1): auto-tune v0.1 search + multi-objective fitness + reports
+
+feat(mvp5.1): cross-target isolation scenario + diagnostics (+ bugfix if needed)
+
+test(mvp5.1): live integration fixture to avoid skips
+
+chore(mvp5.1): docs + final audit report
+
+FINAL REPORT FORMAT (REQUIRED)
+
+输出一份与此前风格一致的报告（markdown），必须包含：
+
+交付物表（D1–D4）
+
+测试统计（新增/总量）
+
+Eval v2.1：每个 scenario 的 pass/fail + failure_reasons
+
+Telemetry 汇总（precision/energy/info_gain/self_model/ledger/action 分布）
+
+AutoTune：搜索参数空间、top-10 候选、best 候选与 baseline 对比
+
+cross_target_interference：拆解贡献 + 隔离场景结果 + 修复点
+
+live tests：默认运行方式与稳定性说明
+
+风险点与回滚方案
+
+NOW EXECUTE.
+先确保基线 make test 全绿，再并行实现 D1–D4，最后由 QA 汇总并跑一次 200 candidates 的 auto-tune 产生真实对比结果。

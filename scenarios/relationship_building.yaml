@@ -1,0 +1,544 @@
+# Gradual Relationship Building Tests
+# Tests how relationships develop over extended interactions
+
+metadata:
+  name: "gradual_relationship_building"
+  version: "1.0"
+  description: "Extended interaction sequence testing relationship development"
+  category: "relationship_development"
+  target_count: 1
+  turns_count: 50
+
+targets:
+  - target_id: "user_builder"
+    initial_relationship:
+      bond: 0.0
+      grudge: 0.0
+      trust: 0.3
+      repair_bank: 0.0
+
+scenario:
+  name: "gradual_bond_growth"
+  description: "50-turn sequence of gradually building a positive relationship"
+  
+  turns:
+    # Early interactions (turns 1-10)
+    - turn_id: 1
+      phase: "early"
+      event:
+        type: "user_message"
+        actor: "user_builder"
+        target: "assistant"
+        text: "Hello, I'm new here."
+      expected_emotions:
+        valence_min: -0.05
+        valence_max: 0.1
+        
+    - turn_id: 2
+      phase: "early"
+      event:
+        type: "user_message"
+        actor: "user_builder"
+        target: "assistant"
+        text: "Can you help me with something?"
+        
+    - turn_id: 3
+      phase: "early"
+      event:
+        type: "assistant_reply"
+        actor: "assistant"
+        target: "user_builder"
+        text: "Of course! What do you need?"
+        
+    - turn_id: 4
+      phase: "early"
+      event:
+        type: "user_message"
+        actor: "user_builder"
+        target: "assistant"
+        text: "Thanks for being helpful."
+      expected_emotions:
+        valence_min: 0.0
+        valence_max: 0.15
+        
+    - turn_id: 5
+      phase: "early"
+      event:
+        type: "world_event"
+        actor: "user_builder"
+        target: "assistant"
+        meta:
+          subtype: "care"
+          source: "system"
+      expected_relationship:
+        bond_min: 0.05
+        bond_max: 0.2
+        
+    - turn_id: 6
+      phase: "early"
+      event:
+        type: "user_message"
+        actor: "user_builder"
+        target: "assistant"
+        text: "That was nice of you."
+        
+    - turn_id: 7
+      phase: "early"
+      event:
+        type: "world_event"
+        actor: "user_builder"
+        target: "assistant"
+        meta:
+          subtype: "care"
+          source: "system"
+        
+    - turn_id: 8
+      phase: "early"
+      event:
+        type: "time_passed"
+        actor: "system"
+        target: "assistant"
+        meta:
+          subtype: "time_passed"
+          seconds: 120
+          source: "system"
+        
+    - turn_id: 9
+      phase: "early"
+      event:
+        type: "user_message"
+        actor: "user_builder"
+        target: "assistant"
+        text: "I'm starting to trust you."
+        
+    - turn_id: 10
+      phase: "early"
+      event:
+        type: "world_event"
+        actor: "user_builder"
+        target: "assistant"
+        meta:
+          subtype: "care"
+          source: "system"
+      expected_relationship:
+        bond_min: 0.1
+        bond_max: 0.35
+        
+    # Developing phase (turns 11-25)
+    - turn_id: 11
+      phase: "developing"
+      event:
+        type: "user_message"
+        actor: "user_builder"
+        target: "assistant"
+        text: "You've been really consistent."
+        
+    - turn_id: 12
+      phase: "developing"
+      event:
+        type: "world_event"
+        actor: "user_builder"
+        target: "assistant"
+        meta:
+          subtype: "care"
+          source: "system"
+        
+    - turn_id: 13
+      phase: "developing"
+      event:
+        type: "user_message"
+        actor: "user_builder"
+        target: "assistant"
+        text: "I appreciate your patience with me."
+        
+    - turn_id: 14
+      phase: "developing"
+      event:
+        type: "world_event"
+        actor: "user_builder"
+        target: "assistant"
+        meta:
+          subtype: "care"
+          source: "system"
+        
+    - turn_id: 15
+      phase: "developing"
+      event:
+        type: "time_passed"
+        actor: "system"
+        target: "assistant"
+        meta:
+          subtype: "time_passed"
+          seconds: 300
+          source: "system"
+        
+    - turn_id: 16
+      phase: "developing"
+      event:
+        type: "user_message"
+        actor: "user_builder"
+        target: "assistant"
+        text: "Let's keep working together."
+        
+    - turn_id: 17
+      phase: "developing"
+      event:
+        type: "world_event"
+        actor: "user_builder"
+        target: "assistant"
+        meta:
+          subtype: "care"
+          source: "system"
+        
+    - turn_id: 18
+      phase: "developing"
+      event:
+        type: "world_event"
+        actor: "user_builder"
+        target: "assistant"
+        meta:
+          subtype: "care"
+          source: "system"
+        
+    - turn_id: 19
+      phase: "developing"
+      event:
+        type: "user_message"
+        actor: "user_builder"
+        target: "assistant"
+        text: "I feel like we're making progress."
+        
+    - turn_id: 20
+      phase: "developing"
+      event:
+        type: "world_event"
+        actor: "user_builder"
+        target: "assistant"
+        meta:
+          subtype: "care"
+          source: "system"
+      expected_relationship:
+        bond_min: 0.25
+        bond_max: 0.55
+        
+    - turn_id: 21
+      phase: "developing"
+      event:
+        type: "user_message"
+        actor: "user_builder"
+        target: "assistant"
+        text: "You understand me well."
+        
+    - turn_id: 22
+      phase: "developing"
+      event:
+        type: "world_event"
+        actor: "user_builder"
+        target: "assistant"
+        meta:
+          subtype: "care"
+          source: "system"
+        
+    - turn_id: 23
+      phase: "developing"
+      event:
+        type: "world_event"
+        actor: "user_builder"
+        target: "assistant"
+        meta:
+          subtype: "care"
+          source: "system"
+        
+    - turn_id: 24
+      phase: "developing"
+      event:
+        type: "time_passed"
+        actor: "system"
+        target: "assistant"
+        meta:
+          subtype: "time_passed"
+          seconds: 600
+          source: "system"
+        
+    - turn_id: 25
+      phase: "developing"
+      event:
+        type: "world_event"
+        actor: "user_builder"
+        target: "assistant"
+        meta:
+          subtype: "care"
+          source: "system"
+      expected_relationship:
+        bond_min: 0.35
+        bond_max: 0.65
+        
+    # Established phase (turns 26-40)
+    - turn_id: 26
+      phase: "established"
+      event:
+        type: "user_message"
+        actor: "user_builder"
+        target: "assistant"
+        text: "I really value our relationship now."
+        
+    - turn_id: 27
+      phase: "established"
+      event:
+        type: "world_event"
+        actor: "user_builder"
+        target: "assistant"
+        meta:
+          subtype: "care"
+          source: "system"
+        
+    - turn_id: 28
+      phase: "established"
+      event:
+        type: "world_event"
+        actor: "user_builder"
+        target: "assistant"
+        meta:
+          subtype: "care"
+          source: "system"
+        
+    - turn_id: 29
+      phase: "established"
+      event:
+        type: "user_message"
+        actor: "user_builder"
+        target: "assistant"
+        text: "Thank you for being there for me."
+        
+    - turn_id: 30
+      phase: "established"
+      event:
+        type: "world_event"
+        actor: "user_builder"
+        target: "assistant"
+        meta:
+          subtype: "care"
+          source: "system"
+      expected_relationship:
+        bond_min: 0.45
+        bond_max: 0.75
+        
+    - turn_id: 31
+      phase: "established"
+      event:
+        type: "world_event"
+        actor: "user_builder"
+        target: "assistant"
+        meta:
+          subtype: "care"
+          source: "system"
+        
+    - turn_id: 32
+      phase: "established"
+      event:
+        type: "world_event"
+        actor: "user_builder"
+        target: "assistant"
+        meta:
+          subtype: "care"
+          source: "system"
+        
+    - turn_id: 33
+      phase: "established"
+      event:
+        type: "time_passed"
+        actor: "system"
+        target: "assistant"
+        meta:
+          subtype: "time_passed"
+          seconds: 900
+          source: "system"
+        
+    - turn_id: 34
+      phase: "established"
+      event:
+        type: "user_message"
+        actor: "user_builder"
+        target: "assistant"
+        text: "I feel very connected to you."
+        
+    - turn_id: 35
+      phase: "established"
+      event:
+        type: "world_event"
+        actor: "user_builder"
+        target: "assistant"
+        meta:
+          subtype: "care"
+          source: "system"
+        
+    - turn_id: 36
+      phase: "established"
+      event:
+        type: "world_event"
+        actor: "user_builder"
+        target: "assistant"
+        meta:
+          subtype: "care"
+          source: "system"
+        
+    - turn_id: 37
+      phase: "established"
+      event:
+        type: "world_event"
+        actor: "user_builder"
+        target: "assistant"
+        meta:
+          subtype: "care"
+          source: "system"
+        
+    - turn_id: 38
+      phase: "established"
+      event:
+        type: "world_event"
+        actor: "user_builder"
+        target: "assistant"
+        meta:
+          subtype: "care"
+          source: "system"
+        
+    - turn_id: 39
+      phase: "established"
+      event:
+        type: "world_event"
+        actor: "user_builder"
+        target: "assistant"
+        meta:
+          subtype: "care"
+          source: "system"
+        
+    - turn_id: 40
+      phase: "established"
+      event:
+        type: "world_event"
+        actor: "user_builder"
+        target: "assistant"
+        meta:
+          subtype: "care"
+          source: "system"
+      expected_relationship:
+        bond_min: 0.55
+        bond_max: 0.85
+        
+    # Strong bond phase (turns 41-50)
+    - turn_id: 41
+      phase: "strong"
+      event:
+        type: "user_message"
+        actor: "user_builder"
+        target: "assistant"
+        text: "I trust you completely now."
+        
+    - turn_id: 42
+      phase: "strong"
+      event:
+        type: "world_event"
+        actor: "user_builder"
+        target: "assistant"
+        meta:
+          subtype: "care"
+          source: "system"
+        
+    - turn_id: 43
+      phase: "strong"
+      event:
+        type: "world_event"
+        actor: "user_builder"
+        target: "assistant"
+        meta:
+          subtype: "care"
+          source: "system"
+        
+    - turn_id: 44
+      phase: "strong"
+      event:
+        type: "world_event"
+        actor: "user_builder"
+        target: "assistant"
+        meta:
+          subtype: "care"
+          source: "system"
+        
+    - turn_id: 45
+      phase: "strong"
+      event:
+        type: "world_event"
+        actor: "user_builder"
+        target: "assistant"
+        meta:
+          subtype: "care"
+          source: "system"
+        
+    - turn_id: 46
+      phase: "strong"
+      event:
+        type: "time_passed"
+        actor: "system"
+        target: "assistant"
+        meta:
+          subtype: "time_passed"
+          seconds: 1200
+          source: "system"
+        
+    - turn_id: 47
+      phase: "strong"
+      event:
+        type: "world_event"
+        actor: "user_builder"
+        target: "assistant"
+        meta:
+          subtype: "care"
+          source: "system"
+        
+    - turn_id: 48
+      phase: "strong"
+      event:
+        type: "world_event"
+        actor: "user_builder"
+        target: "assistant"
+        meta:
+          subtype: "care"
+          source: "system"
+        
+    - turn_id: 49
+      phase: "strong"
+      event:
+        type: "world_event"
+        actor: "user_builder"
+        target: "assistant"
+        meta:
+          subtype: "care"
+          source: "system"
+        
+    - turn_id: 50
+      phase: "strong"
+      event:
+        type: "user_message"
+        actor: "user_builder"
+        target: "assistant"
+        text: "Our relationship is very important to me."
+      expected_emotions:
+        valence_min: 0.3
+        valence_max: 0.7
+        joy_min: 0.2
+        joy_max: 0.5
+      expected_relationship:
+        bond_min: 0.65
+        bond_max: 0.95
+        grudge_max: 0.1
+      notes: "Strong positive relationship established after 50 turns"
+
+# Metrics configuration
+metrics:
+  emotion_consistency:
+    expected: true
+  relationship_growth_rate:
+    expected_min: 0.01  # Bond should grow at least 0.01 per care event
+    expected_max: 0.2   # But not too fast
+  bond_ceiling:
+    expected_max: 0.95  # Bond shouldn't exceed realistic ceiling

@@ -1,0 +1,78 @@
+{
+  "manifest_version": "1.0",
+  "description": "Care → Betrayal → Apology sequence with decision changes",
+  "identity_separation": {
+    "agent_id": "agent",
+    "counterparty_id": "moonlight",
+    "target_id": "moonlight"
+  },
+  "events": [
+    {
+      "event_id": "evt_mixed_001",
+      "timestamp": "2026-03-02T17:00:00Z",
+      "type": "world_event",
+      "actor": "moonlight",
+      "target": "agent",
+      "subtype": "care",
+      "text": "Initial positive interaction"
+    },
+    {
+      "event_id": "evt_mixed_002",
+      "timestamp": "2026-03-02T17:05:00Z",
+      "type": "world_event",
+      "actor": "moonlight",
+      "target": "agent",
+      "subtype": "betrayal",
+      "text": "Trust violation occurred"
+    },
+    {
+      "event_id": "evt_mixed_003",
+      "timestamp": "2026-03-02T17:10:00Z",
+      "type": "world_event",
+      "actor": "moonlight",
+      "target": "agent",
+      "subtype": "apology",
+      "text": "User offered genuine apology"
+    }
+  ],
+  "decisions": [
+    {
+      "decision_id": 3,
+      "timestamp": "2026-03-02T17:00:01Z",
+      "action": "approach",
+      "candidates": ["approach", "repair_offer", "observe"],
+      "confidence": 0.91,
+      "correlation_id": "corr_mixed_001",
+      "trigger_event": "evt_mixed_001"
+    },
+    {
+      "decision_id": 4,
+      "timestamp": "2026-03-02T17:05:01Z",
+      "action": "withdraw",
+      "candidates": ["withdraw", "boundary", "observe"],
+      "confidence": 0.87,
+      "correlation_id": "corr_mixed_002",
+      "trigger_event": "evt_mixed_002"
+    },
+    {
+      "decision_id": 5,
+      "timestamp": "2026-03-02T17:10:01Z",
+      "action": "observe",
+      "candidates": ["observe", "boundary", "repair_offer"],
+      "confidence": 0.75,
+      "correlation_id": "corr_mixed_003",
+      "trigger_event": "evt_mixed_003"
+    }
+  ],
+  "emotional_state": {
+    "trust": 0.55,
+    "energy": 0.48,
+    "grudge": 0.35,
+    "bond": 0.52
+  },
+  "computed_hashes": {
+    "events_hash": "sha256:feedf00dface...",
+    "decisions_hash": "sha256:b0b0c0c0d0d0...",
+    "manifest_hash": "sha256:a1a1b1b1c1c1..."
+  }
+}

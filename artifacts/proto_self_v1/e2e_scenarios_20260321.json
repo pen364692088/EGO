@@ -1,0 +1,57 @@
+{
+  "test_time": "2026-03-21T19:51:32.955666",
+  "scenarios": [
+    {
+      "name": "normal_event_tendency_change",
+      "passed": true,
+      "events_processed": 3,
+      "tendencies": [
+        {
+          "event_id": "normal-001",
+          "preferred_mode": "respond",
+          "preferred_tone": "calm",
+          "caution": 0.05
+        },
+        {
+          "event_id": "normal-002",
+          "preferred_mode": "respond",
+          "preferred_tone": "calm",
+          "caution": 0.15000000000000002
+        },
+        {
+          "event_id": "normal-003",
+          "preferred_mode": "respond",
+          "preferred_tone": "calm",
+          "caution": 0.15000000000000002
+        }
+      ]
+    },
+    {
+      "name": "failure_reflection_trigger",
+      "passed": true,
+      "details": {
+        "has_reflection": true,
+        "correct_trigger": true,
+        "revision_increased": true,
+        "mode_changed": true,
+        "final_mode": "repair"
+      }
+    },
+    {
+      "name": "repeated_pattern_cycle_strengthen",
+      "passed": true,
+      "details": {
+        "all_same_cycle_id": true,
+        "final_op": "strengthen",
+        "cycle_id": "8eb0b02562ae82dc",
+        "in_store": true,
+        "cycle_strength": 0.44999999999999996
+      }
+    }
+  ],
+  "summary": {
+    "passed": 3,
+    "total": 3,
+    "all_passed": true
+  }
+}

@@ -1,0 +1,232 @@
+{
+  "event_id": "evt_680bb36a06d5",
+  "trace_id": "trace_run_20260316_124832_ea691af6_case_1",
+  "case_id": "case_1",
+  "timestamp": "2026-03-16T12:48:33.110306+00:00",
+  "openemotion_result": {
+    "status": "processed",
+    "valence": -0.0050238013267517095,
+    "arousal": 2.3e-322,
+    "prediction_error": 0.0,
+    "memory_strength": 1.0,
+    "regulation_budget": 1.0,
+    "social_safety": 0.6,
+    "energy": 1.0,
+    "uncertainty": 0.45,
+    "energy_budget": 1.0,
+    "budget_deltas": [],
+    "fatigue_level": "energized",
+    "appraisal": {
+      "goal_progress": 0.2,
+      "expectation_violation": 0.0,
+      "controllability": 0.5,
+      "social_threat": 0.0,
+      "novelty": 0.0,
+      "observed_delta": {
+        "safety": 0.0,
+        "energy": 0.0
+      },
+      "emotion_label": "boredom",
+      "intensity": 0.2410618809530023,
+      "reasoning": [
+        "goal_progress: Agreement/acceptance",
+        "expectation_violation: Base expectation_violation: 0.00",
+        "controllability: User message - moderate control via response",
+        "social_threat: Base social_threat: 0.00",
+        "novelty: Base novelty: 0.00"
+      ]
+    },
+    "body_trace": {
+      "global_body_delta": {
+        "energy": -0.02,
+        "social_need": -0.03,
+        "focus_fatigue": 0.01
+      },
+      "target_residual_delta": null,
+      "shrinkage_weight": null
+    },
+    "precision_snapshot": {
+      "w_action": 0.5,
+      "w_memory": 0.3,
+      "w_explore": 0.3
+    },
+    "self_conflict": 0.42,
+    "self_model_hash": "17d0b56a4b0f5489bd366340206782a8f9b7c74e983856f438d91363fe1ffa31",
+    "self_model_result": {
+      "delta": {},
+      "self_conflict": 0.42,
+      "evidence": {
+        "event_type": "user_message",
+        "event_meta": {
+          "event_id": "evt_680bb36a06d5",
+          "trace_id": "trace_run_20260316_124832_ea691af6_case_1",
+          "case_id": "case_1",
+          "source": "user",
+          "timestamp": "2026-03-16T12:48:33.110004+00:00",
+          "client_source": "telegram"
+        },
+        "relationship_state": {
+          "bond": 0.0,
+          "grudge": 0.0,
+          "trust": 0.0,
+          "repair_bank": 0.0,
+          "uncertainty": 0.45
+        },
+        "conflict_components": {
+          "value_conflict": 0.3,
+          "capability_conflict": 0.3,
+          "identity_conflict": 0.7
+        }
+      },
+      "old_state": {
+        "bodily": {
+          "energy": 0.7,
+          "social_safety": 0.6,
+          "focus_fatigue": 0.0
+        },
+        "relational": {
+          "focus_target": "test_user_1",
+          "bond": 0.5,
+          "grudge": 0.0,
+          "trust": 0.5,
+          "repair_bank": 0.0,
+          "ledger_summary": {}
+        },
+        "cognitive": {
+          "confidence": 0.5,
+          "uncertainty": 0.5,
+          "regulation_budget": 1.0
+        },
+        "identity": {
+          "traits": [
+            "calm",
+            "direct",
+            "pragmatic"
+          ],
+          "value_weights": {}
+        },
+        "updated_at": 1773665313.2573502
+      },
+      "new_state": {
+        "bodily": {
+          "energy": 0.7,
+          "social_safety": 0.6,
+          "focus_fatigue": 0.0
+        },
+        "relational": {
+          "focus_target": "test_user_1",
+          "bond": 0.5,
+          "grudge": 0.0,
+          "trust": 0.5,
+          "repair_bank": 0.0,
+          "ledger_summary": {}
+        },
+        "cognitive": {
+          "confidence": 0.5,
+          "uncertainty": 0.5,
+          "regulation_budget": 1.0
+        },
+        "identity": {
+          "traits": [
+            "calm",
+            "direct",
+            "pragmatic"
+          ],
+          "value_weights": {}
+        },
+        "updated_at": 1773665313.2573721
+      }
+    },
+    "self_report": {
+      "schema_version": "mvp8.v1",
+      "generated_at": "2026-03-16T12:48:33+00:00",
+      "seed": 0,
+      "target_id": "telegram",
+      "counterparty_id": "test_user_1",
+      "event": {
+        "type": "user_message",
+        "actor": "test_user_1",
+        "target": "assistant",
+        "text": "\u4f60\u597d\uff0c\u8fd9\u662f\u7b2c\u4e00\u6761\u6d4b\u8bd5\u6d88\u606f",
+        "meta": {
+          "event_id": "evt_680bb36a06d5",
+          "trace_id": "trace_run_20260316_124832_ea691af6_case_1",
+          "case_id": "case_1",
+          "source": "user",
+          "timestamp": "2026-03-16T12:48:33.110004+00:00",
+          "client_source": "telegram"
+        }
+      },
+      "state_snapshot": {
+        "valence": -0.0050238013267517095,
+        "arousal": 2.3e-322,
+        "prediction_error": 0.0,
+        "social_safety": 0.6,
+        "energy": 1.0,
+        "uncertainty": 0.45,
+        "energy_budget": 1.0
+      },
+      "appraisal": {
+        "goal_progress": 0.2,
+        "expectation_violation": 0.0,
+        "controllability": 0.5,
+        "social_threat": 0.0,
+        "novelty": 0.0,
+        "observed_delta": {
+          "safety": 0.0,
+          "energy": 0.0
+        },
+        "emotion_label": "boredom",
+        "intensity": 0.2410618809530023,
+        "reasoning": [
+          "goal_progress: Agreement/acceptance",
+          "expectation_violation: Base expectation_violation: 0.00",
+          "controllability: User message - moderate control via response",
+          "social_threat: Base social_threat: 0.00",
+          "novelty: Base novelty: 0.00"
+        ]
+      },
+      "emotional_reasoning": {
+        "primary_emotion": "caution",
+        "emotion_intensity": 0.2410618809530023,
+        "interpretation": "event=user_message, goal=0.20, threat=0.00, budget=1.00",
+        "predicted_risk": 0.08000000000000002,
+        "action_tendency": "observe",
+        "confidence": 0.7589381190469977
+      },
+      "self_consistency": {
+        "has_conflict": false,
+        "max_severity": 0.0,
+        "items": [],
+        "repair_strategy": "none"
+      },
+      "narrative_memory": {
+        "state": {
+          "target_id": "telegram",
+          "identity": "I am an adaptive emotional agent",
+          "current_task": "maintain coherent, safe interaction",
+          "purpose": "understand events and choose regulated actions",
+          "event_count": 1,
+          "conflict_count": 0,
+          "last_event_type": "user_message",
+          "last_action_tendency": "observe"
+        },
+        "compressed": "who=I am an adaptive emotional agent; what=maintain coherent, safe interaction; why=understand events and choose regulated actions; events=1; conflicts=0; last=user_message/observe",
+        "tokens_estimate": 19
+      },
+      "audit": {
+        "source": "emotiond.reflection",
+        "deterministic": true,
+        "hash_algo": "sha256",
+        "hash_excludes": [
+          "generated_at",
+          "report_path",
+          "self_hash"
+        ],
+        "self_hash": "d617d731f8223e274e807f958030344903acbeb58d93d4f1c0768126e79a8a50"
+      }
+    },
+    "self_report_path": "reports/self_reports/telegram/20260316T124833Z.json",
+    "self_report_index_path": "reports/self_reports/index.jsonl"
+  }
+}

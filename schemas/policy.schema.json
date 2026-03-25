@@ -1,0 +1,84 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://openclaw.ai/schemas/policy.schema.json",
+  "title": "Policy",
+  "description": "策略 - 长期偏好/约束",
+  "type": "object",
+  "required": ["id", "policy_type", "name", "status", "created_at"],
+  "properties": {
+    "id": {
+      "type": "string",
+      "description": "策略唯一标识"
+    },
+    "policy_type": {
+      "type": "string",
+      "enum": [
+        "boundary", "preference", "prohibition",
+        "priority", "escalation", "delegation",
+        "lesson_learned", "best_practice", "anti_pattern"
+      ],
+      "description": "策略类型"
+    },
+    "name": {
+      "type": "string",
+      "description": "策略名称"
+    },
+    "description": {
+      "type": "string",
+      "description": "策略描述"
+    },
+    "condition": {
+      "type": "string",
+      "description": "触发条件"
+    },
+    "action": {
+      "type": "string",
+      "description": "建议行为"
+    },
+    "status": {
+      "type": "string",
+      "enum": ["proposed", "adopted", "active", "deprecated", "rejected"],
+      "description": "策略状态"
+    },
+    "strength": {
+      "type": "string",
+      "enum": ["soft", "medium", "hard"],
+      "description": "策略强度"
+    },
+    "priority": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 100,
+      "description": "优先级（0-100）"
+    },
+    "source_narrative_ids": {
+      "type": "array",
+      "items": {"type": "string"},
+      "description": "来源叙事ID列表"
+    },
+    "created_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "创建时间"
+    },
+    "last_applied": {
+      "type": ["string", "null"],
+      "format": "date-time",
+      "description": "最后应用时间"
+    },
+    "application_count": {
+      "type": "integer",
+      "minimum": 0,
+      "description": "应用次数"
+    },
+    "tags": {
+      "type": "array",
+      "items": {"type": "string"},
+      "description": "标签"
+    },
+    "metadata": {
+      "type": "object",
+      "description": "扩展元数据"
+    }
+  }
+}

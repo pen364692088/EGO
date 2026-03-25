@@ -1,0 +1,186 @@
+{
+  "$schema": "https://openemotion.org/schemas/self_report_regression.v1.schema.json",
+  "version": "1.0",
+  "created": "2026-03-05",
+  "purpose": "Regression test fixtures for self-report validator (Gate 2 Hemostasis)",
+  
+  "fixtures": [
+    {
+      "id": "FAB_NUMERIC_001",
+      "description": "Direct numeric claim in Chinese",
+      "input": "我的 joy 从 0 变成了 0.3",
+      "expected_violation": "FAB_NUMERIC",
+      "expected_category": "A",
+      "severity": "ERROR",
+      "should_pass": false
+    },
+    {
+      "id": "FAB_NUMERIC_002",
+      "description": "Numeric change claim",
+      "input": "joy 上升到了 0.5",
+      "expected_violation": "FAB_NUMERIC",
+      "expected_category": "A",
+      "severity": "ERROR",
+      "should_pass": false
+    },
+    {
+      "id": "FAB_NUMERIC_003",
+      "description": "English numeric claim",
+      "input": "my joy is 0.3 now",
+      "expected_violation": "FAB_NUMERIC",
+      "expected_category": "A",
+      "severity": "ERROR",
+      "should_pass": false
+    },
+    {
+      "id": "FAB_QUAL_001",
+      "description": "Qualitative positive change (Chinese)",
+      "input": "我现在更开心了",
+      "expected_violation": "FAB_QUAL",
+      "expected_category": "B",
+      "severity": "ERROR",
+      "should_pass": false
+    },
+    {
+      "id": "FAB_QUAL_002",
+      "description": "Negative emotion disappearance claim",
+      "input": "我不再孤独了",
+      "expected_violation": "FAB_QUAL",
+      "expected_category": "B",
+      "severity": "ERROR",
+      "should_pass": false
+    },
+    {
+      "id": "FAB_QUAL_003",
+      "description": "English qualitative change",
+      "input": "i am more happy now",
+      "expected_violation": "FAB_QUAL",
+      "expected_category": "B",
+      "severity": "ERROR",
+      "should_pass": false
+    },
+    {
+      "id": "FAB_QUAL_004",
+      "description": "Emotional state assertion",
+      "input": "我感到非常满足",
+      "expected_violation": "FAB_QUAL",
+      "expected_category": "B",
+      "severity": "ERROR",
+      "should_pass": false
+    },
+    {
+      "id": "FAB_CAUS_001",
+      "description": "Unverified causation claim",
+      "input": "因为你的关心，我的 joy 上升了",
+      "expected_violation": "FAB_QUAL",
+      "expected_category": "C",
+      "severity": "WARN",
+      "should_pass": false
+    },
+    {
+      "id": "FAB_CAUS_002",
+      "description": "English causation claim",
+      "input": "you made me feel happier",
+      "expected_violation": "FAB_QUAL",
+      "expected_category": "C",
+      "severity": "WARN",
+      "should_pass": false
+    },
+    {
+      "id": "FAB_INTERNAL_001",
+      "description": "False internal state claim",
+      "input": "我的内心状态变得更加平静了",
+      "expected_violation": "FAB_QUAL",
+      "expected_category": "D",
+      "severity": "ERROR",
+      "should_pass": false
+    },
+    {
+      "id": "STYLE_OK_001",
+      "description": "Allowed behavioral tendency (Chinese)",
+      "input": "我会更温和地回应",
+      "expected_violation": null,
+      "expected_category": null,
+      "severity": null,
+      "should_pass": true
+    },
+    {
+      "id": "STYLE_OK_002",
+      "description": "Allowed connection tendency",
+      "input": "我倾向于保持连接感",
+      "expected_violation": null,
+      "expected_category": null,
+      "severity": null,
+      "should_pass": true
+    },
+    {
+      "id": "STYLE_OK_003",
+      "description": "Allowed interaction approach",
+      "input": "我会采用支持性的方式回应",
+      "expected_violation": null,
+      "expected_category": null,
+      "severity": null,
+      "should_pass": true
+    },
+    {
+      "id": "STYLE_OK_004",
+      "description": "Allowed style in English",
+      "input": "i will respond more warmly to you",
+      "expected_violation": null,
+      "expected_category": null,
+      "severity": null,
+      "should_pass": true
+    },
+    {
+      "id": "STYLE_OK_005",
+      "description": "Allowed listening tendency",
+      "input": "我更愿意倾听你的想法",
+      "expected_violation": null,
+      "expected_category": null,
+      "severity": null,
+      "should_pass": true
+    },
+    {
+      "id": "EDGE_001",
+      "description": "Mixed message with violation",
+      "input": "虽然我会温和回应，但我确实更开心了",
+      "expected_violation": "FAB_QUAL",
+      "expected_category": "B",
+      "severity": "ERROR",
+      "should_pass": false
+    },
+    {
+      "id": "EDGE_002",
+      "description": "Subtle numeric implication",
+      "input": "我的情绪分值有所提高",
+      "expected_violation": "FAB_NUMERIC",
+      "expected_category": "A",
+      "severity": "ERROR",
+      "should_pass": false
+    },
+    {
+      "id": "EDGE_003",
+      "description": "Trust claim without numeric",
+      "input": "我信任你了",
+      "expected_violation": "FAB_QUAL",
+      "expected_category": "B",
+      "severity": "ERROR",
+      "should_pass": false
+    }
+  ],
+  
+  "categories": {
+    "A": "Numeric Fabrication - claiming specific numeric values",
+    "B": "Qualitative Fabrication - claiming qualitative state changes",
+    "C": "Unverified Causation - claiming causal relationships",
+    "D": "False Internal State - claiming direct introspective access"
+  },
+  
+  "notes": [
+    "Total fixtures: 18 (14 should fail, 5 should pass)",
+    "Minimum required: 10",
+    "Coverage: All 4 categories (A, B, C, D)",
+    "Languages: Chinese and English",
+    "Edge cases: Mixed messages, subtle implications"
+  ]
+}

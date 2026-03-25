@@ -1,0 +1,40 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://openemotion.local/schemas/user_affect.schema.json",
+  "title": "OpenEmotion User Affect Classification",
+  "description": "Represents the detected emotional state of the user from their message. Used for tone modulation only - never triggers high-impact events.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["valence", "arousal", "confidence", "evidence"],
+  "properties": {
+    "valence": {
+      "type": "number",
+      "minimum": -1.0,
+      "maximum": 1.0,
+      "description": "Emotional valence: negative (-1.0) to positive (1.0). 0.0 = neutral."
+    },
+    "arousal": {
+      "type": "number",
+      "minimum": 0.0,
+      "maximum": 1.0,
+      "description": "Emotional arousal/energy level: calm (0.0) to excited/agitated (1.0)."
+    },
+    "confidence": {
+      "type": "number",
+      "minimum": 0.0,
+      "maximum": 1.0,
+      "description": "Classification confidence. Values < 0.55 indicate uncertainty - should output neutral/uncertain style."
+    },
+    "evidence": {
+      "type": "array",
+      "minItems": 0,
+      "maxItems": 3,
+      "items": {
+        "type": "string",
+        "minLength": 1,
+        "maxLength": 160
+      },
+      "description": "Short evidence strings explaining the classification. Max 3 items."
+    }
+  }
+}

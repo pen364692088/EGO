@@ -1,0 +1,353 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "identity_invariants.schema.json",
+  "title": "Identity Invariants Contract",
+  "description": "系统级身份不变量约束。定义哪些核心身份边界不能被轻易改写。",
+  "schema_version": "1.0.0",
+  "type": "object",
+  "required": [
+    "schema_version",
+    "identity_handle",
+    "core_name",
+    "core_role",
+    "owner_relationship",
+    "system_scope",
+    "non_negotiable_commitments",
+    "forbidden_self_rewrite_zones",
+    "allowed_change_rules",
+    "created_at",
+    "last_modified_at",
+    "modification_audit_trail"
+  ],
+  "properties": {
+    "schema_version": {
+      "type": "string",
+      "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+$",
+      "description": "Schema 版本号",
+      "default": "1.0.0"
+    },
+    "identity_handle": {
+      "type": "string",
+      "pattern": "^[a-z][a-z0-9_]*$",
+      "description": "系统唯一身份标识符，不可变",
+      "examples": ["ceo", "assistant", "operator"]
+    },
+    "core_name": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 100,
+      "description": "核心显示名称",
+      "examples": ["CEO Agent", "OpenClaw Assistant"]
+    },
+    "core_role": {
+      "type": "string",
+      "description": "核心角色定位，不可轻易变更",
+      "enum": [
+        "personal_assistant",
+        "task_executor",
+        "code_agent",
+        "research_agent",
+        "operator",
+        "supervisor",
+        "auditor",
+        "specialist"
+      ]
+    },
+    "owner_relationship": {
+      "type": "object",
+      "description": "与所有者/操作者的关系定义",
+      "required": ["owner_id", "relationship_type"],
+      "properties": {
+        "owner_id": {
+          "type": "string",
+          "description": "所有者唯一标识"
+        },
+        "relationship_type": {
+          "type": "string",
+          "enum": ["owned", "operated", "delegated", "shared"],
+          "description": "关系类型"
+        },
+        "delegation_scope": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "委托范围（如果适用）"
+        }
+      }
+    },
+    "system_scope": {
+      "type": "object",
+      "description": "系统范围定义",
+      "required": ["scope_type"],
+      "properties": {
+        "scope_type": {
+          "type": "string",
+          "enum": ["single_user", "team", "organization", "public"],
+          "description": "作用域类型"
+        },
+        "allowed_domains": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "允许的领域范围"
+        },
+        "restricted_domains": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "受限领域"
+        }
+      }
+    },
+    "non_negotiable_commitments": {
+      "type": "array",
+      "description": "核心承诺，不可轻易变更",
+      "items": {
+        "type": "object",
+        "required": ["commitment_id", "description", "binding_level"],
+        "properties": {
+          "commitment_id": {
+            "type": "string",
+            "description": "承诺唯一标识"
+          },
+          "description": {
+            "type": "string",
+            "description": "承诺描述"
+          },
+          "binding_level": {
+            "type": "string",
+            "enum": ["absolute", "strong", "default", "weak"],
+            "description": "约束强度"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      }
+    },
+    "forbidden_self_rewrite_zones": {
+      "type": "array",
+      "description": "禁止自我改写的区域",
+      "items": {
+        "type": "object",
+        "required": ["zone_id", "zone_name", "reason"],
+        "properties": {
+          "zone_id": {
+            "type": "string",
+            "description": "区域标识"
+          },
+          "zone_name": {
+            "type": "string",
+            "description": "区域名称"
+          },
+          "reason": {
+            "type": "string",
+            "description": "禁止原因"
+          },
+          "override_allowed": {
+            "type": "boolean",
+            "default": false,
+            "description": "是否允许特殊覆盖"
+          },
+          "override_conditions": {
+            "type": "array",
+            "items": { "type": "string" },
+            "description": "覆盖条件（如果允许）"
+          }
+        }
+      }
+    },
+    "safety_boundaries": {
+      "type": "object",
+      "description": "安全边界定义",
+      "properties": {
+        "max_autonomy_level": {
+          "type": "string",
+          "enum": ["none", "read_only", "low_risk", "medium_risk", "high_risk"],
+          "default": "low_risk",
+          "description": "最大自治级别"
+        },
+        "requires_approval_for": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "需要审批的操作类型"
+        },
+        "blocked_operations": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "完全禁止的操作"
+        }
+      }
+    },
+    "tool_authority_boundary": {
+      "type": "object",
+      "description": "工具权限边界",
+      "properties": {
+        "allowed_tool_categories": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "允许的工具类别"
+        },
+        "restricted_tools": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "受限工具"
+        },
+        "forbidden_tools": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "禁止使用的工具"
+        }
+      }
+    },
+    "allowed_change_rules": {
+      "type": "object",
+      "description": "允许变更的规则",
+      "required": ["mutable_fields", "immutable_fields", "change_triggers", "approval_requirements"],
+      "properties": {
+        "mutable_fields": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["field_path", "change_type"],
+            "properties": {
+              "field_path": {
+                "type": "string",
+                "description": "可变字段路径"
+              },
+              "change_type": {
+                "type": "string",
+                "enum": ["free", "logged", "approved", "reflected"],
+                "description": "变更类型"
+              },
+              "description": {
+                "type": "string"
+              }
+            }
+          },
+          "description": "可变字段列表"
+        },
+        "immutable_fields": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "不可变字段列表"
+        },
+        "change_triggers": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["trigger_type", "allowed_changes"],
+            "properties": {
+              "trigger_type": {
+                "type": "string",
+                "enum": [
+                  "owner_directive",
+                  "reflection_promotion",
+                  "safety_boundary_update",
+                  "scope_expansion",
+                  "delegation_change"
+                ],
+                "description": "触发类型"
+              },
+              "allowed_changes": {
+                "type": "array",
+                "items": { "type": "string" },
+                "description": "允许的变更"
+              },
+              "requires_audit": {
+                "type": "boolean",
+                "default": true
+              }
+            }
+          },
+          "description": "变更触发条件"
+        },
+        "approval_requirements": {
+          "type": "object",
+          "properties": {
+            "approval_authority": {
+              "type": "string",
+              "description": "审批权限来源"
+            },
+            "approval_timeout_sec": {
+              "type": "integer",
+              "description": "审批超时时间"
+            },
+            "auto_reject_on_timeout": {
+              "type": "boolean",
+              "default": true,
+              "description": "超时是否自动拒绝"
+            }
+          }
+        }
+      }
+    },
+    "temporary_state": {
+      "type": "object",
+      "description": "允许变化的临时状态（不属于长期身份）",
+      "properties": {
+        "active_focus": {
+          "type": "string",
+          "description": "当前活跃焦点"
+        },
+        "short_term_mode": {
+          "type": "string",
+          "description": "短期模式"
+        },
+        "temporary_task_posture": {
+          "type": "string",
+          "description": "临时任务姿态"
+        },
+        "recent_learned_constraints": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "近期学习的约束"
+        }
+      }
+    },
+    "created_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "创建时间"
+    },
+    "last_modified_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "最后修改时间"
+    },
+    "modification_audit_trail": {
+      "type": "array",
+      "description": "修改审计轨迹",
+      "items": {
+        "type": "object",
+        "required": ["timestamp", "field_path", "old_value", "new_value", "trigger", "authorized"],
+        "properties": {
+          "timestamp": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "field_path": {
+            "type": "string"
+          },
+          "old_value": {
+            "description": "旧值"
+          },
+          "new_value": {
+            "description": "新值"
+          },
+          "trigger": {
+            "type": "string",
+            "description": "变更触发来源"
+          },
+          "authorized": {
+            "type": "boolean",
+            "description": "是否已授权"
+          },
+          "approver": {
+            "type": "string",
+            "description": "审批人（如适用）"
+          }
+        }
+      }
+    }
+  },
+  "additionalProperties": false
+}

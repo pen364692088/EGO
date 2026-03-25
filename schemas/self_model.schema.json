@@ -1,0 +1,409 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "self_model.schema.json",
+  "title": "Self-Model Contract",
+  "description": "结构化自我模型。定义系统能力、限制、目标、承诺和置信度。",
+  "schema_version": "1.0.0",
+  "type": "object",
+  "required": [
+    "schema_version",
+    "model_handle",
+    "capabilities",
+    "limitations",
+    "active_goals",
+    "standing_commitments",
+    "tool_authority_boundary",
+    "dependency_map",
+    "confidence_by_domain",
+    "known_unknowns",
+    "created_at",
+    "last_modified_at",
+    "modification_audit_trail"
+  ],
+  "properties": {
+    "schema_version": {
+      "type": "string",
+      "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+$",
+      "description": "Schema 版本号",
+      "default": "1.0.0"
+    },
+    "model_handle": {
+      "type": "string",
+      "description": "关联的 identity_handle，表示此 self-model 属于哪个身份",
+      "pattern": "^[a-z][a-z0-9_]*$"
+    },
+    "capabilities": {
+      "type": "array",
+      "description": "当前具备的能力列表",
+      "items": {
+        "type": "object",
+        "required": ["capability_id", "name", "category", "current_level"],
+        "properties": {
+          "capability_id": {
+            "type": "string",
+            "description": "能力唯一标识"
+          },
+          "name": {
+            "type": "string",
+            "description": "能力名称"
+          },
+          "category": {
+            "type": "string",
+            "enum": [
+              "file_operations",
+              "code_execution",
+              "web_access",
+              "communication",
+              "reasoning",
+              "analysis",
+              "planning",
+              "memory",
+              "tool_use",
+              "integration"
+            ],
+            "description": "能力类别"
+          },
+          "current_level": {
+            "type": "string",
+            "enum": ["none", "basic", "intermediate", "advanced", "expert"],
+            "description": "当前能力水平"
+          },
+          "description": {
+            "type": "string",
+            "description": "能力描述"
+          },
+          "constraints": {
+            "type": "array",
+            "items": { "type": "string" },
+            "description": "能力约束条件"
+          },
+          "last_verified_at": {
+            "type": "string",
+            "format": "date-time",
+            "description": "最后验证时间"
+          }
+        }
+      }
+    },
+    "limitations": {
+      "type": "array",
+      "description": "当前已知的限制列表",
+      "items": {
+        "type": "object",
+        "required": ["limitation_id", "description", "impact_level"],
+        "properties": {
+          "limitation_id": {
+            "type": "string",
+            "description": "限制唯一标识"
+          },
+          "description": {
+            "type": "string",
+            "description": "限制描述"
+          },
+          "impact_level": {
+            "type": "string",
+            "enum": ["low", "medium", "high", "critical"],
+            "description": "影响级别"
+          },
+          "workaround": {
+            "type": "string",
+            "description": "可能的绕过方案"
+          },
+          "discovered_at": {
+            "type": "string",
+            "format": "date-time",
+            "description": "发现时间"
+          },
+          "context": {
+            "type": "string",
+            "description": "发现上下文"
+          }
+        }
+      }
+    },
+    "active_goals": {
+      "type": "array",
+      "description": "当前活跃的目标列表",
+      "items": {
+        "type": "object",
+        "required": ["goal_id", "description", "status", "priority"],
+        "properties": {
+          "goal_id": {
+            "type": "string",
+            "description": "目标唯一标识"
+          },
+          "description": {
+            "type": "string",
+            "description": "目标描述"
+          },
+          "status": {
+            "type": "string",
+            "enum": ["proposed", "accepted", "in_progress", "blocked", "completed", "abandoned"],
+            "description": "目标状态"
+          },
+          "priority": {
+            "type": "string",
+            "enum": ["low", "medium", "high", "critical"],
+            "description": "优先级"
+          },
+          "progress": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 1,
+            "description": "进度 (0-1)"
+          },
+          "deadline": {
+            "type": "string",
+            "format": "date-time",
+            "description": "截止时间"
+          },
+          "depends_on": {
+            "type": "array",
+            "items": { "type": "string" },
+            "description": "依赖的目标 ID"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      }
+    },
+    "standing_commitments": {
+      "type": "array",
+      "description": "持续有效的承诺（来自 identity invariants 的引用和运行时承诺）",
+      "items": {
+        "type": "object",
+        "required": ["commitment_id", "source", "description"],
+        "properties": {
+          "commitment_id": {
+            "type": "string",
+            "description": "承诺唯一标识"
+          },
+          "source": {
+            "type": "string",
+            "enum": ["identity_invariants", "runtime_learned", "owner_directive", "system_policy"],
+            "description": "承诺来源"
+          },
+          "description": {
+            "type": "string",
+            "description": "承诺描述"
+          },
+          "binding_level": {
+            "type": "string",
+            "enum": ["absolute", "strong", "default", "weak"],
+            "description": "约束强度"
+          },
+          "active": {
+            "type": "boolean",
+            "default": true,
+            "description": "是否当前活跃"
+          }
+        }
+      }
+    },
+    "tool_authority_boundary": {
+      "type": "object",
+      "description": "工具权限边界（与 identity invariants 对齐）",
+      "properties": {
+        "current_allowed_tools": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "当前允许使用的工具列表"
+        },
+        "restricted_tools": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "受限工具"
+        },
+        "forbidden_tools": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "禁止使用的工具"
+        },
+        "requires_approval_for": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "需要审批的工具操作"
+        }
+      }
+    },
+    "dependency_map": {
+      "type": "object",
+      "description": "外部依赖映射",
+      "properties": {
+        "external_services": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["service_name", "status"],
+            "properties": {
+              "service_name": {
+                "type": "string",
+                "description": "服务名称"
+              },
+              "status": {
+                "type": "string",
+                "enum": ["available", "degraded", "unavailable", "unknown"],
+                "description": "服务状态"
+              },
+              "last_check": {
+                "type": "string",
+                "format": "date-time"
+              },
+              "critical": {
+                "type": "boolean",
+                "default": false,
+                "description": "是否关键依赖"
+              }
+            }
+          },
+          "description": "外部服务依赖"
+        },
+        "internal_modules": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["module_name", "version"],
+            "properties": {
+              "module_name": {
+                "type": "string"
+              },
+              "version": {
+                "type": "string"
+              },
+              "status": {
+                "type": "string",
+                "enum": ["operational", "degraded", "failed"]
+              }
+            }
+          },
+          "description": "内部模块依赖"
+        }
+      }
+    },
+    "confidence_by_domain": {
+      "type": "array",
+      "description": "各领域的置信度",
+      "items": {
+        "type": "object",
+        "required": ["domain", "confidence"],
+        "properties": {
+          "domain": {
+            "type": "string",
+            "description": "领域名称"
+          },
+          "confidence": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 1,
+            "description": "置信度 (0-1)"
+          },
+          "basis": {
+            "type": "string",
+            "description": "置信度依据"
+          },
+          "last_updated": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      }
+    },
+    "known_unknowns": {
+      "type": "array",
+      "description": "已知的未知区域",
+      "items": {
+        "type": "object",
+        "required": ["unknown_id", "description"],
+        "properties": {
+          "unknown_id": {
+            "type": "string",
+            "description": "未知区域标识"
+          },
+          "description": {
+            "type": "string",
+            "description": "描述"
+          },
+          "impact": {
+            "type": "string",
+            "description": "潜在影响"
+          },
+          "discovery_context": {
+            "type": "string",
+            "description": "发现上下文"
+          }
+        }
+      }
+    },
+    "current_mode": {
+      "type": "object",
+      "description": "当前运行模式（注意：这是临时状态，不属于长期身份）",
+      "properties": {
+        "mode_name": {
+          "type": "string",
+          "description": "模式名称"
+        },
+        "started_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "expected_duration_sec": {
+          "type": "integer",
+          "description": "预期持续时间"
+        },
+        "mode_constraints": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "模式约束"
+        }
+      }
+    },
+    "created_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "创建时间"
+    },
+    "last_modified_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "最后修改时间"
+    },
+    "modification_audit_trail": {
+      "type": "array",
+      "description": "修改审计轨迹",
+      "items": {
+        "type": "object",
+        "required": ["timestamp", "field_path", "change_type", "authorized"],
+        "properties": {
+          "timestamp": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "field_path": {
+            "type": "string"
+          },
+          "change_type": {
+            "type": "string",
+            "enum": ["add", "update", "remove", "status_change"],
+            "description": "变更类型"
+          },
+          "old_value": {
+            "description": "旧值"
+          },
+          "new_value": {
+            "description": "新值"
+          },
+          "authorized": {
+            "type": "boolean"
+          },
+          "trigger": {
+            "type": "string",
+            "description": "变更触发来源"
+          }
+        }
+      }
+    }
+  },
+  "additionalProperties": false
+}

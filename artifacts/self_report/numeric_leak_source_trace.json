@@ -1,0 +1,197 @@
+{
+  "schema": "numeric_leak_source_trace.v1",
+  "generated_at": "2026-03-08T17:45:00-05:00",
+  "task_id": "MVP11_5_T03",
+  "source": [
+    "artifacts/self_report/numeric_leak_taxonomy.json",
+    "artifacts/self_report/shadow_log.jsonl",
+    "emotiond/self_report_consistency_checker.py",
+    "emotiond/numeric_leak_filter.py",
+    "emotiond/self_report_validator.py"
+  ],
+  "source_modules": [
+    {
+      "module_id": "MOD-001",
+      "name": "self_report_validator.py",
+      "role": "violation_detection",
+      "description": "检测 LLM 输出中的 numeric leak 模式",
+      "key_patterns": [
+        "NUMERIC_PATTERNS - 检测 '我的 joy 是 0.3' 等模式",
+        "QUALITATIVE_PATTERNS - 检测 '我更开心了' 等定性模式"
+      ],
+      "called_by": "self_report_consistency_checker.py",
+      "calls": "无下游依赖",
+      "status": "working_as_intended"
+    },
+    {
+      "module_id": "MOD-002",
+      "name": "numeric_leak_filter.py",
+      "role": "numeric_filtering",
+      "description": "过滤 LLM 输出中的 numeric leak",
+      "key_functions": [
+        "NumericLeakFilter.sanitize() - 清理输出",
+        "NumericLeakFilter.check_response() - 检查并返回评估",
+        "NumericLeakFilter.should_block() - 决定是否阻止"
+      ],
+      "called_by": "self_report_consistency_checker.py",
+      "calls": "无下游依赖",
+      "status": "working_as_intended"
+    },
+    {
+      "module_id": "MOD-003",
+      "name": "self_report_consistency_checker.py",
+      "role": "orchestration_and_logging",
+      "description": "编排检测流程，记录到 shadow_log",
+      "key_classes": [
+        "SelfReportConsistencyChecker - 主检查器",
+        "ShadowLogger - 记录到 shadow_log.jsonl",
+        "ConsistencyResult - 检查结果"
+      ],
+      "key_logic": [
+        "整合 validator 和 filter 的检测结果",
+        "生成 would_block 标志",
+        "写入 shadow_log.jsonl"
+      ],
+      "enforcement_logic": {
+        "phase_b": "shadow_mode=True, would_block 记录但不阻止",
+        "phase_c": "enforce_mode=True, would_block 实际阻止输出"
+      },
+      "called_by": "core.py / api.py",
+      "calls": ["self_report_validator.py", "numeric_leak_filter.py"],
+      "status": "working_as_intended_but_not_enforcing"
+    },
+    {
+      "module_id": "MOD-004",
+      "name": "core.py",
+      "role": "llm_orchestration",
+      "description": "主 LLM 处理流程",
+      "calls": "self_report_consistency_checker (检测)",
+      "enforcement_integration": "unknown - 需要进一步检查",
+      "status": "requires_investigation"
+    }
+  ],
+  "pipeline_gaps": [
+    {
+      "gap_id": "GAP-001",
+      "name": "shadow_mode_no_enforcement",
+      "severity": "P0",
+      "description": "当前处于 Phase B shadow mode，violations 被检测但不阻止",
+      "evidence": {
+        "file": "emotiond/self_report_consistency_checker.py",
+        "line": 805,
+        "code": "if not enforce_mode: return False  # Shadow mode: never block"
+      },
+      "impact": "所有 detected violations 都会进入用户输出",
+      "affected_violations": 802,
+      "affected_percentage": "100% of detected numeric leaks"
+    },
+    {
+      "gap_id": "GAP-002",
+      "name": "interpreted_mode_vulnerability",
+      "severity": "P0",
+      "description": "interpreted mode 允许 LLM 更多自由度，导致 95.8% 的 numeric leak",
+      "evidence": {
+        "interpreted_mode_leaks": 768,
+        "total_numeric_leaks": 802,
+        "percentage": 95.8
+      },
+      "impact": "interpreted mode 是 numeric leak 的主要通道",
+      "root_cause": "LLM 在 interpreted mode 下可以生成 numeric 内容，且 filter 只在输出后检查"
+    },
+    {
+      "gap_id": "GAP-003",
+      "name": "output_stage_only_filtering",
+      "severity": "P1",
+      "description": "numeric filter 在输出阶段检查，而非在 prompt 构建阶段阻止",
+      "evidence": {
+        "filter_location": "post-LLM-generation",
+        "missing": "pre-LLM-generation numeric constraint"
+      },
+      "impact": "LLM 仍然可以生成 numeric 内容，只是在输出时被检测"
+    }
+  ],
+  "filter_bypass_paths": [
+    {
+      "bypass_id": "BYPASS-001",
+      "name": "shadow_mode_bypass",
+      "description": "Phase B shadow mode 设计上不阻止任何输出",
+      "affected_violations": 802,
+      "fix_required": "切换到 Phase C enforce mode"
+    },
+    {
+      "bypass_id": "BYPASS-002",
+      "name": "interpreted_mode_generation",
+      "description": "LLM 在 interpreted mode 下可以生成 numeric 内容",
+      "affected_violations": 768,
+      "fix_required": "在 prompt 或 LLM 层面阻止 numeric 生成"
+    },
+    {
+      "bypass_id": "BYPASS-003",
+      "name": "post_hoc_detection",
+      "description": "检测发生在输出后，而非生成前",
+      "affected_violations": "all",
+      "fix_required": "在 prompt 阶段注入约束或使用 structured output"
+    }
+  ],
+  "mode_leak_distribution": {
+    "interpreted": {
+      "total_checks": 5829,
+      "numeric_leaks": 768,
+      "leak_rate": 13.2,
+      "percentage_of_all_leaks": 95.8
+    },
+    "numeric": {
+      "numeric_leaks": 17,
+      "percentage_of_all_leaks": 2.1
+    },
+    "style_only": {
+      "numeric_leaks": 17,
+      "percentage_of_all_leaks": 2.1
+    }
+  },
+  "architecture_boundary_assessment": {
+    "requires_architecture_change": false,
+    "requires_srap_authority_change": false,
+    "requires_interpreted_mode_redefinition": true,
+    "requires_raw_state_injection_change": false,
+    "rationale": "interpreted mode 需要重新定义以禁止 numeric 生成，但不涉及 SRAP 权威链或 raw_state 注入策略的根本改变"
+  },
+  "escalation_required": false,
+  "escalation_reason": "GAP-002 (interpreted_mode_vulnerability) 涉及 interpreted mode 定义，可能需要人类决策是否修改 interpreted mode 语义",
+  "minimum_fixes": [
+    {
+      "priority": "P0",
+      "fix_id": "FIX-001",
+      "name": "enable_enforce_mode",
+      "description": "切换到 Phase C enforce mode，使 would_block 生效",
+      "scope": "配置变更，不涉及代码修改",
+      "risk": "低 - 仅改变 enforcement 行为",
+      "estimated_impact": "阻止 100% of detected numeric leaks"
+    },
+    {
+      "priority": "P0",
+      "fix_id": "FIX-002",
+      "name": "interpreted_mode_numeric_prohibition",
+      "description": "在 interpreted mode 的 prompt 或约束中明确禁止 numeric 生成",
+      "scope": "prompt_contracts/self_report.md 或 self_report_interpreter.py",
+      "risk": "中 - 可能影响 LLM 行为",
+      "estimated_impact": "减少 interpreted mode 中的 numeric 生成"
+    },
+    {
+      "priority": "P1",
+      "fix_id": "FIX-003",
+      "name": "zero_value_filter",
+      "description": "添加 zero-value 特定过滤，阻止 'joy=0.0' 类型的输出",
+      "scope": "numeric_leak_filter.py",
+      "risk": "低 - 增加特定 pattern",
+      "estimated_impact": "减少 40.7% of raw_state_direct_leak"
+    }
+  ],
+  "summary": {
+    "primary_source": "interpreted_mode_vulnerability (95.8% of leaks)",
+    "primary_gap": "shadow_mode_no_enforcement (100% of detected leaks not blocked)",
+    "architecture_change_required": false,
+    "escalation_required": false,
+    "recommended_next_task": "T03.1: Enable Enforce Mode (config change)"
+  }
+}

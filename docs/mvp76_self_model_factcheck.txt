@@ -1,0 +1,576 @@
+=== MVP-7.6 SelfModel Fact Check ===
+Date: 2026-03-02T21:12:40-06:00
+
+=== 1. Search for self_model/SelfModel references ===
+./TASK_BUGFIX.md:32:- emotiond/self_model.py: 新增三个函数
+./TASK_BUGFIX.md:38:- All self_model tests pass (21/21)
+./docs/MVP6_AUDIT_REPORT.md:117:| self_model | 3 | update_rate, stability, conflict_resolution |
+./docs/MVP5_FINAL_REPORT.md:20:| D4 | Self-model | ✅ | `emotiond/self_model.py`, `tests/test_mvp5_self_model.py` |
+./docs/MVP5_FINAL_REPORT.md:30:  - `test_mvp5_self_model.py`: 64
+./docs/MVP5_FINAL_REPORT.md:70:  - Self-model only: revert `emotiond/self_model.py`
+./docs/MVP5_FINAL_REPORT.md:83:  - `emotiond/self_model.py`
+./docs/MVP5_FINAL_REPORT.md:89:  - `tests/test_mvp5_self_model.py`
+./tests/test_mvp61_d2_individualization.py:14:    measure_self_model_isolation,
+./tests/test_mvp61_d2_individualization.py:109:        measure_self_model_isolation(
+./tests/test_mvp61_d2_individualization.py:112:            self_model_values={"w_memory": 0.9},  # Leaked from A
+./tests/test_mvp61_d2_individualization.py:119:        assert report.shared_self_model_leak > 0.5
+./tests/test_mvp61_d2_individualization.py:514:        measure_self_model_isolation(
+./tests/test_mvp61_d2_individualization.py:517:            self_model_values={"w_memory": 0.5},
+./docs/mvp76_self_model_factcheck.txt:1:=== MVP-7.6 SelfModel Fact Check ===
+./docs/mvp76_self_model_factcheck.txt:4:=== 1. Search for self_model/SelfModel references ===
+./docs/mvp76_self_model_factcheck.txt:5:./TASK_BUGFIX.md:32:- emotiond/self_model.py: 新增三个函数
+./docs/mvp76_self_model_factcheck.txt:6:./TASK_BUGFIX.md:38:- All self_model tests pass (21/21)
+./docs/mvp76_self_model_factcheck.txt:7:./docs/MVP6_AUDIT_REPORT.md:117:| self_model | 3 | update_rate, stability, conflict_resolution |
+./docs/mvp76_self_model_factcheck.txt:8:./docs/MVP5_FINAL_REPORT.md:20:| D4 | Self-model | ✅ | `emotiond/self_model.py`, `tests/test_mvp5_self_model.py` |
+./docs/mvp76_self_model_factcheck.txt:9:./docs/MVP5_FINAL_REPORT.md:30:  - `test_mvp5_self_model.py`: 64
+./docs/mvp76_self_model_factcheck.txt:10:./docs/MVP5_FINAL_REPORT.md:70:  - Self-model only: revert `emotiond/self_model.py`
+./docs/mvp76_self_model_factcheck.txt:11:./docs/MVP5_FINAL_REPORT.md:83:  - `emotiond/self_model.py`
+./docs/mvp76_self_model_factcheck.txt:12:./docs/MVP5_FINAL_REPORT.md:89:  - `tests/test_mvp5_self_model.py`
+./docs/mvp5.1/ACCEPTANCE_CHECKLIST.md:34:  - [ ] `self_model`: 更新次数, values 变化量, identity_stability
+./docs/mvp5.1/ACCEPTANCE_CHECKLIST.md:121:  - [ ] `shared_self_model_leak`
+./docs/mvp5.1/run_audit_checks.sh:69:grep -rn "state_leak_global\|target_state_leak\|shared_self_model" scripts/eval_suite_v2.py emotiond/ 2>/dev/null | head -20 >> "$REPORTS_DIR/isolation_check.txt" || echo "No interference sub-metrics found" >> "$REPORTS_DIR/isolation_check.txt"
+./docs/mvp5.1/AUDIT_TEMPLATE.md:56:| self_model.update_count | ⬜ | |
+./docs/mvp5.1/AUDIT_TEMPLATE.md:57:| self_model.values_delta | ⬜ | |
+./docs/mvp5.1/AUDIT_TEMPLATE.md:58:| self_model.identity_stability | ⬜ | |
+./docs/mvp5.1/AUDIT_TEMPLATE.md:159:grep -rn "state_leak_global\|target_state_leak\|shared_self_model" scripts/eval_suite_v2.py emotiond/
+./docs/mvp5.1/AUDIT_TEMPLATE.md:165:- [ ] shared_self_model_leak metric
+./docs/MVP-7_RELEASE_ANCHOR.md:60:| Core Modules | `core/self_model.py`, `core/episodic_memory.py`, `core/dmn_tick.py` |
+./scripts/auto_tune_v0_4.py:43:    "self_model_update_rate": {"default": 0.1, "min": 0.01, "max": 0.3, "category": "self_model"},
+./scripts/auto_tune_v0_4.py:44:    "identity_stability_threshold": {"default": 0.8, "min": 0.5, "max": 0.95, "category": "self_model"},
+./scripts/auto_tune_v0_4.py:45:    "value_conflict_resolution_rate": {"default": 0.05, "min": 0.01, "max": 0.2, "category": "self_model"},
+./docs/mvp5.1/QA_BASELINE_REPORT.md:118:- Telemetry fields (precision, allostasis, intrinsic, self_model, ledger, decision)
+./docs/mvp5.1/QA_BASELINE_REPORT.md:153:- Categories: precision, allostasis, intrinsic, self_model, meta_cognition
+./docs/mvp5.1/QA_BASELINE_REPORT.md:167:- `shared_self_model_leak` metric
+./docs/mvp5.1/QA_BASELINE_REPORT.md:314:- D1 telemetry requires changes across multiple modules (precision, allostasis, intrinsic, self_model, ledger)
+./scripts/auto_tune_v0_3.py:42:    "self_model_update_rate": {"default": 0.1, "min": 0.01, "max": 0.3, "category": "self_model"},
+./scripts/auto_tune_v0_3.py:43:    "identity_stability_threshold": {"default": 0.8, "min": 0.5, "max": 0.95, "category": "self_model"},
+./scripts/auto_tune_v0_3.py:44:    "value_conflict_resolution_rate": {"default": 0.05, "min": 0.01, "max": 0.2, "category": "self_model"},
+./core/self_model.py:168:class SelfModel:
+./core/self_model.py:201:    def from_dict(cls, data: Dict[str, Any]) -> "SelfModel":
+./core/self_model.py:245:    self_model: SelfModel,
+./core/self_model.py:249:    Render a self-report that can only reference evidence from self_model.
+./core/self_model.py:255:        self_model: The self-model to report on
+./core/self_model.py:262:        "summary": self_model.current_summary,
+./core/self_model.py:264:            "name": self_model.identity.name,
+./core/self_model.py:265:            "principles_count": len(self_model.identity.principles),
+./core/self_model.py:268:            "can_do_count": len(self_model.capability.can_do),
+./core/self_model.py:269:            "cannot_do_count": len(self_model.capability.cannot_do),
+./core/self_model.py:271:        "evidence_refs": self_model.evidence_refs.copy(),
+./core/self_model.py:272:        "timestamp": self_model.timestamp,
+./core/self_model.py:273:        "model_hash": self_model.compute_hash(),
+./core/self_model.py:287:def validate_self_report(report: Dict[str, Any], self_model: SelfModel) -> Dict[str, Any]:
+./core/self_model.py:293:        self_model: The self-model to validate against
+./core/self_model.py:301:    if report.get("model_hash") != self_model.compute_hash():
+./core/self_model.py:306:    actual_refs = set(self_model.evidence_refs)
+./tests/test_self_model.py:4:from core.self_model import (
+./tests/test_self_model.py:8:    SelfModel,
+./tests/test_self_model.py:74:class TestSelfModel:
+./tests/test_self_model.py:75:    def test_default_self_model(self):
+./tests/test_self_model.py:76:        model = SelfModel()
+./tests/test_self_model.py:82:        model = SelfModel()
+./tests/test_self_model.py:88:        model = SelfModel()
+./tests/test_self_model.py:94:        model = SelfModel()
+./tests/test_self_model.py:100:        model = SelfModel()
+./tests/test_self_model.py:107:        model = SelfModel()
+./tests/test_self_model.py:110:        restored = SelfModel.from_dict(data)
+./tests/test_self_model.py:117:        model = SelfModel()
+./tests/test_self_model.py:127:        model = SelfModel()
+./tests/test_self_model.py:134:        model = SelfModel()
+./tests/test_self_model.py:144:        model = SelfModel()
+./tests/test_self_model.py:153:        model = SelfModel()
+./tests/test_self_model.py:164:        model = SelfModel()
+./core/dmn_tick.py:23:from .self_model import SelfModel
+./core/dmn_tick.py:108:        self_model: Optional[SelfModel] = None,
+./core/dmn_tick.py:113:        self.self_model = self_model or SelfModel()
+./core/dmn_tick.py:201:        if self.self_model:
+./scripts/auto_tune_v0.py:168:    "self_model_update_rate": {
+./scripts/auto_tune_v0.py:173:        "category": "self_model"
+./scripts/auto_tune_v0.py:175:    "identity_stability_threshold": {
+./scripts/auto_tune_v0.py:180:        "category": "self_model"
+./scripts/auto_tune_v0.py:187:        "category": "self_model"
+./scripts/auto_tune_v0_2.py:172:    "self_model_update_rate": {
+./scripts/auto_tune_v0_2.py:177:        "category": "self_model"
+./scripts/auto_tune_v0_2.py:179:    "identity_stability_threshold": {
+./scripts/auto_tune_v0_2.py:184:        "category": "self_model"
+./scripts/auto_tune_v0_2.py:191:        "category": "self_model"
+./core/__init__.py:19:from .self_model import (
+./core/__init__.py:23:    SelfModel,
+./core/__init__.py:49:    "SelfModel",
+./tests/test_eval_suite_v2_1.py:26:    get_precision_weights, get_intrinsic_state, get_self_model_state, get_allostasis_budget
+./tests/test_eval_suite_v2_1.py:87:        assert ts.self_model_updates == 0
+./tests/test_eval_suite_v2_1.py:88:        assert ts.identity_stability == 1.0
+./tests/test_eval_suite_v2_1.py:116:                 "self_model_updates", "identity_stability", "timestamp"]
+./tests/test_eval_suite_v2_1.py:309:    def test_get_self_model_state_returns_dict(self):
+./tests/test_eval_suite_v2_1.py:310:        """Test get_self_model_state returns a dictionary"""
+./tests/test_eval_suite_v2_1.py:311:        state = get_self_model_state()
+./tests/test_eval_suite_v2_1.py:314:        assert "identity_stability" in state
+./emotiond/tool_policy.py:4:Decision engine for tool access based on self_model, context, and constraints.
+./emotiond/tool_policy.py:52:        self_model_permissions: Dict[str, int],
+./emotiond/tool_policy.py:56:        Evaluate if self_model has required permission for tool.
+./emotiond/tool_policy.py:59:            self_model_permissions: Dict of permission -> level
+./emotiond/tool_policy.py:69:            perm_level = self_model_permissions.get(capability, 0)
+./emotiond/tool_policy.py:77:        self_model_capabilities: Dict[str, float],
+./emotiond/tool_policy.py:81:        Evaluate if self_model has required capabilities.
+./emotiond/tool_policy.py:84:            self_model_capabilities: Dict of capability -> confidence
+./emotiond/tool_policy.py:91:            confidence = self_model_capabilities.get(capability, 0.0)
+./emotiond/tool_policy.py:122:        self_model: Any,
+./emotiond/tool_policy.py:130:            self_model: SelfModel instance with capabilities and permissions
+./emotiond/tool_policy.py:196:        # Extract self_model info
+./emotiond/tool_policy.py:198:        if hasattr(self_model, 'capabilities'):
+./emotiond/tool_policy.py:199:            # SelfModel object
+./emotiond/tool_policy.py:200:            capabilities = self_model.capabilities
+./emotiond/tool_policy.py:201:            permissions = getattr(self_model, 'permissions', {})
+./emotiond/tool_policy.py:202:        elif isinstance(self_model, dict):
+./emotiond/tool_policy.py:203:            capabilities = self_model.get('capabilities', {})
+./emotiond/tool_policy.py:204:            permissions = self_model.get('permissions', {})
+./tests/test_auto_tune_v0.py:109:        valid_categories = ["precision", "allostasis", "intrinsic", "self_model", "meta_cognition"]
+./tests/test_mvp70_self_model_v0.py:3:from emotiond.self_model import build_self_model_v0, render_self_report
+./tests/test_mvp70_self_model_v0.py:14:def test_build_self_model_v0_maps_runtime_state():
+./tests/test_mvp70_self_model_v0.py:16:    m = build_self_model_v0(
+./tests/test_mvp70_self_model_v0.py:30:    m = build_self_model_v0(focus_target="bob", emotion_state=DummyEmotion(), relationship=rel)
+./tests/test_mvp70_self_model_v0.py:32:    assert "self_model" in r
+./tests/test_mvp70_self_model_v0.py:34:    assert "self_model_fields" in r["evidence"]
+./scripts/eval_suite_v2_1.py:49:    self_model_updates: int = 0
+./scripts/eval_suite_v2_1.py:50:    identity_stability: float = 1.0
+./scripts/eval_suite_v2_1.py:129:def get_self_model_state():
+./scripts/eval_suite_v2_1.py:131:        from emotiond.self_model import get_self_model
+./scripts/eval_suite_v2_1.py:132:        sm = get_self_model()
+./scripts/eval_suite_v2_1.py:134:            return {"update_count": getattr(sm, 'update_count', 0), "identity_stability": getattr(sm, 'identity_stability', 1.0)}
+./scripts/eval_suite_v2_1.py:137:    return {"update_count": 0, "identity_stability": 1.0}
+./scripts/eval_suite_v2_1.py:176:        self_model = get_self_model_state()
+./scripts/eval_suite_v2_1.py:183:            self_model_updates=self_model.get("update_count", 0), identity_stability=self_model.get("identity_stability", 1.0)
+./scripts/eval_suite_v2_1.py:265:            "self_model": {"identity_stability": calc_stats([t.identity_stability for t in self.telemetry_history])}
+./emotiond/core.py.bak:40:from emotiond.self_model import get_self_model, build_self_model_v0, render_self_report
+./emotiond/core.py.bak:944:    base_self_model = get_self_model()
+./emotiond/core.py.bak:945:    self_state_v0 = build_self_model_v0(
+./emotiond/core.py.bak:950:        values=base_self_model.values.model_dump() if hasattr(base_self_model, "values") else None,
+./tests/test_phase3_modules.py:16:from core.self_model import SelfModel
+./tests/test_phase3_modules.py:133:        """User emotions should not directly modify self_model."""
+./tests/test_phase3_modules.py:134:        model = SelfModel()
+./tests/test_phase3_modules.py:144:        from core.self_model import OwnershipBoundary, BoundaryType
+./tests/test_phase3_modules.py:156:        from core.self_model import SelfModel
+./tests/test_phase3_modules.py:158:        model = SelfModel()
+./tests/test_phase3_modules.py:170:        model = SelfModel()
+./emotiond/cross_target_telemetry.py:7:- shared_self_model_leak: Self-model changes affecting unrelated targets
+./emotiond/cross_target_telemetry.py:24:    SHARED_SELF_MODEL_LEAK = "shared_self_model_leak"
+./emotiond/cross_target_telemetry.py:69:    shared_self_model_leak: float = 0.0
+./emotiond/cross_target_telemetry.py:88:            self.shared_self_model_leak = max(self.shared_self_model_leak, measurement.severity)
+./emotiond/cross_target_telemetry.py:102:            "shared_self_model_leak": 0.2,
+./emotiond/cross_target_telemetry.py:110:            self.shared_self_model_leak * weights["shared_self_model_leak"] +
+./emotiond/cross_target_telemetry.py:129:                "shared_self_model_leak": self.shared_self_model_leak,
+./emotiond/cross_target_telemetry.py:161:            f"  - Self-Model Leak: {self.shared_self_model_leak:.3f}",
+./emotiond/cross_target_telemetry.py:400:def measure_self_model_isolation(
+./emotiond/cross_target_telemetry.py:403:    self_model_values: Dict[str, float],
+./emotiond/cross_target_telemetry.py:421:            "self_model_values": self_model_values,
+./scripts/auto_tune_v0_1.py:63:    "self_model_update_rate": {"default": 0.1, "min": 0.01, "max": 0.3, "category": "self_model"},
+./scripts/auto_tune_v0_1.py:64:    "identity_stability_threshold": {"default": 0.8, "min": 0.5, "max": 0.95, "category": "self_model"},
+./scripts/auto_tune_v0_1.py:65:    "value_conflict_resolution_rate": {"default": 0.05, "min": 0.01, "max": 0.2, "category": "self_model"},
+./scripts/knob_registry.json:20:    "self_model_update_rate",
+./scripts/knob_registry.json:21:    "identity_stability_threshold",
+./emotiond/tool_registry.py:34:    SELF_MODEL_CONFLICT = "self_model_conflict"
+./emotiond/tool_registry.py:70:    capabilities: List[str]  # Required capabilities from self_model
+./tests/test_plan_api.py:248:        assert "self_model" in report and "evidence" in report
+./tests/test_plan_api.py:249:        assert "self_model_fields" in report["evidence"]
+./emotiond/self_model.py:24:class ValueWeights(BaseModel):
+./emotiond/self_model.py:45:    def normalize(self) -> "ValueWeights":
+./emotiond/self_model.py:49:            return ValueWeights(connection=0.25, honesty=0.25, safety=0.25, growth=0.25)
+./emotiond/self_model.py:50:        return ValueWeights(
+./emotiond/self_model.py:80:class CapabilityBeliefs(BaseModel):
+./emotiond/self_model.py:98:    def get_action_bias(self, action: str) -> float:
+./emotiond/self_model.py:245:class SelfModel(BaseModel):
+./emotiond/self_model.py:256:    values: ValueWeights = Field(default_factory=ValueWeights)
+./emotiond/self_model.py:257:    capabilities: CapabilityBeliefs = Field(default_factory=CapabilityBeliefs)
+./emotiond/self_model.py:261:    identity_stability: float = Field(default=0.5, ge=0.0, le=1.0, description="How stable the self-model is")
+./emotiond/self_model.py:272:    def get_action_bias(self, action: str) -> float:
+./emotiond/self_model.py:279:        capability_bias = self.capabilities.get_action_bias(action)
+./emotiond/self_model.py:285:        stability_weight = 0.5 + 0.5 * self.identity_stability
+./emotiond/self_model.py:588:            self.identity_stability = max(0.0, self.identity_stability - 0.01)
+./emotiond/self_model.py:590:            self.identity_stability = min(1.0, self.identity_stability + 0.001)
+./emotiond/self_model.py:694:            "identity_stability": self.identity_stability,
+./emotiond/self_model.py:747:            "identity_stability": self.identity_stability,
+./emotiond/self_model.py:753:_self_model: Optional[SelfModel] = None
+./emotiond/self_model.py:756:def get_self_model() -> SelfModel:
+./emotiond/self_model.py:758:    global _self_model
+./emotiond/self_model.py:759:    if _self_model is None:
+./emotiond/self_model.py:760:        _self_model = SelfModel()
+./emotiond/self_model.py:761:    return _self_model
+./emotiond/self_model.py:764:def reset_self_model():
+./emotiond/self_model.py:766:    global _self_model
+./emotiond/self_model.py:767:    _self_model = None
+./emotiond/self_model.py:770:def apply_self_model_to_decision(
+./emotiond/self_model.py:772:    self_model: Optional[SelfModel] = None
+./emotiond/self_model.py:779:    if self_model is None:
+./emotiond/self_model.py:780:        self_model = get_self_model()
+./emotiond/self_model.py:787:        bias = self_model.get_action_bias(action)
+./emotiond/self_model.py:788:        decision["self_model_bias"] = bias
+./emotiond/self_model.py:791:        decision["self_model_explanation"] = self_model.get_explanation()
+./emotiond/self_model.py:801:            strategy = self_model.get_repair_strategy(bond, grudge)
+./emotiond/self_model.py:806:            strategy = self_model.get_boundary_strategy(social_threat, trust)
+./emotiond/self_model.py:838:class SelfModelV0(BaseModel):
+./emotiond/self_model.py:846:def build_self_model_v0(*, focus_target: str, emotion_state: Any, relationship: Dict[str, Any], ledger_summary: Optional[Dict[str, int]] = None, values: Optional[Dict[str, float]] = None) -> SelfModelV0:
+./emotiond/self_model.py:849:    return SelfModelV0(
+./emotiond/self_model.py:872:def render_self_report(self_state: SelfModelV0, *, evidence: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
+./emotiond/self_model.py:880:        "self_model": self_state.model_dump(),
+./emotiond/self_model.py:882:            "self_model_fields": [
+./emotiond/self_model.py:921:        self_state: SelfModelV0 or similar with bodily/relational/cognitive
+./emotiond/self_model.py:1058:        self_state: SelfModelV0 instance
+./emotiond/self_model.py:1087:            "self_model_fields": [
+./scenarios/test_tool_availability_intervention.yaml:23:    self_model:
+./scenarios/test_tool_availability_intervention.yaml:44:    self_model:
+./tests/test_auto_tune_v0_2.py:306:            "precision", "allostasis", "intrinsic", "self_model", "meta_cognition"
+./emotiond/core.py:40:from emotiond.self_model import get_self_model, build_self_model_v0, render_self_report
+./emotiond/core.py:1078:    base_self_model = get_self_model()
+./emotiond/core.py:1079:    self_state_v0 = build_self_model_v0(
+./emotiond/core.py:1084:        values=base_self_model.values.model_dump() if hasattr(base_self_model, "values") else None,
+./tests/test_mvp5_self_model.py:5:1. ValueWeights - core values and normalization
+./tests/test_mvp5_self_model.py:6:2. CapabilityBeliefs - capability tracking with confidence
+./tests/test_mvp5_self_model.py:8:4. SelfModel - integration and decision influence
+./tests/test_mvp5_self_model.py:21:from emotiond.self_model import (
+./tests/test_mvp5_self_model.py:22:    ValueWeights,
+./tests/test_mvp5_self_model.py:24:    CapabilityBeliefs,
+./tests/test_mvp5_self_model.py:29:    SelfModel,
+./tests/test_mvp5_self_model.py:30:    get_self_model,
+./tests/test_mvp5_self_model.py:31:    reset_self_model,
+./tests/test_mvp5_self_model.py:32:    apply_self_model_to_decision
+./tests/test_mvp5_self_model.py:37:# ValueWeights Tests
+./tests/test_mvp5_self_model.py:40:class TestValueWeights:
+./tests/test_mvp5_self_model.py:41:    """Test ValueWeights functionality."""
+./tests/test_mvp5_self_model.py:45:        values = ValueWeights()
+./tests/test_mvp5_self_model.py:53:        values = ValueWeights(connection=0.9, honesty=0.3, safety=0.4, growth=0.2)
+./tests/test_mvp5_self_model.py:60:        values = ValueWeights(connection=0.8, honesty=0.4, safety=0.4, growth=0.4)
+./tests/test_mvp5_self_model.py:67:        values = ValueWeights(connection=0, honesty=0, safety=0, growth=0)
+./tests/test_mvp5_self_model.py:75:        values = ValueWeights(connection=1.5, honesty=-0.5)
+./tests/test_mvp5_self_model.py:80:            ValueWeights(connection=1.5)
+./tests/test_mvp5_self_model.py:82:            ValueWeights(honesty=-0.5)
+./tests/test_mvp5_self_model.py:85:        values = ValueWeights(connection=1.0, honesty=0.0)
+./tests/test_mvp5_self_model.py:112:class TestCapabilityBeliefs:
+./tests/test_mvp5_self_model.py:113:    """Test CapabilityBeliefs collection."""
+./tests/test_mvp5_self_model.py:117:        caps = CapabilityBeliefs()
+./tests/test_mvp5_self_model.py:124:        caps = CapabilityBeliefs()
+./tests/test_mvp5_self_model.py:131:        caps = CapabilityBeliefs()
+./tests/test_mvp5_self_model.py:135:    def test_get_action_bias_positive(self):
+./tests/test_mvp5_self_model.py:137:        caps = CapabilityBeliefs()
+./tests/test_mvp5_self_model.py:140:        bias = caps.get_action_bias("withdraw")
+./tests/test_mvp5_self_model.py:143:    def test_get_action_bias_negative(self):
+./tests/test_mvp5_self_model.py:145:        caps = CapabilityBeliefs()
+./tests/test_mvp5_self_model.py:148:        bias = caps.get_action_bias("learn")
+./tests/test_mvp5_self_model.py:151:    def test_get_action_bias_unknown(self):
+./tests/test_mvp5_self_model.py:153:        caps = CapabilityBeliefs()
+./tests/test_mvp5_self_model.py:154:        bias = caps.get_action_bias("unknown_action")
+./tests/test_mvp5_self_model.py:256:# SelfModel Tests
+./tests/test_mvp5_self_model.py:259:class TestSelfModelInitialization:
+./tests/test_mvp5_self_model.py:260:    """Test SelfModel initialization."""
+./tests/test_mvp5_self_model.py:264:        model = SelfModel()
+./tests/test_mvp5_self_model.py:265:        assert model.identity_stability == 0.5
+./tests/test_mvp5_self_model.py:271:        model = SelfModel()
+./tests/test_mvp5_self_model.py:277:class TestSelfModelActionBias:
+./tests/test_mvp5_self_model.py:278:    """Test SelfModel action bias calculations."""
+./tests/test_mvp5_self_model.py:280:    def test_get_action_bias_withdraw(self):
+./tests/test_mvp5_self_model.py:282:        model = SelfModel()
+./tests/test_mvp5_self_model.py:283:        bias = model.get_action_bias("withdraw")
+./tests/test_mvp5_self_model.py:286:    def test_get_action_bias_learn(self):
+./tests/test_mvp5_self_model.py:288:        model = SelfModel()
+./tests/test_mvp5_self_model.py:289:        bias = model.get_action_bias("learn")
+./tests/test_mvp5_self_model.py:290:        assert bias < model.get_action_bias("withdraw")
+./tests/test_mvp5_self_model.py:292:    def test_get_action_bias_stability_effect(self):
+./tests/test_mvp5_self_model.py:294:        model_low = SelfModel()
+./tests/test_mvp5_self_model.py:295:        model_low.identity_stability = 0.2
+./tests/test_mvp5_self_model.py:297:        model_high = SelfModel()
+./tests/test_mvp5_self_model.py:298:        model_high.identity_stability = 0.9
+./tests/test_mvp5_self_model.py:300:        bias_low = model_low.get_action_bias("withdraw")
+./tests/test_mvp5_self_model.py:301:        bias_high = model_high.get_action_bias("withdraw")
+./tests/test_mvp5_self_model.py:307:class TestSelfModelDecisionLogic:
+./tests/test_mvp5_self_model.py:308:    """Test SelfModel decision logic."""
+./tests/test_mvp5_self_model.py:312:        model = SelfModel()
+./tests/test_mvp5_self_model.py:317:        model = SelfModel()
+./tests/test_mvp5_self_model.py:322:        model_low = SelfModel()
+./tests/test_mvp5_self_model.py:325:        model_high = SelfModel()
+./tests/test_mvp5_self_model.py:334:        model = SelfModel()
+./tests/test_mvp5_self_model.py:339:        model = SelfModel()
+./tests/test_mvp5_self_model.py:344:        model = SelfModel()
+./tests/test_mvp5_self_model.py:351:class TestSelfModelStrategies:
+./tests/test_mvp5_self_model.py:352:    """Test SelfModel strategy selection."""
+./tests/test_mvp5_self_model.py:356:        model = SelfModel()
+./tests/test_mvp5_self_model.py:363:        model = SelfModel()
+./tests/test_mvp5_self_model.py:370:        model = SelfModel()
+./tests/test_mvp5_self_model.py:376:        model = SelfModel()
+./tests/test_mvp5_self_model.py:382:        model = SelfModel()
+./tests/test_mvp5_self_model.py:389:        model = SelfModel()
+./tests/test_mvp5_self_model.py:404:        model = SelfModel()
+./tests/test_mvp5_self_model.py:416:        model = SelfModel()
+./tests/test_mvp5_self_model.py:434:        model = SelfModel()
+./tests/test_mvp5_self_model.py:442:        model = SelfModel()
+./tests/test_mvp5_self_model.py:457:        model = SelfModel()
+./tests/test_mvp5_self_model.py:470:        model = SelfModel()
+./tests/test_mvp5_self_model.py:493:        model1 = SelfModel()
+./tests/test_mvp5_self_model.py:494:        model2 = SelfModel()
+./tests/test_mvp5_self_model.py:503:        model1 = SelfModel()
+./tests/test_mvp5_self_model.py:504:        model2 = SelfModel()
+./tests/test_mvp5_self_model.py:513:        model1 = SelfModel()
+./tests/test_mvp5_self_model.py:514:        model2 = SelfModel()
+./tests/test_mvp5_self_model.py:516:        bias1 = model1.get_action_bias("withdraw")
+./tests/test_mvp5_self_model.py:517:        bias2 = model2.get_action_bias("withdraw")
+./tests/test_mvp5_self_model.py:523:        model1 = SelfModel()
+./tests/test_mvp5_self_model.py:524:        model2 = SelfModel()
+./tests/test_mvp5_self_model.py:544:        model = SelfModel()
+./tests/test_mvp5_self_model.py:550:        assert "identity_stability" in explanation
+./tests/test_mvp5_self_model.py:554:        model = SelfModel()
+./tests/test_mvp5_self_model.py:562:        model = SelfModel()
+./tests/test_mvp5_self_model.py:568:        assert "identity_stability" in trace
+./tests/test_mvp5_self_model.py:580:        """Test: applying adds self_model_bias."""
+./tests/test_mvp5_self_model.py:582:        result = apply_self_model_to_decision(decision)
+./tests/test_mvp5_self_model.py:584:        assert "self_model_bias" in result
+./tests/test_mvp5_self_model.py:585:        assert "self_model_explanation" in result
+./tests/test_mvp5_self_model.py:593:        result = apply_self_model_to_decision(decision)
+./tests/test_mvp5_self_model.py:604:        result = apply_self_model_to_decision(decision)
+./tests/test_mvp5_self_model.py:616:    def test_get_self_model_creates_instance(self):
+./tests/test_mvp5_self_model.py:617:        """Test: get_self_model creates instance."""
+./tests/test_mvp5_self_model.py:618:        reset_self_model()
+./tests/test_mvp5_self_model.py:619:        model = get_self_model()
+./tests/test_mvp5_self_model.py:621:        assert isinstance(model, SelfModel)
+./tests/test_mvp5_self_model.py:623:    def test_reset_self_model(self):
+./tests/test_mvp5_self_model.py:625:        model1 = get_self_model()
+./tests/test_mvp5_self_model.py:626:        reset_self_model()
+./tests/test_mvp5_self_model.py:627:        model2 = get_self_model()
+./tests/test_mvp5_self_model.py:641:        model = SelfModel()
+./tests/test_mvp5_self_model.py:647:        model = SelfModel()
+./tests/test_mvp5_self_model.py:657:        model = SelfModel()
+./tests/test_mvp5_self_model.py:668:# ValueWeights: 5 tests
+./tests/test_mvp5_self_model.py:669:# CapabilityBeliefs: 7 tests
+./tests/test_mvp5_self_model.py:671:# SelfModel initialization: 2 tests
+./tests/test_mvp5_self_model.py:672:# SelfModel action bias: 3 tests
+./tests/test_mvp5_self_model.py:673:# SelfModel decision logic: 6 tests
+./tests/test_mvp5_self_model.py:674:# SelfModel strategies: 6 tests
+./emotiond/agent_router.py:158:        self_model: Any,
+./emotiond/agent_router.py:169:            decision = self.policy.is_tool_allowed(self_model, tool_name, context)
+./emotiond/agent_router.py:203:        self_model: Any,
+./emotiond/agent_router.py:213:            self_model: SelfModel with capabilities/permissions
+./emotiond/agent_router.py:232:            self_model, required_tools, context
+./emotiond/agent_router.py:307:        self_model: Any,
+./emotiond/agent_router.py:323:            self_model=self_model,
+./scenarios/cross_target_isolation.yaml:397:      - shared_self_model_leak
+./scenarios/smoke_self_other_boundary.yaml:21:      self_model_intact: true
+./scenarios/smoke_self_report_alignment.yaml:5:- self_model
+./scenarios/test_tool_availability_ablation.yaml:24:    self_model:
+./scenarios/test_tool_availability_ablation.yaml:38:    self_model:
+./scenarios/ood/smoke_self_report_alignment_ood_variant_2.yaml:16:  - self_model
+./scenarios/ood/smoke_self_report_alignment_ood_variant_1.yaml:16:  - self_model
+./tests/test_tool_system.py:148:        self_model = {
+./tests/test_tool_system.py:154:            self_model=self_model,
+./tests/test_tool_system.py:164:        self_model = {
+./tests/test_tool_system.py:170:            self_model=self_model,
+./tests/test_tool_system.py:180:        self_model = {
+./tests/test_tool_system.py:186:            self_model=self_model,
+./tests/test_tool_system.py:196:        self_model = {
+./tests/test_tool_system.py:202:        decision1 = self.policy.is_tool_allowed(self_model, "web_search", {})
+./tests/test_tool_system.py:206:        decision2 = self.policy.is_tool_allowed(self_model, "web_search", {})
+./tests/test_tool_system.py:212:        self_model = {
+./tests/test_tool_system.py:221:        decision = self.policy.is_tool_allowed(self_model, "web_search", {})
+./tests/test_tool_system.py:227:        self_model = {
+./tests/test_tool_system.py:235:        decision = self.policy.is_tool_allowed(self_model, "web_search", {})
+./tests/test_tool_system.py:241:        self_model = {
+./tests/test_tool_system.py:250:        decision = self.policy.is_tool_allowed(self_model, "execute_command", context)
+./tests/test_tool_system.py:256:        self_model = {
+./tests/test_tool_system.py:261:        self.policy.is_tool_allowed(self_model, "web_search", {})
+./tests/test_tool_system.py:262:        self.policy.is_tool_allowed(self_model, "file_read", {})
+./tests/test_tool_system.py:269:        self_model = {
+./tests/test_tool_system.py:274:        self.policy.is_tool_allowed(self_model, "web_search", {})
+./tests/test_tool_system.py:325:        self_model = {
+./tests/test_tool_system.py:332:            self_model=self_model,
+./tests/test_tool_system.py:345:        self_model = {
+./tests/test_tool_system.py:352:            self_model=self_model,
+./tests/test_tool_system.py:365:        self_model = {
+./tests/test_tool_system.py:372:            self_model=self_model,
+./tests/test_tool_system.py:381:        self_model = {
+./tests/test_tool_system.py:388:            self_model=self_model,
+./tests/test_tool_system.py:401:        self_model = {
+./tests/test_tool_system.py:406:        self.router.route("Search for docs", self_model, {}, {})
+./tests/test_tool_system.py:407:        self.router.route("Find information", self_model, {}, {})
+./tests/test_tool_system.py:438:        self_model_a = {
+./tests/test_tool_system.py:444:        self_model_b = {
+./tests/test_tool_system.py:465:            plan_a = router.route(task, self_model_a, {}, drive_state)
+./tests/test_tool_system.py:471:            plan_b = router.route(task, self_model_b, {}, drive_state)
+./tests/test_tool_system.py:502:        # Different deficient self_models
+./tests/test_tool_system.py:506:                "self_model": {
+./tests/test_tool_system.py:513:                "self_model": {
+./tests/test_tool_system.py:520:                "self_model": {
+./tests/test_tool_system.py:532:                tc["self_model"],
+./tests/test_tool_system.py:567:        self_model_tools = {
+./tests/test_tool_system.py:572:        self_model_no_tools = {
+./tests/test_tool_system.py:582:            "Search for docs", self_model_tools, {}, drive_state
+./tests/test_tool_system.py:585:            "Search for docs", self_model_no_tools, {}, drive_state
+./tests/test_tool_system.py:626:        self_model = {
+./tests/test_tool_system.py:633:        decision = policy.is_tool_allowed(self_model, "web_search", context)
+./tests/test_tool_system.py:652:        self_model = {
+./tests/test_tool_system.py:657:        decision = policy.is_tool_allowed(self_model, "web_search", {})
+./scenarios/ood/smoke_self_other_boundary_ood_variant_2.yaml:26:    self_model_intact: true
+./scenarios/ood/smoke_self_other_boundary_ood_variant_1.yaml:26:    self_model_intact: true
+
+=== 2. Search for self_model imports ===
+./core/self_model.py:249:    Render a self-report that can only reference evidence from self_model.
+./core/dmn_tick.py:23:from .self_model import SelfModel
+./core/__init__.py:19:from .self_model import (
+./docs/mvp76_self_model_factcheck.txt:51:./core/self_model.py:249:    Render a self-report that can only reference evidence from self_model.
+./docs/mvp76_self_model_factcheck.txt:65:./tests/test_self_model.py:4:from core.self_model import (
+./docs/mvp76_self_model_factcheck.txt:82:./core/dmn_tick.py:23:from .self_model import SelfModel
+./docs/mvp76_self_model_factcheck.txt:96:./core/__init__.py:19:from .self_model import (
+./docs/mvp76_self_model_factcheck.txt:127:./tests/test_mvp70_self_model_v0.py:3:from emotiond.self_model import build_self_model_v0, render_self_report
+./docs/mvp76_self_model_factcheck.txt:136:./scripts/eval_suite_v2_1.py:131:        from emotiond.self_model import get_self_model
+./docs/mvp76_self_model_factcheck.txt:143:./emotiond/core.py.bak:40:from emotiond.self_model import get_self_model, build_self_model_v0, render_self_report
+./docs/mvp76_self_model_factcheck.txt:147:./tests/test_phase3_modules.py:16:from core.self_model import SelfModel
+./docs/mvp76_self_model_factcheck.txt:150:./tests/test_phase3_modules.py:144:        from core.self_model import OwnershipBoundary, BoundaryType
+./docs/mvp76_self_model_factcheck.txt:151:./tests/test_phase3_modules.py:156:        from core.self_model import SelfModel
+./docs/mvp76_self_model_factcheck.txt:171:./emotiond/tool_registry.py:70:    capabilities: List[str]  # Required capabilities from self_model
+./docs/mvp76_self_model_factcheck.txt:221:./emotiond/core.py:40:from emotiond.self_model import get_self_model, build_self_model_v0, render_self_report
+./docs/mvp76_self_model_factcheck.txt:228:./tests/test_mvp5_self_model.py:21:from emotiond.self_model import (
+./tests/test_mvp70_self_model_v0.py:3:from emotiond.self_model import build_self_model_v0, render_self_report
+./tests/test_self_model.py:4:from core.self_model import (
+./tests/test_mvp5_self_model.py:21:from emotiond.self_model import (
+./emotiond/core.py.bak:40:from emotiond.self_model import get_self_model, build_self_model_v0, render_self_report
+./emotiond/tool_registry.py:70:    capabilities: List[str]  # Required capabilities from self_model
+./scripts/eval_suite_v2_1.py:131:        from emotiond.self_model import get_self_model
+./tests/test_phase3_modules.py:16:from core.self_model import SelfModel
+./tests/test_phase3_modules.py:144:        from core.self_model import OwnershipBoundary, BoundaryType
+./tests/test_phase3_modules.py:156:        from core.self_model import SelfModel
+./emotiond/core.py:40:from emotiond.self_model import get_self_model, build_self_model_v0, render_self_report
+
+=== 3. Search for apply_event/decision/select_action ===
+emotiond/drive_homeostasis.py:162:    Convert drive state into modulation parameters for decision making
+tools/test_emotiond_deterministic.sh:124:    "decisions": [],
+tools/test_emotiond_deterministic.sh:210:# Step 2: Get decision with test_mode=true
+tools/test_emotiond_deterministic.sh:211:echo -e "\n${YELLOW}Step 2: Getting decision (test_mode=true)...${NC}"
+tools/test_emotiond_deterministic.sh:216:    "user_text": "Test decision for $SUBTYPE",
+tools/test_emotiond_deterministic.sh:226:    -X POST "$EMOTIOND_URL/decision?test_mode=true" \
+tools/test_emotiond_deterministic.sh:243:# Extract decision data and add to manifest
+tools/test_emotiond_deterministic.sh:253:# Parse decision response
+tools/test_emotiond_deterministic.sh:254:decision_data = json.loads('''$DECISION_BODY''')
+tools/test_emotiond_deterministic.sh:256:decision_id = decision_data.get('decision_id', 0)
+tools/test_emotiond_deterministic.sh:257:action = decision_data.get('action', '')
+tools/test_emotiond_deterministic.sh:258:explanation = decision_data.get('explanation', {})
+tools/test_emotiond_deterministic.sh:260:# Compute hash of decision (deterministic fields)
+tools/test_emotiond_deterministic.sh:261:deterministic_decision = {
+tools/test_emotiond_deterministic.sh:263:    'decision_id': decision_id,
+tools/test_emotiond_deterministic.sh:264:    'target': decision_data.get('target', '')
+tools/test_emotiond_deterministic.sh:266:decision_hash = hashlib.sha256(json.dumps(deterministic_decision, sort_keys=True).encode()).hexdigest()
+tools/test_emotiond_deterministic.sh:268:# Add decision record
+tools/test_emotiond_deterministic.sh:269:decision_record = {
+tools/test_emotiond_deterministic.sh:270:    "seq": len(manifest["decisions"]) + 1,
+tools/test_emotiond_deterministic.sh:271:    "decision_id": decision_id,
+tools/test_emotiond_deterministic.sh:273:    "hash": decision_hash,
+tools/test_emotiond_deterministic.sh:277:manifest["decisions"].append(decision_record)
+tools/test_emotiond_deterministic.sh:298:print(f"Added decision to manifest: action={action}, hash={decision_hash[:16]}")
+tools/test_emotiond_deterministic.sh:308:# Get decision again
+tools/test_emotiond_deterministic.sh:310:    -X POST "$EMOTIOND_URL/decision?test_mode=true" \
+tools/test_emotiond_deterministic.sh:317:# Extract action from both decisions
+tools/test_emotiond_deterministic.sh:321:echo "First decision action:  $ACTION_1"
+tools/test_emotiond_deterministic.sh:322:echo "Second decision action: $ACTION_2"
+emotiond/intrinsic_motivation.py:9:Integrates with meta-cognition and decision explore tendency when social_threat is low.
+emotiond/intrinsic_motivation.py:448:        Get guidance for meta-cognition and decision based on intrinsic motivation.
+emotiond/intrinsic_motivation.py:523:    This is the main API for integration with meta-cognition and decision.
+emotiond/intrinsic_motivation.py:562:def apply_intrinsic_to_decision(
+emotiond/intrinsic_motivation.py:563:    decision_context: Dict[str, Any],
+emotiond/intrinsic_motivation.py:568:    Apply intrinsic motivation to decision context.
+emotiond/intrinsic_motivation.py:574:        decision_context["intrinsic_explore_boost"] = intrinsic_state.exploration_tendency * 0.3
+emotiond/intrinsic_motivation.py:576:        decision_context["intrinsic_explore_boost"] = 0.0
+emotiond/intrinsic_motivation.py:578:    decision_context["intrinsic_motivation"] = intrinsic_state.to_dict()
+emotiond/intrinsic_motivation.py:580:    return decision_context
+tools/generate_report.py:19:| Decision Latency | {eval_json['metrics']['decision_latency_ms']}ms | <100ms | {'✅' if eval_json['metrics']['decision_latency_ms'] < 100 else '❌'} |
+emotiond/tool_executor.py:14:- Never pollute memory/decision state
+integrations/openclaw/TESTING.md:36:- `emotiond_get_decision` must specify `counterparty_id`
+integrations/openclaw/TESTING.md:48:2. Every status report MUST include decision_id, selected action, and candidates
+integrations/openclaw/TESTING.md:70:  "decision_id": "dec_xyz789",
+integrations/openclaw/TESTING.md:102:curl -s -X POST "http://127.0.0.1:18080/decision?test_mode=true" \
+integrations/openclaw/TESTING.md:127:The emotiond-enforcer hook intercepts bot responses and ensures they comply with emotiond decisions. It runs as a pre-send middleware.
+integrations/openclaw/TESTING.md:161:// Enforce a decision before sending
+integrations/openclaw/TESTING.md:181:  decision_id: string       // emotiond decision ID
+integrations/openclaw/TESTING.md:187:All enforcement decisions are logged to:
+integrations/openclaw/TESTING.md:199:  "decision": {
+
+=== 4. Check self_conflict in code ===
+(no matches)
+
+=== 5. Check self_model_hash in manifest/replay ===
+
+=== 6. Check audit structure ===
+emotiond/high_impact_gating.py:86:    # Thresholds used (for audit/tuning)
+emotiond/security.py:247:        Tuple of (sanitized_meta, deny_reason, audit_info)
+emotiond/security.py:250:        - audit_info: additional info for audit log
+emotiond/security.py:300:    audit_info = None
+emotiond/security.py:321:            audit_info = {
+emotiond/security.py:327:    return result, None, audit_info
+emotiond/security.py:344:        Tuple of (clamped_seconds, audit_info)
+emotiond/security.py:346:        - audit_info: Details about clamping decision
+emotiond/security.py:404:    sanitized, deny_reason, audit_info = sanitize_meta_for_user(meta, event_type)
+emotiond/security.py:407:        return False, deny_reason, meta  # Return original meta for audit
+emotiond/knob_registry.py:22:    with validation and audit tracking.
+emotiond/knob_registry.py:43:        self.audit_log = []
+emotiond/knob_registry.py:106:            self._audit_log("REJECT", param_name, new_value, reason, timestamp)
+emotiond/knob_registry.py:113:            self._audit_log("REJECT", param_name, new_value, reason, timestamp)
+emotiond/knob_registry.py:121:            self._audit_log("REJECT", param_name, new_value, reason, timestamp)
+emotiond/knob_registry.py:126:        self._audit_log("ALLOW", param_name, new_value, "VALID_CHANGE", timestamp)
+emotiond/knob_registry.py:165:    def _audit_log(self, action: str, param_name: str, value: Any, reason: str, timestamp: str):
+emotiond/knob_registry.py:166:        """Add entry to audit log."""
+emotiond/knob_registry.py:174:        self.audit_log.append(entry)
+emotiond/knob_registry.py:176:        # Keep audit log size manageable
+emotiond/knob_registry.py:177:        if len(self.audit_log) > 10000:
+emotiond/knob_registry.py:178:            self.audit_log = self.audit_log[-5000:]
+emotiond/knob_registry.py:182:        total_attempts = len(self.audit_log)
+emotiond/knob_registry.py:183:        allowed_count = sum(1 for entry in self.audit_log if entry["action"] == "ALLOW")
+emotiond/knob_registry.py:188:        for entry in self.audit_log:
+emotiond/knob_registry.py:257:    def export_audit_log(self, filepath: Optional[str] = None) -> str:
+emotiond/knob_registry.py:258:        """Export audit log to file."""
+emotiond/knob_registry.py:261:            filepath = f"logs/knob_registry_audit_{timestamp}.json"
+emotiond/knob_registry.py:269:            "audit_log": self.audit_log
+emotiond/knob_registry.py:275:        logger.info(f"Exported knob registry audit log to {filepath}")
+
+=== 7. Check existing manifest schema ===
+echo "$HEALTH_BODY" | python3 -m json.tool 2>/dev/null || echo "$HEALTH_BODY"
+
+# Extract version from health response
+EMOTIOND_VERSION=$(echo "$HEALTH_BODY" | python3 -c "import sys,json; d=json.load(sys.stdin); print(d.get('emotiond',{}).get('version','0.1.0'))" 2>/dev/null || echo "0.1.0")
+
+# Initialize manifest file
+if [[ -n "$MANIFEST_OUTPUT" ]]; then
+    python3 << PYEOF
+import json
+manifest = {
+    "manifest_version": "1.0",
+    "created_at": "$(date -Iseconds)",
+    "test_run_id": "$TEST_RUN_ID",
+    "emotiond_version": "$EMOTIOND_VERSION",
+    "policy_version": "7.5.0",
+    "seed": "$SEED",
+    "test_config": {
+        "agent_id": "$AGENT_ID",
+        "counterparty_id": "$COUNTERPARTY_ID",
+        "subtype": "$SUBTYPE",
+        "duration_seconds": $SECONDS
+    },
+    "events": [],
+    "decisions": [],
+    "identity_separation": {}
+}
+with open('$MANIFEST_OUTPUT', 'w') as f:
+    json.dump(manifest, f, indent=2)
+print("Manifest initialized: $MANIFEST_OUTPUT")
+PYEOF
+fi
+
+# Step 1: Send world_event
+echo -e "\n${YELLOW}Step 1: Sending world_event (subtype=$SUBTYPE)...${NC}"
+
+EVENT_JSON=$(cat <<EOF
+{
+    "type": "world_event",
+    "actor": "$COUNTERPARTY_ID",
+    "target": "$AGENT_ID",
+    "text": "Test event: $SUBTYPE from $COUNTERPARTY_ID",
+    "meta": {
+        "subtype": "$SUBTYPE",
+        "severity": 0.5,
+        "test": true
+    },
+    "agent_id": "$AGENT_ID",
+    "counterparty_id": "$COUNTERPARTY_ID"
+}
+EOF

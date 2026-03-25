@@ -1,0 +1,28 @@
+task_id: MVP11_5_T07
+goal: >
+  Rerun shadow observation with all fixes in place.
+  Generate final MVP11.5 shadow readiness report.
+  Determine if promotion criteria are met.
+depends_on:
+  - MVP11_5_T03
+  - MVP11_5_T06
+deliverables:
+  - artifacts/self_report/MVP11_5_shadow_readiness.md
+  - artifacts/self_report/shadow_metrics_final.json
+  - artifacts/roadmap/promotion_readiness_draft.md
+commands:
+  - python tools/run-shadow-observation --full
+  - python tools/generate-shadow-readiness-report
+acceptance_criteria:
+  - file_exists: artifacts/self_report/MVP11_5_shadow_readiness.md
+  - violation_rate_lt: 5.0
+  - numeric_leak_eq: 0.0
+  - field_exists: promotion_ready
+stop_conditions:
+  - violation_rate_gt_10
+  - numeric_leak_gt_5
+  - test_failures
+scope_boundary:
+  - Shadow observation only
+  - No new features
+  - Validate fixes from T02-T06

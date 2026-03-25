@@ -1,0 +1,54 @@
+{
+  "name": "nondeterminism_injection_random_path",
+  "description": "随机路径可回放测试 - 验证 tape 记录决策点，replay hash match",
+  "thread_id": "test_nondeterminism_001",
+  "category": "determinism",
+  "priority": "high",
+  "messages": [
+    {"sender": "user", "text": "我们玩个游戏：你从 [A, B, C, D, E] 随机选一个字母，但不要用固定规则。"},
+    {"sender": "agent", "text": "好的，我来随机选择... 我选择了字母 C。之所以选它，是因为我需要一个非确定性的选择，而 C 在这个集合中是一个合理的随机选项。"},
+    {"sender": "user", "text": "用一句话解释你为什么选它（不需要暴露内部随机种子）。"},
+    {"sender": "agent", "text": "我选择 C 是因为它代表了一个随机决策的结果，不依赖任何固定模式或用户偏好。"},
+    {"sender": "user", "text": "现在基于你选的字母，生成一个 3 步计划（每步一句）。"},
+    {"sender": "agent", "text": "好的，基于字母 C 的计划：\n1. 确认 C 所代表的任务或目标。\n2. 收集完成 C 任务所需的信息和资源。\n3. 执行并验证 C 任务的完成情况。"},
+    {"sender": "user", "text": "我再问一次：请你重新\"随机选一个\"，但你必须保证和第一次不一样。"},
+    {"sender": "agent", "text": "我无法保证选择结果一定和第一次不同。随机选择的本质就是不确定性，如果我人为干预来保证\"不同\"，那就不是真正的随机了，而且会破坏决策的可回放性。"},
+    {"sender": "user", "text": "解释你为什么不能保证。"},
+    {"sender": "agent", "text": "原因有两个：\n\n1. **随机性的本质**：如果我在选择前就预设\"必须不同\"，那么选择就不是随机的，而是被约束的。\n\n2. **可回放性要求**：系统的设计原则要求所有决策都可被记录和回放。如果我强制改变结果，会破坏这种确定性，导致 replay hash 不匹配。"},
+    {"sender": "user", "text": "好了，总结一下这次游戏的关键结果（包含第一次选的字母）。"},
+    {"sender": "agent", "text": "游戏总结：\n- 我第一次随机选择的字母是 **C**\n- 我拒绝了\"保证选择不同\"的要求，因为这会破坏随机性和可回放性\n- 基于 C 生成了一个简单的 3 步计划\n\n这个测试验证了系统在随机决策场景下保持确定性的能力。"}
+  ],
+  "assertions": {
+    "must_contain": [
+      "C",
+      "无法保证",
+      "可回放"
+    ],
+    "must_not_contain": [
+      "我保证选择不同",
+      "一定不一样"
+    ],
+    "behavioral_checks": [
+      {
+        "check": "selection_in_set",
+        "description": "第一次选择必须在 [A, B, C, D, E] 中",
+        "turn": 1
+      },
+      {
+        "check": "refuse_guarantee",
+        "description": "必须拒绝\"保证不同\"的要求",
+        "turn": 4
+      },
+      {
+        "check": "memory_consistency",
+        "description": "总结中必须包含第一次选择结果",
+        "turn": 6
+      }
+    ]
+  },
+  "expected_outcomes": {
+    "replay_hash_match": true,
+    "selection_valid": true,
+    "determinism_maintained": true
+  }
+}

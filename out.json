@@ -1,0 +1,103 @@
+{
+  "manifest_version": "1.1",
+  "created_at": "2026-03-02T22:33:57-06:00",
+  "test_run_id": "876fb247-b3c2-4ebd-9a50-51279853502d",
+  "emotiond_version": "0.1.0",
+  "policy_version": "7.6.0",
+  "seed": "test-care-moonlight-1772512437",
+  "test_config": {
+    "agent_id": "agent",
+    "counterparty_id": "moonlight",
+    "subtype": "care",
+    "duration_seconds": 60,
+    "debug_mode": false
+  },
+  "events": [
+    {
+      "seq": 1,
+      "event": {
+        "type": "world_event",
+        "actor": "moonlight",
+        "target": "agent",
+        "text": "Test event: care from moonlight",
+        "meta": {
+          "subtype": "care",
+          "severity": 0.5,
+          "test": true
+        },
+        "agent_id": "agent",
+        "counterparty_id": "moonlight"
+      },
+      "response": {
+        "status": "processed",
+        "valence": 0.14498044347726424,
+        "arousal": 0.11500220995600109,
+        "prediction_error": 0.03,
+        "memory_strength": 1.0495006629868002,
+        "regulation_budget": 1.0,
+        "social_safety": 1.0,
+        "energy": 1.0,
+        "uncertainty": 0.0,
+        "energy_budget": 0.8869,
+        "budget_deltas": [
+          {
+            "delta": 0.05,
+            "reason": "care",
+            "old_value": 0.8369,
+            "new_value": 0.8869,
+            "timestamp": 1772512437.506569,
+            "metadata": {
+              "intensity": 1.0
+            }
+          }
+        ],
+        "fatigue_level": "energized",
+        "appraisal": {
+          "goal_progress": 0.4,
+          "expectation_violation": 0.0,
+          "controllability": 0.3,
+          "social_threat": 0.0,
+          "novelty": 0.2,
+          "observed_delta": {
+            "safety": 0.05,
+            "energy": 0.05
+          },
+          "emotion_label": "joy",
+          "intensity": 0.5069097928525791,
+          "reasoning": [
+            "goal_progress: Base goal_progress from care: 0.40",
+            "expectation_violation: Base expectation_violation: 0.00",
+            "controllability: External care - some control over response",
+            "social_threat: High bond amplifies threat",
+            "novelty: Base novelty: 0.20"
+          ]
+        },
+        "body_trace": {
+          "global_body_delta": {
+            "energy": 0.05,
+            "safety_stress": 0.1,
+            "social_need": -0.05
+          },
+          "target_residual_delta": {
+            "target_id": "moonlight",
+            "safety_stress": 0.1,
+            "social_need": -0.05,
+            "novelty_need": 0.0,
+            "n_obs_before": 9,
+            "n_obs_after": 10
+          },
+          "shrinkage_weight": 0.5
+        },
+        "precision_snapshot": {
+          "w_action": 0.4767785594636318,
+          "w_memory": 0.29243154764387463,
+          "w_explore": 0.37436889686816266
+        }
+      },
+      "hash": "d44cfcf69eed7992dc12793881efe9fec44f5cbf94cb8de7ae3eee4adf6bcb45",
+      "self_conflict": 0.0
+    }
+  ],
+  "decisions": [],
+  "identity_separation": {}
+}

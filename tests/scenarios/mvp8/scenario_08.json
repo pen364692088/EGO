@@ -1,0 +1,16 @@
+{
+  "name": "ignored_observed",
+  "description": "Being ignored → observe (low goal impact)",
+  "events": [
+    {
+      "type": "world_event",
+      "actor": "userA",
+      "target": "agent",
+      "text": "user ignores messages",
+      "meta": {"target_id": "session_ignore2", "subtype": "ignored"}
+    }
+  ],
+  "expect": {
+    "has_conflict": false
+  }
+}

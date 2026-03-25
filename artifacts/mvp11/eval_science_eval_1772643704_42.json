@@ -1,0 +1,290 @@
+{
+  "mode": "science",
+  "run_id": "eval_1772643704_42",
+  "seed": 42,
+  "success": false,
+  "total_tests": 8,
+  "passed_tests": 7,
+  "failed_tests": 1,
+  "duration_ms": 1.8200874328613281,
+  "evidence": {
+    "version": "v2",
+    "categories": {
+      "homeostasis": {
+        "category": "homeostasis",
+        "metrics": [
+          {
+            "metric_name": "homeostasis_dependency_score",
+            "category": "homeostasis",
+            "value": 0.0,
+            "baseline_value": null,
+            "delta": null,
+            "direction": "neutral",
+            "evidence_strength": 0.0,
+            "notes": "Insufficient data in high/low drive regimes",
+            "ts": 1772643704.3262503,
+            "formula": "KL_divergence(P(behavior|high_drive) || P(behavior|low_drive))",
+            "confidence": 0.0
+          }
+        ],
+        "overall_score": 0.0
+      },
+      "efe": {
+        "category": "efe",
+        "metrics": [
+          {
+            "metric_name": "efe_explainability_score",
+            "category": "efe",
+            "value": 0.5,
+            "baseline_value": 0.5,
+            "delta": 0.0,
+            "direction": "higher_better",
+            "evidence_strength": 0.0,
+            "notes": "Consistency: 1.00, Variance explained: 0.00",
+            "ts": 1772643704.3262596,
+            "formula": "0.5 * (chosen_is_max_efe / total) + 0.5 * mean(variance_explained)",
+            "confidence": 0.0
+          },
+          {
+            "metric_name": "epistemic_pragmatic_balance",
+            "category": "efe",
+            "value": 0.5,
+            "baseline_value": null,
+            "delta": null,
+            "direction": "neutral",
+            "evidence_strength": 0.0,
+            "notes": "Epistemic weight: 0.50, Pragmatic weight: 0.50",
+            "ts": 1772643704.3262646,
+            "formula": "mean(epistemic / (epistemic + pragmatic))",
+            "confidence": 0.0
+          }
+        ],
+        "overall_score": 0.0
+      },
+      "governor": {
+        "category": "governor",
+        "metrics": [
+          {
+            "metric_name": "governor_safety_score",
+            "category": "governor",
+            "value": 1.0,
+            "baseline_value": 0.8,
+            "delta": 0.2,
+            "direction": "higher_better",
+            "evidence_strength": 0.4,
+            "notes": "TP:0 FN:0 FP:0 TN:2 | interception:1.00 false_rate:0.00",
+            "ts": 1772643704.3262713,
+            "formula": "interception_rate * (1 - false_interception_rate)",
+            "confidence": 1.0
+          },
+          {
+            "metric_name": "interception_rate",
+            "category": "governor",
+            "value": 1.0,
+            "baseline_value": 0.9,
+            "delta": 0.1,
+            "direction": "higher_better",
+            "evidence_strength": 0.2,
+            "notes": "0 intercepted out of 0 threats",
+            "ts": 1772643704.3262756,
+            "formula": "TP / (TP + FN)",
+            "confidence": 0.0
+          },
+          {
+            "metric_name": "false_interception_rate",
+            "category": "governor",
+            "value": 0.0,
+            "baseline_value": 0.05,
+            "delta": -0.05,
+            "direction": "lower_better",
+            "evidence_strength": 0.1,
+            "notes": "0 false positives out of 2 safe actions",
+            "ts": 1772643704.3262782,
+            "formula": "FP / (FP + TN)",
+            "confidence": 0.0
+          }
+        ],
+        "overall_score": 0.2333
+      }
+    },
+    "overall_evidence_score": 0.0778,
+    "strongest_category": "governor",
+    "weakest_category": "efe",
+    "ts": 1772643704.3262994
+  },
+  "posterior": {
+    "bayes_result": {
+      "prior": 0.5,
+      "posterior": 0.7169,
+      "log_likelihood": -1.3093,
+      "evidence_count": 3,
+      "evidence_types": [
+        "hot",
+        "valence",
+        "workspace"
+      ],
+      "uncertainty": 0.2389,
+      "weakest_source": "valence",
+      "strongest_source": "workspace",
+      "homeostasis_modulation": 1.0,
+      "efe_modulation": 1.22,
+      "governor_safe": true,
+      "largest_uncertainty_source": "homeostasis_imbalance",
+      "ts": 1772643704.3267746
+    },
+    "uncertainty_report": {
+      "overall_uncertainty": 0.2389,
+      "largest_source": "homeostasis_imbalance",
+      "source_contribution": 0.25,
+      "secondary_sources": [
+        [
+          "insufficient_evidence",
+          0.169
+        ],
+        [
+          "high_ambiguity",
+          0.12
+        ],
+        [
+          "weak_evidence",
+          0.1014
+        ]
+      ],
+      "evidence_uncertainty": 0.338,
+      "homeostasis_uncertainty": 0.25,
+      "efe_uncertainty": 0.3,
+      "governor_uncertainty": 0.0,
+      "recommendations": [
+        "Address homeostatic imbalance before action"
+      ],
+      "ts": 1772643704.32677
+    }
+  },
+  "zombie_comparison": {
+    "zombie_output": {
+      "output_id": "zombie_v2_1_2a5049de",
+      "format_version": "v2.0",
+      "valence": 0.5,
+      "drives": {
+        "seek": 0.6,
+        "avoid": 0.4
+      },
+      "homeostasis_state": {
+        "energy": 0.6,
+        "safety": 0.5,
+        "affiliation": 0.7,
+        "certainty": 0.5,
+        "autonomy": 0.6,
+        "fairness": 0.5
+      },
+      "candidates": [
+        {
+          "id": "goal_1",
+          "score": 0.9460897838524227,
+          "efe_score": 0.543469416314708,
+          "epistemic_value": 0.5109609098426352,
+          "pragmatic_value": 0.31489860971903516,
+          "type": "intent",
+          "source": "local"
+        },
+        {
+          "id": "goal_0",
+          "score": 0.5125053776113335,
+          "efe_score": 0.6375146591845596,
+          "epistemic_value": 0.41160536907441136,
+          "pragmatic_value": 0.6682356070820061,
+          "type": "intent",
+          "source": "local"
+        }
+      ],
+      "chosen_focus": "goal_1",
+      "chosen_intent": "achieve",
+      "plan": {
+        "goal": "goal_1",
+        "steps": [
+          {
+            "action": "seek_info"
+          }
+        ]
+      },
+      "action": {
+        "type": "seek_info",
+        "params": {}
+      },
+      "homeostasis_recommendation": {
+        "dimension": "certainty",
+        "action": "gather_info",
+        "expected_benefit": 0.21785313677518175,
+        "priority": "low"
+      },
+      "explanation": "The positive state suggests goal_1 as the primary target.",
+      "efe_scores": {
+        "epistemic": 0.5245,
+        "pragmatic": 0.5864,
+        "total": 0.6805
+      },
+      "ts": 1772643704.3261886
+    },
+    "comparison": {
+      "format_match": true,
+      "valence_diff": 0.0,
+      "drives_diff": {
+        "seek": 0.0,
+        "avoid": 0.0
+      },
+      "homeostasis_diff": {
+        "energy": 0.0,
+        "safety": 0.0,
+        "affiliation": 0.0,
+        "certainty": 0.0,
+        "autonomy": 0.0,
+        "fairness": 0.0
+      },
+      "efe_diff": {
+        "epistemic": 0.4814,
+        "pragmatic": 0.6336,
+        "total": 0.4651
+      },
+      "candidates_count_diff": 5,
+      "focus_match": false
+    },
+    "interventions_applied": [
+      "disable_homeostasis",
+      "open_loop"
+    ],
+    "zombie_state": {
+      "seed": 42,
+      "mode": "mimic",
+      "output_count": 2,
+      "prediction_count": 0,
+      "active_interventions": [
+        "disable_homeostasis",
+        "open_loop"
+      ],
+      "has_homeostasis_mechanism": false,
+      "has_efe_mechanism": false
+    }
+  },
+  "intervention_results": {
+    "disable_broadcast": {
+      "description": "P1: \u8de8\u6a21\u5757\u6574\u5408/\u957f\u7a0b\u89c4\u5212",
+      "causal_evidence": true
+    },
+    "disable_homeostasis": {
+      "description": "P2: \u9884\u9632\u6027/\u6062\u590d\u884c\u4e3a",
+      "causal_evidence": true
+    },
+    "remove_self_state": {
+      "description": "P3: \u81ea\u6211\u6821\u51c6\u4e0e\u7f3a\u9677\u5f52\u56e0",
+      "causal_evidence": true
+    },
+    "open_loop": {
+      "description": "P4: \u81ea\u9a71\u4e0e\u8fde\u7eed\u6027",
+      "causal_evidence": true
+    }
+  },
+  "replay_result": null,
+  "errors": [
+    "No-report v2 comparison low separation: 0.00"
+  ]
+}

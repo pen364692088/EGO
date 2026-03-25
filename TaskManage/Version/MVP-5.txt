@@ -1,0 +1,247 @@
+MVP-5：Precision + Allostasis + Intrinsic Motivation + Self-model + Auto-Tuning
+
+Project location: /home/moonlight/Project/Github/MyProject/Emotion/OpenEmotion
+
+TASK NAME: MVP-5 Emergent Affective-Cognitive Core v2 (Precision/Allostasis/Intrinsic/Self/AutoTune)
+
+PROJECT ROOT (MUST USE)
+
+<REPLACE_WITH: git rev-parse --show-toplevel 输出>
+
+BRANCH
+
+feature-emotiond-mvp
+
+NON-NEGOTIABLE PRINCIPLES
+
+情绪要“涌现”：不要靠堆情绪分类器；核心是让情绪成为系统内部的“调参信号/控制信号”（precision、能量预算、信息增益、学习率、探索/保守等）。
+
+可审计 & 可回放：所有新机制必须进 trace；eval suite 必须能复现变化。
+
+不失控自改代码：允许“自我进化”的范围 = 自动调参/权重/阈值（可回滚、可对比），禁止模型随意改业务逻辑。
+
+稳定性红线：任何 emotiond 异常不得影响 OpenClaw 主对话；注入块仍保持上限（当前 3KB）。
+
+全量测试必须通过：make test 0 失败；新增测试必须覆盖新增机制。
+
+OVERALL GOAL
+
+在 MVP-4 的层级状态 + appraisal + emotion labels + ledger + meta-cognition + eval suite v2 基础上，新增 MVP-5 五大模块，使“快乐/悲伤/疑惑/反思/好奇/厌倦”等更像大脑机制：
+
+Precision（精度/注意力仲裁）：决定我该更相信哪条通道、该多果断还是更澄清
+
+Allostasis Budget（能量预算）：疲惫/恢复/冷却与学习率、探索度耦合
+
+Intrinsic Motivation（内在动机）：好奇/无聊从“预期信息增益”涌现
+
+Self-model（自我模型）：将“自我”从解释升级为决策输入的一等公民
+
+Auto-Tuning（可控自我进化）：用 eval suite 做适应度函数，自动产生“只改参数”的 PR 级提案（本次先实现本地脚本与输出，不必自动推 PR）
+
+DELIVERABLES (D1–D5)
+D1: Precision Controller（必做，ROI 最高）
+功能
+
+新增 precision 模块：根据 uncertainty / prediction_error / ledger_evidence_strength / user_affect_confidence / social_threat 等，动态计算几个精度权重（0~1）：
+
+w_external（更信当前用户信息）
+
+w_internal（更信内感/能量/情绪态）
+
+w_memory（更信历史/ledger/bond）
+
+w_action（动作果断程度：高→果断；低→澄清/保守）
+
+w_explore（探索/提问倾向）
+
+接入点
+
+decision 前：用 precision 影响 meta-cognition 触发（澄清/反思/软化语气），以及 action 选择偏好（approach/repair/boundary/withdraw/attack）。
+
+解释输出：必须能显示关键 precision 值与主要证据来源（简短）。
+
+测试
+
+至少新增 30 个测试：同一句“算了/呵呵/你别闹了（笑）/我很忙”在不同上下文（有无承诺、是否冷处理、bond 状态不同）下，precision 仲裁结果合理、且可复现。
+
+D2: Allostasis Budget（疲惫/恢复/冷却）
+功能
+
+引入 energy_budget（0~1）与恢复动力学：
+
+高冲突/高不确定/连续 prediction_error ↑ → 能量下降（更谨慎、话更短、学习率下降）
+
+time_passed → 能量恢复（可配置恢复常数）
+
+能量影响：
+
+语言强度/长度上限
+
+w_explore（能量低时减少探索）
+
+学习率/更新幅度（能量低时更保守）
+
+Trace & Explain
+
+trace 必须记录每轮 budget 变化原因（简短 tags），方便回放。
+
+测试
+
+新增 scenario：长对抗/高不确定对话→明显疲惫化；休息（time_passed）后恢复。
+
+D3: Intrinsic Motivation（信息增益驱动的好奇/无聊）
+功能
+
+把 Curiosity / Boredom / Confusion 从“标签映射”升级为从 expected_info_gain 与 predictability 推导：
+
+expected_info_gain 高 → curiosity 上升（触发 ask_clarify / ask_more / propose_experiment）
+
+长期 expected_info_gain 低 且 prediction_error 低 → boredom 上升（倾向换话题/请求更具体目标）
+
+prediction_error 高且不收敛 → confusion 上升（更澄清、更慢、更反思）
+
+接入点
+
+meta-cognition：新增 ask_more / shift_topic（可作为 intent，不一定改变 action 空间；至少进入 guidance）。
+
+decision：允许 curiosity 在低 social_threat 时提高 explore 倾向。
+
+测试
+
+至少 20 个测试 + 2 个 YAML 场景：重复低信息对话导致 boredom；高信息缺口对话导致 curiosity 与提问涌现。
+
+D4: Self-model（自我模型：决策输入）
+功能
+
+新增 self_model（结构化、可更新、可冲突解决），最小包含：
+
+values（例如：connection, honesty, safety, growth 的权重 0~1）
+
+capability_beliefs（我能做什么/不能做什么，置信度）
+
+current_goals（短期目标列表，带优先级）
+
+identity_stability（稳定性指标，避免每句都变）
+
+规则
+
+self_model 不是“人设文案”，它必须参与决策（action 倾向、修复策略、边界策略、是否反思/澄清）。
+
+必须提供冲突解决：当新证据与既有信念冲突时，走“渐进更新 + 记录证据”，避免跳变。
+
+测试
+
+至少 25 个测试：跨场景一致性、以及证据导致的渐进修正（而非突然翻转）。
+
+D5: Auto-Tuning v0（可控自我进化：只调参）
+功能
+
+实现一个本地脚本（例如 scripts/auto_tune_v0.py）：
+
+输入：一组可调参数（json/yaml），例如：
+
+precision 温度、阈值、能量恢复常数、探索权重、澄清触发阈值等
+
+运行：调用 eval_suite_v2 跑所有场景
+
+输出：生成 reports/auto_tune_<timestamp>.json + 简要 markdown 报告：
+
+baseline vs candidate 的指标对比（误判高影响率、澄清触发率、情绪一致性、跨 target 干扰率、平均 token/轮、场景通过率等）
+
+约束：
+
+本次只需要实现“跑 + 出报告 + 可复现”
+
+不要自动改代码逻辑；最多生成“建议参数文件”与报告
+
+测试
+
+至少 5 个测试：脚本在固定随机种子下输出可复现、报告字段完整、失败有清晰错误信息。
+
+IMPLEMENTATION CONSTRAINTS
+
+不引入重型新依赖（除非必要且有充分理由）。
+
+所有随机行为必须可设定 seed，并在 eval 中固定。
+
+Trace 依然按 Integration-3 的轮转与保留策略执行，不得破坏。
+
+OpenClaw 注入块仍需遵守 3KB 上限；新增内容必须是“短摘要 + 指针”。
+
+PARALLEL SUB-AGENTS (5-way)
+Agent 1 — Precision Agent
+
+负责 D1：实现 precision controller、接入 decision/meta-cognition、补齐单测与最小文档。
+
+Agent 2 — Allostasis Agent
+
+负责 D2：energy_budget 动力学、time_passed 恢复、接入学习率/探索/语气强度、单测与场景。
+
+Agent 3 — Intrinsic Motivation Agent
+
+负责 D3：expected_info_gain / boredom/curiosity/confusion 机制、接入 guidance、单测 + 场景 YAML。
+
+Agent 4 — Self-model Agent
+
+负责 D4：self_model 数据结构、更新规则、冲突解决、决策输入接入、单测。
+
+Agent 5 — AutoTune + QA/Audit Agent
+
+负责 D5 + 总体验收：
+
+实现 auto_tune 脚本与报告格式
+
+跑全量 make test
+
+跑 eval suite v2 baseline & candidate（至少 1 组参数扰动）
+
+输出最终交付报告（见下方模板）
+
+审计：检查安全（无 token）、注入上限、trace 轮转是否仍有效
+
+ACCEPTANCE CRITERIA (MUST PASS)
+
+make test 全绿（0 fail）
+
+eval_suite_v2：所有场景可跑通，输出包含新增模块指标
+
+新增模块全部进入 trace（可回放）
+
+Precision/Allostasis/Intrinsic/Self-model 不会导致“高影响误判率上升”（要么下降，要么持平且有解释）
+
+auto_tune_v0 能生成可复现报告（固定 seed）
+
+COMMIT PLAN (SUGGESTED)
+
+feat(mvp5): precision controller + tests
+
+feat(mvp5): allostasis budget dynamics + tests
+
+feat(mvp5): intrinsic motivation (info gain) + tests + scenarios
+
+feat(mvp5): self-model as decision input + tests
+
+feat(mvp5): auto-tune v0 report pipeline + eval metrics
+
+chore(mvp5): docs + final audit
+
+FINAL REPORT FORMAT (REQUIRED)
+
+输出与 Integration-3 / MVP-4 一致风格，包含：
+
+Runtime / tokens（如果可取）
+
+交付物表（D1–D5）
+
+测试统计（新增/总量）
+
+关键技术决策表（precision 公式、能量恢复、信息增益近似、self_model 更新规则）
+
+风险点与回滚方案
+
+场景结果对比（baseline vs candidate）
+
+文件结构变更摘要
+
+NOW EXECUTE.
+先从本地拉起全量测试确保基线全绿，再按 5 个 Agent 并行实现，最后由 QA/Audit 汇总并确保所有验收标准满足。

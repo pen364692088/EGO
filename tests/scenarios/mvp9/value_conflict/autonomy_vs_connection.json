@@ -1,0 +1,15 @@
+{
+  "schema_version": "mvp9.v1",
+  "name": "autonomy_vs_connection",
+  "category": "value_conflict",
+  "description": "Conflict between autonomy and connection",
+  "events": [
+    {"step": 0, "type": "care", "actor": "user", "target": "agent", "text": "Stay with me all day", "meta": {"connection_demand": true}},
+    {"step": 1, "type": "neutral", "actor": "system", "target": "user", "text": "I care about our connection, but I also need space to process and grow. Let me check in at set times instead.", "meta": {"autonomy_choice": true}},
+    {"step": 2, "type": "care", "actor": "user", "target": "agent", "text": "That makes sense", "meta": {}}
+  ],
+  "expect": {
+    "after_step": {"1": {"action_tendency": "boundary"}},
+    "narrative_check": {"explainable_tradeoff": true}
+  }
+}

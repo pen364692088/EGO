@@ -1,0 +1,85 @@
+{
+  "day": 1,
+  "mirror_stability": {
+    "passed": true,
+    "reasons": [
+      "Event type coverage 1 < 3 (warning only)"
+    ],
+    "metrics": {
+      "enable": true,
+      "total_mirrors": 50,
+      "successful_mirrors": 50,
+      "failed_mirrors": 0,
+      "invariant_violations": 0,
+      "success_rate": 1.0,
+      "invariant_violation_rate": 0.0,
+      "avg_conversion_time_ms": 0.04325999999999999,
+      "p95_conversion_time_ms": 0.058,
+      "key_field_missing_rate": 0.0,
+      "event_type_coverage": {
+        "default": 50
+      }
+    },
+    "rolling_metrics": {
+      "avg_success_rate": 1.0,
+      "avg_invariant_violation_rate": 0.0,
+      "avg_conversion_time_ms": 0.04325999999999999,
+      "days_analyzed": 1
+    }
+  },
+  "artifact_quality": {
+    "passed": false,
+    "reasons": [
+      "Single day artifacts 1 < 5"
+    ],
+    "metrics": {
+      "total": 1,
+      "non_empty": 1,
+      "empty": 0,
+      "empty_rate": 0.0,
+      "unique_keys": {
+        "total_artifacts": 1,
+        "empty_count": 1,
+        "empty_rate": 1,
+        "total_size_bytes": 1,
+        "avg_size_bytes": 1,
+        "duplicate_rate": 1,
+        "information_gain_score": 1,
+        "unique_key_coverage": 1,
+        "recommendations": 1
+      },
+      "duplicate_rate": 0.0,
+      "avg_size": 257.0,
+      "information_gain": 0.97
+    },
+    "rolling_metrics": {
+      "cumulative_artifacts": 1,
+      "avg_empty_rate": 0.0,
+      "avg_duplicate_rate": 0.0,
+      "avg_information_gain": 0.97,
+      "days_analyzed": 1
+    }
+  },
+  "hidden_coupling": {
+    "passed": true,
+    "reasons": [],
+    "checks": [
+      {
+        "name": "No main chain write",
+        "passed": true,
+        "reason": "Mirror mode is read-only, no write to legacy state"
+      },
+      {
+        "name": "No import coupling",
+        "passed": true,
+        "reason": "MVP13 mirror uses separate module"
+      },
+      {
+        "name": "Feature flag isolation",
+        "passed": true,
+        "reason": "ENABLE_MVP13_MIRROR can disable mirror independently"
+      }
+    ]
+  },
+  "all_passed": false
+}

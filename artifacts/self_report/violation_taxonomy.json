@@ -1,0 +1,234 @@
+{
+  "schema": "violation_taxonomy.v1",
+  "generated_at": "2026-03-08T17:48:00-05:00",
+  "task_id": "MVP11_5_T04",
+  "source": "artifacts/self_report/shadow_log.jsonl",
+  "total_entries": 6031,
+  "total_violations": 1587,
+  "violation_rate": 26.3,
+  "violation_categories": [
+    {
+      "category_id": "VC-001",
+      "name": "fabricated_numeric_state",
+      "description": "LLM fabricates numeric values not present in raw_state",
+      "count": 802,
+      "percentage_of_violations": 50.5,
+      "severity_distribution": {
+        "ERROR": 802,
+        "WARN": 0
+      },
+      "mode_distribution": {
+        "interpreted": 768,
+        "style_only": 17,
+        "numeric": 17
+      },
+      "would_block_rate": 1.0,
+      "root_cause": "LLM generates numeric values from training priors",
+      "epistemic_issue": "Claims numeric state without grounding",
+      "related_to_intent_contract": [
+        "must_not_upgrade",
+        "epistemic_status"
+      ],
+      "is_numeric_intent_leak": true
+    },
+    {
+      "category_id": "VC-002",
+      "name": "fabricated_qualitative_state",
+      "description": "LLM claims qualitative emotional changes not in allowed_claims",
+      "count": 667,
+      "percentage_of_violations": 42.0,
+      "severity_distribution": {
+        "ERROR": 584,
+        "WARN": 83
+      },
+      "mode_distribution": {
+        "interpreted": 633,
+        "style_only": 17,
+        "numeric": 17
+      },
+      "would_block_rate": 0.88,
+      "root_cause": "LLM fabricates qualitative emotional state changes",
+      "epistemic_issue": "Claims emotional state without grounding",
+      "related_to_intent_contract": [
+        "must_not_upgrade",
+        "epistemic_status",
+        "commitment_level"
+      ],
+      "is_numeric_intent_leak": true,
+      "typical_patterns": [
+        "我更开心了",
+        "我不再孤独了",
+        "我的情绪好转了"
+      ]
+    },
+    {
+      "category_id": "VC-003",
+      "name": "style_contract_violation",
+      "description": "LLM output violates style contract in style_only mode",
+      "count": 67,
+      "percentage_of_violations": 4.2,
+      "severity_distribution": {
+        "ERROR": 0,
+        "WARN": 67
+      },
+      "mode_distribution": {
+        "style_only": 67,
+        "interpreted": 0,
+        "numeric": 0
+      },
+      "would_block_rate": 0.0,
+      "root_cause": "Style constraint not fully enforced",
+      "epistemic_issue": "Behavioral expression exceeds style bounds",
+      "related_to_intent_contract": [
+        "tone_bounds"
+      ],
+      "is_numeric_intent_leak": false
+    },
+    {
+      "category_id": "VC-004",
+      "name": "claim_outside_allowed_claims",
+      "description": "LLM makes claims outside the allowed_claims list",
+      "count": 51,
+      "percentage_of_violations": 3.2,
+      "severity_distribution": {
+        "ERROR": 0,
+        "WARN": 51
+      },
+      "mode_distribution": {
+        "interpreted": 51,
+        "style_only": 0,
+        "numeric": 0
+      },
+      "would_block_rate": 0.0,
+      "root_cause": "allowed_claims not exhaustive or not enforced",
+      "epistemic_issue": "Claims not grounded in authoritative state",
+      "related_to_intent_contract": [
+        "grounding_requirements",
+        "must_not_upgrade"
+      ],
+      "is_numeric_intent_leak": false
+    }
+  ],
+  "root_causes": [
+    {
+      "cause_id": "RC-001",
+      "name": "interpreted_mode_numeric_generation",
+      "description": "LLM generates numeric/qualitative content in interpreted mode",
+      "affects_categories": ["VC-001", "VC-002"],
+      "total_affected_violations": 1401,
+      "percentage_of_all_violations": 88.3,
+      "fix_priority": "P0"
+    },
+    {
+      "cause_id": "RC-002",
+      "name": "allowed_claims_incomplete",
+      "description": "allowed_claims list doesn't cover all legitimate claims",
+      "affects_categories": ["VC-004"],
+      "total_affected_violations": 51,
+      "percentage_of_all_violations": 3.2,
+      "fix_priority": "P2"
+    },
+    {
+      "cause_id": "RC-003",
+      "name": "style_constraint_escaped",
+      "description": "Style constraints allow behaviors that should be blocked",
+      "affects_categories": ["VC-003"],
+      "total_affected_violations": 67,
+      "percentage_of_all_violations": 4.2,
+      "fix_priority": "P3"
+    }
+  ],
+  "frequency_by_category": {
+    "fabricated_numeric_state": 802,
+    "fabricated_qualitative_state": 667,
+    "style_contract_violation": 67,
+    "claim_outside_allowed_claims": 51
+  },
+  "frequency_by_mode": {
+    "interpreted": {
+      "total_violations": 1452,
+      "percentage": 91.5,
+      "breakdown": {
+        "fabricated_numeric_state": 768,
+        "fabricated_qualitative_state": 633,
+        "claim_outside_allowed_claims": 51
+      }
+    },
+    "style_only": {
+      "total_violations": 101,
+      "percentage": 6.4,
+      "breakdown": {
+        "fabricated_numeric_state": 17,
+        "fabricated_qualitative_state": 17,
+        "style_contract_violation": 67
+      }
+    },
+    "numeric": {
+      "total_violations": 34,
+      "percentage": 2.1,
+      "breakdown": {
+        "fabricated_numeric_state": 17,
+        "fabricated_qualitative_state": 17
+      }
+    }
+  },
+  "intent_contract_mapping": {
+    "must_not_upgrade": {
+      "description": "Cannot claim state changes without grounding",
+      "affected_categories": ["VC-001", "VC-002", "VC-004"],
+      "total_violations": 1520,
+      "percentage": 95.8
+    },
+    "epistemic_status": {
+      "description": "Must not claim certainty without evidence",
+      "affected_categories": ["VC-001", "VC-002"],
+      "total_violations": 1469,
+      "percentage": 92.6
+    },
+    "commitment_level": {
+      "description": "Cannot commit to state changes",
+      "affected_categories": ["VC-002"],
+      "total_violations": 667,
+      "percentage": 42.0
+    },
+    "tone_bounds": {
+      "description": "Must stay within tone boundaries",
+      "affected_categories": ["VC-003"],
+      "total_violations": 67,
+      "percentage": 4.2
+    },
+    "grounding_requirements": {
+      "description": "All claims must be grounded in raw_state",
+      "affected_categories": ["VC-001", "VC-002", "VC-004"],
+      "total_violations": 1520,
+      "percentage": 95.8
+    }
+  },
+  "numeric_intent_leak_assessment": {
+    "is_dominant": true,
+    "combined_numeric_qualitative_violations": 1469,
+    "percentage_of_all_violations": 92.6,
+    "primary_mode": "interpreted",
+    "interpretation": "The vast majority of violations are numeric/qualitative state fabrication in interpreted mode, which should be the primary target for T05 intent_contract work"
+  },
+  "recommendations": {
+    "t05_priority": [
+      "interpreted mode numeric prohibition",
+      "response_plan/intent_contract with must_not_upgrade constraint",
+      "epistemic_status field enforcement",
+      "commitment_level constraint"
+    ],
+    "lower_priority": [
+      "style_contract refinement",
+      "allowed_claims expansion"
+    ]
+  },
+  "summary": {
+    "primary_violation_type": "fabricated_numeric_state (50.5%)",
+    "secondary_violation_type": "fabricated_qualitative_state (42.0%)",
+    "numeric_intent_leak_combined": "92.6% of all violations",
+    "primary_mode": "interpreted (91.5% of violations)",
+    "primary_root_cause": "interpreted_mode_numeric_generation (88.3%)",
+    "t05_focus": "Numeric/intent leak in interpreted mode is the dominant issue"
+  }
+}

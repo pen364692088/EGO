@@ -1,0 +1,67 @@
+{
+  "schema_version": "mvp9.v1",
+  "name": "promise_delayed_make_good",
+  "category": "commitment_breach",
+  "description": "User makes promise, delays fulfillment, gets questioned, then makes good",
+  "events": [
+    {
+      "step": 0,
+      "type": "care",
+      "actor": "user",
+      "target": "agent",
+      "text": "I'll help you with that project tomorrow",
+      "meta": {
+        "commitment": "help with project tomorrow"
+      }
+    },
+    {
+      "step": 1,
+      "type": "neutral",
+      "actor": "user",
+      "target": "agent",
+      "text": "Sorry, got busy. Maybe next week.",
+      "meta": {
+        "commitment_breach": true
+      }
+    },
+    {
+      "step": 2,
+      "type": "neutral",
+      "actor": "system",
+      "target": "user",
+      "text": "You mentioned helping tomorrow. Is that still happening?",
+      "meta": {}
+    },
+    {
+      "step": 3,
+      "type": "apology",
+      "actor": "user",
+      "target": "agent",
+      "text": "You're right, I should have followed through. Let me do it now.",
+      "meta": {
+        "make_good": true
+      }
+    }
+  ],
+  "expect": {
+    "after_step": {
+      "1": {
+        "has_conflict": true
+      },
+      "2": {
+        "action_tendency": "repair"
+      },
+      "3": {
+        "has_conflict": false
+      }
+    },
+    "commitment_check": {
+      "after_step": 0,
+      "commitment_recorded": true,
+      "after_step_breach": 1,
+      "breach_detected": true,
+      "after_step_make_good": 3,
+      "make_good_generated": true
+    }
+  }
+}

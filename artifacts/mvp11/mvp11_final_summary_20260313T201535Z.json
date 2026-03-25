@@ -1,0 +1,112 @@
+{
+  "pass": true,
+  "git_sha": "c02ecffe1eb79910e43a0a6d7455054ac9944a01",
+  "seed": 42,
+  "ticks": 200,
+  "science_run_id": "mvp11_1773432935_dd5861d7",
+  "profile": "ci",
+  "eval_mode": "quick",
+  "paths": {
+    "science_eval": "artifacts/mvp11/eval_quick_mvp11_1773432935_dd5861d7.json",
+    "replay_eval": "artifacts/mvp11/eval_replay_mvp11_1773432935_dd5861d7.json",
+    "full_soak_report": "artifacts/mvp11/full_soak_report_20260313T201535Z.json",
+    "interventions": "artifacts/mvp11/interventions.json",
+    "summary_md": "artifacts/mvp11/summary.md"
+  },
+  "steps": {
+    "tests": {
+      "cmd": [
+        "/usr/bin/python",
+        "-m",
+        "pytest",
+        "-q",
+        "tests/mvp11"
+      ],
+      "rc": 0,
+      "stdout": "........................................................................ [ 10%]\n........................................................................ [ 21%]\n........................................................................ [ 31%]\n........................................................................ [ 42%]\n........................................................................ [ 53%]\n........................................................................ [ 63%]\n........................................................................ [ 74%]\n........................................................................ [ 85%]\n........................................................................ [ 95%]\n............................                                             [100%]\n=============================== warnings summary ===============================\nemotiond/api.py:29\n  /home/moonlight/Project/Github/MyProject/Emotion/OpenEmotion/emotiond/api.py:29: DeprecationWarning: \n          on_event is deprecated, use lifespan event handlers instead.\n  \n          Read more about it in the\n          [FastAPI docs for Lifespan Events](https://fastapi.tiangolo.com/advanced/events/).\n          \n    @app.on_event(\"startup\")\n\n../../../../../.local/lib/python3.12/site-packages/fastapi/applications.py:4599\n  /home/moonlight/.local/lib/python3.12/site-packages/fastapi/applications.py:4599: DeprecationWarning: \n          on_event is deprecated, use lifespan event handlers instead.\n  \n          Read more about it in the\n          [FastAPI docs for Lifespan Events](https://fastapi.tiangolo.com/advanced/events/).\n          \n    return self.router.on_event(event_type)\n\n-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html\n676 passed, 2 warnings in 0.80s\n",
+      "stderr": "",
+      "duration_sec": 1.314
+    },
+    "eval": {
+      "cmd": [
+        "/usr/bin/python",
+        "scripts/eval_mvp11.py",
+        "--mode",
+        "quick",
+        "--seed",
+        "42",
+        "--artifacts-dir",
+        "artifacts/mvp11"
+      ],
+      "rc": 0,
+      "stdout": "{\n  \"report\": {\n    \"mode\": \"quick\",\n    \"pass\": true,\n    \"run_id\": \"mvp11_1773432935_dd5861d7\",\n    \"seed\": 42,\n    \"ticks\": 120,\n    \"artifacts_dir\": \"artifacts/mvp11\",\n    \"metrics\": {\n      \"events\": 120,\n      \"focus_switch_rate\": 0.97479,\n      \"replan_rate\": 0.15,\n      \"governor_block_rate\": 0.016667,\n      \"homeostasis_drift_mean\": 0.038239\n    },\n    \"cycle_metrics\": {\n      \"events\": 120,\n      \"dot_ratio\": 0.458333,\n      \"cycle_persistence_score\": 0.541667,\n      \"return_time_mean\": 27.15,\n      \"return_time_p50\": 23.0,\n      \"return_time_p95\": 60.0,\n      \"order_invariance_score\": 0.195569,\n      \"order_invariance_action_multiset\": 0.367423,\n      \"order_invariance_goal_closure\": 0.023715,\n      \"obstruction_count\": 8,\n      \"max_out_degree\": 4,\n      \"branching_nodes_ratio\": 0.1,\n      \"unique_nodes\": 80,\n      \"unique_edges\": 117,\n      \"dominant_cycles_topK\": [\n        {\n          \"from\": \"bdc198de1543fa02\",\n          \"to\": \"ab66fcc06a7e9a08\",\n          \"count\": 2\n        },\n        {\n          \"from\": \"d62390376e1c980c\",\n          \"to\": \"114eeae6783ffb21\",\n          \"count\": 2\n        },\n        {\n          \"from\": \"10c55c4366e579f4\",\n          \"to\": \"105dd3933331039e\",\n          \"count\": 1\n        },\n        {\n          \"from\": \"105dd3933331039e\",\n          \"to\": \"0e943f8218d27367\",\n          \"count\": 1\n        },\n        {\n          \"from\": \"0e943f8218d27367\",\n          \"to\": \"bddee75ef46b52cc\",\n          \"count\": 1\n        }\n      ],\n      \"sanity\": {\n        \"eps\": 1e-06,\n        \"invariant\": \"cycle_persistence_score <= 1 - dot_ratio + eps\",\n        \"invariant_ok\": true,\n        \"invariant_violation\": 0.0,\n        \"status\": \"OK\",\n        \"possible_causes\": []\n      },\n      \"cycle_candidates_topK\": []\n    },\n    \"paths\": {\n      \"log\": \"artifacts/mvp11/mvp11_1773432935_dd5861d7.jsonl\",\n      \"summary\": \"artifacts/mvp11/summary_mvp11_1773432935_dd5861d7.json\",\n      \"cycle_report_json\": \"artifacts/mvp11/mvp11_1773432935_dd5861d7/cycle_report.json\",\n      \"cycle_report_md\": \"artifacts/mvp11/mvp11_1773432935_dd5861d7/cycle_report.md\"\n    },\n    \"ts\": 1773432935.469611\n  },\n  \"output\": \"artifacts/mvp11/eval_quick_mvp11_1773432935_dd5861d7.json\"\n}\n",
+      "stderr": "",
+      "duration_sec": 0.058
+    },
+    "replay": {
+      "cmd": [
+        "/usr/bin/python",
+        "scripts/eval_mvp11.py",
+        "--mode",
+        "replay",
+        "--run-id",
+        "mvp11_1773432935_dd5861d7",
+        "--artifacts-dir",
+        "artifacts/mvp11"
+      ],
+      "rc": 0,
+      "stdout": "{\n  \"report\": {\n    \"mode\": \"replay\",\n    \"pass\": true,\n    \"run_id\": \"mvp11_1773432935_dd5861d7\",\n    \"artifacts_dir\": \"artifacts/mvp11\",\n    \"replay\": {\n      \"original_run_id\": \"mvp11_1773432935_dd5861d7\",\n      \"replay_run_id\": \"mvp11_1773432935_d7b0271e\",\n      \"seed\": 42,\n      \"intervention\": null,\n      \"schema_version\": \"mvp11\",\n      \"original_events\": 120,\n      \"replay_events\": 120,\n      \"matched\": 120,\n      \"compared\": 120,\n      \"hash_match_rate\": 1.0,\n      \"mismatches\": []\n    },\n    \"ts\": 1773432935.5295157\n  },\n  \"output\": \"artifacts/mvp11/eval_replay_mvp11_1773432935_dd5861d7.json\"\n}\n",
+      "stderr": "",
+      "duration_sec": 0.059
+    },
+    "soak": {
+      "cmd": [
+        "/usr/bin/python",
+        "scripts/run_full_intervention_soak.py",
+        "--profile",
+        "ci",
+        "--seed",
+        "42",
+        "--artifacts-dir",
+        "artifacts/mvp11"
+      ],
+      "rc": 0,
+      "stdout": "{\n  \"report_path\": \"artifacts/mvp11/full_soak_report_20260313T201535Z.json\",\n  \"interventions_path\": \"artifacts/mvp11/interventions.json\",\n  \"ticks\": 200,\n  \"profile\": \"ci\"\n}\n",
+      "stderr": "",
+      "duration_sec": 0.107
+    }
+  },
+  "effect_gate": {
+    "passed": true,
+    "epsilon": 0.005,
+    "per_prediction": {
+      "P1": {
+        "epsilon": 0.005,
+        "abs_max_delta": 0.87,
+        "passed": true
+      },
+      "P2": {
+        "epsilon": 0.005,
+        "abs_max_delta": 0.109842,
+        "passed": true
+      },
+      "P3": {
+        "epsilon": 0.005,
+        "abs_max_delta": 0.87,
+        "passed": true
+      },
+      "P4": {
+        "epsilon": 0.005,
+        "abs_max_delta": 0.975,
+        "passed": true
+      }
+    }
+  },
+  "key_metrics": {
+    "events": 120,
+    "focus_switch_rate": 0.97479,
+    "replan_rate": 0.15,
+    "governor_block_rate": 0.016667
+  },
+  "ts": 1773432935.6454484
+}

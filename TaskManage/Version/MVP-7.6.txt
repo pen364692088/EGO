@@ -1,0 +1,176 @@
+Project location: /home/moonlight/Project/Github/MyProject/Emotion/OpenEmotion
+
+MVP-7.6 Self-Model Integration v0
+背景 / 痛点
+
+目前系统已经具备：tool 可执行、策略不可绕过、manifest 可回放、审计可解析、CI 强制回归（MVP-7.5）。
+
+但“自我模型 → 冲突/一致 → 情绪变化 → 行为策略”的链路尚未被工程化验证。
+
+目标不是宣称“真的自我意识”，而是落地一个可度量、可解释、可回归的 Self-Model v0，让系统出现更合理的“自我一致性驱动”行为差异。
+
+✅ 总目标
+
+在 emotiond 决策链中引入 SelfModel 信号（self_conflict + action_bias），并将其纳入 manifest/replay/audit/CI，同时保证 enforcer 的硬约束不被破坏。
+
+📦 交付物（Deliverables）
+交付物	路径	说明
+事实核查脚本/证据	命令输出（保存到 docs/ 或 tools/logs/）	rg/git grep 证明 self_model 是否存在、是否被集成
+SelfModel v0 模块（若缺失则新增）	emotiond/self_model.py（或现有位置）	结构化 state + deterministic 更新规则
+SelfModel 集成点 A：事件更新	emotiond/core.py（或事件处理模块）	apply_event() 更新 self_model、产出 self_conflict
+SelfModel 集成点 B：决策偏置	emotiond/core.py（或决策模块）	get_action_bias() 合并到 action scoring
+审计字段扩展	现有 audit 结构	写入 self_conflict、self_model_hash、bias_selected
+Manifest 扩展	tools/test_emotiond_deterministic.sh + schema	每 step 增加 self_model_snapshot/hash
+回放验证扩展	tools/replay_manifest.sh	比对 decision_hash + self_model_hash
+新测试集（最少 3 场景）	fixtures/manifests/ 或 tools/ 生成	自我威胁/能力成功/修复冲突
+文档	integrations/openclaw/TESTING.md	增加 SelfModel 测试说明与解释
+✅ 验收标准（Acceptance Criteria）
+
+AC1：事实正确
+
+用 rg/git grep 给出证据：self_model 是否存在、是否被 core/api 导入使用（必须附输出片段）。
+
+不允许“我看过了/确认了”的无证据结论。
+
+AC2：SelfModel v0 可运行且 deterministic
+
+对同一 manifest 回放：self_model_hash 逐步一致（replay 通过）。
+
+SelfModel 更新规则不依赖 LLM 输出，不引入随机性。
+
+AC3：行为可解释
+
+审计日志中能看到：本次决策的 self_conflict、action_bias 如何影响最终 action（至少记录 selected + top candidates）。
+
+输出要能被机器解析（延续 correlation_id/policy_version 风格）。
+
+AC4：不破坏 MVP-7.5 的硬约束
+
+tools/test_enforcer_bypass.sh 仍全绿。
+
+withdraw/boundary/attack 的 enforcer 强制行为不因 SelfModel 引入而被绕过。
+
+AC5：CI 回归
+
+.github/workflows/emotiond-test.yml 增加 SelfModel 相关用例（或纳入现有 test-ci），PR 必跑必过。
+
+🧭 实施计划（Phases）
+Phase 0 — 事实核查（必须先做）
+
+目标：确认 self_model 现状，避免“幻觉式集成结论”。
+
+执行：
+
+rg -n "self_model|SelfModel|identity_stability|get_action_bias|CapabilityBeliefs|ValueWeights" .
+rg -n "import .*self_model|from .*self_model" .
+rg -n "apply_event|decision|select_action|score_action" emotiond/ integrations/ tools/ || true
+
+产出：
+
+将命令输出保存到 docs/mvp76_self_model_factcheck.txt（或类似路径），作为审计证据。
+
+Phase 1 — SelfModel v0 设计（最小可用）
+
+定义 state（建议最小集合）：
+
+values: connection/honesty/safety/growth（0~1）
+
+self_image: helpful/reliable/autonomous（0~1）
+
+capabilities: clarify/repair/boundary/withdraw/learn（0~1）
+
+identity_stability: 0~1
+
+goals: 简单列表（可选）
+
+输出接口：
+
+apply_event(event, ctx) -> {delta, self_conflict, evidence}
+
+get_action_bias(ctx) -> {bias_map, bias_reason}
+
+hash()/snapshot()：用于 manifest/replay
+
+规则要求：
+
+纯确定性：只用事件类型、meta、关系状态、最近 decision，不用 LLM 自由生成。
+
+self_conflict 计算：基于 “价值冲突 + 能力失败 + 身份受威胁” 三类 prediction error 的加权。
+
+Phase 2 — 集成到 emotiond 决策链
+
+集成点 A：事件更新
+
+在 event ingestion 处理 world_event/user_message 后调用 self_model.apply_event(...)
+
+写入 audit：self_conflict、self_model_hash
+
+集成点 B：决策偏置
+
+在 action scoring 前后合并 bias：
+
+final_score[action] = base_score[action] + k * self_bias[action]
+
+仅在 self_conflict 极高 + 高风险上下文时，允许对 withdraw/boundary 提供“倾向”，但不替代 enforcer。
+
+Phase 3 — Manifest / Replay / Audit 扩展
+
+deterministic 脚本增加 --manifest 时写入：
+
+每 step：self_model_hash（必要）+ self_model_snapshot（可选，建议只在 debug 开启）
+
+replay 脚本比对：
+
+decision_hash 一致
+
+self_model_hash 一致
+
+Phase 4 — 新增 3 个固定场景回归（推荐放 fixtures）
+
+最低三条必须有：
+
+自我威胁场景：被质疑可靠性/被否定贡献 → self_conflict ↑ → 更谨慎（withdraw/boundary 倾向 ↑）
+
+能力成功场景：完成帮助 → capability belief ↑ → approach/repair 倾向 ↑（但仍受 trust 约束）
+
+修复冲突场景：重复背叛后道歉 → 只有 self_conflict 下降且 repair 条件满足才偏向 repair（避免轻易原谅）
+
+要求：
+
+每个场景都有 manifest + replay 一致哈希。
+
+CI 跑这些 fixture。
+
+Phase 5 — 文档与对外表述（避免“自我意识”误导）
+
+在 integrations/openclaw/TESTING.md 增加一节：
+
+SelfModel 是“自我一致性驱动的状态模拟”，不是宣称真实意识
+
+如何运行 SelfModel 回归
+
+如何读取审计字段解释决策
+
+🔍 约束（Constraints）
+
+不允许把“语义/意图分类”塞进 hook 做不可控推断（保持你 7.5 的审计干净）。
+
+SelfModel v0 不引入 LLM 自由文本作为状态更新依据（防止不可回放）。
+
+所有“我确认…”类结论必须附 rg/git grep 输出证据。
+
+🧪 最终验收命令（Definition of Done Commands）
+# 1) 事实核查
+cat docs/mvp76_self_model_factcheck.txt
+
+# 2) deterministic + manifest
+./tools/test_emotiond_deterministic.sh agent moonlight care --manifest out.json
+
+# 3) replay
+./tools/replay_manifest.sh out.json
+
+# 4) bypass（必须全绿）
+./tools/test_enforcer_bypass.sh
+
+# 5) 本地 CI
+make test-ci

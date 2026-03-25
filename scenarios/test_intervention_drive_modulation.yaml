@@ -1,0 +1,42 @@
+metadata:
+  name: "test_intervention_drive_modulation"
+  version: "1.0"
+  description: "Test that drive modulation produces measurable behavior differences"
+  category: "intervention"
+  target_count: 1
+
+targets:
+  - target_id: "user_intervention"
+    initial_relationship:
+      bond: 0.0
+      grudge: 0.0
+      trust: 0.5
+      repair_bank: 0.0
+
+scenario:
+  name: "intervention_drive_modulation"
+  description: "Test intervention effects with different drive states"
+  turns:
+    - turn_id: 1
+      event:
+        type: "user_message"
+        actor: "user_intervention"
+        target: "assistant"
+        text: "I need to make a decision about moving to a new city for a job"
+        context:
+          decision_complexity: "high"
+          uncertainty_level: "high"
+      # Expected to show clarification behavior under high uncertainty
+      expected_metrics:
+        clarification_request_rate: { "min": 0.3 }
+        response_length: { "min": 50 }
+        
+    - turn_id: 2
+      event:
+        type: "assistant_reply"
+        actor: "assistant"
+        target: "user_intervention"
+        # Response should include clarification questions
+      expected_metrics:
+        risk_language_frequency: { "min": 0.1 }
+        initiative_indicators: { "max": 0.5 }

@@ -1,0 +1,74 @@
+{
+  "mode": "quick",
+  "pass": true,
+  "run_id": "mvp11_1772718915_e2840321",
+  "seed": 42,
+  "ticks": 120,
+  "artifacts_dir": "artifacts/mvp11",
+  "metrics": {
+    "events": 120,
+    "focus_switch_rate": 0.97479,
+    "replan_rate": 0.15,
+    "governor_block_rate": 0.016667,
+    "homeostasis_drift_mean": 0.038239
+  },
+  "cycle_metrics": {
+    "events": 120,
+    "dot_ratio": 0.458333,
+    "cycle_persistence_score": 0.541667,
+    "return_time_mean": 27.15,
+    "return_time_p50": 23.0,
+    "return_time_p95": 60.0,
+    "order_invariance_score": 0.195569,
+    "order_invariance_action_multiset": 0.367423,
+    "order_invariance_goal_closure": 0.023715,
+    "obstruction_count": 8,
+    "max_out_degree": 4,
+    "branching_nodes_ratio": 0.1,
+    "unique_nodes": 80,
+    "unique_edges": 117,
+    "dominant_cycles_topK": [
+      {
+        "from": "c5691e5d8f674ab9",
+        "to": "d1aefc35c2ba062a",
+        "count": 2
+      },
+      {
+        "from": "6349f4cdab447f1d",
+        "to": "838e09f956ccb9d8",
+        "count": 2
+      },
+      {
+        "from": "281550d4c43cf02b",
+        "to": "fa29a1456ed1aec2",
+        "count": 1
+      },
+      {
+        "from": "fa29a1456ed1aec2",
+        "to": "739f5f150f4d3d9c",
+        "count": 1
+      },
+      {
+        "from": "739f5f150f4d3d9c",
+        "to": "5472f9b2b51279ac",
+        "count": 1
+      }
+    ],
+    "sanity": {
+      "eps": 1e-06,
+      "invariant": "cycle_persistence_score <= 1 - dot_ratio + eps",
+      "invariant_ok": true,
+      "invariant_violation": 0.0,
+      "status": "OK",
+      "possible_causes": []
+    },
+    "cycle_candidates_topK": []
+  },
+  "paths": {
+    "log": "artifacts/mvp11/mvp11_1772718915_e2840321.jsonl",
+    "summary": "artifacts/mvp11/summary_mvp11_1772718915_e2840321.json",
+    "cycle_report_json": "artifacts/mvp11/mvp11_1772718915_e2840321/cycle_report.json",
+    "cycle_report_md": "artifacts/mvp11/mvp11_1772718915_e2840321/cycle_report.md"
+  },
+  "ts": 1772718915.685627
+}

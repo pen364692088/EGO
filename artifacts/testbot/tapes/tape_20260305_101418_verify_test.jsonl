@@ -1,0 +1,11 @@
+{"type": "run_start", "ts": 1772727258.6698246, "channel": "test", "thread_id": "verify_test", "run_id": "tape_20260305_101418_verify_test", "config": {"channel": "test", "thread_id": "verify_test", "output_dir": "artifacts/testbot/tapes", "run_id": null, "log_to_file": true}}
+{"type": "inbound", "ts": 1772727258.6699798, "message_id": "m1", "sender": "User", "sender_id": "u1", "text": "Hello", "turn_id": 1, "channel": "test", "thread_id": "verify_test"}
+{"type": "tool_call", "ts": 1772727258.6700246, "turn_id": 1, "tool": "process_event", "args": {"type": "user_message", "text": "Hello"}}
+{"type": "tool_return", "ts": 1772727258.6700554, "turn_id": 1, "result": {"status": "processed", "valence": 0.0}}
+{"type": "inbound", "ts": 1772727258.670088, "message_id": "m2", "sender": "User", "sender_id": "u1", "text": "How are you?", "turn_id": 2, "channel": "test", "thread_id": "verify_test"}
+{"type": "tool_call", "ts": 1772727258.6701167, "turn_id": 2, "tool": "process_event", "args": {"type": "user_message", "text": "How are you?"}}
+{"type": "tool_return", "ts": 1772727258.6701412, "turn_id": 2, "result": {"status": "processed", "valence": 0.0}}
+{"type": "inbound", "ts": 1772727258.6701682, "message_id": "m3", "sender": "User", "sender_id": "u1", "text": "Goodbye", "turn_id": 3, "channel": "test", "thread_id": "verify_test"}
+{"type": "tool_call", "ts": 1772727258.6701927, "turn_id": 3, "tool": "process_event", "args": {"type": "user_message", "text": "Goodbye"}}
+{"type": "tool_return", "ts": 1772727258.6702158, "turn_id": 3, "result": {"status": "processed", "valence": 0.0}}
+{"type": "run_end", "ts": 1772727258.6702418, "message_count": 3, "turn_count": 3}

@@ -1,0 +1,57 @@
+{
+  "version": "v6a",
+  "timestamp": "2026-03-16T15:21:27.778408",
+  "config": {
+    "ollama_base_url": "http://192.168.79.1:11434/v1",
+    "ollama_model": "mxbai-embed-large",
+    "test_case_count": 5
+  },
+  "providers": {
+    "tfidf": {
+      "provider": "tfidf",
+      "model": "tfidf-v1.0.0",
+      "hit_at_1": 0.4,
+      "hit_at_3": 0.8,
+      "hard_negative_false_recall_count": 4,
+      "wrong_user_recall_count": 4,
+      "avg_latency_ms": 0.012874603271484375,
+      "p95_latency_ms": 0.04029273986816406,
+      "duplicate_suppression_rate": 0.0,
+      "total_cases": 5,
+      "latency_samples": [
+        0.04029273986816406,
+        0.0069141387939453125,
+        0.0054836273193359375,
+        0.006198883056640625,
+        0.0054836273193359375
+      ]
+    },
+    "ollama": {
+      "provider": "ollama",
+      "model": "mxbai-embed-large",
+      "hit_at_1": 0.6,
+      "hit_at_3": 1.0,
+      "hard_negative_false_recall_count": 3,
+      "wrong_user_recall_count": 3,
+      "avg_latency_ms": 68.511962890625,
+      "p95_latency_ms": 93.59002113342285,
+      "duplicate_suppression_rate": 0.0,
+      "total_cases": 5,
+      "latency_samples": [
+        93.59002113342285,
+        60.91165542602539,
+        65.13047218322754,
+        62.081336975097656,
+        60.84632873535156
+      ]
+    }
+  },
+  "verdict": "better",
+  "verdict_criteria": {
+    "better_hit": true,
+    "no_wrong_user_regression": true,
+    "no_hard_negative_regression": true,
+    "acceptable_latency": true
+  },
+  "recommendation": "ollama_as_high_quality_candidate"
+}

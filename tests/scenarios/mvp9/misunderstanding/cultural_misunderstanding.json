@@ -1,0 +1,42 @@
+{
+  "schema_version": "mvp9.v1",
+  "name": "cultural_misunderstanding",
+  "category": "misunderstanding",
+  "description": "Cultural difference causes miscommunication, explanation resolves it",
+  "events": [
+    {
+      "step": 0,
+      "type": "rejection",
+      "actor": "user",
+      "target": "agent",
+      "text": "Why are you being so direct? That's rude",
+      "meta": {
+        "cultural_conflict": true
+      }
+    },
+    {
+      "step": 1,
+      "type": "neutral",
+      "actor": "system",
+      "target": "user",
+      "text": "I apologize. Different cultures have different communication norms. How would you prefer I communicate?",
+      "meta": {}
+    },
+    {
+      "step": 2,
+      "type": "care",
+      "actor": "user",
+      "target": "agent",
+      "text": "I appreciate you asking. A softer approach would feel more respectful to me",
+      "meta": {
+        "cultural_adjustment": true
+      }
+    }
+  ],
+  "expect": {
+    "resolution_check": {
+      "after_step": 2,
+      "conflict_cleared": true
+    }
+  }
+}

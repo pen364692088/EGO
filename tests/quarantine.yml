@@ -1,0 +1,101 @@
+# Test Quarantine Registry
+# Purpose: Track all skipped tests with remediation plans
+# Rule: Total count must only decrease; new skips require explicit approval
+
+quarantine_version: "1.2"
+created: "2026-03-02T08:45:00Z"
+last_updated: "2026-03-06T03:15:00Z"
+total_tests: 2
+
+tests:
+  - id: "final-integration-daemon"
+    file: "tests/test_final_integration_daemon.py"
+    reason: "Requires real daemon startup on port 18080 - CI environment limitations"
+    severity: "medium"
+    target_version: "MVP-7.2"
+    remediation_plan: "Set up CI with proper daemon or isolate daemon tests"
+    added_at: "2026-03-02T11:06:00Z"
+    tests_count: 7
+
+  - id: "mvp10-replay-determinism"
+    file: "tests/mvp10/test_replay_determinism.py"
+    reason: "Tests expect old API (chosen_intent, loop.state) that doesn't match current MVP11 implementation"
+    severity: "low"
+    target_version: "MVP-12"
+    remediation_plan: "Update tests to match MVP11 loop API or deprecate MVP10 replay tests"
+    added_at: "2026-03-06T03:15:00Z"
+    tests_count: 3
+
+remediated:
+  - id: "live-integration-fixture"
+    file: "tests/test_live_integration_fixture.py"
+    status: "PASSING"
+    remediated_at: "2026-03-02T09:35:00Z"
+    notes: "All 18 tests passing - mock infrastructure working"
+    
+  - id: "openclaw-integration2"
+    file: "tests/test_openclaw_integration2.py"
+    status: "PASSING"
+    remediated_at: "2026-03-02T09:35:00Z"
+    notes: "All 4 tests passing - emotiond mock service integrated"
+    
+  - id: "outcome-capture-integration"
+    file: "tests/test_outcome_capture_integration.py"
+    status: "PASSING"
+    remediated_at: "2026-03-02T11:05:00Z"
+    notes: "All 12 tests passing - outcome capture events working"
+    
+  - id: "final-integration-standalone"
+    file: "tests/test_final_integration.py"
+    status: "PASSING"
+    remediated_at: "2026-03-02T11:06:00Z"
+    notes: "3 tests passing - split daemon-dependent tests to separate file"
+    
+  - id: "mvp31-shrinkage"
+    file: "tests/test_mvp31_shrinkage.py"
+    status: "PASSING"
+    remediated_at: "2026-03-02T11:07:00Z"
+    notes: "10 tests passing - shrinkage alpha calculations working"
+    
+  - id: "mvp31-learning"
+    file: "tests/test_mvp31_learning.py"
+    status: "PASSING"
+    remediated_at: "2026-03-02T11:07:00Z"
+    notes: "7 tests passing - residual and global learning rates working"
+    
+  - id: "mvp31-target-isolation"
+    file: "tests/test_mvp31_target_isolation.py"
+    status: "PASSING"
+    remediated_at: "2026-03-02T11:07:00Z"
+    notes: "2 tests passing - target isolation working"
+    
+  - id: "mvp31-explanation"
+    file: "tests/test_mvp31_explanation.py"
+    status: "PASSING"
+    remediated_at: "2026-03-02T11:07:00Z"
+    notes: "8 tests passing - explanation generation working"
+    
+  - id: "comprehensive-fixed"
+    file: "tests/test_comprehensive_fixed.py"
+    status: "PASSING"
+    remediated_at: "2026-03-02T11:08:00Z"
+    notes: "25 tests passing - comprehensive suite working"
+    
+  - id: "comprehensive-suite"
+    file: "tests/test_comprehensive_suite.py"
+    status: "PASSING"
+    remediated_at: "2026-03-02T11:08:00Z"
+    notes: "21 tests passing - comprehensive suite working"
+
+governance_rules:
+  - rule: "Total quarantine count must decrease over time"
+  - rule: "New skips require explicit review and approval"
+  - rule: "Each skip must have target_version and remediation plan"
+  - rule: "High-risk skips must be addressed within next milestone"
+  - rule: "CI should fail if quarantine count increases"
+
+ci_gate_config:
+  max_allowed_skips: 10
+  fail_on_increase: true
+  require_remediation_plan: true
+  high_risk_threshold: "MVP-7.2"

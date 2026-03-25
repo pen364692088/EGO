@@ -1,0 +1,387 @@
+"""
+Final integration tests for daemon-dependent functionality.
+These tests require the actual emotiond daemon to be running.
+Moved from test_final_integration.py to separate daemon-dependent tests.
+"""
+
+import os
+import sys
+import time
+import subprocess
+import requests
+import json
+import socket
+from pathlib import Path
+import pytest
+
+# Add project root to path
+sys.path.insert(0, str(Path(__file__).parent.parent))
+
+from openclaw_skill.emotion_core.skill import check_daemon_health, send_event, get_plan, process_user_message, process_assistant_reply
+
+# Real daemon port
+DAEMON_PORT = 18080
+
+
+def is_port_in_use(port, host='127.0.0.1'):
+    """Check if a port is already in use."""
+    with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+        return s.connect_ex((host, port)) == 0
+
+
+def kill_process_on_port(port):
+    """Kill any process using the specified port."""
+    try:
+        result = subprocess.run(
+            ['lsof', '-t', '-i', f':{port}'],
+            capture_output=True, text=True
+        )
+        if result.stdout.strip():
+            pids = result.stdout.strip().split('\n')
+            for pid in pids:
+                try:
+                    subprocess.run(['kill', '-9', pid], capture_output=True)
+                except Exception:
+                    pass
+        time.sleep(0.5)
+    except Exception:
+        pass
+
+
+class TestDaemonIntegration:
+    """Tests requiring the actual emotiond daemon."""
+
+    def test_daemon_startup_and_health(self):
+        """Test daemon starts up and responds to health checks."""
+        kill_process_on_port(DAEMON_PORT)
+        
+        daemon_process = subprocess.Popen(
+            [".venv/bin/python", "scripts/run_daemon.py"],
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            cwd=Path(__file__).parent.parent
+        )
+        
+        try:
+            # Wait for daemon to start
+            time.sleep(5)
+            
+            # Test health endpoint
+            response = requests.get(f"http://127.0.0.1:{DAEMON_PORT}/health", timeout=10)
+            assert response.status_code == 200
+            
+            health = response.json()
+            assert "status" in health
+            assert health["status"] == "healthy"
+            
+        finally:
+            daemon_process.terminate()
+            try:
+                daemon_process.wait(timeout=5)
+            except subprocess.TimeoutExpired:
+                daemon_process.kill()
+                daemon_process.wait()
+            kill_process_on_port(DAEMON_PORT)
+
+    def test_api_endpoints_accessible(self):
+        """Test that all API endpoints are accessible and return proper responses."""
+        kill_process_on_port(DAEMON_PORT)
+        
+        daemon_process = subprocess.Popen(
+            [".venv/bin/python", "scripts/run_daemon.py"],
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            cwd=Path(__file__).parent.parent
+        )
+        
+        try:
+            time.sleep(5)
+            
+            # Test event endpoint - accept 200 or 201 (both are valid for creation)
+            event_data = {
+                "type": "user_message",
+                "actor": "test_user",
+                "target": "assistant",
+                "text": "Hello, how are you?"
+            }
+            response = requests.post(f"http://127.0.0.1:{DAEMON_PORT}/event", json=event_data, timeout=10)
+            assert response.status_code in [200, 201], f"Expected 200 or 201, got {response.status_code}"
+            
+            # Test plan endpoint
+            plan_data = {
+                "user_id": "test_user",
+                "user_text": "Hello, how are you?"
+            }
+            response = requests.post(f"http://127.0.0.1:{DAEMON_PORT}/plan", json=plan_data, timeout=10)
+            assert response.status_code == 200
+            plan = response.json()
+            
+            # Verify plan structure
+            required_fields = ["tone", "intent", "focus_target", "key_points", 
+                             "constraints", "emotion", "relationship"]
+            for field in required_fields:
+                assert field in plan, f"Missing field: {field}"
+            
+            # Verify emotion ranges
+            assert -1 <= plan["emotion"]["valence"] <= 1
+            assert 0 <= plan["emotion"]["arousal"] <= 1
+            
+        finally:
+            daemon_process.terminate()
+            try:
+                daemon_process.wait(timeout=5)
+            except subprocess.TimeoutExpired:
+                daemon_process.kill()
+                daemon_process.wait()
+            kill_process_on_port(DAEMON_PORT)
+
+    def test_openclaw_skill_integration(self):
+        """Test OpenClaw skill integration with the daemon."""
+        kill_process_on_port(DAEMON_PORT)
+        
+        daemon_process = subprocess.Popen(
+            [".venv/bin/python", "scripts/run_daemon.py"],
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            cwd=Path(__file__).parent.parent
+        )
+        
+        try:
+            time.sleep(5)
+            
+            # Test skill health check
+            health = check_daemon_health()
+            assert health is not None
+            assert health.get("status") == "healthy"
+            
+            # Test event sending
+            event_result = send_event({
+                "type": "user_message",
+                "actor": "test_user",
+                "target": "assistant",
+                "text": "Test message for skill integration"
+            })
+            assert event_result.get("success") is True
+            
+            # Test plan generation
+            plan = get_plan("test_user", "Test message for skill integration")
+            assert plan is not None
+            assert "emotion" in plan
+            
+        finally:
+            daemon_process.terminate()
+            try:
+                daemon_process.wait(timeout=5)
+            except subprocess.TimeoutExpired:
+                daemon_process.kill()
+                daemon_process.wait()
+            kill_process_on_port(DAEMON_PORT)
+
+    def test_emotion_state_persistence(self):
+        """Test that emotion state persists across multiple interactions."""
+        kill_process_on_port(DAEMON_PORT)
+        
+        daemon_process = subprocess.Popen(
+            [".venv/bin/python", "scripts/run_daemon.py"],
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            cwd=Path(__file__).parent.parent
+        )
+        
+        try:
+            time.sleep(5)
+            
+            # Send a series of events that should affect emotional state
+            events = [
+                {"type": "user_message", "actor": "user1", "target": "assistant", "text": "I'm feeling happy today!"},
+                {"type": "assistant_reply", "actor": "assistant", "target": "user1", "text": "That's wonderful to hear!"},
+                {"type": "user_message", "actor": "user1", "target": "assistant", "text": "Yes, the sun is shining and everything is great."},
+            ]
+            
+            for event in events:
+                response = requests.post(f"http://127.0.0.1:{DAEMON_PORT}/event", json=event, timeout=10)
+                assert response.status_code in [200, 201]
+            
+            # Get plan and check emotional state reflects the conversation
+            plan_data = {
+                "user_id": "user1",
+                "user_text": "How are you feeling about our conversation?"
+            }
+            response = requests.post(f"http://127.0.0.1:{DAEMON_PORT}/plan", json=plan_data, timeout=10)
+            assert response.status_code == 200
+            
+            plan = response.json()
+            emotion = plan.get("emotion", {})
+            
+            # Should have positive valence due to happy conversation
+            assert emotion.get("valence", 0) > 0
+            assert "arousal" in emotion
+            
+        finally:
+            daemon_process.terminate()
+            try:
+                daemon_process.wait(timeout=5)
+            except subprocess.TimeoutExpired:
+                daemon_process.kill()
+                daemon_process.wait()
+            kill_process_on_port(DAEMON_PORT)
+
+    def test_complete_workflow(self):
+        """Test complete workflow: daemon startup -> user interaction -> plan generation."""
+        kill_process_on_port(DAEMON_PORT)
+        
+        daemon_process = subprocess.Popen(
+            [".venv/bin/python", "scripts/run_daemon.py"],
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            cwd=Path(__file__).parent.parent
+        )
+        
+        try:
+            time.sleep(5)
+            
+            # Simulate conversation flow
+            conversation_steps = [
+                ("user_message", "user1", "Hello, nice to meet you!"),
+                ("assistant_reply", "assistant", "Nice to meet you too!"),
+                ("user_message", "user1", "How are you feeling today?"),
+                ("assistant_reply", "assistant", "I'm doing well, thanks for asking!"),
+            ]
+            
+            plans = []
+            for event_type, actor, text in conversation_steps:
+                # Send event
+                event_data = {
+                    "type": event_type,
+                    "actor": actor,
+                    "target": "assistant",
+                    "text": text
+                }
+                response = requests.post(f"http://127.0.0.1:{DAEMON_PORT}/event", json=event_data, timeout=10)
+                assert response.status_code in [200, 201]
+                
+                # Get plan
+                if event_type == "user_message":
+                    plan_data = {
+                        "user_id": actor,
+                        "user_text": text
+                    }
+                    response = requests.post(f"http://127.0.0.1:{DAEMON_PORT}/plan", json=plan_data, timeout=10)
+                    assert response.status_code == 200
+                    plan = response.json()
+                    plans.append(plan)
+            
+            # Verify we got plans and they have emotional content
+            assert len(plans) >= 2
+            for plan in plans:
+                assert "emotion" in plan
+                assert "valence" in plan["emotion"]
+                assert "arousal" in plan["emotion"]
+                
+        finally:
+            daemon_process.terminate()
+            try:
+                daemon_process.wait(timeout=5)
+            except subprocess.TimeoutExpired:
+                daemon_process.kill()
+                daemon_process.wait()
+            kill_process_on_port(DAEMON_PORT)
+
+
+class TestPerformanceAndStability:
+    """Performance and stability tests for the emotiond system."""
+
+    def test_daemon_stability_under_load(self):
+        """Test that the daemon remains stable under moderate load."""
+        kill_process_on_port(DAEMON_PORT)
+        
+        daemon_process = subprocess.Popen(
+            [".venv/bin/python", "scripts/run_daemon.py"],
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            cwd=Path(__file__).parent.parent
+        )
+        
+        try:
+            time.sleep(5)
+            
+            # Send multiple rapid requests
+            for i in range(10):
+                event_data = {
+                    "type": "user_message",
+                    "actor": f"load_user_{i}",
+                    "target": "assistant",
+                    "text": f"Test message {i}"
+                }
+                response = requests.post(f"http://127.0.0.1:{DAEMON_PORT}/event", json=event_data, timeout=10)
+                assert response.status_code in [200, 201]
+                
+                plan_data = {
+                    "user_id": f"load_user_{i}",
+                    "user_text": f"Test message {i}"
+                }
+                response = requests.post(f"http://127.0.0.1:{DAEMON_PORT}/plan", json=plan_data, timeout=10)
+                assert response.status_code == 200
+            
+            # Health should still work
+            response = requests.get(f"http://127.0.0.1:{DAEMON_PORT}/health", timeout=10)
+            assert response.status_code == 200
+            
+        finally:
+            daemon_process.terminate()
+            try:
+                daemon_process.wait(timeout=5)
+            except subprocess.TimeoutExpired:
+                daemon_process.kill()
+                daemon_process.wait()
+            kill_process_on_port(DAEMON_PORT)
+
+    def test_memory_usage_stability(self):
+        """Test that memory usage remains stable during extended operation."""
+        kill_process_on_port(DAEMON_PORT)
+        
+        daemon_process = subprocess.Popen(
+            [".venv/bin/python", "scripts/run_daemon.py"],
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            cwd=Path(__file__).parent.parent
+        )
+        
+        try:
+            time.sleep(5)
+            
+            # Get initial memory usage
+            import psutil
+            initial_memory = psutil.Process(daemon_process.pid).memory_info().rss
+            
+            # Generate many events and plans
+            for cycle in range(5):
+                for i in range(20):
+                    event_data = {
+                        "type": "user_message",
+                        "actor": f"memory_user_{cycle}_{i}",
+                        "target": "assistant",
+                        "text": f"Memory test message {cycle}-{i}"
+                    }
+                    response = requests.post(f"http://127.0.0.1:{DAEMON_PORT}/event", json=event_data, timeout=10)
+                    assert response.status_code in [200, 201]
+                
+                # Check memory after each cycle
+                current_memory = psutil.Process(daemon_process.pid).memory_info().rss
+                memory_increase = current_memory - initial_memory
+                
+                # Memory increase should be reasonable (< 100MB)
+                assert memory_increase < 100 * 1024 * 1024, f"Memory increased by {memory_increase / 1024 / 1024:.1f}MB"
+            
+        finally:
+            daemon_process.terminate()
+            try:
+                daemon_process.wait(timeout=5)
+            except subprocess.TimeoutExpired:
+                daemon_process.kill()
+                daemon_process.wait()
+            kill_process_on_port(DAEMON_PORT)
+
+
+if __name__ == '__main__':
+    pytest.main([__file__, '-v'])

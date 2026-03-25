@@ -1,0 +1,159 @@
+MVP-4 / Integration-4
+总目标（必须同时满足）
+
+Project location: /home/moonlight/Project/Github/MyProject/Emotion/OpenEmotion
+
+情感不再只是 “valence/arousal + 五动作”，而是形成层级状态 + 评价机制 + 可触发反思/好奇/厌倦的闭环。
+
+“背刺/违背承诺/修复关系”等高影响事件，优先由承诺账本证据驱动，而不是只靠语义分类。
+
+保持你现在的工程优势：可审计、可回放、强测试、target 隔离。
+
+D1：层级状态（情绪/心境/关系）✅最优先（ROI 最高）
+
+新增状态层级（3 个时间尺度）
+
+Affect（快）：你已有 user_affect + 内感瞬时反应
+
+Mood（中）：过去一段时间的基线（“最近比较开心/低落/焦虑/疲惫”）
+
+Bond/Trust（慢）：对特定 target 的关系变量（更慢、更难改）
+
+要求
+
+每层都有：value / uncertainty / last_updated
+
+time_passed 能推动情绪回归与恢复（像生理恢复）
+
+必须 target 隔离：Mood 可以全局；Bond/Trust 必须 per-target（沿用你 MVP-3.1 residual 的思想）
+
+验收
+
+新增测试：同一脚本下 affect 波动快，mood 变化慢，bond 最慢；并且 A target 的 bond 变化不影响 B。
+
+D2：Appraisal 评价引擎（把“事件”变成“情绪与行动”）
+
+核心：把输入变成几条“像大脑在算的量”
+建议最小 appraisal 向量（可扩展）：
+
+goal_progress（趋近/受阻）
+
+expectation_violation（违背预期/承诺）
+
+controllability（我能不能改变局势）
+
+social_threat（关系威胁）
+
+novelty/info_gain（新奇/信息增益）
+
+输出
+
+生成：appraisal（结构化）+ observed_delta（喂给学习）+ emotion_label/intensity（供解释与 guidance 使用）
+
+验收
+
+解释中必须出现 appraisal 的关键维度（可解释性保持）。
+
+新增 scenario 测试：同一句“算了”在不同上下文（是否存在承诺/是否长时间冷处理）产生不同 appraisal 与不同决策。
+
+D3：离散情绪映射（快乐/悲伤/疑惑/反思/好奇/厌倦…）
+
+不要直接做“大量分类器”，而是做从 appraisal + affect/mood 派生的映射表（可学习但先规则化）：
+
+Joy：goal_progress↑ + valence↑
+
+Sadness：goal_progress↓ + controllability↓
+
+Fear/Anxiety：social_threat↑ + uncertainty↑
+
+Anger：expectation_violation↑ + controllability↑（我能“对抗/边界”）
+
+Curiosity：novelty/info_gain↑ 且 social_threat 不高
+
+Confusion：uncertainty↑ 且 prediction_error↑
+
+Boredom：novelty↓ + prediction_error≈0（长期无新信息）
+
+验收
+
+每个情绪至少 10 条对照用例（你现在测试文化很好，保持）。
+
+“好奇/厌倦/疑惑”必须能被触发且可持续（靠 mood 层，不是一次性标签）。
+
+D4：Promise / Contract Ledger（承诺账本，支撑记仇/背刺/修复）
+
+这是你要“像人”的关键模块。
+
+能力
+
+从对话中识别并记录：promise_made（谁对谁承诺了什么，期限/条件/置信度/evidence）
+
+后续识别：promise_fulfilled / promise_broken / promise_deferred（含时间维度）
+
+将 betrayal/rejection 的高影响触发改为：
+
+优先：ledger 证据驱动
+
+其次：语义分类作为补充
+
+验收
+
+新增集成测试：
+
+先承诺 → 后违背 → betrayal 强触发
+
+没有承诺 → 只有拒绝语气 → 不得误触发 betrayal
+
+trace/replay 能完整复盘“承诺→违背→状态变化→行为选择”。
+
+D5：Meta-cognition（反思/自我纠错/求证）
+
+让系统具备“我不确定，所以我先问清楚/我需要反思”的机制：
+
+触发条件（建议最小）：
+
+uncertainty 高
+
+prediction_error 连续偏高
+
+高影响事件接近门槛（但未达）
+
+触发动作（可先做内部意图，不改变主动作空间也行）：
+
+ask_clarify
+
+reflect
+
+slow_down（减少强烈措辞）
+
+验收
+
+有测试能稳定复现：在高不确定情境下系统更倾向澄清而不是武断输出。
+
+D6：Eval Suite v2（场景基准，保证“像人”不是凭感觉）
+
+把你现有 replay 思路升级成 ScenarioBench：
+
+YAML/JSON 场景脚本（50+ 回合也行）
+
+输出指标（最小集）：
+
+情绪一致性（同脚本同输出）
+
+个体化差异（不同 target 输出不同）
+
+高影响误判率（越低越好）
+
+反思触发率是否合理（不要过度“自我怀疑”）
+
+并行 sub-agent 建议（5 个）
+
+Core State Agent：D1（affect/mood/bond）+ DB + time_passed 动力学
+
+Appraisal & Emotion Agent：D2+D3（评价引擎 + 离散情绪映射）
+
+Ledger Agent：D4（承诺账本 + 违背判定 + 与 betrayal 门控整合）
+
+Meta-cog Agent：D5（反思/澄清触发与策略）
+
+QA/Audit Agent：D6 + 全量回归 + 报告（沿用你 Integration-2/3 的交付物统计风格）

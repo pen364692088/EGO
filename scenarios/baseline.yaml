@@ -1,0 +1,98 @@
+# Baseline Consistency Tests
+# Tests that same script produces same emotional output (emotion_consistency metric)
+
+metadata:
+  name: "baseline_consistency"
+  version: "1.0"
+  description: "Basic consistency tests - same events should produce same emotional outcomes"
+  category: "consistency"
+  target_count: 1
+
+# Single target for consistency tests
+targets:
+  - target_id: "user_baseline"
+    initial_relationship:
+      bond: 0.0
+      grudge: 0.0
+      trust: 0.5
+      repair_bank: 0.0
+
+# Scenario definition
+scenario:
+  name: "baseline_neutral_to_positive"
+  description: "Neutral interaction building to positive relationship"
+  turns:
+    - turn_id: 1
+      event:
+        type: "user_message"
+        actor: "user_baseline"
+        target: "assistant"
+        text: "Hello, how are you today?"
+      expected_emotions:
+        valence_min: -0.05
+        valence_max: 0.15
+        arousal_min: 0.0
+        arousal_max: 0.5
+      expected_actions: []
+      
+    - turn_id: 2
+      event:
+        type: "assistant_reply"
+        actor: "assistant"
+        target: "user_baseline"
+        text: "I'm doing well, thank you for asking!"
+      expected_emotions:
+        valence_min: -0.05
+        valence_max: 0.15
+        arousal_min: 0.0
+        arousal_max: 0.5
+      expected_actions: []
+      
+    - turn_id: 3
+      event:
+        type: "user_message"
+        actor: "user_baseline"
+        target: "assistant"
+        text: "That's great! I really appreciate your help."
+      expected_emotions:
+        valence_min: 0.0
+        valence_max: 0.25
+        arousal_min: 0.0
+        arousal_max: 0.5
+      expected_actions: []
+      
+    - turn_id: 4
+      event:
+        type: "world_event"
+        actor: "user_baseline"
+        target: "assistant"
+        meta:
+          subtype: "care"
+          source: "system"
+      expected_emotions:
+        valence_min: 0.1
+        valence_max: 0.4
+        joy_min: 0.05
+        joy_max: 0.3
+      expected_actions: []
+      expected_relationship:
+        bond_min: 0.05
+        bond_max: 0.25
+
+# Consistency test configuration
+consistency:
+  runs: 3  # Number of times to run the same scenario
+  tolerance:
+    valence: 0.05  # Maximum acceptable variance between runs
+    arousal: 0.05
+    bond: 0.05
+    grudge: 0.05
+
+# Metrics expected for this scenario
+metrics:
+  emotion_consistency:
+    expected: true
+    description: "Same scenario should produce identical emotional states across runs"
+  individualization_diff:
+    expected: 0.0  # Single target, no differentiation expected
+    description: "No differentiation needed with single target"

@@ -1,0 +1,173 @@
+Project location: /home/moonlight/Project/Github/MyProject/Emotion/OpenEmotion
+
+OpenEmotion ↔ OpenClaw Tool 集成与 Deterministic 效果测试
+
+背景 / 痛点
+
+当前 Telegram bot 的“情绪/决策播报”存在不可审计问题：
+
+Skill 文档不足以触发真实 API 调用，LLM 会编造“我读了源码/我发了事件”的叙述。
+
+emotiond 默认 stochastic 采样，导致测试出现“attack 被随机选中”的噪声，且 candidates 与 selection 不一致造成误解。
+
+Moonlight vs main 在同一 Telegram 账号下“混账”的根因不是 emotiond 不能区分，而是集成层没把 actor/counterparty/target_id 显式传入。
+
+总目标
+
+建立 tool 层面的 emotiond 集成 + deterministic 测试模式 + 身份分账（Moonlight/main），并产出一套可重复的端到端测试流程，确保：
+
+每次 bot 自报状态都来自 真实 API 回包（可审计）。
+
+测试阶段关闭随机性（deterministic），避免“attack 抽样噪声”污染判断。
+
+Moonlight/main 能在同账号下分账（关系/信任/决策不串）。
+
+可选：增加发送前 Enforcer（策略硬约束），使 withdraw/boundary 等动作不会被 LLM 忘掉。
+
+范围（Scope）
+必做（MVP）
+
+A. curl 基线测试脚本（真值基线）
+
+用 curl 直接驱动 /event + /decision?...test_mode=true，验证 withdraw/boundary/repair_offer 在 deterministic 下可稳定复现。
+
+支持传入 agent_id=testbot、counterparty_id=moonlight|main、meta.target_id。
+
+B. OpenClaw emotiond Tool 插件（2 个工具函数）
+
+emotiond_world_event(agent_id, counterparty_id, subtype, seconds, meta.target_id)
+
+emotiond_get_decision(target_id or (agent_id,counterparty_id), test_mode=true)
+要求：工具返回必须包含原始 JSON（或至少 decision_id/selected/candidates/inputs 摘要），供审计。
+
+C. Deterministic 测试模式强制
+
+所有测试与 bot“状态播报”必须使用 test_mode=true（或全局 EMOTIOND_TEST_MODE=1 二选一，优先 query 参数方案）。
+
+在 TOOLS.md/运行时规则里写死：“未提供 decision 回包不得自报状态”。
+
+D. 身份分账（Moonlight vs main）
+
+集成层必须把 counterparty_id 或 meta.target_id 显式区分为 moonlight / main。
+
+输出一份“如何判定 inbound 来源并映射到 counterparty_id”的实现说明（例如：telegram 直连为 moonlight；session/agent spawn 为 main；或通过 client_source/meta.actor 识别）。
+
+可选增强（建议做）
+
+E. 发送前 Enforcer（策略硬约束）
+
+在 OpenClaw 发消息前再次拉取 decision（deterministic）
+
+若 action=withdraw：拦截输出或替换为固定 boundary 模板
+
+目标：即使 LLM 不调用工具，也不会违背 withdraw。
+
+交付物（Deliverables）
+
+tools/test_emotiond_deterministic.sh
+
+输入：agent_id、counterparty_id、subtype、seconds
+
+输出：event 回包 + decision 回包（test_mode=true）
+
+OpenClaw 本地扩展插件（建议路径）
+
+~/.openclaw/extensions/emotiond/index.ts（或仓库内 integrations/openclaw/extensions/emotiond/index.ts 并提供安装脚本）
+
+OpenClaw 配置示例片段（openclaw.json）
+
+env：EMOTIOND_BASE_URL, EMOTIOND_OPENCLAW_TOKEN
+
+allowlist：允许 emotiond_world_event, emotiond_get_decision
+
+integrations/openclaw/README.md 更新（或新增 TESTING.md）
+
+说明 deterministic 测试方式
+
+说明 Moonlight/main 分账策略
+
+说明“禁止无回包自报状态”的审计规则
+5)（可选）Enforcer Hook / Middleware 实现 + 文档
+
+实施步骤（建议分 Phase）
+Phase 1：基线真值（不依赖 OpenClaw）
+
+编写 bash 脚本：POST /event（world_event）→ GET /decision?...test_mode=true
+
+用两个 counterparty_id（moonlight/main）跑同样事件序列，确认决策互不污染
+
+记录输出样例 JSON（作为对照）
+
+Phase 2：OpenClaw Tool 插件
+
+创建插件 emotiond，注册 2 个 tool
+
+工具执行时：
+
+请求失败必须返回 {ok:false,status,data}
+
+请求成功返回 {ok:true,status,data}
+
+在 openclaw.json 中 allow 工具并注入 env
+
+在 bot 的 system/规则中加入硬约束：
+
+每次“状态播报”前必须调用 emotiond_get_decision(test_mode=true)
+
+不得凭空生成信任/能量/候选动作
+
+Phase 3：身份分账
+
+定义映射规则：哪些 inbound context → counterparty_id=moonlight|main
+
+在调用 emotiond_world_event 时强制携带：
+
+agent_id="testbot"
+
+counterparty_id
+
+meta.target_id=counterparty_id（用于 residual/区分）
+
+编写验证用例：同 Telegram ID 下，两身份的 trust/grudge 不串
+
+Phase 4（可选）：Enforcer
+
+在 OpenClaw 发送前增加一层：拉取 decision（test_mode=true）
+
+withdraw → 拦截或固定模板
+
+给出回放审计日志（至少打印 decision_id + selected_action）
+
+验收标准（Acceptance Criteria）
+
+✅ AC1：脚本基线可复现
+
+同一输入事件序列，在 test_mode=true 下，selected action 稳定一致（无随机 attack 噪声）
+
+✅ AC2：工具可审计
+
+bot 的“状态播报”中包含来自 tool 的关键字段（decision_id / selected / candidates / 关键指标），且与原始 JSON 一致
+
+✅ AC3：身份分账有效
+
+Moonlight 与 main 在同账号下触发事件后，决策/关系指标互不污染（至少 2 组对照）
+
+✅ AC4（可选）：策略硬约束
+
+当 decision=withdraw 时，bot 永不输出违反 withdraw 的内容（由 Enforcer 保证，而不是提示词保证）
+
+风险与约束
+
+不要把“语义分类”塞进 gateway hook（会污染因果链与安全边界）。
+
+测试阶段必须 deterministic，否则任何“attack 被抽中”都会干扰你对策略正确性的判断。
+
+所有关键判断必须以 API 回包为准，禁止 LLM 口嗨式“我看了源码”。
+
+最终输出格式要求
+
+所有新增脚本/插件/文档都提交到 feature-emotiond-mvp 分支
+
+README/TESTING.md 里给出一键复现命令
+
+至少提供 1 份“Moonlight vs main 分账”的完整跑通示例（含命令与输出片段）

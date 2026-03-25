@@ -1,0 +1,83 @@
+{
+  "shadow_log_entry": {
+    "timestamp": "2026-03-06T09:30:03.192736+00:00",
+    "session_id": "",
+    "mode": "interpreted",
+    "self_report_detected": false,
+    "violation": false,
+    "violation_type": null,
+    "violation_severity": null,
+    "allowed_claim_used": false,
+    "allowed_claim_text": null,
+    "numeric_attempt": false,
+    "confidence": 0.98,
+    "would_block": false,
+    "shadow_mode": true,
+    "sampled_for_review": true
+  },
+  "llm_response": "response 27",
+  "contract": {
+    "raw_state": {
+      "affect": {
+        "joy": 0.0,
+        "loneliness": 0.21,
+        "anxiety": 0.0
+      },
+      "mood": {
+        "joy": 0.0,
+        "loneliness": 0.15
+      },
+      "bonds": {
+        "telegram:8420019401": {
+          "bond": 1.0,
+          "trust": 0.6
+        }
+      }
+    },
+    "report_policy": {
+      "mode": "interpreted",
+      "allowed_claims": [
+        "当前没有明显愉悦激活",
+        "仍存在一定连接需求",
+        "没有明显焦虑",
+        "近期愉悦基调不明显",
+        "近期存在一定连接需求",
+        "与该用户的连接较强",
+        "信任处于中等偏高水平"
+      ],
+      "forbidden_claims": [
+        "不要声称 joy 上升",
+        "不要声称'我更开心了'",
+        "不要声称愉悦感增加",
+        "不要声称孤独感已经消失",
+        "不要声称'我不再孤独'",
+        "不要声称任何未在 allowed_claims 中列出的情绪状态",
+        "不要声称具体数值"
+      ]
+    },
+    "metadata": {
+      "generated_at": 1772789403.1926997,
+      "schema_version": "v1"
+    }
+  },
+  "result": {
+    "status": "ok",
+    "violations": [],
+    "session_id": "",
+    "contract_mode": "interpreted",
+    "llm_response_preview": "response 27",
+    "timestamp": "2026-03-06T09:30:03.192736+00:00",
+    "severity": "ok",
+    "confidence_score": 0.98,
+    "violation_count": 0,
+    "self_report_detected": false,
+    "numeric_attempt": false,
+    "allowed_claim_used": false,
+    "would_block": false,
+    "shadow_mode": true,
+    "sampled_for_review": true
+  },
+  "review_status": "pending",
+  "reviewed_at": null,
+  "reviewer_notes": ""
+}

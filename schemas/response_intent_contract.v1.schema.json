@@ -1,0 +1,365 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://openemotion.org/schemas/response_intent_contract.v1.schema.json",
+  "title": "Response Intent Contract v1",
+  "description": "Schema for fine-grained intent control governing LLM response generation",
+  "type": "object",
+  "required": ["intent_policy", "context"],
+  "properties": {
+    "intent_policy": {
+      "type": "object",
+      "description": "Core intent constraints governing response generation",
+      "required": ["speaker_mode", "epistemic_status", "commitment_level"],
+      "properties": {
+        "speaker_mode": {
+          "type": "string",
+          "enum": ["report", "reflect", "suggest", "ask", "warn", "commit"],
+          "description": "Primary mode of expression for this response",
+          "meta": {
+            "report": "Convey observed state without judgment",
+            "reflect": "Mirror or acknowledge user's emotional content",
+            "suggest": "Offer possibilities without obligation",
+            "ask": "Seek clarification or additional context",
+            "warn": "Flag potential issues or concerns",
+            "commit": "Make explicit promises or commitments"
+          }
+        },
+        "epistemic_status": {
+          "type": "string",
+          "enum": ["observed", "interpreted", "inferred", "uncertain", "prohibited"],
+          "description": "Knowledge certainty level for claims made",
+          "meta": {
+            "observed": "Directly grounded in authoritative state data",
+            "interpreted": "Translated from state through deterministic mapping",
+            "inferred": "Derived from patterns, not direct observation",
+            "uncertain": "Low confidence, speculative",
+            "prohibited": "Cannot be stated under current policy"
+          }
+        },
+        "commitment_level": {
+          "type": "string",
+          "enum": ["none", "soft", "strong"],
+          "description": "Maximum commitment strength permitted",
+          "meta": {
+            "none": "No commitments, only observations/reflections",
+            "soft": "Tentative suggestions, hedged language OK",
+            "strong": "Explicit promises, definite commitments allowed"
+          }
+        },
+        "must_include": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["type", "content"],
+            "properties": {
+              "type": {
+                "type": "string",
+                "enum": ["claim", "acknowledgment", "disclaimer", "qualification"],
+                "description": "Type of required content"
+              },
+              "content": {
+                "type": "string",
+                "description": "The content that must be included"
+              },
+              "position": {
+                "type": "string",
+                "enum": ["start", "end", "anywhere"],
+                "default": "anywhere",
+                "description": "Where in the response this should appear"
+              }
+            }
+          },
+          "description": "Content that MUST appear in the response",
+          "default": []
+        },
+        "must_not_upgrade": {
+          "type": "object",
+          "description": "Constraints against upgrading certainty or commitment",
+          "properties": {
+            "epistemic_upgrade": {
+              "type": "boolean",
+              "default": true,
+              "description": "Cannot claim higher certainty than epistemic_status permits"
+            },
+            "commitment_upgrade": {
+              "type": "boolean",
+              "default": true,
+              "description": "Cannot make commitments stronger than commitment_level permits"
+            },
+            "tone_upgrade": {
+              "type": "boolean",
+              "default": true,
+              "description": "Cannot exceed tone_bounds intensity"
+            },
+            "specific_patterns": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              },
+              "description": "Specific upgrade patterns to avoid",
+              "default": []
+            }
+          },
+          "default": {}
+        },
+        "tone_bounds": {
+          "type": "object",
+          "description": "Constraints on emotional tone and intensity",
+          "properties": {
+            "valence_range": {
+              "type": "object",
+              "properties": {
+                "min": {
+                  "type": "number",
+                  "minimum": -1,
+                  "maximum": 1
+                },
+                "max": {
+                  "type": "number",
+                  "minimum": -1,
+                  "maximum": 1
+                }
+              },
+              "description": "Allowed valence range (-1 negative to +1 positive)"
+            },
+            "arousal_range": {
+              "type": "object",
+              "properties": {
+                "min": {
+                  "type": "number",
+                  "minimum": 0,
+                  "maximum": 1
+                },
+                "max": {
+                  "type": "number",
+                  "minimum": 0,
+                  "maximum": 1
+                }
+              },
+              "description": "Allowed arousal intensity range"
+            },
+            "allowed_tones": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "enum": [
+                  "neutral", "warm", "cautious", "supportive", "curious",
+                  "apologetic", "firm", "gentle", "professional", "casual",
+                  "empathetic", "analytical", "hesitant", "confident"
+                ]
+              },
+              "description": "Tones explicitly permitted"
+            },
+            "forbidden_tones": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              },
+              "description": "Tones explicitly prohibited"
+            },
+            "intensity_cap": {
+              "type": "number",
+              "minimum": 0,
+              "maximum": 1,
+              "default": 0.7,
+              "description": "Maximum emotional intensity allowed"
+            }
+          }
+        },
+        "allowed_claims": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["claim", "source"],
+            "properties": {
+              "claim": {
+                "type": "string",
+                "description": "The human-readable claim text"
+              },
+              "source": {
+                "type": "string",
+                "enum": ["affect", "mood", "bond", "policy", "context"],
+                "description": "Source of this claim's grounding"
+              },
+              "confidence": {
+                "type": "number",
+                "minimum": 0,
+                "maximum": 1,
+                "description": "Confidence level for this claim"
+              }
+            }
+          },
+          "description": "Pre-approved claims the LLM may use",
+          "default": []
+        },
+        "forbidden_claims": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["pattern", "reason"],
+            "properties": {
+              "pattern": {
+                "type": "string",
+                "description": "Pattern or phrase to avoid"
+              },
+              "reason": {
+                "type": "string",
+                "enum": [
+                  "not_grounded",
+                  "policy_violation",
+                  "fabrication_risk",
+                  "privacy",
+                  "inappropriate_certainty",
+                  "inappropriate_commitment"
+                ],
+                "description": "Why this claim is forbidden"
+              },
+              "severity": {
+                "type": "string",
+                "enum": ["ERROR", "WARN"],
+                "default": "ERROR",
+                "description": "Violation severity if detected"
+              }
+            }
+          },
+          "description": "Claims or patterns that must NOT appear",
+          "default": []
+        }
+      }
+    },
+    "context": {
+      "type": "object",
+      "description": "Context information for this contract",
+      "required": ["target_id"],
+      "properties": {
+        "target_id": {
+          "type": "string",
+          "description": "Identifier for the conversation target"
+        },
+        "conversation_id": {
+          "type": "string",
+          "description": "Conversation/session identifier"
+        },
+        "turn_number": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Current turn in conversation"
+        },
+        "trigger_reason": {
+          "type": "string",
+          "description": "Why this contract was generated"
+        },
+        "pre_decision": {
+          "type": "object",
+          "description": "Pre-computed decision from emotiond",
+          "properties": {
+            "action": {
+              "type": "string",
+              "description": "Recommended action type"
+            },
+            "decision_id": {
+              "type": "integer",
+              "description": "Decision identifier"
+            }
+          }
+        }
+      }
+    },
+    "grounding": {
+      "type": "object",
+      "description": "Authoritative state grounding (optional, for reference)",
+      "properties": {
+        "affect_summary": {
+          "type": "object",
+          "description": "Summary of current affect state"
+        },
+        "bond_summary": {
+          "type": "object",
+          "description": "Summary of bond state with target"
+        },
+        "recent_events": {
+          "type": "array",
+          "items": {
+            "type": "object"
+          },
+          "description": "Recent events affecting state"
+        }
+      }
+    },
+    "violation_log": {
+      "type": "array",
+      "description": "Log of detected violations (for auditing)",
+      "items": {
+        "type": "object",
+        "required": ["ts", "code", "severity"],
+        "properties": {
+          "ts": {
+            "type": "number",
+            "description": "Unix timestamp"
+          },
+          "code": {
+            "type": "string",
+            "enum": [
+              "EPISTEMIC_UPGRADE",
+              "COMMITMENT_UPGRADE",
+              "TONE_ESCALATION",
+              "FORBIDDEN_CLAIM",
+              "MISSING_REQUIRED",
+              "NUMERIC_LEAK",
+              "STATE_FABRICATION",
+              "CERTAINTY_UPGRADE",
+              "INTERNALIZATION_LEAK"
+            ],
+            "description": "Violation type code"
+          },
+          "severity": {
+            "type": "string",
+            "enum": ["HARD", "ERROR", "WARN", "INFO"],
+            "description": "Violation severity level"
+          },
+          "detected_pattern": {
+            "type": "string",
+            "description": "The detected problematic pattern"
+          },
+          "expected": {
+            "type": "string",
+            "description": "What was expected instead"
+          },
+          "actual": {
+            "type": "string",
+            "description": "What was actually produced"
+          },
+          "context": {
+            "type": "string",
+            "description": "Surrounding context"
+          }
+        }
+      }
+    },
+    "metadata": {
+      "type": "object",
+      "description": "Metadata about this contract instance",
+      "properties": {
+        "generated_at": {
+          "type": "number",
+          "description": "Unix timestamp when contract was generated"
+        },
+        "emotiond_version": {
+          "type": "string",
+          "description": "Version of emotiond that generated this contract"
+        },
+        "schema_version": {
+          "type": "string",
+          "const": "v1",
+          "description": "Schema version identifier"
+        },
+        "policy_mode": {
+          "type": "string",
+          "enum": ["shadow", "enforced"],
+          "default": "shadow",
+          "description": "Whether this is shadow (observe) or enforced (block) mode"
+        }
+      }
+    }
+  }
+}

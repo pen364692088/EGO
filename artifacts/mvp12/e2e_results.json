@@ -1,0 +1,32 @@
+{
+  "test_name": "MVP12 T03.1: Full E2E Cycle Test",
+  "timestamp": "2026-03-13T20:17:42.969199",
+  "configuration": {
+    "total_cycles": 100,
+    "seed": 42
+  },
+  "results": {
+    "total_cycles": 100,
+    "successful_cycles": 100,
+    "failed_cycles": 0,
+    "cycle_success_rate": 1.0,
+    "total_candidates_generated": 200,
+    "total_candidates_approved": 200,
+    "candidate_pool_size": 200,
+    "sandbox_violations": 0,
+    "trigger_breakdown": {
+      "idle": 100
+    }
+  },
+  "assertions": {
+    "cycle_success_rate_threshold": 0.95,
+    "cycle_success_rate_actual": 1.0,
+    "cycle_success_rate_passed": true
+  },
+  "evidence": {
+    "cycles_file": "artifacts/mvp12/developmental_cycles.json",
+    "pool_file": "artifacts/mvp12/candidate_pool.json",
+    "traces_dir": "artifacts/mvp12/cycle_traces",
+    "metrics_file": "artifacts/mvp12/sandbox_metrics.json"
+  }
+}

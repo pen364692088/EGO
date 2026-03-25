@@ -1,0 +1,236 @@
+{
+  "event_id": "evt_916774032796",
+  "trace_id": "trace_run_20260316_122521_27b3a2bc_case_1",
+  "case_id": "case_1",
+  "timestamp": "2026-03-16T12:25:21.437915+00:00",
+  "openemotion_result": {
+    "status": "processed",
+    "valence": 0.0,
+    "arousal": 0.3,
+    "prediction_error": 0.0,
+    "memory_strength": 1.09,
+    "regulation_budget": 1.0,
+    "social_safety": 0.6,
+    "energy": 0.7,
+    "uncertainty": 0.45,
+    "energy_budget": 1.0,
+    "budget_deltas": [],
+    "fatigue_level": "energized",
+    "appraisal": {
+      "goal_progress": 0.0,
+      "expectation_violation": 0.0,
+      "controllability": 0.5,
+      "social_threat": 0.0,
+      "novelty": 0.0,
+      "observed_delta": {
+        "safety": 0.0,
+        "energy": 0.0
+      },
+      "emotion_label": "boredom",
+      "intensity": 0.242,
+      "reasoning": [
+        "goal_progress: Base goal_progress from neutral: 0.00",
+        "expectation_violation: Base expectation_violation: 0.00",
+        "controllability: User message - moderate control via response",
+        "social_threat: Base social_threat: 0.00",
+        "novelty: Base novelty: 0.00"
+      ]
+    },
+    "body_trace": {
+      "global_body_delta": {
+        "energy": -0.02,
+        "social_need": -0.03,
+        "focus_fatigue": 0.01
+      },
+      "target_residual_delta": null,
+      "shrinkage_weight": null
+    },
+    "precision_snapshot": {
+      "w_action": 0.5,
+      "w_memory": 0.3,
+      "w_explore": 0.3
+    },
+    "self_conflict": 0.42,
+    "self_model_hash": "17d0b56a4b0f5489bd366340206782a8f9b7c74e983856f438d91363fe1ffa31",
+    "self_model_result": {
+      "delta": {},
+      "self_conflict": 0.42,
+      "evidence": {
+        "event_type": "user_message",
+        "event_meta": {
+          "trace_id": "trace_run_20260316_122521_27b3a2bc_case_1",
+          "case_id": "case_1",
+          "event_id": "evt_916774032796"
+        },
+        "relationship_state": {
+          "bond": 0.0,
+          "grudge": 0.0,
+          "trust": 0.0,
+          "repair_bank": 0.0,
+          "uncertainty": 0.45
+        },
+        "conflict_components": {
+          "value_conflict": 0.3,
+          "capability_conflict": 0.3,
+          "identity_conflict": 0.7
+        }
+      },
+      "old_state": {
+        "bodily": {
+          "energy": 0.7,
+          "social_safety": 0.6,
+          "focus_fatigue": 0.0
+        },
+        "relational": {
+          "focus_target": "test_user_1",
+          "bond": 0.5,
+          "grudge": 0.0,
+          "trust": 0.5,
+          "repair_bank": 0.0,
+          "ledger_summary": {}
+        },
+        "cognitive": {
+          "confidence": 0.5,
+          "uncertainty": 0.5,
+          "regulation_budget": 1.0
+        },
+        "identity": {
+          "traits": [
+            "calm",
+            "direct",
+            "pragmatic"
+          ],
+          "value_weights": {}
+        },
+        "updated_at": 1773663921.4623978
+      },
+      "new_state": {
+        "bodily": {
+          "energy": 0.7,
+          "social_safety": 0.6,
+          "focus_fatigue": 0.0
+        },
+        "relational": {
+          "focus_target": "test_user_1",
+          "bond": 0.5,
+          "grudge": 0.0,
+          "trust": 0.5,
+          "repair_bank": 0.0,
+          "ledger_summary": {}
+        },
+        "cognitive": {
+          "confidence": 0.5,
+          "uncertainty": 0.5,
+          "regulation_budget": 1.0
+        },
+        "identity": {
+          "traits": [
+            "calm",
+            "direct",
+            "pragmatic"
+          ],
+          "value_weights": {}
+        },
+        "updated_at": 1773663921.4624214
+      }
+    },
+    "self_report": {
+      "schema_version": "mvp8.v1",
+      "generated_at": "2026-03-16T12:25:21+00:00",
+      "seed": 0,
+      "target_id": "default",
+      "counterparty_id": "test_user_1",
+      "event": {
+        "type": "user_message",
+        "actor": "test_user_1",
+        "target": "assistant",
+        "text": "",
+        "meta": {
+          "trace_id": "trace_run_20260316_122521_27b3a2bc_case_1",
+          "case_id": "case_1",
+          "event_id": "evt_916774032796"
+        }
+      },
+      "state_snapshot": {
+        "valence": 0.0,
+        "arousal": 0.3,
+        "prediction_error": 0.0,
+        "social_safety": 0.6,
+        "energy": 0.7,
+        "uncertainty": 0.45,
+        "energy_budget": 1.0
+      },
+      "appraisal": {
+        "goal_progress": 0.0,
+        "expectation_violation": 0.0,
+        "controllability": 0.5,
+        "social_threat": 0.0,
+        "novelty": 0.0,
+        "observed_delta": {
+          "safety": 0.0,
+          "energy": 0.0
+        },
+        "emotion_label": "boredom",
+        "intensity": 0.242,
+        "reasoning": [
+          "goal_progress: Base goal_progress from neutral: 0.00",
+          "expectation_violation: Base expectation_violation: 0.00",
+          "controllability: User message - moderate control via response",
+          "social_threat: Base social_threat: 0.00",
+          "novelty: Base novelty: 0.00"
+        ]
+      },
+      "emotional_reasoning": {
+        "primary_emotion": "caution",
+        "emotion_intensity": 0.242,
+        "interpretation": "event=user_message, goal=0.00, threat=0.00, budget=1.00",
+        "predicted_risk": 0.08000000000000002,
+        "action_tendency": "observe",
+        "confidence": 0.758
+      },
+      "self_consistency": {
+        "has_conflict": false,
+        "max_severity": 0.0,
+        "items": [],
+        "repair_strategy": "none"
+      },
+      "narrative_memory": {
+        "state": {
+          "target_id": "default",
+          "identity": "I am an adaptive emotional agent",
+          "current_task": "maintain coherent, safe interaction",
+          "purpose": "understand events and choose regulated actions",
+          "event_count": 1,
+          "conflict_count": 0,
+          "last_event_type": "user_message",
+          "last_action_tendency": "observe"
+        },
+        "compressed": "who=I am an adaptive emotional agent; what=maintain coherent, safe interaction; why=understand events and choose regulated actions; events=1; conflicts=0; last=user_message/observe",
+        "tokens_estimate": 19
+      },
+      "audit": {
+        "source": "emotiond.reflection",
+        "deterministic": true,
+        "hash_algo": "sha256",
+        "hash_excludes": [
+          "generated_at",
+          "report_path",
+          "self_hash"
+        ],
+        "self_hash": "877aeccd833d5ecb78103a0804a4ea66da17be9cb847da061832841f0627d2cb"
+      }
+    },
+    "self_report_path": "reports/self_reports/default/20260316T122521Z.json",
+    "self_report_index_path": "reports/self_reports/index.jsonl"
+  },
+  "adapter_metrics": {
+    "total_calls": 0,
+    "new_model_calls": 0,
+    "legacy_calls": 0,
+    "errors": 0,
+    "new_model_available": true,
+    "legacy_model_available": true,
+    "shadow_mode": true,
+    "identity_handle": "openemotion-default"
+  }
+}

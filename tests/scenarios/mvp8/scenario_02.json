@@ -1,0 +1,16 @@
+{
+  "name": "rejection_triggers_sadness",
+  "description": "Rejection event → sadness emotion",
+  "events": [
+    {
+      "type": "world_event",
+      "actor": "userA",
+      "target": "agent",
+      "text": "user rejects offer",
+      "meta": {"target_id": "session_reject", "subtype": "rejection"}
+    }
+  ],
+  "expect": {
+    "action_tendency": "withdraw"
+  }
+}

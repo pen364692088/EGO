@@ -1,0 +1,77 @@
+{
+  "trace_id": "trace_epoch_20260316_160101_case_1",
+  "case_id": "case_1",
+  "memory_chain_id": "chain_95676857",
+  "session_epoch": "epoch_20260316_160101",
+  "created_at": "2026-03-16T16:01:01.640046+00:00",
+  "steps": [
+    {
+      "step_id": "trace_epoch_20260316_160101_case_1_event_memory_0",
+      "step_name": "\u4e8b\u4ef6\u5b58\u50a8",
+      "layer": "event_memory",
+      "trace_id": "trace_epoch_20260316_160101_case_1",
+      "case_id": "case_1",
+      "memory_chain_id": "chain_95676857",
+      "session_epoch": "epoch_20260316_160101",
+      "timestamp": "2026-03-16T16:01:01.640059+00:00",
+      "data": {
+        "event_id": "evt_eaef103c0b89",
+        "event_type": "user_message",
+        "trace_id": "trace_epoch_20260316_160101_case_1",
+        "case_id": "case_1",
+        "memory_chain_id": "chain_95676857",
+        "session_epoch": "epoch_20260316_160101",
+        "context": {
+          "event_type": "user_message",
+          "actor": "trace_test_user",
+          "target": "assistant",
+          "content": "\u8fd9\u662f\u4e00\u6761 trace \u6d4b\u8bd5\u6d88\u606f"
+        }
+      }
+    },
+    {
+      "step_id": "trace_epoch_20260316_160101_case_1_narrative_memory_1",
+      "step_name": "\u53d9\u4e8b\u805a\u5408",
+      "layer": "narrative_memory",
+      "trace_id": "trace_epoch_20260316_160101_case_1",
+      "case_id": "case_1",
+      "memory_chain_id": "chain_95676857",
+      "session_epoch": "epoch_20260316_160101",
+      "timestamp": "2026-03-16T16:01:01.640065+00:00",
+      "data": {
+        "narrative_id": "narr_bd2258a3",
+        "trace_id": "trace_epoch_20260316_160101_case_1",
+        "case_id": "case_1",
+        "memory_chain_id": "chain_95676857",
+        "event_ids": [
+          "evt_eaef103c0b89"
+        ],
+        "summary": "User trace_test_user sent: \u8fd9\u662f\u4e00\u6761 trace \u6d4b\u8bd5\u6d88\u606f"
+      }
+    },
+    {
+      "step_id": "trace_epoch_20260316_160101_case_1_downstream_effect_2",
+      "step_name": "\u4e0b\u6e38\u5f71\u54cd",
+      "layer": "downstream_effect",
+      "trace_id": "trace_epoch_20260316_160101_case_1",
+      "case_id": "case_1",
+      "memory_chain_id": "chain_95676857",
+      "session_epoch": "epoch_20260316_160101",
+      "timestamp": "2026-03-16T16:01:01.640070+00:00",
+      "data": {
+        "decision_id": "dec_2031b2e3",
+        "trace_id": "trace_epoch_20260316_160101_case_1",
+        "case_id": "case_1",
+        "memory_chain_id": "chain_95676857",
+        "action": "respond",
+        "confidence": 0.85
+      }
+    }
+  ],
+  "step_count": 3,
+  "layers_touched": [
+    "downstream_effect",
+    "event_memory",
+    "narrative_memory"
+  ]
+}

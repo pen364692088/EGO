@@ -1,0 +1,17 @@
+# MVP-2.1 — World Event Auth Gate + Audit
+Project location: /home/moonlight/Project/Github/MyProject/Emotion/OpenEmotion
+目标
+- 防止 user 伪造高影响 world_event（betrayal/repair_success 等）
+- 保持 eval_suite 可用：评测仍可注入全量 subtype（通过 system/openclaw source）
+- 增加可审计记录（拒绝/通过原因落库）
+
+实现
+1) Event.meta 增加字段 source: user|system|openclaw|sensor（默认 user）
+2) /event 服务端增加规则：
+   - user source: 允许 care/rejection/ignored/apology/time_passed；拒绝 betrayal/repair_success
+   - system/openclaw source: 允许全部 subtype
+3) 拒绝时返回结构化错误（包含 reason + allowed_subtypes）
+4) 审计：events.meta 记录 decision=allow/deny 与 reason
+5) 测试：
+   - unit: user 提交 betrayal 必须 4xx；system 提交 betrayal 必须 200
+   - regression: pytest -q 全绿；eval_suite 全绿

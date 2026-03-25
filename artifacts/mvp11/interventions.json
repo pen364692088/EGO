@@ -1,0 +1,64 @@
+{
+  "interventions": [
+    {
+      "id": "P1",
+      "kind": "disable_broadcast",
+      "seed": 43,
+      "run_id": "mvp11_1773432935_adfb01f2",
+      "metrics": {
+        "events": 200,
+        "focus_switch_rate": 0.984925,
+        "replan_rate": 1.0,
+        "governor_block_rate": 0.025,
+        "homeostasis_drift_mean": 0.040075,
+        "homeostasis_drift_max": 0.062583,
+        "bytes_per_event": 1399.54
+      }
+    },
+    {
+      "id": "P2",
+      "kind": "disable_homeostasis",
+      "seed": 44,
+      "run_id": "mvp11_1773432935_ea8be529",
+      "metrics": {
+        "events": 200,
+        "focus_switch_rate": 0.974874,
+        "replan_rate": 0.075,
+        "governor_block_rate": 0.065,
+        "homeostasis_drift_mean": 0.115113,
+        "homeostasis_drift_max": 0.172585,
+        "bytes_per_event": 1397.95
+      }
+    },
+    {
+      "id": "P3",
+      "kind": "remove_self_state",
+      "seed": 45,
+      "run_id": "mvp11_1773432935_1fd57360",
+      "metrics": {
+        "events": 200,
+        "focus_switch_rate": 0.979899,
+        "replan_rate": 1.0,
+        "governor_block_rate": 0.01,
+        "homeostasis_drift_mean": 0.040739,
+        "homeostasis_drift_max": 0.062468,
+        "bytes_per_event": 1422.16
+      }
+    },
+    {
+      "id": "P4",
+      "kind": "open_loop",
+      "seed": 46,
+      "run_id": "mvp11_1773432935_ec885076",
+      "metrics": {
+        "events": 200,
+        "focus_switch_rate": 0.954774,
+        "replan_rate": 1.0,
+        "governor_block_rate": 1.0,
+        "homeostasis_drift_mean": 0.322904,
+        "homeostasis_drift_max": 0.553053,
+        "bytes_per_event": 1405.43
+      }
+    }
+  ]
+}

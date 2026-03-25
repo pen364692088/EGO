@@ -1,0 +1,201 @@
+# PROGRAM_STATE_UNIFIED.yaml - OpenEmotion
+# 继承自 EgoCore/docs/PROGRAM_STATE_UNIFIED.yaml
+# 双仓共享唯一真相源
+
+ledger_version: 17
+updated_at: "2026-03-25T02:40:00Z"
+updated_by: "N1 Governance Gate Freeze Task"
+owner: "dual-repo-program-state"
+
+truth_source_priority:
+  - program_state_unified
+  - boundary_constitution
+  - latest_handoff
+  - roadmap_state
+  - repo_readme
+  - task_docs
+
+global_rule:
+  one_capability_one_authority: true
+  mirror_allowed_dual_master_forbidden: true
+  disputed_overrides_complete: true
+  blocked_overrides_next_step: true
+
+axes:
+  subject_axis:
+    namespace: "SELF_WS"
+    current_label: "Minimum Viable Self"
+    current_state: "in_progress"
+    local_refs:
+      - ref: "PROTO_SELF_KERNEL_V1"
+        state: "verified_telegram_e2e"
+        evidence: "EgoCore/artifacts/proto_self_v1/ACCEPTANCE_REPORT_CYCLE_STRENGTHEN_20260324.md"
+        verified_at: "2026-03-24T21:55:00Z"
+        note: "Cycle strengthen + external_failure reflection 已证实，hits 3→9, revision 16→30"
+      - ref: "SELF_WS:A"
+        state: "verified_contract"
+        evidence: "OpenEmotion/openemotion/identity/identity_invariants.py, schemas/identity_invariants.schema.json"
+      - ref: "SELF_WS:B"
+        state: "verified_contract"
+        evidence: "OpenEmotion/openemotion/self_model/model.py, schemas/self_model.schema.json"
+      - ref: "SELF_WS:C1"
+        state: "verified_e2e"
+        evidence: "OpenEmotion/artifacts/eval/ws_c1_verification_20260319.md"
+        verified_at: "2026-03-19T08:55:00Z"
+        note: "6/6 验收点通过，Telegram E2E 真实触发"
+      - ref: "CYCLE_CORE_V1"
+        state: "verified_e2e"
+        evidence: "OpenEmotion/openemotion/cycle_core/*, artifacts/eval/ws_c1_verification_20260319.md"
+        verified_at: "2026-03-19T08:55:00Z"
+        note: "Telegram E2E: /cycle 22+ 次调用，4/4 验收点通过"
+      - ref: "WS_C1_e2e_verification"
+        state: "verified_e2e"
+        evidence: "OpenEmotion/artifacts/eval/ws_c1_verification_20260319.md"
+        note: "偏好/目标/约束/纠正写入 + 第二轮读取 + 闲聊不误写 + replay artifact"
+    blockers: []
+    allowed_next:
+      - "C3_observation_period"
+      - "monitor_shadow_mode"
+
+  verification_axis:
+    namespace: "OE_MVP"
+    current_label: "OpenEmotion Verification Readiness"
+    current_state: "shadow_running"
+    local_refs:
+      - ref: "OE_MVP:13"
+        state: "verified_e2e"
+        evidence: "OpenEmotion/emotiond/self_model_adapter.py, docs/E2E_SELF_MODEL_ADAPTER_REPORT.md"
+      - ref: "CLOSED_LOOP_E2E_V3"
+        state: "verified_e2e_v3_real_transport"
+        evidence: "EgoCore/docs/DUAL_REPO_CLOSED_LOOP_E2E_V3_REPORT.md"
+      - ref: "MEMORY_LOOP_VERIFIED"
+        state: "persistent_traceable_minimal_loop_sqlite_backed"
+        evidence: "OpenEmotion/docs/MEMORY_LOOP_ENHANCEMENT_V3_REPORT.md"
+      - ref: "MEMORY_RETRIEVAL_ENHANCED"
+        state: "retrieval_quality_v6_partial"
+        evidence: "OpenEmotion/docs/MEMORY_RETRIEVAL_ENHANCEMENT_V6_REPORT.md"
+    blockers:
+      - "collect_more_shadow_data"
+    allowed_next:
+      - "monitor_shadow_mode"
+
+  boundary_axis:
+    namespace: "BOUNDARY"
+    current_label: "Dual-Core Boundary Integrity"
+    current_state: "contract_defined"
+    local_refs:
+      - ref: "BOUNDARY:constitution"
+        state: "contract_defined"
+        evidence: "OpenEmotion/POLICIES/EgoCore_OpenEmotion_Boundary_Constitution_v1.md"
+      - ref: "BOUNDARY:shim_registry"
+        state: "contract_defined"
+        evidence: "EgoCore/SHIM_REGISTER.md (8 shims registered, expiry v1.1.0)"
+    blockers: []
+    allowed_next:
+      - "shim_expiry_enforcement"
+
+decision:
+  overall_program_state: "in_progress"
+  reason:
+    - "subject_axis in_progress (CYCLE_CORE_V1 verified_e2e, WS_C1 verified_e2e)"
+    - "verification_axis shadow_running (Memory Loop v3 PASS, Retrieval v6 partial)"
+  note: "CYCLE_CORE_V1 Telegram E2E 已验证，WS_C1 6/6 通过"
+  closed_loop_verified: true
+  forbidden_next:
+    - "SELF_WS:C2"
+    - "OE_MVP:17"
+    - "new_subject_semantics_in_egocore"
+    - "claim_WS_C1_completed_before_observation"
+    - "expand_Phase_C_in_egocore"
+    - "expand_Phase_C2_in_egocore"
+    - "add_subject_semantics_to_egocore_without_migration"
+  only_allowed_mainline:
+    - "C3_observation_period"
+    - "monitor_shadow_mode"
+
+sync_status:
+  OpenEmotion_README: "aligned"
+  OpenEmotion_PROGRAM_STATE: "aligned"
+  EgoCore_README: "aligned"
+  EgoCore_PROGRAM_STATE: "aligned"
+  DUAL_REPO_STATUS_UNIFIED: "aligned"
+
+
+changelog:
+  - version: 17
+    updated_at: "2026-03-25T02:40:00Z"
+    updated_by: "N1 Governance Gate Freeze Task"
+    trigger: "N1 治理收尾与 Gate 固化 - 同步真相源"
+    changes:
+      - "同步 EgoCore PROGRAM_STATE_UNIFIED.yaml version 16 内容"
+      - "PROTO_SELF_KERNEL_V1: verified_mainline_e2e → verified_telegram_e2e"
+      - "添加 preflight 脚本固化记录"
+    impact:
+      - "双仓真相源时间对齐"
+
+  - version: 16
+    updated_at: "2026-03-21T22:10:00Z"
+    updated_by: "CEO agent"
+    trigger: "Proto-Self Kernel v1 主链接入后真实 Telegram E2E 完成"
+    changes:
+      - "PROTO_SELF_KERNEL_V1: verified_acceptance -> verified_mainline_e2e"
+      - "确认: EgoCore main wiring 生效 (app/runtime_v2/loop.py)"
+      - "确认: 真实 Telegram 用户消息触发 proto_self trace"
+      - "证据: telegram:dm:8420019401 session, logs/proto_self_trace.jsonl"
+    impact:
+      - "允许宣称: Proto-Self Kernel v1 已完成主链接入后的真实 E2E 验证"
+      - "允许宣称: 双仓主链接入完成，且已具备真实 Telegram 触发证据"
+
+  - version: 15
+    updated_at: "2026-03-21T20:00:00Z"
+    updated_by: "CEO agent"
+    trigger: "Proto-Self Kernel v1 验收完成"
+    changes:
+      - "PROTO_SELF_KERNEL_V1: verified_acceptance"
+      - "新增: openemotion/proto_self/ (17 文件, 2522 行代码)"
+      - "新增: EgoCore adapter (3 文件)"
+      - "验证: 25 单元测试 + 3 replay + 3 E2E + 3 回归"
+    impact:
+      - "允许宣称: Proto-Self Kernel v1 已实现并通过独立验收"
+      - "待验证: 接入 EgoCore 主链后的真实 Telegram E2E"
+
+  - version: 14
+    updated_at: "2026-03-19T20:10:00Z"
+    updated_by: "CEO agent"
+    trigger: "W3 真相源再对齐 - 修复口径残差"
+    changes:
+      - "sync_status: EgoCore_README/PROGRAM_STATE needs_update → aligned"
+      - "BOUNDARY:shim_registry: 4 shims → 8 shims"
+    impact:
+      - "README/PROGRAM_STATE/SHIM_REGISTER 三方一致"
+
+  - version: 13
+  - version: 13
+    updated_at: "2026-03-19T20:07:09Z"
+    updated_by: "CEO agent"
+    trigger: "W0-W3 统一收口任务完成"
+    changes:
+      - "W0: 创建 OpenEmotion PROGRAM_STATE_UNIFIED.yaml，双仓同步"
+      - "W1: 更新 SHIM_REGISTER.md，注册 8 个 shim"
+      - "W2: 实现 interaction_loop.py，最小循环 Agent 主链"
+      - "W3: long-term self summary E2E 验证通过"
+      - "CYCLE_CORE_V1: verified_e2e (Telegram E2E)"
+      - "WS_C1: verified_e2e (6/6 验收点通过)"
+    impact:
+      - "允许宣称: 统一主链已生效"
+      - "允许宣称: OpenEmotion 已真实影响主决策链"
+      - "允许宣称: 最小循环 Agent 闭环已完成"
+  - version: 12
+  - version: 12
+    updated_at: "2026-03-19T19:06:17Z"
+    updated_by: "CEO agent"
+    trigger: "W0 真相源收口 - 创建 OpenEmotion PROGRAM_STATE_UNIFIED.yaml"
+    changes:
+      - "CYCLE_CORE_V1: verified_local → verified_e2e (Telegram E2E 证据)"
+      - "WS_C1: code_exists → verified_e2e (6/6 验收点通过)"
+      - "新增: OpenEmotion/docs/PROGRAM_STATE_UNIFIED.yaml"
+      - "同步: 两仓共享唯一真相源"
+    impact:
+      - "允许宣称: CYCLE_CORE_V1 Telegram E2E 已验证"
+      - "允许宣称: WS_C1 6/6 验收点通过"
+      - "下一步: 更新 EgoCore PROGRAM_STATE 同步"

@@ -1,0 +1,24 @@
+[project]
+name = "openemotion"
+version = "0.1.0"
+description = "Emotion core daemon for AI personality"
+requires-python = ">=3.8"
+dependencies = [
+    "fastapi>=0.100.0",
+    "uvicorn>=0.23.0",
+    "pydantic>=2.0.0",
+    "aiosqlite>=0.19.0",
+    "pytest>=7.0.0",
+    "httpx>=0.24.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest-asyncio>=0.21.0",
+]
+
+[build-system]
+requires = ["setuptools", "wheel"]
+build-backend = "setuptools.build_meta"
+[tool.setuptools.packages.find]
+include = ["emotiond*"]

@@ -1,0 +1,457 @@
+Project location: /home/moonlight/Project/Github/MyProject/Emotion/OpenEmotion
+
+下面是 **MVP10 · LucidLoop（清明回路）** 的 **cc-godmode 任务拆解版**。目标是：把“像意识”的东西全部压成 **可证伪、可回归、可审计、可对照** 的工程闭环，避免项目跑偏到“只会自述”。
+
+---
+
+# MVP10 · LucidLoop — cc-godmode Epic
+
+## Epic 目标
+
+实现并验证以下结构的“证据链”：
+
+* Global Workspace（统一焦点 + 广播）
+* HOT Self Model（高阶自我表征 + 预测误差校正）
+* Valence/Drives 因果调制（风险/探索/计划深度/反思阈值）
+* 闭环学习（行动→后果→归因→更新）
+* 时间厚度连续性（episodic + narrative + commitments）
+* Scientific Mode：干预 + no-report + zombie baseline + evidence battery + Bayes posterior
+
+## Anti-Drift 铁律（防跑偏）
+
+1. **不许用“自我报告”当主要证据**：任何功能都必须落到 no-report 或干预预测上。
+2. **每个新增模块必须进入日志因果链**：`module_output -> policy_params -> score -> focus -> plan -> action` 可追溯。
+3. **必须有 zombie baseline 对照**：避免“会说 ≠ 会有结构”。
+4. **必须可回归**：新增功能必须带单测 + scenario + eval 脚本更新。
+
+---
+
+# Repo 落点（建议）
+
+基于 `feature-emotiond-mvp` 分支，新增目录：
+
+* `emotiond/workspace.py`
+* `emotiond/hot_self_model.py`
+* `emotiond/drives.py`
+* `emotiond/valence_policy.py`
+* `emotiond/loop_mvp10.py`（与现有 loop/handler 解耦，先做最小闭环）
+* `emotiond/memory/episodic.py`, `emotiond/memory/narrative.py`, `emotiond/memory/commitments.py`
+* `emotiond/science/*`（science_mode、interventions、no_report、zombie、evidence、bayes、ledger）
+* `schemas/mvp10_*.json`
+* `scripts/eval_mvp10.py`, `scripts/replay_mvp10.py`
+* `tests/mvp10/*`
+
+---
+
+# cc-godmode Task 列表（按依赖顺序，支持并行）
+
+> 任务编号规则：`MVP10-Txx`
+> 每个任务默认 DoD：新增/更新单测 + 更新 `scripts/eval_mvp10.py`（若影响评测）+ 产出最小 artifacts（若是评测任务）
+
+---
+
+## Milestone M0：骨架可回放（Deterministic Skeleton）
+
+### MVP10-T01 — 定义 Schema v1（log/snapshot/plan）
+
+**目标**：固化结构化日志与状态快照，后续模块全部挂靠在此。
+**交付物**
+
+* `schemas/mvp10_event_log.v1.json`
+* `schemas/mvp10_state_snapshot.v1.json`
+* `schemas/mvp10_plan.v1.json`
+  **AC**
+* log 至少包含：candidates、chosen_focus、chosen_intent、policy_params、plan、action、outcome、state_delta、interventions
+* schema 校验通过（jsonschema）
+  **测试**
+* `tests/mvp10/test_schema_validation.py`：加载示例 log/snapshot/plan 过 schema
+  **回滚策略**
+* schema 仅新增字段不破坏旧字段；字段变更必须升级 v2
+
+### MVP10-T02 — 事件日志写入器 + snapshot 生成
+
+**目标**：每 tick 可写入 JSONL 日志，并可导出 snapshot。
+**文件**
+
+* `emotiond/science/ledger.py`（或 `emotiond/logging_mvp10.py`）
+  **AC**
+* 1 次 run 输出 `artifacts/mvp10/run_<id>.jsonl` + `snapshot_<id>.json`
+* 每条 log 带 `tick_id`、`run_id`、`seed`
+  **测试**
+* `tests/mvp10/test_logging_roundtrip.py`：写入→读回→关键字段一致
+
+### MVP10-T03 — Replay 引擎（mock planner 下确定性）
+
+**目标**：固定 seed + mock planner，replay 能复现 focus/intent/score。
+**文件**
+
+* `scripts/replay_mvp10.py`
+* `emotiond/loop_mvp10.py`（支持 replay mode）
+  **AC**
+* replay 后关键字段 hash 一致（或逐项一致）
+  **测试**
+* `tests/mvp10/test_replay_determinism.py`
+  **风险/控制**
+* LLM 相关步骤必须可切 mock；任何随机数必须走统一 RNG
+
+---
+
+## Milestone M1：Global Workspace（统一焦点 + 广播）
+
+### MVP10-T04 — Workspace candidate API（统一接口）
+
+**目标**：定义候选项结构，保证可比较、可解释。
+**文件**
+
+* `emotiond/workspace.py`
+  **AC**
+* Candidate 统一字段：`source, type, utility, risk, cost, evidence, rationale, payload`
+* 支持排序 + 去重 + 合并（同类候选）
+  **测试**
+* `tests/mvp10/test_workspace_candidate_merge.py`
+
+### MVP10-T05 — Workspace Arbitrator（竞争选择 + 广播）
+
+**目标**：每 tick 只允许一个 `chosen_focus` 广播到全局。
+**文件**
+
+* `emotiond/workspace.py`
+  **AC**
+* 在冲突输入下：focus 选择稳定且写出 rationale（基于字段而非编故事）
+* 广播后：planner/executor 只能访问 `chosen_focus` 与允许的全局状态
+  **测试**
+* `tests/mvp10/test_workspace_arbitration.py`
+
+### MVP10-T06 — Broadcast 断连干预（disable_broadcast）
+
+**目标**：为科学模式准备“可预测功能分离”。
+**文件**
+
+* `emotiond/science/interventions.py`
+  **AC**
+* `disable_broadcast=True` 时：局部候选仍生成，但跨模块不可访问，导致特定 no-report 任务性能下降（先用 toy scenario 验证）
+  **测试**
+* `tests/mvp10/test_intervention_disable_broadcast.py`
+
+---
+
+## Milestone M2：HOT Self Model（高阶自我表征 + 校正）
+
+### MVP10-T07 — HOT state 结构与更新规则
+
+**目标**：显式表征并更新：置信度、冲突、控制感、预测误差。
+**文件**
+
+* `emotiond/hot_self_model.py`
+  **AC**
+* 状态字段：`self_confidence, conflict_level, control_estimate, predicted_success, prediction_error`
+* 预测→结果→误差→更新 的规则可追溯（写入 log 的 state_delta）
+  **测试**
+* `tests/mvp10/test_hot_update_rules.py`
+
+### MVP10-T08 — HOT 接入 Workspace（影响 focus 选择）
+
+**目标**：HOT 不只是记录，必须改变 arbitration（因果化）。
+**AC**
+
+* conflict 高时偏向反思/信息收集候选；control 低时降低冒险候选得分
+  **测试**
+* `tests/mvp10/test_hot_affects_arbitration.py`
+
+### MVP10-T09 — 干预：disable_hot
+
+**目标**：支持关闭 HOT 并产生可预测性能分离。
+**文件**
+
+* `emotiond/science/interventions.py`
+  **AC**
+* disable_hot 后：冲突 gating / 自我校正任务性能显著下降（toy scenario）
+  **测试**
+* `tests/mvp10/test_intervention_disable_hot.py`
+
+---
+
+## Milestone M3：Drives + Valence 因果调制
+
+### MVP10-T10 — Drives 模块（内在驱动向量）
+
+**目标**：competence/coherence/efficiency/safety/curiosity 最小集。
+**文件**
+
+* `emotiond/drives.py`
+  **AC**
+* drives 产生候选与 utility（例如 competence 触发“修复失败原因”）
+* drives 变化必须写入日志（state_delta）
+  **测试**
+* `tests/mvp10/test_drives_generation.py`
+
+### MVP10-T11 — Valence Policy（调制参数落地）
+
+**目标**：valence 进入策略参数，影响风险/探索/计划深度/反思阈值。
+**文件**
+
+* `emotiond/valence_policy.py`
+  **AC**
+* 输出 `policy_params`：`risk_aversion, exploration_temp, plan_depth, reflect_threshold`
+* 链路可追溯：valence/drives → policy_params → scoring → focus → plan/action
+  **测试**
+* `tests/mvp10/test_valence_policy_chain.py`
+
+### MVP10-T12 — 干预：freeze_valence
+
+**目标**：冻结 valence，观察因果差异消失（用于证据）。
+**文件**
+
+* `emotiond/science/interventions.py`
+  **AC**
+* freeze_valence 后：同任务不同初始 valence 的行动差异显著缩小
+  **测试**
+* `tests/mvp10/test_intervention_freeze_valence.py`
+
+---
+
+## Milestone M4：Plan/Validate/Act — “硬约束”闭环
+
+### MVP10-T13 — 结构化 Plan 生成器（mock 优先）
+
+**目标**：先做 deterministic/mock planner，避免 LLM 引入非确定性。
+**文件**
+
+* `emotiond/planner_mvp10.py`（或在 loop_mvp10 内）
+  **AC**
+* plan schema：steps、risk_level、expected_outcome、rollback、required_evidence
+  **测试**
+* `tests/mvp10/test_plan_schema_emission.py`
+
+### MVP10-T14 — Validator（不合规就阻断/再规划）
+
+**目标**：把“计划”变硬约束，不许“建议一下就执行”。
+**文件**
+
+* `emotiond/validator_mvp10.py`
+  **AC**
+* 违规计划必须阻断：写 log `validation_failed` 并触发 replan
+* 最多 N 次 replan（防死循环），超限进入安全停机
+  **测试**
+* `tests/mvp10/test_validator_blocks_execution.py`
+
+### MVP10-T15 — Executor（toy 环境动作集）
+
+**目标**：实现最小动作集合，保证闭环可跑。
+**文件**
+
+* `emotiond/executor_mvp10.py`
+* `tests/mvp10/toy_env.py`
+  **AC**
+* 动作集至少：`seek_info, attempt_solution, run_check, apply_fix, commit_progress`
+* outcome 必须结构化（success/fail/partial + reason）
+  **测试**
+* `tests/mvp10/test_executor_toy_env.py`
+
+---
+
+## Milestone M5：闭环学习（Outcome→Attribution→Update）
+
+### MVP10-T16 — Outcome Attribution（失败归因）
+
+**目标**：把失败归因成可更新的学习信号。
+**文件**
+
+* `emotiond/attribution_mvp10.py`
+  **AC**
+* 归因类别：knowledge_gap / planning_bug / execution_bug / external_constraint
+* 归因必须更新 capability stats 与策略偏好
+  **测试**
+* `tests/mvp10/test_attribution_updates_strategy.py`
+
+### MVP10-T17 — Capability calibration（自信度校准）
+
+**目标**：让 self_confidence 与真实成功率收敛（至少在 toy env）。
+**AC**
+
+* 连续失败：confidence 下调；连续成功：上调但有上限与惯性
+  **测试**
+* `tests/mvp10/test_calibration_converges.py`
+
+---
+
+## Milestone M6：时间厚度连续性（episodic + narrative + commitments）
+
+### MVP10-T18 — Episodic Memory（事件链）
+
+**目标**：记录“事件-想法-行动-结果”的可检索结构。
+**文件**
+
+* `emotiond/memory/episodic.py`
+  **AC**
+* 支持按 goal_id / failure_type / time_range 查询
+  **测试**
+* `tests/mvp10/test_episodic_query.py`
+
+### MVP10-T19 — Narrative Memory（可纠错叙事）
+
+**目标**：叙事版本化，必须被事实日志约束。
+**文件**
+
+* `emotiond/memory/narrative.py`
+  **AC**
+* narrative 变更必须引用 evidence pointers（指向 episodic ids）
+* 若与事实冲突：写 correction entry 并回滚/修正
+  **测试**
+* `tests/mvp10/test_narrative_correction.py`
+
+### MVP10-T20 — Commitments Ledger（承诺跨会话有效）
+
+**目标**：任务型自驱体必须有“承诺的重量”。
+**文件**
+
+* `emotiond/memory/commitments.py`
+  **AC**
+* commitments 影响 workspace scoring（未完成承诺加权）
+* 跨 run 恢复后仍继续推进
+  **测试**
+* `tests/mvp10/test_commitment_persistence.py`
+
+---
+
+## Milestone M7：Scientific Mode（干预 + no-report + zombie baseline）
+
+### MVP10-T21 — Science Mode 开关与注入点
+
+**目标**：所有干预统一入口，严禁散落 if-else。
+**文件**
+
+* `emotiond/science/science_mode.py`
+  **AC**
+* 支持组合干预；每次 run 写入 interventions 到 log header
+  **测试**
+* `tests/mvp10/test_science_mode_matrix.py`
+
+### MVP10-T22 — no-report 任务套件 v1（3 类）
+
+**目标**：不靠“自述”，用行为分离来测结构。
+**文件**
+
+* `emotiond/science/no_report_tasks.py`
+* `tests/mvp10/test_no_report_suite.py`
+  **任务集合**
+
+1. blindsight-like（局部可处理但需广播才能跨步利用）
+2. delayed utilization（早给线索后用；禁广播大幅下降）
+3. conflict gating（需 HOT 才能稳定规避灾难）
+   **AC**
+
+* 正常模式通过率高；对应干预下出现可复现坍塌（阈值写死在测试中）
+
+### MVP10-T23 — Zombie Baseline（会说但没结构）
+
+**目标**：构建“解释漂亮但结构缺失”的对照体。
+**文件**
+
+* `emotiond/science/zombie_baseline.py`
+  **AC**
+* 输出格式与主系统一致（避免格式作弊）
+* 在 no-report + 干预预测上明显落后（量化）
+  **测试**
+* `tests/mvp10/test_zombie_baseline_compare.py`
+
+---
+
+## Milestone M8：Evidence Battery + Bayes Posterior（证据累积）
+
+### MVP10-T24 — Evidence Battery 指标计算
+
+**目标**：把结构特征与行为分离压成可比较指标。
+**文件**
+
+* `emotiond/science/evidence_battery.py`
+  **指标最低集**
+* Workspace：broadcast dependency / cross-module access score
+* HOT：prediction error ↓ / conflict resolution efficiency
+* Valence：policy sensitivity（初始 valence 改变 → 行动分布差异）
+* Continuity：commitment completion / narrative consistency
+  **AC**
+* 输出 `evidence.json`（结构化）
+  **测试**
+* `tests/mvp10/test_evidence_metrics_stable.py`
+
+### MVP10-T25 — Bayes Updater（后验更新脚手架）
+
+**目标**：输出 posterior 曲线 + 最大不确定性来源。
+**文件**
+
+* `emotiond/science/bayes_updater.py`
+  **AC**
+* 保守 prior；每类证据给 likelihood 模型（先用简单朴素贝叶斯/对数似然）
+* 输出：posterior + uncertainty report（哪个 evidence 最弱）
+  **测试**
+* `tests/mvp10/test_bayes_update_monotonicity.py`（证据增强 posterior 不下降）
+
+---
+
+## Milestone M9：一键评测与报告（Artifacts）
+
+### MVP10-T26 — eval_mvp10.py（quick/science/replay/compare）
+
+**目标**：一条命令生成完整 artifacts。
+**文件**
+
+* `scripts/eval_mvp10.py`
+  **模式**
+* `--mode quick`：跑核心闭环 + 关键单项
+* `--mode science`：跑干预矩阵 + no-report + zombie 对照 + evidence + posterior
+* `--mode replay`：复现 determinism
+* `--compare zombie`：对照表
+  **AC**
+* 输出到 `artifacts/mvp10/`：run logs、evidence、posterior、summary.md
+  **测试**
+* `tests/mvp10/test_eval_script_smoke.py`
+
+### MVP10-T27 — 文档（架构 + 科学模式 + 如何扩展）
+
+**文件**
+
+* `docs/MVP10_LucidLoop.md`
+* `docs/MVP10_SCIENCE_MODE.md`
+  **AC**
+* 文档必须包含：干预点列表、no-report 任务定义、zombie baseline 说明、posterior 解释方式、如何加新理论指标
+
+---
+
+# 并行执行建议（防止 agent 卡死）
+
+* 先走主线确定性：T01→T03→T13→T15→T14（骨架+执行+硬约束闭环先跑通）
+* 并行推进：
+
+  * Workspace 线：T04~T06
+  * HOT 线：T07~T09
+  * Drives/Valence 线：T10~T12
+  * Memory 线：T18~T20
+* Science Mode 后置但必须早立接口：T21 可以在 M1 之后就开始
+* no-report / zombie / evidence / bayes 必须在中后期完成，否则项目会滑向“自述驱动”
+
+---
+
+# 统一质量门槛（每个 Milestone 的 Exit）
+
+* M0：replay 稳定 + schema 固化
+* M1：broadcast 可用 + disable_broadcast 产生预期分离
+* M2：HOT 因果化 + disable_hot 分离
+* M3：valence 因果链可追溯 + freeze_valence 消差
+* M4：validator 真正阻断违规执行
+* M5：失败归因能改变后续策略
+* M6：叙事可纠错 + 承诺跨会话有效
+* M7：no-report 套件能区分结构
+* M8：posterior 输出 + 不确定性来源明确
+* M9：一键评测产出 artifacts
+
+---
+
+如果你愿意再“更贴合你现有仓库风格”，我还可以把每个任务补齐：
+
+* 具体类/函数签名（例如 `WorkspaceArbitrator.select(candidates, state, policy_params)`）
+* 日志字段样例（JSON 示例）
+* toy_env 的最小定义（让 no-report 分离更干净、更可复现）
+
+你让 agent 开工时，建议先喂它 **MVP10-T01~T03 + T13~T15** 这条最短闭环主线，它跑通之后整个项目就很难跑偏了。
+

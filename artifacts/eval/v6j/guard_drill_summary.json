@@ -1,0 +1,38 @@
+{
+  "scenario_name": "complex_semantic_reasoning",
+  "demotion_drill": "PASS",
+  "rollback_drill": "PASS",
+  "all_passed": true,
+  "demotion_details": {
+    "drill_type": "demotion",
+    "scenario_name": "complex_semantic_reasoning",
+    "trigger": "fallback_rate > 10%",
+    "result": "pass",
+    "expected_action": "demote",
+    "actual_action": "demote",
+    "expected_status": "demoted",
+    "actual_status": "demoted",
+    "details": {
+      "fallback_rate": 0.13043478260869565,
+      "simulate_only": false,
+      "demotion_triggered": true
+    },
+    "timestamp": "2026-03-16T18:03:48.171496"
+  },
+  "rollback_details": {
+    "drill_type": "rollback",
+    "scenario_name": "complex_semantic_reasoning",
+    "trigger": "wrong_user_guard_trigger_count > 0",
+    "result": "pass",
+    "expected_action": "rollback",
+    "actual_action": "rollback",
+    "expected_status": "rolled_back",
+    "actual_status": "rolled_back",
+    "details": {
+      "wrong_user_guard_count": 1,
+      "simulate_only": false
+    },
+    "timestamp": "2026-03-16T18:03:48.175076"
+  },
+  "generated_at": "2026-03-16T18:03:48.175223"
+}

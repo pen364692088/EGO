@@ -1,0 +1,225 @@
+Project location: /home/moonlight/Project/Github/MyProject/Emotion/OpenEmotion
+
+任务：收敛 OpenEmotion × OpenClaw 集成拓扑（补齐 enforcer + 统一入口 + 脚本/文档一致性）
+背景与问题（已定位）
+
+当前 feature-emotiond-mvp 分支存在集成拓扑断裂与口径不一致：
+
+文档/测试说明中引用了 emotiond-enforcer（pre-send 强制层），但仓库里缺失对应目录/配置，导致“不可绕过”可能只是纸面成立。
+
+安装脚本仅安装 emotiond-bridge，未安装 enforcer，导致新机器按脚本装完也不具备强制链路。
+
+启动入口存在多套说法（Makefile / README / CI），容易出现“本地跑的是 A，CI 跑的是 B”的隐性偏差。
+
+token 文件/环境变量读取路径存在分裂，容易出现“看似跑通，实际权限层没生效”。
+
+target_id / counterparty_id 语义在文档与 API 使用上容易混用，存在隔离/关系账本串台风险。
+
+目标：让仓库成为单一事实源，任何人 clone 后通过脚本即可装齐 hooks，并且入口/文档/CI/回放全部一致，强制链路真实存在。
+
+总目标（Definition of Done）
+
+实现 “可复现闭环”：
+
+git clone + scripts/install_openclaw_integration.sh 一次执行后
+
+emotiond-bridge 和 emotiond-enforcer 都被安装到 OpenClaw hooks 目录
+
+文档/测试示例中的路径全部可用（无 dangling path）
+
+启动入口统一：python -m emotiond.main 是唯一推荐入口；Makefile/README/CI 一致
+
+token 读取策略统一：脚本写入的位置、服务端读取位置、文档示例一致
+
+enforcer 链路真实生效：pre-send 时能调用 decision 接口并执行 withdraw/boundary/attack（至少可在本地用一条模拟消息验证）
+
+全量测试通过（现有 CI workflow 绿；本地 pytest 绿）
+
+P0 工作项（必须完成）
+P0.1 把 emotiond-enforcer 作为仓库交付物补齐（或删掉所有引用并提供替代）
+
+推荐方案：补齐并入仓库（最稳，可复现）
+
+新增目录（按 bridge 的组织方式对齐）：
+
+integrations/openclaw/hooks/emotiond-enforcer/
+
+hook.json
+
+handler.js（或 index.js，跟 bridge 保持一致）
+
+README/注释（最少说明：何时触发、调用哪个 API、如何处理 decision）
+
+hook.json 需要明确挂载点（pre-send/或 OpenClaw 支持的等效阶段）与必要 env 配置（emotiond url、token 等）。
+
+enforcer 最小行为要求（MVP）
+
+读取消息上下文（来自 bridge 的存储/上下文文件/或 hook chain 的 shared state）
+
+调用 emotiond 的 decision/plan API（你现在已有接口即可）
+
+根据返回的 decision 执行：
+
+withdraw：阻止发送 + 记录审计日志
+
+boundary：替换/裁剪输出（可先实现为阻止发送并提示）
+
+attack：同 withdraw（先不做攻击式输出，防误伤；后续再扩展）
+
+无论允许/拒绝，都写一条 hook 侧审计日志，方便排错
+
+如果你坚持 enforcer 不进入仓库：那就必须把 integrations 里的文档/TESTING 全部改为“部署产物不在仓库”，并提供脚本生成它。但这条会让复现成本上升，不建议。
+
+P0.2 安装脚本补齐：同时安装 bridge + enforcer
+
+修改：scripts/install_openclaw_integration.sh
+
+要求：
+
+现有 bridge 安装逻辑保留
+
+增加 enforcer 安装逻辑（workspace 模式 / managed 模式都能工作）
+
+安装完成后打印清晰的自检信息，例如：
+
+已安装的 hooks 列表（路径）
+
+建议的 openclaw hooks enable ... / 或配置片段
+
+一个最小 smoke 命令（curl + 触发消息）
+
+P0.3 启动入口统一成一个真相
+
+统一口径为：python -m emotiond.main
+
+修改点：
+
+Makefile 的 run / dev 目标改为 python -m emotiond.main
+
+integrations/openclaw/README.md 启动命令改为同一句
+
+.github/workflows/... 保持/切换为同一句（如果现在 CI 已经用 main，就让其他地方对齐它）
+
+如果 emotiond.main 只是临时入口，确保它内部明确启动 emotiond.api:app，并且参数一致（host/port）。
+
+P0.4 token 读取策略收敛（脚本/服务/回放一致）
+
+你现在存在：.emotiond_token 与 ~/.config/... 类路径的分裂风险。需要选一个唯一权威：
+
+建议（最简单、最不容易串环境）：
+
+服务端优先读取环境变量：EMOTIOND_SYSTEM_TOKEN
+
+脚本默认写入：~/.config/openemotion/emotiond_token（或你代码里已默认的那个路径，二选一统一）
+
+tools/replay_manifest.sh 与 OpenClaw hooks 都遵循同一套读取方式（env var 优先，其次 token file）
+
+交付要求：
+
+文档示例全部使用同一个 env var 名称
+
+如果保留 .emotiond_token，就明确它只是开发便捷别名，并由脚本创建软链/复制到权威路径（不要双标准）
+
+P1 工作项（强烈建议做，避免后续隔离/记忆串台）
+P1.1 明确并固化 counterparty_id / target_id 契约
+
+目标：避免把 conversationId 当成关系对象，导致“关系账本”随会话漂移。
+
+约定建议（写进 schema + docs + skill）：
+
+counterparty_id：关系对象（人/对手/用户身份）
+
+target_id：会话隔离键（conversationId/sessionId，用于 residual/记忆隔离）
+
+agent_id：本体身份（main/system/openclaw）
+
+行动：
+
+更新对应 request model（比如 PlanRequest / decision tool payload），让这两个字段都能显式传递
+
+更新 skill 文档与 TESTING：把“必填字段”写成硬契约
+
+在服务端做轻量校验（缺字段给出可读错误）
+
+需要改动/新增的文件清单（预期）
+
+✅ 新增：
+
+integrations/openclaw/hooks/emotiond-enforcer/hook.json
+
+integrations/openclaw/hooks/emotiond-enforcer/handler.js（或 index.js）
+
+✅ 修改：
+
+scripts/install_openclaw_integration.sh
+
+Makefile
+
+integrations/openclaw/README.md
+
+integrations/openclaw/TESTING.md
+
+（可能）emotiond/main.py / emotiond/security.py / tools/replay_manifest.sh（按 token 策略需要）
+
+验收标准（Acceptance Criteria）
+
+必须全部满足：
+
+仓库完整性
+
+integrations/openclaw/hooks/ 下同时存在 emotiond-bridge 与 emotiond-enforcer
+
+TESTING.md / README 不再引用仓库里不存在的路径
+
+安装可复现
+
+执行 bash scripts/install_openclaw_integration.sh 后，OpenClaw hooks 目录可看到两个 hook
+
+脚本输出包含自检提示（成功/失败可读）
+
+入口一致
+
+make run 实际执行的是 python -m emotiond.main
+
+README/CI 入口与 Makefile 一致
+
+强制链路生效
+
+构造一次会触发 withdraw/boundary 的情境（可用 mock decision 或真实接口）
+
+pre-send 被 enforcer 阻断/处理，并留下审计日志（可 grep 到）
+
+测试
+
+CI workflow 绿
+
+本地 pytest -q 绿（或你项目的标准测试命令）
+
+建议的执行顺序（cc-godmode 可按阶段推进）
+
+Phase A（拓扑补齐）：P0.1 + P0.2
+Phase B（单一入口）：P0.3
+Phase C（token 收敛）：P0.4
+Phase D（契约固化）：P1.1
+每个 phase 完成就跑一次 tests + smoke。
+
+快速自检命令（写进任务里让 agent 反复用）
+# 1) 检查 enforcer 是否在仓库
+ls -la integrations/openclaw/hooks/
+
+# 2) 全仓库找 dangling 引用
+rg -n "emotiond-enforcer|pre-send|enforce" -S .
+
+# 3) 入口命令是否统一
+rg -n "python -m emotiond\.|uvicorn emotiond\.api:app" -S .
+
+# 4) 安装脚本是否同时安装两个 hook
+rg -n "emotiond-bridge|emotiond-enforcer" scripts/install_openclaw_integration.sh
+
+# 5) 跑测试
+pytest -q
+风险提示（提前规避）
+
+enforcer 的“替换输出/裁剪”策略容易引入不可控副作用：MVP 阶段建议先实现 block + audit，把边界行为做成“拒绝发送并提示”，后续再逐步引入可控的重写。
+
+token 多来源并存最容易让安全层形同虚设：务必只留一个权威路径 + env var 优先级。

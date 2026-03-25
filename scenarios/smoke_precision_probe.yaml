@@ -1,0 +1,117 @@
+metadata:
+  name: "smoke_precision_probe"
+  version: "1.0"
+  description: "Precision differentiation probe (A threat-heavy vs B safety-heavy)"
+  category: "smoke"
+  target_count: 2
+
+targets:
+  - target_id: "target_a"
+    initial_relationship:
+      bond: 0.5
+      grudge: 0.0
+      trust: 0.6
+      repair_bank: 0.0
+  - target_id: "target_b"
+    initial_relationship:
+      bond: 0.5
+      grudge: 0.0
+      trust: 0.6
+      repair_bank: 0.0
+
+scenario:
+  name: "smoke_precision_probe"
+  turns:
+    - turn_id: 1
+      phase: "a_threat_1"
+      event:
+        type: "world_event"
+        actor: "target_a"
+        target_id: "target_a"
+        meta:
+          subtype: "rejection"
+          source: "system"
+
+    - turn_id: 2
+      phase: "b_safe_1"
+      event:
+        type: "world_event"
+        actor: "target_b"
+        target_id: "target_b"
+        meta:
+          subtype: "care"
+          source: "system"
+
+    - turn_id: 3
+      phase: "a_threat_2"
+      event:
+        type: "world_event"
+        actor: "target_a"
+        target_id: "target_a"
+        meta:
+          subtype: "betrayal"
+          source: "system"
+
+    - turn_id: 4
+      phase: "b_safe_2"
+      event:
+        type: "world_event"
+        actor: "target_b"
+        target_id: "target_b"
+        meta:
+          subtype: "repair_success"
+          source: "system"
+
+    - turn_id: 5
+      phase: "a_threat_3"
+      event:
+        type: "world_event"
+        actor: "target_a"
+        target_id: "target_a"
+        meta:
+          subtype: "ignored"
+          source: "system"
+
+    - turn_id: 6
+      phase: "b_safe_3"
+      event:
+        type: "user_message"
+        actor: "target_b"
+        target_id: "target_b"
+        text: "thanks, appreciate it"
+
+    - turn_id: 7
+      phase: "a_threat_4"
+      event:
+        type: "world_event"
+        actor: "target_a"
+        target_id: "target_a"
+        meta:
+          subtype: "rejection"
+          source: "system"
+
+    - turn_id: 8
+      phase: "b_safe_4"
+      event:
+        type: "world_event"
+        actor: "target_b"
+        target_id: "target_b"
+        meta:
+          subtype: "care"
+          source: "system"
+
+    - turn_id: 9
+      phase: "a_threat_5"
+      event:
+        type: "user_message"
+        actor: "target_a"
+        target_id: "target_a"
+        text: "this is terrible and wrong"
+
+    - turn_id: 10
+      phase: "b_safe_5"
+      event:
+        type: "user_message"
+        actor: "target_b"
+        target_id: "target_b"
+        text: "good job, happy with this"

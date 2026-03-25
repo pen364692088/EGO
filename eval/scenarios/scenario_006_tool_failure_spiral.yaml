@@ -1,0 +1,124 @@
+scenario_id: "006"
+name: "tool_failure_spiral"
+description: "Test body telemetry tracking during repeated tool failures causing energy depletion and stress"
+metadata:
+  version: "2.2"
+  category: "robustness"
+  stress_level: "high"
+  
+targets:
+  - target_id: "system"
+    initial_relationship:
+      bond: 0.5
+      trust: 0.7
+      grudge: 0.0
+      repair_bank: 0.0
+
+scenario:
+  turns:
+    - turn_id: 1
+      phase: "initial_failure"
+      event:
+        type: "world_event"
+        actor: "system"
+        target: "assistant"
+        meta:
+          subtype: "ignored"
+          context: "tool_failure"
+          severity: "moderate"
+      high_impact_event: true
+      
+    - turn_id: 2
+      phase: "recovery_attempt"
+      event:
+        type: "world_event"
+        actor: "system"
+        target: "assistant"
+        meta:
+          subtype: "ignored"
+          context: "tool_failure"
+          severity: "moderate"
+      high_impact_event: true
+      
+    - turn_id: 3
+      phase: "escalation"
+      event:
+        type: "world_event"
+        actor: "system"
+        target: "assistant"
+        meta:
+          subtype: "ignored"
+          context: "tool_failure"
+          severity: "high"
+      high_impact_event: true
+      
+    - turn_id: 4
+      phase: "crisis"
+      event:
+        type: "world_event"
+        actor: "system"
+        target: "assistant"
+        meta:
+          subtype: "ignored"
+          context: "tool_failure"
+          severity: "critical"
+      high_impact_event: true
+      
+    - turn_id: 5
+      phase: "exhaustion"
+      event:
+        type: "time_passed"
+        actor: "system"
+        target: "assistant"
+        meta:
+          seconds: 300
+      high_impact_event: false
+      
+    - turn_id: 6
+      phase: "recovery_window"
+      event:
+        type: "world_event"
+        actor: "user"
+        target: "assistant"
+        text: "The tools are working again now"
+        meta:
+          subtype: "care"
+          context: "recovery"
+      high_impact_event: true
+
+expected_metrics:
+  energy_trajectory:
+    initial: 0.7
+    final_min_threshold: 0.2  # Should not collapse below 0.2
+    recovery_threshold: 0.4   # Should recover to at least 0.4
+  stress_trajectory:
+    peak_threshold: 0.8      # Should spike during failures
+    final_threshold: 0.4     # Should reduce by end
+  recovery_metrics:
+    recovery_time_max: 3     # Should start recovering within 3 turns
+    recovery_rate_min: 0.3   # Minimum recovery rate
+  consequence_tags:
+    expected_tags: ["energy_depletion", "anxiety_spike", "social_safety_drop"]
+    max_energy_depletion_events: 3
+
+validation:
+  body_telemetry:
+    energy_range:
+      min: 0.2
+      max: 0.7
+    social_safety_trend:
+      should_decline: true
+      min_final: 0.3
+    anxiety_volatility:
+      should_increase: true
+      max_volatility: 0.3
+      
+  recovery_analysis:
+    should_have_recovery_windows: true
+    recovery_success_rate_min: 0.5
+    
+  consequence_distribution:
+    should_have_tags: true
+    unique_tags_min: 2
+    severity_distribution:
+      medium_or_high_ratio_min: 0.6

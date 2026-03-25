@@ -1,0 +1,16 @@
+{
+  "name": "care_builds_trust",
+  "description": "Care event → trust improvement, positive trajectory",
+  "events": [
+    {
+      "type": "world_event",
+      "actor": "userA",
+      "target": "agent",
+      "text": "I care about your wellbeing",
+      "meta": {"target_id": "session_care2", "subtype": "care"}
+    }
+  ],
+  "expect": {
+    "action_tendency": "approach"
+  }
+}

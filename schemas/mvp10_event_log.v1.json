@@ -1,0 +1,141 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://openemotion.org/schemas/mvp10_event_log.v1.json",
+  "title": "MVP10 Event Log",
+  "description": "Schema for deterministic event logging in LucidLoop MVP-10",
+  "type": "object",
+  "required": ["tick_id", "run_id", "seed", "ts", "candidates", "chosen_focus", "chosen_intent", "policy_params", "plan", "action", "outcome", "state_delta", "interventions"],
+  "properties": {
+    "tick_id": {
+      "type": "integer",
+      "description": "Sequential tick number within a run",
+      "minimum": 0
+    },
+    "run_id": {
+      "type": "string",
+      "description": "Unique identifier for this run",
+      "minLength": 1,
+      "maxLength": 128
+    },
+    "seed": {
+      "type": "integer",
+      "description": "Random seed for deterministic replay",
+      "minimum": 0
+    },
+    "ts": {
+      "type": "number",
+      "description": "Unix timestamp in seconds"
+    },
+    "candidates": {
+      "type": "array",
+      "description": "List of candidate intents/focuses considered",
+      "items": {
+        "type": "object",
+        "required": ["id", "score"],
+        "properties": {
+          "id": {"type": "string"},
+          "score": {"type": "number", "minimum": 0, "maximum": 1},
+          "type": {"type": "string"},
+          "meta": {"type": "object"}
+        }
+      }
+    },
+    "chosen_focus": {
+      "type": "string",
+      "description": "The focus that was selected"
+    },
+    "chosen_intent": {
+      "type": "string",
+      "description": "The intent that was chosen"
+    },
+    "policy_params": {
+      "type": "object",
+      "description": "Policy parameters used for this decision",
+      "additionalProperties": true
+    },
+    "plan": {
+      "type": "object",
+      "description": "The generated plan",
+      "required": ["steps", "risk_level", "expected_outcome"],
+      "properties": {
+        "plan_id": {"type": "string"},
+        "goal": {"type": "string"},
+        "steps": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["action"],
+            "properties": {
+              "step_id": {"type": "string"},
+              "action": {"type": "string"},
+              "params": {"type": "object"},
+              "expected_result": {"type": "string"},
+              "rollback": {"type": "string"},
+              "required_evidence": {"type": "array", "items": {"type": "string"}}
+            }
+          }
+        },
+        "risk_level": {"type": "string", "enum": ["low", "medium", "high", "critical"]},
+        "expected_outcome": {"type": "string"},
+        "rollback": {"type": "string"},
+        "required_evidence": {"type": "array", "items": {"type": "string"}},
+        "constraints": {"type": "array", "items": {"type": "string"}},
+        "timeout_seconds": {"type": "integer"},
+        "created_at": {"type": "number"}
+      }
+    },
+    "action": {
+      "type": "object",
+      "description": "The action that was executed",
+      "required": ["type"],
+      "properties": {
+        "type": {
+          "type": "string",
+          "enum": ["seek_info", "attempt_solution", "run_check", "apply_fix", "commit_progress", "noop"]
+        },
+        "params": {"type": "object"},
+        "target": {"type": "string"}
+      }
+    },
+    "outcome": {
+      "type": "object",
+      "description": "Result of the action",
+      "required": ["status"],
+      "properties": {
+        "status": {"type": "string", "enum": ["success", "fail", "partial"]},
+        "reason": {"type": "string"},
+        "evidence": {"type": "object"}
+      }
+    },
+    "state_delta": {
+      "type": "object",
+      "description": "Changes to state after this tick",
+      "properties": {
+        "before": {"type": "object"},
+        "after": {"type": "object"},
+        "changed_keys": {"type": "array", "items": {"type": "string"}}
+      }
+    },
+    "interventions": {
+      "type": "array",
+      "description": "Any interventions applied",
+      "items": {
+        "type": "object",
+        "properties": {
+          "type": {"type": "string"},
+          "reason": {"type": "string"},
+          "details": {"type": "object"}
+        }
+      }
+    },
+    "validation": {
+      "type": "object",
+      "description": "Validation result if any",
+      "properties": {
+        "passed": {"type": "boolean"},
+        "violations": {"type": "array", "items": {"type": "string"}},
+        "replan_count": {"type": "integer"}
+      }
+    }
+  }
+}

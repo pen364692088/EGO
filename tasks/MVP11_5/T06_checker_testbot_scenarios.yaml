@@ -1,0 +1,26 @@
+task_id: MVP11_5_T06
+goal: >
+  Implement intent checker and testbot scenarios for intent alignment validation.
+  Create E2E tests that verify response intent compliance.
+depends_on:
+  - MVP11_5_T05
+deliverables:
+  - emotiond/intent_checker.py
+  - tests/testbot/test_intent_alignment_e2e.py
+  - artifacts/testbot/scenarios/intent_alignment_scenarios.json
+commands:
+  - python tools/implement-intent-checker
+  - pytest -q tests/testbot/test_intent_alignment_e2e.py
+acceptance_criteria:
+  - file_exists: emotiond/intent_checker.py
+  - file_exists: tests/testbot/test_intent_alignment_e2e.py
+  - test_pass: test_intent_alignment_e2e.py
+  - coverage_gte: 80%
+stop_conditions:
+  - dependency_incomplete
+  - schema_invalid
+  - test_failures_unrecoverable
+scope_boundary:
+  - Implement intent checker
+  - Add testbot scenarios
+  - Do not modify core LLM behavior

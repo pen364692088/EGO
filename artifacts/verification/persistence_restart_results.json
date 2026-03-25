@@ -1,0 +1,98 @@
+{
+  "timestamp": "2026-03-12 19:43:57",
+  "mode": "verification-only",
+  "experiments": [
+    {
+      "experiment": "self_model_persistence",
+      "tests": [
+        {
+          "name": "legacy_reset_behavior",
+          "status": "PASS",
+          "evidence": "Reset creates fresh instance (expected for in-memory)",
+          "persistence": false,
+          "reason": "Legacy SelfModelV0 is in-memory only, reset clears state"
+        },
+        {
+          "name": "mvp13_reset_behavior",
+          "status": "PASS",
+          "evidence": "Phase before/after reset: None -> None",
+          "persistence": false,
+          "reason": "MVP13 SelfModelManager is in-memory, reset creates fresh instance"
+        },
+        {
+          "name": "mvp13_persistence_api",
+          "status": "PASS",
+          "evidence": "Persistence has save/load methods"
+        },
+        {
+          "name": "persistence_main_chain_usage",
+          "status": "PASS",
+          "evidence": "core.py uses SelfModelPersistence"
+        }
+      ]
+    },
+    {
+      "experiment": "drives_persistence",
+      "tests": [
+        {
+          "name": "drives_reset_behavior",
+          "status": "PASS",
+          "evidence": "Reset creates fresh instance",
+          "persistence": false,
+          "reason": "DriveManager is in-memory, reset creates fresh instance"
+        },
+        {
+          "name": "drives_persistence_mechanism",
+          "status": "FAIL",
+          "evidence": "DriveManager missing persistence (save: False, load: False)"
+        }
+      ]
+    },
+    {
+      "experiment": "developmental_persistence",
+      "tests": [
+        {
+          "name": "episodes_persist_across_reset",
+          "status": "FAIL",
+          "evidence": "Episodes LOST: 3 -> 0",
+          "critical": true,
+          "reason": "DevelopmentalManager reset clears state - NO PERSISTENCE"
+        },
+        {
+          "name": "developmental_persistence_mechanism",
+          "status": "FAIL",
+          "evidence": "NO persistence methods (save: False, load: False)",
+          "critical": true
+        },
+        {
+          "name": "developmental_persistence_file",
+          "status": "FAIL",
+          "evidence": "No persistence file found in expected locations",
+          "critical": true
+        },
+        {
+          "name": "daily_check_reset_analysis",
+          "status": "FAIL",
+          "evidence": "reset_developmental_manager() called 3 times in: ['def check_continuity() -> dict:', 'def check_metrics() -> dict:', 'def check_invariants() -> dict:']",
+          "critical": true,
+          "reason": "Daily check resets state before reading, making observations meaningless"
+        }
+      ]
+    },
+    {
+      "experiment": "cross_session_state",
+      "tests": [
+        {
+          "name": "self_model_serialization",
+          "status": "PASS",
+          "evidence": "SelfModelState is serializable (Pydantic)"
+        },
+        {
+          "name": "developmental_serialization",
+          "status": "PASS",
+          "evidence": "DevelopmentalState is serializable (Pydantic)"
+        }
+      ]
+    }
+  ]
+}

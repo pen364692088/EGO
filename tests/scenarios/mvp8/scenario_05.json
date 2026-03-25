@@ -1,0 +1,23 @@
+{
+  "name": "multi_step_care_sequence",
+  "description": "Sequence of care events maintains positive trajectory",
+  "events": [
+    {
+      "type": "world_event",
+      "actor": "userA",
+      "target": "agent",
+      "text": "user shows care",
+      "meta": {"target_id": "session_multi", "subtype": "care"}
+    },
+    {
+      "type": "world_event",
+      "actor": "userA",
+      "target": "agent",
+      "text": "user shows care again",
+      "meta": {"target_id": "session_multi", "subtype": "care"}
+    }
+  ],
+  "expect": {
+    "action_tendency": "approach"
+  }
+}

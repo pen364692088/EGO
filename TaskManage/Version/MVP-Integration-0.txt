@@ -1,0 +1,170 @@
+任务说明：OpenEmotion ↔ OpenClaw 联调接入（Integration-0）
+
+Project location: /home/moonlight/Project/Github/MyProject/Emotion/OpenEmotion
+
+目标
+
+把 OpenEmotion（emotiond）连到 OpenClaw，完成一次端到端联调，让 OpenClaw 在真实对话中：
+
+每条用户消息：由 agent 判断对应的 world_event subtype（care / apology / rejection / ignored…）并调用 emotiond /event
+
+由 Hook 提供稳定的 target_id（用 OpenClaw 的 message:received conversationId），避免用户伪造 target 导致“学习串号”
+
+Hook 自动把真实时间差转成 time_passed 事件喂给 emotiond（受你现有 10s/60s 限流控制）
+
+agent 在回复前拉取 /decision（含 explanation）用于“语气/边界/修复策略”的生成（不要求改变 OpenClaw 核心，只做 skill 指导）
+
+这一版以“验证效果”为主，不做 OpenClaw 插件 HTTP 暴露（有已知风险点，见下）。
+
+Repo / Branch
+
+Repo：pen364692088/OpenEmotion
+
+Branch：feature-emotiond-mvp
+
+当前基线：MVP-3.1 已完成（419 tests 全绿）
+
+设计原则（全局最优的联调方式）
+
+语义归因交给 LLM：事件 subtype 由 agent 判断（更像人、可塑性高）
+
+身份/对象归因交给 Hook：target_id 必须来自网关事件上下文（conversationId），而不是用户输入（否则 3.1 的“目标隔离”会被破坏）
+
+最小侵入：不改 OpenClaw 核心；用 workspace skills + workspace hooks 完成集成（OpenClaw 也推荐用这些扩展点）
+
+交付物清单
+A) OpenClaw Skill：openemotion-emotiond
+
+放置位置（二选一）：
+
+<workspace>/skills/openemotion-emotiond/（仅该 agent 生效，优先级最高）
+
+或 ~/.openclaw/skills/openemotion-emotiond/（全局共享）
+
+内容要求：
+
+SKILL.md（含 YAML frontmatter），描述清楚两类操作：
+
+POST /event：发送情绪世界事件（带 request_id、target_id）
+
+GET /decision：获取最新决策与 explanation（用于生成回复）
+
+Skill 指令必须明确：
+
+每条用户消息先：调用 /event
+
+再：调用 /decision
+
+最后：依据 explanation 的 selected action + reasons 来生成回复（边界/修复/靠近/撤退/反击等）
+
+环境变量约定（由 OpenClaw 配置注入）：
+
+EMOTIOND_BASE_URL（默认 http://127.0.0.1:18080）
+
+EMOTIOND_OPENCLAW_TOKEN（Bearer token；source= openclaw）
+
+OpenClaw 对 ~/.openclaw/ 下的配置/密钥文件属于敏感面，文档也明确要当作 secrets 管理。
+
+B) OpenClaw Hook：emotiond-bridge
+
+放置位置：
+
+<workspace>/hooks/emotiond-bridge/（推荐，方便跟 workspace 走）
+
+Hook 功能：
+
+监听 message:received 事件（OpenClaw hooks 支持 message 事件，并提供 conversationId/from/channelId/messageId 等上下文）
+
+生成并写入 workspace 文件：
+
+emotiond/context.json（或同等路径），内容至少包括：
+
+target_id = conversationId（核心）
+
+from/channelId/conversationId/messageId/timestamp
+
+自动 time_passed：
+
+维护“上一次 message:received 的 timestamp”
+
+计算真实秒数 delta，向 emotiond 发 time_passed（seconds clamp 到 1–300，且你已有 10s 窗口 60s 上限）
+
+meta.target_id 用 conversationId
+
+request_id 可用 messageId + ":tp"（确保幂等）
+
+注意：Hook 很适合“写文件/调外部 API”。官方文档也把“调用外部 API”作为常见用途之一。
+
+C) 集成文档 & 脚本
+
+integrations/openclaw/README.md
+
+如何放置 skills/hooks
+
+如何在 openclaw.json 里注入 env（只写示例，不写真实 token）
+
+如何启动 emotiond（本机/远程两种）
+
+scripts/install_openclaw_integration.sh（可选）
+
+把 repo 内 skills/hooks 复制/软链到目标 workspace 目录
+
+非目标（这版不要做）
+
+不做 OpenClaw 插件 HTTP 对外路由（近期有报告：插件 HTTP routes 可能绕过网关认证）。
+
+不做复杂的多 channel 身份绑定安全策略（以后再补）
+
+联调验收标准（必须可复现）
+
+基本打通
+
+OpenClaw 对话时，每条用户消息都会导致 emotiond 收到事件 + 产生新 decision
+
+/decision 返回中能看到 explanation（candidates/selected/reasons）
+
+target 隔离在真实对话成立
+
+同一 OpenClaw 会话（同 conversationId）学习会累积
+
+换一个对话线程（不同 conversationId）不会继承 residual（验证你 3.1 的隔离能力）
+
+time_passed 有效
+
+停顿一段时间后再发消息，energy/social_safety 的变化与 time_passed 逻辑一致
+
+不会因为频率过高导致 time_passed 被拒绝（或拒绝有审计原因）
+
+幂等稳定
+
+同一 messageId 重放不会造成重复状态更新（request_id 幂等生效）
+
+建议的目录结构（放在 OpenEmotion repo 内）
+
+integrations/openclaw/skills/openemotion-emotiond/SKILL.md
+
+integrations/openclaw/hooks/emotiond-bridge/HOOK.md
+
+integrations/openclaw/hooks/emotiond-bridge/index.ts
+
+integrations/openclaw/README.md
+
+scripts/install_openclaw_integration.sh（可选）
+
+快速自测流程（写进 README）
+
+启动 emotiond（本机 18080）
+
+启动 OpenClaw（加载该 workspace 的 skills/hooks）
+
+在同一会话连续发 10 条“边界/忽视/道歉/关心”混合消息
+
+对比：
+
+decision 的 selected action 是否出现“学乖”趋势
+
+explanation 里 residual/alpha 是否随 n 增长更偏向个体经验
+
+换一个新会话（新 conversationId），确认策略不会继承上个会话的残差
+
+建议在联调跑通后立刻做一个 Integration-1：把 explanation 中的 selected.action 映射到固定的“回复风格模板”（boundary/withdraw/repair_offer 等），这样主观体感会更明显、更稳定

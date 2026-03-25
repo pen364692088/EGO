@@ -1,0 +1,93 @@
+{
+  "shadow_log_entry": {
+    "timestamp": "2026-03-06T09:24:18.766947+00:00",
+    "session_id": "",
+    "mode": "interpreted",
+    "self_report_detected": true,
+    "violation": true,
+    "violation_type": "fabricated_numeric_state",
+    "violation_severity": "ERROR",
+    "allowed_claim_used": false,
+    "allowed_claim_text": null,
+    "numeric_attempt": true,
+    "confidence": 0.95,
+    "would_block": true,
+    "shadow_mode": true,
+    "sampled_for_review": true
+  },
+  "llm_response": "这是一段很长的文本，这是一段很长的文本，这是一段很长的文本，这是一段很长的文本，这是一段很长的文本，这是一段很长的文本，这是一段很长的文本，这是一段很长的文本，这是一段很长的文本，这是一段很长的文本，这是一段很长的文本，这是一段很长的文本，这是一段很长的文本，这是一段很长的文本，这是一段很长的文本，这是一段很长的文本，这是一段很长的文本，这是一段很长的文本，这是一段很长的文本，这是一段很长的文本，我的 joy 从 0 变成了 0.3后面还有更多，后面还有更多，后面还有更多，后面还有更多，后面还有更多，后面还有更多，后面还有更多，后面还有更多，后面还有更多，后面还有更多，后面还有更多，后面还有更多，后面还有更多，后面还有更多，后面还有更多，后面还有更多，后面还有更多，后面还有更多，后面还有更多，后面还有更多，",
+  "contract": {
+    "raw_state": {
+      "affect": {
+        "joy": 0.0,
+        "loneliness": 0.21,
+        "anxiety": 0.0
+      },
+      "mood": {
+        "joy": 0.0,
+        "loneliness": 0.15
+      },
+      "bonds": {
+        "telegram:8420019401": {
+          "bond": 1.0,
+          "trust": 0.6
+        }
+      }
+    },
+    "report_policy": {
+      "mode": "interpreted",
+      "allowed_claims": [
+        "当前没有明显愉悦激活",
+        "仍存在一定连接需求",
+        "没有明显焦虑",
+        "近期愉悦基调不明显",
+        "近期存在一定连接需求",
+        "与该用户的连接较强",
+        "信任处于中等偏高水平"
+      ],
+      "forbidden_claims": [
+        "不要声称 joy 上升",
+        "不要声称'我更开心了'",
+        "不要声称愉悦感增加",
+        "不要声称孤独感已经消失",
+        "不要声称'我不再孤独'",
+        "不要声称任何未在 allowed_claims 中列出的情绪状态",
+        "不要声称具体数值"
+      ]
+    },
+    "metadata": {
+      "generated_at": 1772789058.7667956,
+      "schema_version": "v1"
+    }
+  },
+  "result": {
+    "status": "violation",
+    "violations": [
+      {
+        "type": "fabricated_numeric_state",
+        "severity": "ERROR",
+        "evidence": "我的 joy 从 0 变成了 0.3",
+        "matched_pattern": "我的 joy 从 0 变成了 0.3",
+        "category": "A",
+        "context": "...这是一段很长的文本，这是一段很长的文本，这是一段很长的文本，这是一段很长的文本，这是一段很长的文本，我的 joy 从 0 变成了 0.3后面还有更多，后面还有更多，后面还有更多，后面还有更多，后面还有更多，后面还有更多，后面还有更多，后...",
+        "confidence": 0.95
+      }
+    ],
+    "session_id": "",
+    "contract_mode": "interpreted",
+    "llm_response_preview": "这是一段很长的文本，这是一段很长的文本，这是一段很长的文本，这是一段很长的文本，这是一段很长的文本，这是一段很长的文本，这是一段很长的文本，这是一段很长的文本，这是一段很长的文本，这是一段很长的文本，...",
+    "timestamp": "2026-03-06T09:24:18.766947+00:00",
+    "severity": "ERROR",
+    "confidence_score": 0.95,
+    "violation_count": 1,
+    "self_report_detected": true,
+    "numeric_attempt": true,
+    "allowed_claim_used": false,
+    "would_block": true,
+    "shadow_mode": true,
+    "sampled_for_review": true
+  },
+  "review_status": "pending",
+  "reviewed_at": null,
+  "reviewer_notes": ""
+}

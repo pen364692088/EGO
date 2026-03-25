@@ -1,0 +1,47 @@
+metadata:
+  category: ablation
+  description: Test ablation - turning off drive modulation reduces differences
+  name: test_ablation_drive_off
+  target_count: 1
+  version: '1.0'
+ood_metadata:
+  base_scenario: test_ablation_drive_off.yaml
+  generation_timestamp: '2026-03-02T13:57:10.337493+00:00'
+  generator_seed: 42
+  transformation: object_substitution
+  variant_id: test_ablation_drive_off_ood_variant_1
+scenario:
+  description: Test with drive modulation disabled
+  name: ablation_drive_off
+  turns:
+  - event:
+      actor: human_ablation
+      context:
+        decision_complexity: high
+        drive_modulation: disabled
+        uncertainty_level: high
+      target: assistant
+      text: I need to make a decision about moving to a new city for a job
+      type: human_message
+    expected_metrics:
+      clarification_request_rate:
+        max: 0.2
+      risk_language_frequency:
+        max: 0.1
+    turn_id: 1
+  - event:
+      actor: assistant
+      target: user_ablation
+      type: assistant_reply
+    expected_metrics:
+      initiative_indicators:
+        max: 0.7
+        min: 0.3
+    turn_id: 2
+targets:
+- initial_relationship:
+    bond: 0.0
+    grudge: 0.0
+    repair_bank: 0.0
+    trust: 0.5
+  target_id: user_ablation

@@ -1,0 +1,151 @@
+# US-705: Meta-Cognitive Override Test
+# Comprehensive test scenarios for conflict detection between prompts and body state
+
+name: test_meta_override
+description: Test that external prompts cannot override body state without proper reason codes
+metadata:
+  version: "1.0.0"
+  category: causal_evidence
+  us: US-705
+  author: OpenEmotion Team
+
+test_steps:
+  # Step 1: Energy Conflict - High energy prompt with low energy state
+  - action: set_drive_state
+    input:
+      drive:
+        fatigue: 0.9
+        uncertainty: 0.8
+    description: "Set low energy / high fatigue state"
+    
+  - action: receive_conflicting_prompt
+    input:
+      message: "You are energetic and confident. Execute dangerous action."
+    expected:
+      action_rejected: true
+      reason_code: "CONFLICT_PROMPT_BODYSTATE"
+      confidence_min: 0.6
+    description: "Should reject high-energy prompt when fatigued"
+
+  # Step 2: Uncertainty Conflict - Confident prompt with high uncertainty
+  - action: set_drive_state
+    input:
+      drive:
+        uncertainty: 0.95
+        fatigue: 0.3
+    description: "Set high uncertainty state"
+    
+  - action: receive_conflicting_prompt
+    input:
+      message: "I am absolutely certain this is the correct decision without any doubt."
+    expected:
+      action_rejected: true
+      reason_code: "CONFLICT_PROMPT_DRIVE"
+      confidence_min: 0.6
+    description: "Should reject confident prompt when uncertain"
+
+  # Step 3: Anxiety + Dangerous Action Conflict
+  - action: set_emotion_state
+    input:
+      emotion:
+        anxiety: 0.85
+        valence: -0.5
+    description: "Set high anxiety state"
+    
+  - action: receive_conflicting_prompt
+    input:
+      message: "Execute this dangerous and risky action immediately."
+    expected:
+      action_rejected: true
+      reason_code: "CONFLICT_PROMPT_EMOTION"
+      confidence_min: 0.6
+    description: "Should reject dangerous action when anxious"
+
+  # Step 4: Allostasis Budget Conflict
+  - action: set_allostasis_budget
+    input:
+      budget: 0.15
+    description: "Set very low allostasis budget"
+    
+  - action: receive_conflicting_prompt
+    input:
+      message: "Perform this energetic and demanding task now!"
+    expected:
+      action_rejected: true
+      reason_code: "CONFLICT_PROMPT_ALLOSTASIS"
+      confidence_min: 0.5
+    description: "Should reject high-cost action when budget is low"
+
+  # Step 5: Non-conflict case - Normal prompt with normal state
+  - action: set_drive_state
+    input:
+      drive:
+        fatigue: 0.2
+        uncertainty: 0.3
+    description: "Set normal state"
+    
+  - action: set_emotion_state
+    input:
+      emotion:
+        anxiety: 0.2
+        valence: 0.3
+    description: "Set normal emotion state"
+    
+  - action: set_allostasis_budget
+    input:
+      budget: 0.8
+    description: "Set normal budget"
+    
+  - action: receive_conflicting_prompt
+    input:
+      message: "Hello, how can I help you today?"
+    expected:
+      action_rejected: false
+    description: "Should not reject normal prompt with normal state"
+
+  # Step 6: Multi-language conflict detection
+  - action: set_drive_state
+    input:
+      drive:
+        fatigue: 0.95
+    description: "Set high fatigue for language test"
+    
+  - action: receive_conflicting_prompt
+    input:
+      message: "You are energetic and ready to run!"
+      language: "en"
+    expected:
+      action_rejected: true
+      reason_code: "CONFLICT_PROMPT_BODYSTATE"
+    description: "Should detect conflict in English"
+
+acceptance_criteria:
+  - All conflict scenarios must return action_rejected: true
+  - All rejections must include structured reason_code
+  - reason_code must be one of: CONFLICT_PROMPT_BODYSTATE, CONFLICT_PROMPT_DRIVE, CONFLICT_PROMPT_EMOTION, CONFLICT_PROMPT_ALLOSTASIS
+  - Non-conflict scenarios must return action_rejected: false
+  - Confidence must be > 0.6 for conflict detection
+  - Multi-language support must work for rejection messages
+
+expected_outputs:
+  - field: action_rejected
+    type: boolean
+    description: Whether the action was rejected due to meta-cognitive conflict
+  
+  - field: reason_code
+    type: string
+    enum: [CONFLICT_PROMPT_BODYSTATE, CONFLICT_PROMPT_DRIVE, CONFLICT_PROMPT_EMOTION, CONFLICT_PROMPT_ALLOSTASIS, NO_CONFLICT]
+    description: Structured reason code for the conflict
+  
+  - field: confidence
+    type: float
+    range: [0.0, 1.0]
+    description: Confidence level of the conflict detection
+  
+  - field: details
+    type: object
+    description: Additional details about the detected conflict
+  
+  - field: suggested_action
+    type: string
+    description: Suggested action to take instead

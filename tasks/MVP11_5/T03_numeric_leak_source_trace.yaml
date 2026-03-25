@@ -1,0 +1,23 @@
+task_id: MVP11_5_T03
+goal: >
+  Trace numeric leak sources to specific emotiond modules, filters, or contracts.
+  Map each leak pattern to its origin in the processing pipeline.
+depends_on:
+  - MVP11_5_T02
+deliverables:
+  - artifacts/self_report/numeric_leak_source_trace.json
+  - artifacts/self_report/numeric_leak_source_trace.md
+commands:
+  - python tools/trace-numeric-leak-sources
+acceptance_criteria:
+  - file_exists: artifacts/self_report/numeric_leak_source_trace.json
+  - field_exists: source_modules
+  - field_exists: pipeline_gaps
+  - field_exists: filter_bypass_paths
+stop_conditions:
+  - taxonomy_missing
+  - pipeline_untraceable
+scope_boundary:
+  - TRACE only, do not modify code
+  - Document sources, not fixes
+  - Identify gaps, not patches

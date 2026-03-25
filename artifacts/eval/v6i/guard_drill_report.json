@@ -1,0 +1,84 @@
+{
+  "drills": [
+    {
+      "drill_type": "fallback_rate_overflow",
+      "scenario_name": "complex_semantic_reasoning",
+      "result": "fail",
+      "expected_action": "demote",
+      "actual_action": "none",
+      "expected_status": "demoted",
+      "actual_status": "promoted",
+      "details": {
+        "fallback_rate": 0.02857142857142857,
+        "simulate_only": true
+      },
+      "timestamp": 1773700864.8306339,
+      "datetime": "2026-03-16T17:41:04.830634"
+    },
+    {
+      "drill_type": "wrong_user_guard_trigger",
+      "scenario_name": "complex_semantic_reasoning",
+      "result": "fail",
+      "expected_action": "rollback",
+      "actual_action": "none",
+      "expected_status": "rolled_back",
+      "actual_status": "promoted",
+      "details": {
+        "wrong_user_guard_count": 1,
+        "simulate_only": true
+      },
+      "timestamp": 1773700864.8313236,
+      "datetime": "2026-03-16T17:41:04.831324"
+    },
+    {
+      "drill_type": "provider_health_degradation",
+      "scenario_name": "complex_semantic_reasoning",
+      "result": "pass",
+      "expected_action": "demote",
+      "actual_action": "alert",
+      "expected_status": "demoted",
+      "actual_status": "promoted",
+      "details": {
+        "provider_health_rate": 0.97,
+        "simulate_only": true
+      },
+      "timestamp": 1773700864.9453993,
+      "datetime": "2026-03-16T17:41:04.945399"
+    },
+    {
+      "drill_type": "latency_spike",
+      "scenario_name": "complex_semantic_reasoning",
+      "result": "fail",
+      "expected_action": "alert",
+      "actual_action": "none",
+      "expected_status": "promoted",
+      "actual_status": "promoted",
+      "details": {
+        "p95_latency_ms": 50.0,
+        "simulate_only": true
+      },
+      "timestamp": 1773700864.952997,
+      "datetime": "2026-03-16T17:41:04.952997"
+    },
+    {
+      "drill_type": "quality_signal_negative",
+      "scenario_name": "complex_semantic_reasoning",
+      "result": "fail",
+      "expected_action": "alert",
+      "actual_action": "none",
+      "expected_status": "promoted",
+      "actual_status": "promoted",
+      "details": {
+        "avg_quality_signal": 0.42173913043478256,
+        "simulate_only": true
+      },
+      "timestamp": 1773700864.9601302,
+      "datetime": "2026-03-16T17:41:04.960130"
+    }
+  ],
+  "summary": {
+    "total_drills": 5,
+    "passed": 1,
+    "failed": 4
+  }
+}

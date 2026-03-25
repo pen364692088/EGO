@@ -1,0 +1,70 @@
+name: MVP-9 Evaluation
+
+on:
+  pull_request:
+    branches:
+      - main
+      - feature-emotiond-mvp
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+jobs:
+  mvp9-eval:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: |
+          python -m venv .venv
+          . .venv/bin/activate
+          pip install -e .
+          pip install pytest
+
+      - name: Run MVP-9 evaluation
+        id: mvp9_eval
+        run: |
+          . .venv/bin/activate
+          chmod +x tools/eval_mvp9.sh
+          ./tools/eval_mvp9.sh || echo "eval_failed=true" >> $GITHUB_OUTPUT
+        continue-on-error: true
+
+      - name: Analyze failures
+        if: steps.mvp9_eval.outputs.eval_failed == 'true'
+        run: |
+          echo "## MVP-9 Evaluation Failed" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          if [ -f reports/mvp9_failures.md ]; then
+            cat reports/mvp9_failures.md >> $GITHUB_STEP_SUMMARY
+          fi
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### Top Failure Categories" >> $GITHUB_STEP_SUMMARY
+          if [ -f reports/mvp9_eval.json ]; then
+            python3 scripts/ci/mvp9_analyze_failures.py >> $GITHUB_STEP_SUMMARY
+          fi
+
+      - name: Upload MVP-9 artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: mvp9-evaluation-results
+          path: |
+            reports/mvp9_eval.json
+            reports/mvp9_failures.md
+
+      - name: Check evaluation threshold
+        run: |
+          if [ -f reports/mvp9_eval.json ]; then
+            python3 scripts/ci/mvp9_check_threshold.py
+          else
+            echo "No evaluation report found!"
+            exit 1
+          fi

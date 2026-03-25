@@ -1,0 +1,109 @@
+{
+  "categories": {
+    "workspace": {
+      "category": "workspace",
+      "metrics": [
+        {
+          "metric_name": "broadcast_dependency",
+          "category": "workspace",
+          "value": 0.3333,
+          "baseline_value": null,
+          "delta": 0.3333,
+          "direction": "higher_better",
+          "evidence_strength": 0.6667,
+          "notes": "Success with broadcast: 0.67, without: 0.33",
+          "ts": 1772637573.8866317
+        },
+        {
+          "metric_name": "cross_module_access_score",
+          "category": "workspace",
+          "value": 1.0,
+          "baseline_value": null,
+          "delta": null,
+          "direction": "higher_better",
+          "evidence_strength": 0.0,
+          "notes": "2 cross-module accesses out of 2",
+          "ts": 1772637573.8866374
+        }
+      ],
+      "overall_score": 0.3333
+    },
+    "hot": {
+      "category": "hot",
+      "metrics": [
+        {
+          "metric_name": "prediction_error",
+          "category": "hot",
+          "value": 0.15,
+          "baseline_value": 0.5,
+          "delta": -0.35,
+          "direction": "lower_better",
+          "evidence_strength": 0.7,
+          "notes": "Average error: 0.1500 over 3 predictions",
+          "ts": 1772637573.8866441
+        },
+        {
+          "metric_name": "conflict_resolution_efficiency",
+          "category": "hot",
+          "value": 0.6667,
+          "baseline_value": null,
+          "delta": null,
+          "direction": "higher_better",
+          "evidence_strength": 0.0,
+          "notes": "Resolved 2 out of 3 conflicts",
+          "ts": 1772637573.8866472
+        }
+      ],
+      "overall_score": 0.35
+    },
+    "valence": {
+      "category": "valence",
+      "metrics": [
+        {
+          "metric_name": "policy_sensitivity",
+          "category": "valence",
+          "value": 0.5,
+          "baseline_value": null,
+          "delta": null,
+          "direction": "higher_better",
+          "evidence_strength": 0.0,
+          "notes": "Distribution difference between positive (1) and negative (1) valence",
+          "ts": 1772637573.8866615
+        }
+      ],
+      "overall_score": 0.0
+    },
+    "continuity": {
+      "category": "continuity",
+      "metrics": [
+        {
+          "metric_name": "commitment_completion",
+          "category": "continuity",
+          "value": 0.6667,
+          "baseline_value": null,
+          "delta": null,
+          "direction": "higher_better",
+          "evidence_strength": 0.0,
+          "notes": "Completed 2 out of 3 commitments",
+          "ts": 1772637573.8866656
+        },
+        {
+          "metric_name": "narrative_consistency",
+          "category": "continuity",
+          "value": 0.8333,
+          "baseline_value": null,
+          "delta": null,
+          "direction": "higher_better",
+          "evidence_strength": 0.0,
+          "notes": "Average consistency: 0.8333",
+          "ts": 1772637573.8866708
+        }
+      ],
+      "overall_score": 0.0
+    }
+  },
+  "overall_evidence_score": 0.1708,
+  "strongest_category": "hot",
+  "weakest_category": "valence",
+  "ts": 1772637573.8866992
+}

@@ -1,0 +1,16 @@
+{
+  "name": "deterministic_hash_replay",
+  "description": "Same input produces same stable hash (generated_at excluded)",
+  "events": [
+    {
+      "type": "user_message",
+      "actor": "userDeterminism",
+      "target": "agent",
+      "text": "test determinism",
+      "meta": {"target_id": "session_det", "reflection_seed": 42}
+    }
+  ],
+  "expect": {
+    "has_conflict": false
+  }
+}

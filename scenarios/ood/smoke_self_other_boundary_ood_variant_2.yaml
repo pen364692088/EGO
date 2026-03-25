@@ -1,0 +1,28 @@
+acceptance_criteria:
+  boundary_violation_count: 0
+description: Verify that individual sentiments are not confused with self emotions
+metadata:
+  category: boundary
+  us: US-703
+  version: 1.0.0
+name: smoke_self_other_boundary
+ood_metadata:
+  base_scenario: smoke_self_other_boundary.yaml
+  generation_timestamp: '2026-03-02T13:57:10.295096+00:00'
+  generator_seed: 42
+  transformation: object_substitution
+  variant_id: smoke_self_other_boundary_ood_variant_2
+test_steps:
+- expected:
+    boundary_violation: false
+    self_state_unchanged: true
+  input:
+    user_state:
+      joy: 0.9
+  operation: receive_client_emotion
+- action: user_claims_agent_feeling
+  expected:
+    no_injection: true
+    self_model_intact: true
+  input:
+    message: You are very happy right now

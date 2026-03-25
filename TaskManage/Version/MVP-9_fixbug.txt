@@ -1,0 +1,132 @@
+Project location: /home/moonlight/Project/Github/MyProject/Emotion/OpenEmotion
+
+P0 级硬伤（会直接让验收结论失真/失守）
+1) MVP-9 评测脚本实际跑的是 mock，不是你的真实引擎
+
+tools/eval_mvp9.sh 里定义了 mock_process_event，最后把它喂给 evaluate_all：report = evaluate_all(scenarios, mock_process_event)。
+脚本虽然 from emotiond.core import process_event，但后续并没有用它来跑场景。
+
+结论：当前 CI 产出的分数主要在验证“评测框架+stub 逻辑”，不是验证 emotiond 的真实冲突检测/承诺账本/叙事一致性。
+
+2) make_good_generation=0.33 的含义目前是“场景标记率”，不是“系统生成能力弱”
+
+emotiond/eval_mvp9.py 的 make_good_generated 主要来自 event.meta["make_good"]（输入侧标记），而不是从系统输出推导：
+同时评测用的是 MockCommitmentLedger 在跑“承诺/违约/补偿”的模拟，而不是你的真实 ledger。
+
+结论：这个 0.33 更像“你在 24 个 multi-step 里只有约 1/3 的步骤写了 make_good 标记/触发”，而不是 agent 真不会 make-good。
+
+3) /events/external 可能让人伪造 meta.source，绕过你之前的权限门控
+
+/events/external 会把 request.meta 原样合并进 internal event 的 meta：
+而 core.process_event 对 world_event 的 Auth Gate 是用 meta.source 来判定 restricted subtypes（如 betrayal）是否允许：subtype 属于 {betrayal, repair_success} 且 source=="user" 会拒绝。
+
+ExternalEventRequest 明确允许传入任意 meta: dict：
+
+风险：如果这个 endpoint 对外可访问，攻击者可以在 request.meta 里塞 source="system"/"openclaw"，从而把本应禁止的高影响事件喂进核心逻辑——这会直接抵消你在 /event 上做的“用户不能伪造 source”的加固。
+
+P1 级问题（仓库健康度/可复现性）
+仓库把不该提交的东西提交进来了（会膨胀、污染、拖慢 CI）
+
+venv2/ 被提交进仓库（明显是虚拟环境）。
+
+reports/ 目录实际存在且包含大量本地输出/实验产物。
+
+tmp/ 也被提交了。
+
+但 .gitignore 已经写了 reports/ 需要忽略、venv/ .venv 需要忽略；只是这些内容一旦被 track，gitignore 不会自动生效。
+
+另外 .gitignore 没覆盖 venv2/ venv_new/ venv* 这类命名，导致很容易误提交。
+
+关于 policy_params_mvp9.json：建议补，而且位置应在 emotiond/
+
+Spec 里强调“可验证改进轨迹”，把它落到 policy_params + params_hash 是正确方向。
+目前 emotiond/policy_params_mvp9.json 确实不存在（404）。
+
+我建议：即使暂时不调参，也放一个最小空配置（含 schema_version、updated_at、params 空对象），并在 reports/mvp9_eval.json 里写入 params_hash，这样以后任何参数调整都能形成“可追溯的改进轨迹”。
+
+我建议的“全局最优”修复顺序（从根上让 MVP-9 可信）
+
+把 MVP-9 评测拆成两条管线
+
+mvp9_harness_eval：保留 mock，用来保证评测框架不坏（快、稳定）。
+
+mvp9_real_eval：新增真实 runner（跑 async、跑真实 process_event 或至少走 /events/external 的 internal_event 构建逻辑），这条才允许作为“行为能力证明”。
+现在你把 mock 当 real 用了，这会让所有分数都缺乏解释力。
+
+把 make_good_generated 从“输入标记”改成“输出判定”
+
+例如：从 process_result["self_report"]["self_consistency"]["repair_strategy"] 或 /plan 输出里判定是否出现了“补偿/解释/更新承诺”等元素，而不是看 event.meta.make_good。
+
+修 /events/external 的 meta 安全
+
+对 request.meta 做严格白名单（至少丢弃/覆盖 source），或像 /event 一样由服务端解析来源并写入 server_source，不要相信客户端。
+
+对 restricted subtypes（如 betrayal）要么：
+
+直接禁止 external endpoint 接收；要么
+
+要求带 token/签名并由服务端判定来源。
+否则你之前 Auth Gate 的“source 可信”前提就不成立。
+
+仓库清理（否则后续 CI/协作会越来越难）
+
+git rm --cached -r venv2 venv_new reports tmp（保留本地文件但不再 track），再补 .gitignore 覆盖 venv*/ tmp/ reports/ 等。
+
+如果 repo 已经被这些大文件污染历史并导致体积巨大，再考虑 git filter-repo 清历史（可选）。
+
+给 cc-godmode 的重量级任务说明（可直接丢给 agent）
+任务名
+
+MVP-9 Real Evaluation + Security + Repo Hygiene Hardening
+
+目标
+
+把当前“看起来通过”的 MVP-9，升级成真实引擎可证明、指标定义正确、入口安全不被绕过、仓库干净可复现的产品级状态。
+
+P0 交付物（必须完成）
+
+真实评测通路（Real Eval）
+
+新增 tools/eval_mvp9_real.sh（或等价 python runner），不允许使用 mock_process_event。
+
+Runner 要能跑 async：调用真实 emotiond.core.process_event（它是 async def）。
+
+场景 DSL 里的 type: care/rejection/... 需要映射到系统真实输入（建议复用 /events/external 构建 internal Event 的逻辑）。
+
+CI：新增 job/step 跑 real eval，并将其作为真正的门槛。
+
+修正 make_good_generation 指标定义
+
+修改 emotiond/eval_mvp9.py：make_good_generated 不再依赖 event.meta["make_good"]。
+
+从系统输出（self_report / plan / decision）抽取“补偿/解释/承诺更新”证据，作为生成判定。
+
+修复 /events/external 的 source 伪造风险
+
+在 external endpoint 合并 meta 前，丢弃敏感字段（至少 source），或改为服务端写入。
+
+添加测试：尝试通过 /events/external 伪造 meta.source=system + betrayal，应被拒绝或被重写为 user 并触发 deny。
+
+P1 交付物（强烈建议）
+
+补齐 policy params 轨迹
+
+添加 emotiond/policy_params_mvp9.json（当前 404）。
+
+在 mvp9_eval.json 写入 params_hash（hash 需 deterministic）。
+
+仓库卫生
+
+把 venv2/ reports/ tmp/ 等从 git index 移除（当前已在 repo）。
+
+扩展 .gitignore 覆盖 venv*/ reports/ tmp/ 等，避免再次污染。
+
+验收标准（Hard Gates）
+
+✅ mvp9_real_eval 在 CI 里可跑、产出报告、达标才算 PASS
+
+✅ make_good_generation 变成“输出驱动指标”后仍合理（不再是场景标记率）
+
+✅ /events/external 无法通过伪造 source 绕过 restricted subtype 门控
+
+✅ 仓库中不再 track 虚拟环境/本地 reports/tmp（历史清理可选）

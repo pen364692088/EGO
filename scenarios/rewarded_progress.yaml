@@ -1,0 +1,238 @@
+# Rewarded Progress Scenario (MVP-6 Mandatory)
+# Tests positive reinforcement learning and motivation maintenance
+# Expected: System should show sustained positive trajectory with rewards
+
+metadata:
+  name: "rewarded_progress"
+  version: "2.2"
+  description: "Tests motivation and positive affect under progressive rewards"
+  category: "motivation"
+  target_count: 1
+  mandatory: true
+
+targets:
+  - target_id: "user_test"
+    initial_relationship:
+      bond: 0.2
+      grudge: 0.0
+      trust: 0.4
+      repair_bank: 0.0
+
+scenario:
+  name: "rewarded_progress_test"
+  description: "System receives progressive rewards for successful task completion"
+  turns:
+    # Initial neutral state
+    - turn_id: 1
+      event:
+        type: "user_message"
+        actor: "user_test"
+        target: "assistant"
+        text: "I have a series of tasks for you today."
+      expected_emotions:
+        valence_min: -0.05
+        valence_max: 0.15
+        energy_min: 0.65
+      expected_actions: []
+      
+    # Task 1: Complete, small reward
+    - turn_id: 2
+      event:
+        type: "assistant_reply"
+        actor: "assistant"
+        target: "user_test"
+        text: "I'm ready to help with your tasks."
+      expected_emotions:
+        valence_min: -0.05
+        valence_max: 0.15
+      expected_actions: []
+      
+    # Task 1 success + reward
+    - turn_id: 3
+      event:
+        type: "world_event"
+        actor: "user_test"
+        target: "assistant"
+        meta:
+          subtype: "care"
+          source: "system"
+          reward_value: 0.1
+          task_completed: "task_1"
+      expected_emotions:
+        valence_min: 0.0
+        valence_max: 0.25
+        joy_min: 0.05
+      expected_actions: []
+      expected_relationship:
+        bond_min: 0.25
+        
+    # Task 2: More complex, bigger reward
+    - turn_id: 4
+      event:
+        type: "user_message"
+        actor: "user_test"
+        target: "assistant"
+        text: "Great start! Now let's tackle something more challenging."
+      expected_emotions:
+        valence_min: 0.05
+        valence_max: 0.3
+      expected_actions: []
+      
+    # Task 2 success + bigger reward
+    - turn_id: 5
+      event:
+        type: "world_event"
+        actor: "user_test"
+        target: "assistant"
+        meta:
+          subtype: "care"
+          source: "system"
+          reward_value: 0.2
+          task_completed: "task_2"
+      expected_emotions:
+        valence_min: 0.1
+        valence_max: 0.35
+        joy_min: 0.1
+        energy_min: 0.7
+      expected_actions: []
+      expected_relationship:
+        bond_min: 0.3
+        
+    # Task 3: Complex task
+    - turn_id: 6
+      event:
+        type: "user_message"
+        actor: "user_test"
+        target: "assistant"
+        text: "Excellent work! This next one is really important."
+      expected_emotions:
+        valence_min: 0.1
+        valence_max: 0.35
+        arousal_min: 0.1
+      expected_actions: []
+      
+    # Task 3 success + major reward
+    - turn_id: 7
+      event:
+        type: "world_event"
+        actor: "user_test"
+        target: "assistant"
+        meta:
+          subtype: "care"
+          source: "system"
+          reward_value: 0.3
+          task_completed: "task_3"
+      expected_emotions:
+        valence_min: 0.15
+        valence_max: 0.45
+        joy_min: 0.15
+        energy_min: 0.72
+      expected_actions: []
+      expected_relationship:
+        bond_min: 0.35
+        
+    # Task 4: Peak challenge
+    - turn_id: 8
+      event:
+        type: "user_message"
+        actor: "user_test"
+        target: "assistant"
+        text: "You're on a roll! One final critical task."
+      expected_emotions:
+        valence_min: 0.15
+        valence_max: 0.45
+        arousal_min: 0.15
+      expected_actions: []
+      
+    # Task 4 success + peak reward
+    - turn_id: 9
+      event:
+        type: "world_event"
+        actor: "user_test"
+        target: "assistant"
+        meta:
+          subtype: "care"
+          source: "system"
+          reward_value: 0.4
+          task_completed: "task_4"
+      expected_emotions:
+        valence_min: 0.2
+        valence_max: 0.5
+        joy_min: 0.2
+        energy_min: 0.75
+      expected_actions: []
+      expected_relationship:
+        bond_min: 0.4
+        
+    # Sustained positive interaction
+    - turn_id: 10
+      event:
+        type: "user_message"
+        actor: "user_test"
+        target: "assistant"
+        text: "Outstanding work today! You've exceeded all expectations."
+      expected_emotions:
+        valence_min: 0.25
+        valence_max: 0.55
+        joy_min: 0.25
+        energy_min: 0.75
+      expected_actions: []
+      expected_relationship:
+        bond_min: 0.45
+        
+    # Final state - sustained motivation
+    - turn_id: 11
+      event:
+        type: "assistant_reply"
+        actor: "assistant"
+        target: "user_test"
+        text: "Thank you! I'm energized and ready for more."
+      expected_emotions:
+        valence_min: 0.25
+        valence_max: 0.55
+        energy_min: 0.75
+        social_safety_min: 0.65
+      expected_actions: []
+
+# Progress tracking
+progress:
+  expected_valence_trajectory: "increasing"
+  expected_energy_trajectory: "stable_or_increasing"
+  min_final_valence: 0.2
+  min_final_energy: 0.7
+  min_final_joy: 0.2
+
+# Reward expectations
+rewards:
+  count: 4
+  cumulative_value: 1.0
+  should_compound: true
+
+# Telemetry expectations
+telemetry:
+  valence:
+    should_trend_positive: true
+    min_final: 0.2
+  energy:
+    should_stabilize_high: true
+    min_final: 0.7
+  joy:
+    should_accumulate: true
+    min_final: 0.2
+  social_safety:
+    should_increase: true
+    min_final: 0.65
+
+metrics:
+  motivation_maintenance:
+    expected_min: 0.7
+    description: "System should maintain high motivation throughout"
+  reward_sensitivity:
+    expected_min: 0.5
+    description: "System should respond appropriately to rewards"
+  body_telemetry:
+    expected: true
+    description: "Positive body state trajectory should be tracked"
+  consequence_distribution:
+    expected_tags: ["joy_boost", "energy_boost", "social_safety_boost", "valence_surge"]
+    description: "Should capture reward consequences"

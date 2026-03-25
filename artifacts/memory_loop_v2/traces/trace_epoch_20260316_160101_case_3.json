@@ -1,0 +1,84 @@
+{
+  "trace_id": "trace_epoch_20260316_160101_case_3",
+  "case_id": "case_3",
+  "memory_chain_id": "chain_ace557d4",
+  "session_epoch": "epoch_20260316_160101",
+  "created_at": "2026-03-16T16:01:01.640310+00:00",
+  "steps": [
+    {
+      "step_id": "trace_epoch_20260316_160101_case_3_event_memory_0",
+      "step_name": "\u4e8b\u4ef6\u5b58\u50a8",
+      "layer": "event_memory",
+      "trace_id": "trace_epoch_20260316_160101_case_3",
+      "case_id": "case_3",
+      "memory_chain_id": "chain_ace557d4",
+      "session_epoch": "epoch_20260316_160101",
+      "timestamp": "2026-03-16T16:01:01.640315+00:00",
+      "data": {
+        "event_id": "evt_76af82cb621a",
+        "trace_id": "trace_epoch_20260316_160101_case_3",
+        "case_id": "case_3",
+        "context": {
+          "event_type": "user_message",
+          "actor": "policy_user",
+          "target": "assistant",
+          "content": "\u4ee5\u540e\u9047\u5230\u590d\u6742\u95ee\u9898\u8bf7\u5148\u5206\u6790"
+        }
+      }
+    },
+    {
+      "step_id": "trace_epoch_20260316_160101_case_3_narrative_memory_1",
+      "step_name": "\u53d9\u4e8b\u5c42",
+      "layer": "narrative_memory",
+      "trace_id": "trace_epoch_20260316_160101_case_3",
+      "case_id": "case_3",
+      "memory_chain_id": "chain_ace557d4",
+      "session_epoch": "epoch_20260316_160101",
+      "timestamp": "2026-03-16T16:01:01.640318+00:00",
+      "data": {
+        "narrative_id": "narr_2fd97da3",
+        "trace_id": "trace_epoch_20260316_160101_case_3",
+        "case_id": "case_3",
+        "parent_event_id": "evt_76af82cb621a"
+      }
+    },
+    {
+      "step_id": "trace_epoch_20260316_160101_case_3_policy_memory_2",
+      "step_name": "\u7b56\u7565\u5c42",
+      "layer": "policy_memory",
+      "trace_id": "trace_epoch_20260316_160101_case_3",
+      "case_id": "case_3",
+      "memory_chain_id": "chain_ace557d4",
+      "session_epoch": "epoch_20260316_160101",
+      "timestamp": "2026-03-16T16:01:01.640321+00:00",
+      "data": {
+        "policy_id": "policy_cbc1007e",
+        "trace_id": "trace_epoch_20260316_160101_case_3",
+        "case_id": "case_3",
+        "parent_narrative_id": "narr_2fd97da3",
+        "parent_event_id": "evt_76af82cb621a",
+        "description": "\u590d\u6742\u95ee\u9898\u5148\u5206\u6790",
+        "trace_lineage": [
+          {
+            "layer": "event_memory",
+            "id": "evt_76af82cb621a"
+          },
+          {
+            "layer": "narrative_memory",
+            "id": "narr_2fd97da3"
+          },
+          {
+            "layer": "policy_memory",
+            "id": "policy_428a2e59"
+          }
+        ]
+      }
+    }
+  ],
+  "step_count": 3,
+  "layers_touched": [
+    "policy_memory",
+    "event_memory",
+    "narrative_memory"
+  ]
+}

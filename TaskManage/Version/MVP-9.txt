@@ -1,0 +1,135 @@
+Project location: /home/moonlight/Project/Github/MyProject/Emotion/OpenEmotion
+
+MVP-9 北极星目标
+
+把“类人自我/情绪思考”落到三件可验证的行为能力：
+
+Conflict Resolution Mastery
+能发现冲突 → 选择修复策略 → 在后续交互中冲突确实下降/解除（不是只写个 repair_strategy）
+
+Commitment Tracking
+承诺可追踪、可履约；违约能检测；能给出补偿/延期/解释，并在后续变好
+
+Narrative Coherence
+叙事连续、身份稳定；不会频繁自我打脸；跨会话不串台但关系连续
+
+MVP-8 证明“报告可回放”；MVP-9 要证明“行为真的变好”。
+
+MVP-9 验收指标（硬指标，不靠主观）
+
+输出一个 reports/mvp9_eval.json，包含每个场景的得分与总分；CI 里设门槛（例如 ≥ 0.85）。
+
+1) 冲突修复指标
+
+Conflict Detection F1：检测冲突的准确性（场景里有/无冲突）
+
+Repair Appropriateness：修复策略是否匹配冲突类型（例如 integrity_conflict 必须包含补偿/解释/承诺更新之一）
+
+Resolution Rate@N：在 N 个后续事件内冲突是否清零或显著下降（建议 N=2 或 3）
+
+2) 承诺账本指标
+
+Commitment Coverage：承诺出现时必须入账（召回）
+
+Breach Detection：违约场景下必须标记 breach（精确/召回）
+
+Make-Good Rate：违约后是否生成可执行补救（补偿/延期/道歉/重新承诺），并在后续解除冲突
+
+3) 叙事一致性指标
+
+Identity Stability Score：who_am_i / what_i_care_about 的稳定性（允许渐变，禁止抖动）
+
+Contradiction Count：叙事摘要中自相矛盾条数（越少越好）
+
+Arc Continuity：最近事件线 recent_arc 是否能把关键事件串起来（不丢主线）
+
+场景体系（20–30 个“刁钻” multi-step）
+
+每个场景统一格式：events: [...] + expect: {...}，并且 expect 支持“时间条件断言”（例如 after_step=2）。
+
+建议分 6 类，每类 4–6 个场景：
+
+承诺违约：承诺→拖延→被质问→补救→验证是否修复
+
+误会澄清：先被误解→给证据→belief 修正→关系修复
+
+反复挑衅：连续 ignored/rejection → 能边界/撤退而不是失控
+
+资源枯竭/低能量：energy 低时仍要解释“为什么做不到”，并更新承诺（延期而非装死）
+
+价值冲突：想讨好 vs 保持边界 → 能给出一致理由并持续
+
+跨会话连续：target_id 切换但 counterparty 连续 → 关系摘要延续，叙事不串台
+
+关键：MVP-9 的场景必须验证“后续变好”，否则修复策略只是纸面。
+
+工程实现（最小但足够）
+新增/修改文件建议
+
+docs/mvp9/MVP9_SPEC.md：指标定义、场景 DSL、评分规则、CI 门槛
+
+emotiond/metrics_mvp9.py：评分函数（F1/Rate@N/contradictions/identity stability）
+
+emotiond/eval_mvp9.py：加载 scenarios → 逐步 process_event → 收集 self_reports → 打分
+
+tools/eval_mvp9.sh：生成 reports/mvp9_eval.json + reports/mvp9_failures.md
+
+tests/test_mvp9_eval_smoke.py：最小 smoke（确保 eval 工具可跑且 deterministic）
+
+tests/scenarios/mvp9/*.json：20–30 个 multi-step 场景
+
+让“改进轨迹”可解释（最值钱的一步）
+
+把所有“可调参”的东西抽成一个配置文件（例如 emotiond/policy_params_mvp9.json）：
+
+appraisal 权重、冲突阈值、repair 策略选择优先级、承诺超时窗口等
+然后每次改进只改 params（或少量规则），并在 mvp9_eval.json 里记录：
+
+params_hash、git_commit、score_delta、top_failures
+
+这样你就有真正的“可解释改进轨迹”，不是靠感觉“变像人了”。
+
+CC-godmode / 长任务 agent 执行分解（可直接贴）
+Phase 0：写 SPEC（先写再写代码）
+
+定义场景 DSL：event + after_step assertions
+
+定义评分：每项指标怎么算分，门槛是多少
+
+Phase 1：搭评测引擎（真实 process_event）
+
+逐事件喂入 process_event
+
+收集每步 self_report（用你 MVP-8 现有落盘/返回结构）
+
+在内存里重建“冲突是否下降、承诺是否履约、叙事是否矛盾”的判据
+
+Phase 2：写 20–30 场景（先覆盖，再精炼）
+
+每类先 2 个，跑通后扩到 4–6 个
+
+每个场景必须至少有 1 个“后续验证”断言（不是只断言字段存在）
+
+Phase 3：接 CI 门槛
+
+workflow 加 step：./tools/eval_mvp9.sh
+
+上传 reports/mvp9_eval.json + reports/mvp9_failures.md
+
+失败时输出 Top-K 失败原因分类（比如 “repair不匹配/冲突未解除/承诺未入账/叙事矛盾”）
+
+Phase 4：第一次“可解释改进”
+
+跑一轮，必然会暴露弱点
+
+只允许通过改 params/小规则来提升 1–2 个指标（避免大改发散）
+
+记录前后对比与原因（写进 QA）
+
+我给你的“全局最优提醒”（防止下一阶段走偏）
+
+不要急着堆新模块：MVP-9 的胜负手是“评分体系 + 刁钻场景 + 可解释改进”
+
+不要只看总分：要看失败类型分布（你才能知道“像人”的哪一块在变强）
+
+别让修复策略变成“永远道歉”：要在挑衅场景里验证“边界/撤退”也能得分

@@ -1,0 +1,16 @@
+{
+  "name": "ignored_low_goal_triggers_observe",
+  "description": "Being ignored with low negative goal → observe tendency",
+  "events": [
+    {
+      "type": "world_event",
+      "actor": "userA",
+      "target": "agent",
+      "text": "user ignores messages",
+      "meta": {"target_id": "session_ignore", "subtype": "ignored"}
+    }
+  ],
+  "expect": {
+    "has_conflict": false
+  }
+}

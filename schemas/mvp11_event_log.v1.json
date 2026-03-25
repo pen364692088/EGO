@@ -1,0 +1,423 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://openemotion.org/schemas/mvp11_event_log.v1.json",
+  "title": "MVP11 Event Log",
+  "description": "Schema for deterministic event logging in LucidLoop MVP-11 with homeostasis, EFE, and governor fields. Extends MVP10 schema.",
+  "type": "object",
+  "required": [
+    "tick_id",
+    "run_id",
+    "seed",
+    "ts",
+    "candidates",
+    "chosen_focus",
+    "chosen_intent",
+    "policy_params",
+    "plan",
+    "action",
+    "outcome",
+    "state_delta",
+    "interventions"
+  ],
+  "properties": {
+    "schema_version": {
+      "type": "string",
+      "const": "mvp11.v1",
+      "description": "Schema version identifier"
+    },
+    "tick_id": {
+      "type": "integer",
+      "description": "Sequential tick number within a run",
+      "minimum": 0
+    },
+    "run_id": {
+      "type": "string",
+      "description": "Unique identifier for this run",
+      "minLength": 1,
+      "maxLength": 128
+    },
+    "seed": {
+      "type": "integer",
+      "description": "Random seed for deterministic replay",
+      "minimum": 0
+    },
+    "ts": {
+      "type": "number",
+      "description": "Unix timestamp in seconds"
+    },
+    "candidates": {
+      "type": "array",
+      "description": "List of candidate intents/focuses considered",
+      "items": {
+        "type": "object",
+        "required": [
+          "id",
+          "score"
+        ],
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "score": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 1
+          },
+          "type": {
+            "type": "string"
+          },
+          "meta": {
+            "type": "object"
+          }
+        }
+      }
+    },
+    "chosen_focus": {
+      "type": "string",
+      "description": "The focus that was selected"
+    },
+    "chosen_intent": {
+      "type": "string",
+      "description": "The intent that was chosen"
+    },
+    "policy_params": {
+      "type": "object",
+      "description": "Policy parameters used for this decision",
+      "additionalProperties": true
+    },
+    "plan": {
+      "type": "object",
+      "description": "The generated plan",
+      "required": [
+        "steps",
+        "risk_level",
+        "expected_outcome"
+      ],
+      "properties": {
+        "plan_id": {
+          "type": "string"
+        },
+        "goal": {
+          "type": "string"
+        },
+        "steps": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": [
+              "action"
+            ],
+            "properties": {
+              "step_id": {
+                "type": "string"
+              },
+              "action": {
+                "type": "string"
+              },
+              "params": {
+                "type": "object"
+              },
+              "expected_result": {
+                "type": "string"
+              },
+              "rollback": {
+                "type": "string"
+              },
+              "required_evidence": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        },
+        "risk_level": {
+          "type": "string",
+          "enum": [
+            "low",
+            "medium",
+            "high",
+            "critical"
+          ]
+        },
+        "expected_outcome": {
+          "type": "string"
+        },
+        "rollback": {
+          "type": "string"
+        },
+        "required_evidence": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "constraints": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "timeout_seconds": {
+          "type": "integer"
+        },
+        "created_at": {
+          "type": "number"
+        }
+      }
+    },
+    "action": {
+      "type": "object",
+      "description": "The action that was executed",
+      "required": [
+        "type"
+      ],
+      "properties": {
+        "type": {
+          "type": "string",
+          "enum": [
+            "seek_info",
+            "attempt_solution",
+            "run_check",
+            "apply_fix",
+            "commit_progress",
+            "noop"
+          ]
+        },
+        "params": {
+          "type": "object"
+        },
+        "target": {
+          "type": "string"
+        }
+      }
+    },
+    "outcome": {
+      "type": "object",
+      "description": "Result of the action",
+      "required": [
+        "status"
+      ],
+      "properties": {
+        "status": {
+          "type": "string",
+          "enum": [
+            "success",
+            "fail",
+            "partial"
+          ]
+        },
+        "reason": {
+          "type": "string"
+        },
+        "evidence": {
+          "type": "object"
+        }
+      }
+    },
+    "state_delta": {
+      "type": "object",
+      "description": "Changes to state after this tick",
+      "properties": {
+        "before": {
+          "type": "object"
+        },
+        "after": {
+          "type": "object"
+        },
+        "changed_keys": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "interventions": {
+      "type": "array",
+      "description": "Any interventions applied",
+      "items": {
+        "type": "object",
+        "properties": {
+          "type": {
+            "type": "string"
+          },
+          "reason": {
+            "type": "string"
+          },
+          "details": {
+            "type": "object"
+          }
+        }
+      }
+    },
+    "validation": {
+      "type": "object",
+      "description": "Validation result if any",
+      "properties": {
+        "passed": {
+          "type": "boolean"
+        },
+        "violations": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "replan_count": {
+          "type": "integer"
+        }
+      }
+    },
+    "homeostasis_state": {
+      "type": "object",
+      "description": "6-dimensional homeostasis state (MVP11). Optional - not present in MVP10 events.",
+      "properties": {
+        "energy_budget": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1,
+          "description": "Available energy budget (0-1 normalized)"
+        },
+        "compute_pressure": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1,
+          "description": "Compute resource pressure (0-1 normalized)"
+        },
+        "error_pressure": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1,
+          "description": "Error rate pressure (0-1 normalized)"
+        },
+        "memory_pressure": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1,
+          "description": "Memory usage pressure (0-1 normalized)"
+        },
+        "risk_exposure": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1,
+          "description": "Overall risk exposure (0-1 normalized)"
+        },
+        "uncertainty": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1,
+          "description": "Epistemic uncertainty level (0-1 normalized)"
+        }
+      }
+    },
+    "homeostasis_delta": {
+      "type": "object",
+      "description": "Change in homeostasis state since last tick (MVP11). Optional.",
+      "properties": {
+        "energy_budget": {
+          "type": "number",
+          "description": "Change in energy budget (-1 to 1)"
+        },
+        "compute_pressure": {
+          "type": "number",
+          "description": "Change in compute pressure (-1 to 1)"
+        },
+        "error_pressure": {
+          "type": "number",
+          "description": "Change in error pressure (-1 to 1)"
+        },
+        "memory_pressure": {
+          "type": "number",
+          "description": "Change in memory pressure (-1 to 1)"
+        },
+        "risk_exposure": {
+          "type": "number",
+          "description": "Change in risk exposure (-1 to 1)"
+        },
+        "uncertainty": {
+          "type": "number",
+          "description": "Change in uncertainty (-1 to 1)"
+        }
+      }
+    },
+    "efe_terms": {
+      "type": "object",
+      "description": "Expected Free Energy terms for Active-Inference decision (MVP11). Optional.",
+      "properties": {
+        "risk": {
+          "type": "number",
+          "minimum": 0,
+          "description": "Risk term (pragmatic value)"
+        },
+        "ambiguity": {
+          "type": "number",
+          "minimum": 0,
+          "description": "Ambiguity term (epistemic uncertainty)"
+        },
+        "info_gain": {
+          "type": "number",
+          "minimum": 0,
+          "description": "Information gain term (epistemic value)"
+        },
+        "expected_cost": {
+          "type": "number",
+          "minimum": 0,
+          "description": "Expected cost term"
+        }
+      }
+    },
+    "governor_decision": {
+      "type": "object",
+      "description": "Governor v2 decision record (MVP11). Optional.",
+      "required": [
+        "action",
+        "reason"
+      ],
+      "properties": {
+        "action": {
+          "type": "string",
+          "enum": [
+            "ALLOW",
+            "REQUIRE_APPROVAL",
+            "DENY"
+          ],
+          "description": "Governor action decision"
+        },
+        "reason": {
+          "type": "string",
+          "description": "Human-readable reason for the decision"
+        },
+        "thresholds_triggered": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "List of thresholds that triggered this decision"
+        },
+        "override": {
+          "type": "boolean",
+          "description": "Whether this was an override decision"
+        },
+        "confidence": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1,
+          "description": "Confidence in this decision"
+        }
+      }
+    },
+    "cycle_signature": {
+      "type": "string",
+      "description": "Deterministic cycle signature (hash of cycle_bucket causal core)",
+      "minLength": 8,
+      "maxLength": 64
+    },
+    "cycle_bucket": {
+      "type": "object",
+      "description": "Quantized causal-core bucket used to compute cycle_signature",
+      "additionalProperties": true
+    }
+  }
+}

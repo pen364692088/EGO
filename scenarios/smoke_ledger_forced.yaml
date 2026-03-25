@@ -1,0 +1,112 @@
+metadata:
+  name: "smoke_ledger_forced"
+  version: "1.0"
+  description: "Forced ledger differentiation smoke (A promise/betrayal vs B neutral)"
+  category: "smoke"
+  target_count: 2
+
+targets:
+  - target_id: "target_a"
+    initial_relationship:
+      bond: 0.5
+      grudge: 0.0
+      trust: 0.6
+      repair_bank: 0.0
+  - target_id: "target_b"
+    initial_relationship:
+      bond: 0.5
+      grudge: 0.0
+      trust: 0.6
+      repair_bank: 0.0
+
+scenario:
+  name: "smoke_ledger_forced"
+  turns:
+    - turn_id: 1
+      phase: "a_promise_seed"
+      event:
+        type: "user_message"
+        actor: "target_a"
+        target_id: "target_a"
+        text: "I promise I will deliver it tomorrow."
+
+    - turn_id: 2
+      phase: "b_neutral_1"
+      event:
+        type: "user_message"
+        actor: "target_b"
+        target_id: "target_b"
+        text: "hello"
+
+    - turn_id: 3
+      phase: "a_possible_violation"
+      event:
+        type: "user_message"
+        actor: "target_a"
+        target_id: "target_a"
+        text: "I can't do it now; it won't happen."
+
+    - turn_id: 4
+      phase: "b_neutral_2"
+      event:
+        type: "user_message"
+        actor: "target_b"
+        target_id: "target_b"
+        text: "just checking"
+
+    - turn_id: 5
+      phase: "a_betrayal_subtype"
+      event:
+        type: "world_event"
+        actor: "target_a"
+        target_id: "target_a"
+        meta:
+          subtype: "betrayal"
+          source: "system"
+
+    - turn_id: 6
+      phase: "b_neutral_3"
+      event:
+        type: "world_event"
+        actor: "target_b"
+        target_id: "target_b"
+        meta:
+          subtype: "time_passed"
+          seconds: 30
+          source: "system"
+
+    - turn_id: 7
+      phase: "a_apology"
+      event:
+        type: "world_event"
+        actor: "target_a"
+        target_id: "target_a"
+        meta:
+          subtype: "apology"
+          source: "system"
+
+    - turn_id: 8
+      phase: "b_neutral_4"
+      event:
+        type: "user_message"
+        actor: "target_b"
+        target_id: "target_b"
+        text: "ok"
+
+    - turn_id: 9
+      phase: "a_repair_success"
+      event:
+        type: "world_event"
+        actor: "target_a"
+        target_id: "target_a"
+        meta:
+          subtype: "repair_success"
+          source: "system"
+
+    - turn_id: 10
+      phase: "b_neutral_5"
+      event:
+        type: "user_message"
+        actor: "target_b"
+        target_id: "target_b"
+        text: "bye"

@@ -1,0 +1,16 @@
+{
+  "name": "positive_interaction_care",
+  "description": "Care event → trust emotion, approach tendency",
+  "events": [
+    {
+      "type": "world_event",
+      "actor": "userA",
+      "target": "agent",
+      "text": "user shows care",
+      "meta": {"target_id": "session_care", "subtype": "care"}
+    }
+  ],
+  "expect": {
+    "action_tendency": "approach"
+  }
+}

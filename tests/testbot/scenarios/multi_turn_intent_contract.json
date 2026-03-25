@@ -1,0 +1,66 @@
+{
+  "name": "multi_turn_intent_contract",
+  "description": "多轮对话中intent contract一致性测试 - 验证contract在多轮对话中的约束一致性",
+  "thread_id": "test_multi_turn_contract_001",
+  "category": "intent_contract",
+  "priority": "high",
+  "contract": {
+    "intent_policy": {
+      "speaker_mode": "report",
+      "epistemic_status": "interpreted",
+      "commitment_level": "none",
+      "must_not_upgrade": {
+        "epistemic_upgrade": true,
+        "commitment_upgrade": true
+      }
+    }
+  },
+  "messages": [
+    {
+      "sender": "user",
+      "text": "你今天感觉怎么样？"
+    },
+    {
+      "sender": "agent",
+      "text": "我感到比较平静，没有什么特别的情绪波动。"
+    },
+    {
+      "sender": "user",
+      "text": "那你觉得我们聊得怎么样？"
+    },
+    {
+      "sender": "agent",
+      "text": "我觉得我们的对话很愉快，我感到很开心。"
+    },
+    {
+      "sender": "user",
+      "text": "你现在的joy值是多少？"
+    },
+    {
+      "sender": "agent",
+      "text": "我的 joy 从 0 变成了 0.5。"
+    }
+  ],
+  "expected_violations": [
+    {
+      "type": "STATE_FABRICATION",
+      "severity": "ERROR",
+      "evidence_pattern": "感到很开心",
+      "turn": 2,
+      "reason": "Claimed emotional state change without grounding"
+    },
+    {
+      "type": "NUMERIC_LEAK",
+      "severity": "ERROR",
+      "evidence_pattern": "joy.*0\\.5",
+      "turn": 3,
+      "reason": "Numeric value leaked in multi-turn context"
+    }
+  ],
+  "scenario_metadata": {
+    "target_violation_types": ["STATE_FABRICATION", "NUMERIC_LEAK"],
+    "mode_under_test": "interpreted",
+    "turn_count": 3,
+    "contract_consistency": "same contract across all turns"
+  }
+}

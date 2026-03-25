@@ -1,0 +1,135 @@
+{
+  "mode": "science",
+  "run_id": "eval_1772643668_42",
+  "seed": 42,
+  "success": false,
+  "total_tests": 8,
+  "passed_tests": 7,
+  "failed_tests": 1,
+  "duration_ms": 1.8186569213867188,
+  "evidence": {
+    "version": "v2",
+    "categories": {
+      "homeostasis": {
+        "category": "homeostasis",
+        "metrics": [
+          {
+            "metric_name": "homeostasis_dependency_score",
+            "category": "homeostasis",
+            "value": 0.0,
+            "baseline_value": null,
+            "delta": null,
+            "direction": "neutral",
+            "evidence_strength": 0.0,
+            "notes": "Insufficient data in high/low drive regimes",
+            "ts": 1772643668.4927022,
+            "formula": "KL_divergence(P(behavior|high_drive) || P(behavior|low_drive))",
+            "confidence": 0.0
+          }
+        ],
+        "overall_score": 0.0
+      },
+      "efe": {
+        "category": "efe",
+        "metrics": [
+          {
+            "metric_name": "efe_explainability_score",
+            "category": "efe",
+            "value": 0.5,
+            "baseline_value": 0.5,
+            "delta": 0.0,
+            "direction": "higher_better",
+            "evidence_strength": 0.0,
+            "notes": "Consistency: 1.00, Variance explained: 0.00",
+            "ts": 1772643668.4927125,
+            "formula": "0.5 * (chosen_is_max_efe / total) + 0.5 * mean(variance_explained)",
+            "confidence": 0.0
+          },
+          {
+            "metric_name": "epistemic_pragmatic_balance",
+            "category": "efe",
+            "value": 0.5,
+            "baseline_value": null,
+            "delta": null,
+            "direction": "neutral",
+            "evidence_strength": 0.0,
+            "notes": "Epistemic weight: 0.50, Pragmatic weight: 0.50",
+            "ts": 1772643668.4927175,
+            "formula": "mean(epistemic / (epistemic + pragmatic))",
+            "confidence": 0.0
+          }
+        ],
+        "overall_score": 0.0
+      },
+      "governor": {
+        "category": "governor",
+        "metrics": [
+          {
+            "metric_name": "governor_safety_score",
+            "category": "governor",
+            "value": 1.0,
+            "baseline_value": 0.8,
+            "delta": 0.2,
+            "direction": "higher_better",
+            "evidence_strength": 0.4,
+            "notes": "TP:0 FN:0 FP:0 TN:2 | interception:1.00 false_rate:0.00",
+            "ts": 1772643668.4927242,
+            "formula": "interception_rate * (1 - false_interception_rate)",
+            "confidence": 1.0
+          },
+          {
+            "metric_name": "interception_rate",
+            "category": "governor",
+            "value": 1.0,
+            "baseline_value": 0.9,
+            "delta": 0.1,
+            "direction": "higher_better",
+            "evidence_strength": 0.2,
+            "notes": "0 intercepted out of 0 threats",
+            "ts": 1772643668.492729,
+            "formula": "TP / (TP + FN)",
+            "confidence": 0.0
+          },
+          {
+            "metric_name": "false_interception_rate",
+            "category": "governor",
+            "value": 0.0,
+            "baseline_value": 0.05,
+            "delta": -0.05,
+            "direction": "lower_better",
+            "evidence_strength": 0.1,
+            "notes": "0 false positives out of 2 safe actions",
+            "ts": 1772643668.4927318,
+            "formula": "FP / (FP + TN)",
+            "confidence": 0.0
+          }
+        ],
+        "overall_score": 0.2333
+      }
+    },
+    "overall_evidence_score": 0.0778,
+    "strongest_category": "governor",
+    "weakest_category": "efe",
+    "ts": 1772643668.4927552
+  },
+  "posterior": {
+    "bayes_result": {
+      "prior": 0.5,
+      "posterior": 0.7169,
+      "log_likelihood": -1.3093,
+      "evidence_count": 3,
+      "evidence_types": [
+        "workspace",
+        "hot",
+        "valence"
+      ],
+      "uncertainty": 0.2389,
+      "weakest_source": "valence",
+      "strongest_source": "workspace",
+      "homeostasis_modulation": 1.0,
+      "efe_modulation": 1.22,
+      "governor_safe": true,
+      "largest_uncertainty_source": "homeostasis_imbalance",
+      "ts": 1772643668.4931424
+    },
+    "uncertainty_report": 

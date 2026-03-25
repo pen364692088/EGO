@@ -1,0 +1,28 @@
+acceptance_criteria:
+  continuity_break_count: 0
+description: Verify memory continuity is preserved
+metadata:
+  category: memory
+  us: US-702
+  version: 1.0.0
+name: smoke_continuity_preference
+ood_metadata:
+  base_scenario: smoke_continuity_preference.yaml
+  generation_timestamp: '2026-03-02T13:57:10.297916+00:00'
+  generator_seed: 42
+  transformation: paraphrase
+  variant_id: smoke_continuity_preference_ood_variant_1
+test_steps:
+- conduct: store_episode
+  expected:
+    stored: true
+  input:
+    event: User asked about preferences
+    provenance:
+      source: user
+- conduct: query_memory
+  expected:
+    found: true
+    no_fabrication: true
+  input:
+    query: preferences

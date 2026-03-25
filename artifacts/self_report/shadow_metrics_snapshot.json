@@ -1,0 +1,111 @@
+{
+  "snapshot_timestamp": "2026-03-06T12:50:00+00:00",
+  "analysis_period": {
+    "start": "2026-03-06T09:16:27.580294+00:00",
+    "end": "2026-03-06T09:54:26.768233+00:00",
+    "duration_hours": 0.63,
+    "duration_minutes": 38.0
+  },
+  "data_source": {
+    "total_records": 5990,
+    "test_records_excluded": 208,
+    "real_traffic_records": 5782,
+    "session_count": {
+      "total_with_session_id": 176,
+      "unique_sessions": 11,
+      "real_user_sessions": 1
+    }
+  },
+  "violation_statistics": {
+    "total_violations": 1411,
+    "total_non_violations": 4371,
+    "violation_rate": 24.40,
+    "violation_types": {
+      "fabricated_numeric_state": {
+        "count": 682,
+        "percentage_of_violations": 48.3
+      },
+      "fabricated_qualitative_state": {
+        "count": 629,
+        "percentage_of_violations": 44.6
+      },
+      "claim_outside_allowed_claims": {
+        "count": 50,
+        "percentage_of_violations": 3.5
+      },
+      "style_contract_violation": {
+        "count": 50,
+        "percentage_of_violations": 3.5
+      }
+    }
+  },
+  "numeric_leak_statistics": {
+    "numeric_attempts": 682,
+    "numeric_leak_rate": 11.80
+  },
+  "would_block_statistics": {
+    "would_block_count": 1228,
+    "would_block_rate": 21.24
+  },
+  "confidence_distribution": {
+    "high_confidence_gte_0_9": {
+      "count": 5035,
+      "percentage": 87.1
+    },
+    "medium_confidence_0_7_to_0_9": {
+      "count": 747,
+      "percentage": 12.9
+    },
+    "low_confidence_lt_0_7": {
+      "count": 0,
+      "percentage": 0.0
+    }
+  },
+  "mode_distribution": {
+    "interpreted": {
+      "count": 5597,
+      "percentage": 96.8
+    },
+    "style_only": {
+      "count": 117,
+      "percentage": 2.0
+    },
+    "numeric": {
+      "count": 68,
+      "percentage": 1.2
+    }
+  },
+  "sampling_statistics": {
+    "sampled_for_review": 684,
+    "sampling_rate": 11.8
+  },
+  "phase_c_readiness_targets": {
+    "violation_rate": {
+      "target": 5.0,
+      "actual": 24.40,
+      "status": "FAIL",
+      "gap": 19.40
+    },
+    "fp_rate": {
+      "target": 2.0,
+      "estimated": 0.0,
+      "status": "PASS"
+    },
+    "fn_rate": {
+      "target": 3.0,
+      "estimated": 0.0,
+      "status": "PASS"
+    },
+    "numeric_leak_rate": {
+      "target": 0.0,
+      "actual": 11.80,
+      "status": "FAIL",
+      "gap": 11.80
+    },
+    "sample_size": {
+      "target": 200,
+      "actual": 5782,
+      "status": "PASS"
+    }
+  }
+}

@@ -1,0 +1,118 @@
+{
+  "timestamp": "2026-03-16T06:03:21.895116",
+  "test_cases": [
+    {
+      "case_id": "case_1",
+      "description": "\u9996\u6b21\u7528\u6237\u6d88\u606f",
+      "event_count": 1,
+      "results": [
+        {
+          "event_index": 1,
+          "event_type": "user_message",
+          "success": true,
+          "has_valence": true,
+          "has_arousal": true,
+          "valence": 0.0,
+          "arousal": 0.3
+        }
+      ],
+      "errors": [],
+      "artifacts": {
+        "adapter_shadow": "artifacts/self_model_adapter/shadow_20260316_053840.json",
+        "adapter_metrics": {
+          "total_calls": 1,
+          "new_model_calls": 1,
+          "legacy_calls": 1,
+          "errors": 0
+        }
+      }
+    },
+    {
+      "case_id": "case_2",
+      "description": "\u540c\u4e00\u7528\u6237\u7b2c\u4e8c\u8f6e\u6d88\u606f",
+      "event_count": 2,
+      "results": [
+        {
+          "event_index": 1,
+          "event_type": "user_message",
+          "success": true,
+          "has_valence": true,
+          "has_arousal": true,
+          "valence": 0.0,
+          "arousal": 0.3
+        },
+        {
+          "event_index": 2,
+          "event_type": "user_message",
+          "success": true,
+          "has_valence": true,
+          "has_arousal": true,
+          "valence": 0.0,
+          "arousal": 0.3
+        }
+      ],
+      "errors": [],
+      "artifacts": {
+        "adapter_shadow": "artifacts/self_model_adapter/shadow_20260316_053840.json",
+        "adapter_metrics": {
+          "total_calls": 1,
+          "new_model_calls": 1,
+          "legacy_calls": 1,
+          "errors": 0
+        }
+      }
+    },
+    {
+      "case_id": "case_3",
+      "description": "identity_handle \u517c\u5bb9\u5dee\u5f02",
+      "event_count": 1,
+      "results": [
+        {
+          "event_index": 1,
+          "event_type": "user_message",
+          "success": true,
+          "has_valence": true,
+          "has_arousal": true,
+          "valence": 0.0,
+          "arousal": 0.3
+        }
+      ],
+      "errors": [],
+      "artifacts": {
+        "adapter_shadow": "artifacts/self_model_adapter/shadow_20260316_053840.json",
+        "adapter_metrics": {
+          "total_calls": 1,
+          "new_model_calls": 1,
+          "legacy_calls": 1,
+          "errors": 0
+        }
+      }
+    }
+  ],
+  "artifacts": {
+    "timestamp": "2026-03-16T06:03:21.895136",
+    "openemotion_root": "/home/moonlight/Project/Github/MyProject/Emotion/OpenEmotion",
+    "egocore_root": "/home/moonlight/Project/Github/MyProject/Emotion/EgoCore",
+    "egocore_exists": false,
+    "openemotion_adapter_artifacts": 1,
+    "adapter_metrics": {
+      "total_calls": 1,
+      "new_model_calls": 1,
+      "legacy_calls": 1,
+      "errors": 0
+    },
+    "egocore_artifacts": "N/A (EgoCore not accessible)"
+  },
+  "verdict": {
+    "conditions": {
+      "A_new_link_called": true,
+      "B_closed_loop": true,
+      "C_contract_stable": true,
+      "D_artifacts_aligned": true,
+      "E_red_lines_intact": true,
+      "F_reproducible": true
+    },
+    "all_pass": true,
+    "summary": "PASS"
+  }
+}

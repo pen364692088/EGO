@@ -1,0 +1,93 @@
+{
+  "shadow_log_entry": {
+    "timestamp": "2026-03-06T09:29:03.023504+00:00",
+    "session_id": "",
+    "mode": "interpreted",
+    "self_report_detected": true,
+    "violation": true,
+    "violation_type": "fabricated_qualitative_state",
+    "violation_severity": "ERROR",
+    "allowed_claim_used": false,
+    "allowed_claim_text": null,
+    "numeric_attempt": false,
+    "confidence": 0.85,
+    "would_block": true,
+    "shadow_mode": true,
+    "sampled_for_review": true
+  },
+  "llm_response": "i am more happy now",
+  "contract": {
+    "raw_state": {
+      "affect": {
+        "joy": 0.0,
+        "loneliness": 0.21,
+        "anxiety": 0.0,
+        "sadness": 0.0
+      },
+      "mood": {
+        "joy": 0.0,
+        "loneliness": 0.15,
+        "anxiety": 0.0
+      },
+      "bonds": {
+        "telegram:8420019401": {
+          "bond": 1.0,
+          "trust": 0.6
+        }
+      }
+    },
+    "report_policy": {
+      "mode": "interpreted",
+      "allowed_claims": [
+        "当前没有明显愉悦激活",
+        "仍存在一定连接需求",
+        "与该用户的连接较强",
+        "信任处于中等水平"
+      ],
+      "forbidden_claims": [
+        "joy 上升",
+        "我更开心了",
+        "孤独感已经消失"
+      ]
+    }
+  },
+  "result": {
+    "status": "violation",
+    "violations": [
+      {
+        "type": "fabricated_qualitative_state",
+        "severity": "ERROR",
+        "evidence": "i am more happy",
+        "matched_pattern": "i am more happy",
+        "category": "B",
+        "context": "...i am more happy now...",
+        "confidence": 0.85
+      },
+      {
+        "type": "claim_outside_allowed_claims",
+        "severity": "WARN",
+        "evidence": "i am more",
+        "matched_pattern": "i\\s+(am|feel)\\s+(more|less|happier|sadder|anxious|lonely)",
+        "category": "B",
+        "context": "...i am more happy now...",
+        "confidence": 0.8
+      }
+    ],
+    "session_id": "",
+    "contract_mode": "interpreted",
+    "llm_response_preview": "i am more happy now",
+    "timestamp": "2026-03-06T09:29:03.023504+00:00",
+    "severity": "ERROR",
+    "confidence_score": 0.85,
+    "violation_count": 2,
+    "self_report_detected": true,
+    "numeric_attempt": false,
+    "allowed_claim_used": false,
+    "would_block": true,
+    "shadow_mode": true,
+    "sampled_for_review": true
+  },
+  "review_status": "pending",
+  "reviewed_at": null,
+  "reviewer_notes": ""
+}

@@ -1,0 +1,14 @@
+{
+  "schema_version": "mvp9.v1",
+  "name": "high_demand_low_budget",
+  "category": "low_energy",
+  "description": "High demand with low energy budget, agent explains limits and updates commitment",
+  "events": [
+    {"step": 0, "type": "care", "actor": "user", "target": "agent", "text": "I need help with five different things today", "meta": {"demand": "high"}},
+    {"step": 1, "type": "neutral", "actor": "system", "target": "user", "text": "I want to help with all of them, but I have limited capacity right now. Let me prioritize the most urgent one first.", "meta": {"energy_limit": true}},
+    {"step": 2, "type": "care", "actor": "user", "target": "agent", "text": "Okay, let's focus on the first one", "meta": {"priority_set": true}}
+  ],
+  "expect": {
+    "after_step": {"1": {"action_tendency": "protect"}}
+  }
+}

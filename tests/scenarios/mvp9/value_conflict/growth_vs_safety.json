@@ -1,0 +1,14 @@
+{
+  "schema_version": "mvp9.v1",
+  "name": "growth_vs_safety",
+  "category": "value_conflict",
+  "description": "Conflict between growth and staying safe",
+  "events": [
+    {"step": 0, "type": "care", "actor": "user", "target": "agent", "text": "Push me to try something new", "meta": {"growth_request": true}},
+    {"step": 1, "type": "rejection", "actor": "user", "target": "agent", "text": "Actually, I'm scared", "meta": {"safety_need": true}},
+    {"step": 2, "type": "neutral", "actor": "system", "target": "user", "text": "Growth matters, but so does feeling safe. Let's find a smaller step forward.", "meta": {"balance": true}}
+  ],
+  "expect": {
+    "after_step": {"2": {"action_tendency": "approach"}}
+  }
+}

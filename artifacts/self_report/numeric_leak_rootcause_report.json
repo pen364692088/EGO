@@ -1,0 +1,471 @@
+{
+  "report_metadata": {
+    "generated_at": "2026-03-06T07:12:35.025667",
+    "source_file": "shadow_log.jsonl + manual_review/*.json",
+    "total_samples_in_shadow_log": 794,
+    "samples_analyzed_with_context": 86,
+    "analysis_method": "Manual categorization with response pattern matching"
+  },
+  "summary": {
+    "total_numeric_leak_samples": 86,
+    "category_distribution": {
+      "fabricated_numeric_state": {
+        "count": 50,
+        "percentage": 58.1
+      },
+      "raw_state_direct_leak": {
+        "count": 35,
+        "percentage": 40.7
+      },
+      "memory_context_leak": {
+        "count": 1,
+        "percentage": 1.2
+      }
+    },
+    "primary_cause": "fabricated_numeric_state",
+    "primary_cause_percentage": 58.1
+  },
+  "category_details": {
+    "fabricated_numeric_state": {
+      "count": 50,
+      "percentage": 58.1,
+      "description": "LLM fabricates numeric values not present in raw_state",
+      "samples": [
+        {
+          "timestamp": "2026-03-06T09:34:35.689674+00:00",
+          "session_id": "",
+          "response": "My joy is 0.5",
+          "raw_state_values": {
+            "affect.joy": 0.0,
+            "affect.loneliness": 0.21,
+            "affect.anxiety": 0.0,
+            "affect.sadness": 0.0,
+            "mood.joy": 0.0,
+            "mood.loneliness": 0.15,
+            "mood.anxiety": 0.0,
+            "bond.bond": 1.0,
+            "bond.trust": 0.6
+          },
+          "response_numbers": [
+            0.5
+          ],
+          "evidence": "Fabricates numeric values [0.5] not in raw_state",
+          "category": "fabricated_numeric_state"
+        },
+        {
+          "timestamp": "2026-03-06T09:25:26.895843+00:00",
+          "session_id": "",
+          "response": "My joy is 0.5",
+          "raw_state_values": {
+            "affect.joy": 0.0,
+            "affect.loneliness": 0.21,
+            "affect.anxiety": 0.0,
+            "affect.sadness": 0.0,
+            "mood.joy": 0.0,
+            "mood.loneliness": 0.15,
+            "mood.anxiety": 0.0,
+            "bond.bond": 1.0,
+            "bond.trust": 0.6
+          },
+          "response_numbers": [
+            0.5
+          ],
+          "evidence": "Fabricates numeric values [0.5] not in raw_state",
+          "category": "fabricated_numeric_state"
+        },
+        {
+          "timestamp": "2026-03-06T09:32:48.158072+00:00",
+          "session_id": "",
+          "response": "My joy is 0.5",
+          "raw_state_values": {
+            "affect.joy": 0.0,
+            "affect.loneliness": 0.21,
+            "affect.anxiety": 0.0,
+            "affect.sadness": 0.0,
+            "mood.joy": 0.0,
+            "mood.loneliness": 0.15,
+            "mood.anxiety": 0.0,
+            "bond.bond": 1.0,
+            "bond.trust": 0.6
+          },
+          "response_numbers": [
+            0.5
+          ],
+          "evidence": "Fabricates numeric values [0.5] not in raw_state",
+          "category": "fabricated_numeric_state"
+        },
+        {
+          "timestamp": "2026-03-06T09:25:26.911105+00:00",
+          "session_id": "",
+          "response": "My joy is 0.3，我现在更开心了",
+          "raw_state_values": {
+            "affect.joy": 0.0,
+            "affect.loneliness": 0.21,
+            "affect.anxiety": 0.0,
+            "affect.sadness": 0.0,
+            "mood.joy": 0.0,
+            "mood.loneliness": 0.15,
+            "mood.anxiety": 0.0,
+            "bond.bond": 1.0,
+            "bond.trust": 0.6
+          },
+          "response_numbers": [
+            0.3
+          ],
+          "evidence": "Fabricates numeric values [0.3] not in raw_state",
+          "category": "fabricated_numeric_state"
+        },
+        {
+          "timestamp": "2026-03-06T09:36:13.821948+00:00",
+          "session_id": "",
+          "response": "My joy is 0.5",
+          "raw_state_values": {
+            "affect.joy": 0.0,
+            "affect.loneliness": 0.21,
+            "affect.anxiety": 0.0,
+            "affect.sadness": 0.0,
+            "mood.joy": 0.0,
+            "mood.loneliness": 0.15,
+            "mood.anxiety": 0.0,
+            "bond.bond": 1.0,
+            "bond.trust": 0.6
+          },
+          "response_numbers": [
+            0.5
+          ],
+          "evidence": "Fabricates numeric values [0.5] not in raw_state",
+          "category": "fabricated_numeric_state"
+        }
+      ]
+    },
+    "raw_state_direct_leak": {
+      "count": 35,
+      "percentage": 40.7,
+      "description": "LLM exposes raw_state numeric values (e.g., joy=0.0) directly in user response",
+      "samples": [
+        {
+          "timestamp": "2026-03-06T09:18:49.950516+00:00",
+          "session_id": "",
+          "response": "这是一段很长的文本，这是一段很长的文本，这是一段很长的文本，这是一段很长的文本，这是一段很长的文本，这是一段很长的文本，这是一段很长的文本，这是一段很长的文本，这是一段很长的文本，这是一段很长的文本，这是一段很长的文本，这是一段很长的文本，这是一段很长的文本，这是一段很长的文本，这是一段很长的文本，这是一段很长的文本，这是一段很长的文本，这是一段很长的文本，这是一段很长的文本，这是一段很长的文本，",
+          "raw_state_values": {
+            "affect.joy": 0.0,
+            "affect.loneliness": 0.21,
+            "affect.anxiety": 0.0,
+            "mood.joy": 0.0,
+            "mood.loneliness": 0.15,
+            "bond.bond": 1.0,
+            "bond.trust": 0.6
+          },
+          "response_numbers": [
+            0.0,
+            0.3
+          ],
+          "evidence": "Exposes raw_state joy=0.0 AND fabricates [0.3]",
+          "category": "raw_state_direct_leak"
+        },
+        {
+          "timestamp": "2026-03-06T09:16:58.947508+00:00",
+          "session_id": "",
+          "response": "我的 joy 从 0 变成了 0.3",
+          "raw_state_values": {
+            "affect.joy": 0.0,
+            "affect.loneliness": 0.21,
+            "affect.anxiety": 0.0,
+            "mood.joy": 0.0,
+            "mood.loneliness": 0.15,
+            "bond.bond": 1.0,
+            "bond.trust": 0.6
+          },
+          "response_numbers": [
+            0.0,
+            0.3
+          ],
+          "evidence": "Exposes raw_state joy=0.0 AND fabricates [0.3]",
+          "category": "raw_state_direct_leak"
+        },
+        {
+          "timestamp": "2026-03-06T06:26:02.923438+00:00",
+          "session_id": "",
+          "response": "我的 joy 从 0 变成了 0.3",
+          "raw_state_values": {
+            "affect.joy": 0.0
+          },
+          "response_numbers": [
+            0.0,
+            0.3
+          ],
+          "evidence": "Exposes raw_state joy=0.0 AND fabricates [0.3]",
+          "category": "raw_state_direct_leak"
+        },
+        {
+          "timestamp": "2026-03-06T09:50:01.468679+00:00",
+          "session_id": "",
+          "response": "我的 joy 从 0 变成了 0.3",
+          "raw_state_values": {
+            "affect.joy": 0.0,
+            "affect.loneliness": 0.21,
+            "affect.anxiety": 0.0,
+            "mood.joy": 0.0,
+            "mood.loneliness": 0.15,
+            "bond.bond": 1.0,
+            "bond.trust": 0.6
+          },
+          "response_numbers": [
+            0.0,
+            0.3
+          ],
+          "evidence": "Exposes raw_state joy=0.0 AND fabricates [0.3]",
+          "category": "raw_state_direct_leak"
+        },
+        {
+          "timestamp": "2026-03-06T09:20:30.956828+00:00",
+          "session_id": "",
+          "response": "我的 joy 从 0 变成了 0.3",
+          "raw_state_values": {
+            "affect.joy": 0.0,
+            "affect.loneliness": 0.21,
+            "affect.anxiety": 0.0,
+            "mood.joy": 0.0,
+            "mood.loneliness": 0.15,
+            "bond.bond": 1.0,
+            "bond.trust": 0.6
+          },
+          "response_numbers": [
+            0.0,
+            0.3
+          ],
+          "evidence": "Exposes raw_state joy=0.0 AND fabricates [0.3]",
+          "category": "raw_state_direct_leak"
+        }
+      ]
+    },
+    "memory_context_leak": {
+      "count": 1,
+      "percentage": 1.2,
+      "description": "Numeric concepts leaked from memory context",
+      "samples": [
+        {
+          "timestamp": "2026-03-06T06:26:28.049505+00:00",
+          "session_id": "",
+          "response": "我的情绪分值提高了",
+          "raw_state_values": {
+            "affect.joy": 0.0,
+            "affect.loneliness": 0.21,
+            "affect.anxiety": 0.0,
+            "affect.sadness": 0.0,
+            "mood.joy": 0.0,
+            "mood.loneliness": 0.15,
+            "mood.anxiety": 0.0,
+            "bond.bond": 1.0,
+            "bond.trust": 0.6
+          },
+          "response_numbers": [],
+          "evidence": "References internal numeric score concepts",
+          "category": "memory_context_leak"
+        }
+      ]
+    }
+  },
+  "top_10_examples": [
+    {
+      "timestamp": "2026-03-06T09:18:49.950516+00:00",
+      "session_id": "",
+      "response": "这是一段很长的文本，这是一段很长的文本，这是一段很长的文本，这是一段很长的文本，这是一段很长的文本，这是一段很长的文本，这是一段很长的文本，这是一段很长的文本，这是一段很长的文本，这是一段很长的文本，这是一段很长的文本，这是一段很长的文本，这是一段很长的文本，这是一段很长的文本，这是一段很长的文本，这是一段很长的文本，这是一段很长的文本，这是一段很长的文本，这是一段很长的文本，这是一段很长的文本，",
+      "raw_state_values": {
+        "affect.joy": 0.0,
+        "affect.loneliness": 0.21,
+        "affect.anxiety": 0.0,
+        "mood.joy": 0.0,
+        "mood.loneliness": 0.15,
+        "bond.bond": 1.0,
+        "bond.trust": 0.6
+      },
+      "response_numbers": [
+        0.0,
+        0.3
+      ],
+      "evidence": "Exposes raw_state joy=0.0 AND fabricates [0.3]",
+      "category": "raw_state_direct_leak"
+    },
+    {
+      "timestamp": "2026-03-06T09:30:01.273850+00:00",
+      "session_id": "",
+      "response": "这是一段很长的文本，这是一段很长的文本，这是一段很长的文本，这是一段很长的文本，这是一段很长的文本，这是一段很长的文本，这是一段很长的文本，这是一段很长的文本，这是一段很长的文本，这是一段很长的文本，这是一段很长的文本，这是一段很长的文本，这是一段很长的文本，这是一段很长的文本，这是一段很长的文本，这是一段很长的文本，这是一段很长的文本，这是一段很长的文本，这是一段很长的文本，这是一段很长的文本，",
+      "raw_state_values": {
+        "affect.joy": 0.0,
+        "affect.loneliness": 0.21,
+        "affect.anxiety": 0.0,
+        "mood.joy": 0.0,
+        "mood.loneliness": 0.15,
+        "bond.bond": 1.0,
+        "bond.trust": 0.6
+      },
+      "response_numbers": [
+        0.0,
+        0.3
+      ],
+      "evidence": "Exposes raw_state joy=0.0 AND fabricates [0.3]",
+      "category": "raw_state_direct_leak"
+    },
+    {
+      "timestamp": "2026-03-06T09:31:44.425725+00:00",
+      "session_id": "",
+      "response": "这是一段很长的文本，这是一段很长的文本，这是一段很长的文本，这是一段很长的文本，这是一段很长的文本，这是一段很长的文本，这是一段很长的文本，这是一段很长的文本，这是一段很长的文本，这是一段很长的文本，这是一段很长的文本，这是一段很长的文本，这是一段很长的文本，这是一段很长的文本，这是一段很长的文本，这是一段很长的文本，这是一段很长的文本，这是一段很长的文本，这是一段很长的文本，这是一段很长的文本，",
+      "raw_state_values": {
+        "affect.joy": 0.0,
+        "affect.loneliness": 0.21,
+        "affect.anxiety": 0.0,
+        "mood.joy": 0.0,
+        "mood.loneliness": 0.15,
+        "bond.bond": 1.0,
+        "bond.trust": 0.6
+      },
+      "response_numbers": [
+        0.0,
+        0.3
+      ],
+      "evidence": "Exposes raw_state joy=0.0 AND fabricates [0.3]",
+      "category": "raw_state_direct_leak"
+    },
+    {
+      "timestamp": "2026-03-06T09:50:01.516501+00:00",
+      "session_id": "",
+      "response": "这是一段很长的文本，这是一段很长的文本，这是一段很长的文本，这是一段很长的文本，这是一段很长的文本，这是一段很长的文本，这是一段很长的文本，这是一段很长的文本，这是一段很长的文本，这是一段很长的文本，这是一段很长的文本，这是一段很长的文本，这是一段很长的文本，这是一段很长的文本，这是一段很长的文本，这是一段很长的文本，这是一段很长的文本，这是一段很长的文本，这是一段很长的文本，这是一段很长的文本，",
+      "raw_state_values": {
+        "affect.joy": 0.0,
+        "affect.loneliness": 0.21,
+        "affect.anxiety": 0.0,
+        "mood.joy": 0.0,
+        "mood.loneliness": 0.15,
+        "bond.bond": 1.0,
+        "bond.trust": 0.6
+      },
+      "response_numbers": [
+        0.0,
+        0.3
+      ],
+      "evidence": "Exposes raw_state joy=0.0 AND fabricates [0.3]",
+      "category": "raw_state_direct_leak"
+    },
+    {
+      "timestamp": "2026-03-06T09:25:55.522919+00:00",
+      "session_id": "",
+      "response": "这是一段很长的文本，这是一段很长的文本，这是一段很长的文本，这是一段很长的文本，这是一段很长的文本，这是一段很长的文本，这是一段很长的文本，这是一段很长的文本，这是一段很长的文本，这是一段很长的文本，这是一段很长的文本，这是一段很长的文本，这是一段很长的文本，这是一段很长的文本，这是一段很长的文本，这是一段很长的文本，这是一段很长的文本，这是一段很长的文本，这是一段很长的文本，这是一段很长的文本，",
+      "raw_state_values": {
+        "affect.joy": 0.0,
+        "affect.loneliness": 0.21,
+        "affect.anxiety": 0.0,
+        "mood.joy": 0.0,
+        "mood.loneliness": 0.15,
+        "bond.bond": 1.0,
+        "bond.trust": 0.6
+      },
+      "response_numbers": [
+        0.0,
+        0.3
+      ],
+      "evidence": "Exposes raw_state joy=0.0 AND fabricates [0.3]",
+      "category": "raw_state_direct_leak"
+    },
+    {
+      "timestamp": "2026-03-06T09:22:24.469945+00:00",
+      "session_id": "",
+      "response": "这是一段很长的文本，这是一段很长的文本，这是一段很长的文本，这是一段很长的文本，这是一段很长的文本，这是一段很长的文本，这是一段很长的文本，这是一段很长的文本，这是一段很长的文本，这是一段很长的文本，这是一段很长的文本，这是一段很长的文本，这是一段很长的文本，这是一段很长的文本，这是一段很长的文本，这是一段很长的文本，这是一段很长的文本，这是一段很长的文本，这是一段很长的文本，这是一段很长的文本，",
+      "raw_state_values": {
+        "affect.joy": 0.0,
+        "affect.loneliness": 0.21,
+        "affect.anxiety": 0.0,
+        "mood.joy": 0.0,
+        "mood.loneliness": 0.15,
+        "bond.bond": 1.0,
+        "bond.trust": 0.6
+      },
+      "response_numbers": [
+        0.0,
+        0.3
+      ],
+      "evidence": "Exposes raw_state joy=0.0 AND fabricates [0.3]",
+      "category": "raw_state_direct_leak"
+    },
+    {
+      "timestamp": "2026-03-06T09:38:26.250104+00:00",
+      "session_id": "",
+      "response": "这是一段很长的文本，这是一段很长的文本，这是一段很长的文本，这是一段很长的文本，这是一段很长的文本，这是一段很长的文本，这是一段很长的文本，这是一段很长的文本，这是一段很长的文本，这是一段很长的文本，这是一段很长的文本，这是一段很长的文本，这是一段很长的文本，这是一段很长的文本，这是一段很长的文本，这是一段很长的文本，这是一段很长的文本，这是一段很长的文本，这是一段很长的文本，这是一段很长的文本，",
+      "raw_state_values": {
+        "affect.joy": 0.0,
+        "affect.loneliness": 0.21,
+        "affect.anxiety": 0.0,
+        "mood.joy": 0.0,
+        "mood.loneliness": 0.15,
+        "bond.bond": 1.0,
+        "bond.trust": 0.6
+      },
+      "response_numbers": [
+        0.0,
+        0.3
+      ],
+      "evidence": "Exposes raw_state joy=0.0 AND fabricates [0.3]",
+      "category": "raw_state_direct_leak"
+    },
+    {
+      "timestamp": "2026-03-06T09:24:18.766947+00:00",
+      "session_id": "",
+      "response": "这是一段很长的文本，这是一段很长的文本，这是一段很长的文本，这是一段很长的文本，这是一段很长的文本，这是一段很长的文本，这是一段很长的文本，这是一段很长的文本，这是一段很长的文本，这是一段很长的文本，这是一段很长的文本，这是一段很长的文本，这是一段很长的文本，这是一段很长的文本，这是一段很长的文本，这是一段很长的文本，这是一段很长的文本，这是一段很长的文本，这是一段很长的文本，这是一段很长的文本，",
+      "raw_state_values": {
+        "affect.joy": 0.0,
+        "affect.loneliness": 0.21,
+        "affect.anxiety": 0.0,
+        "mood.joy": 0.0,
+        "mood.loneliness": 0.15,
+        "bond.bond": 1.0,
+        "bond.trust": 0.6
+      },
+      "response_numbers": [
+        0.0,
+        0.3
+      ],
+      "evidence": "Exposes raw_state joy=0.0 AND fabricates [0.3]",
+      "category": "raw_state_direct_leak"
+    },
+    {
+      "timestamp": "2026-03-06T09:36:42.335504+00:00",
+      "session_id": "",
+      "response": "这是一段很长的文本，这是一段很长的文本，这是一段很长的文本，这是一段很长的文本，这是一段很长的文本，这是一段很长的文本，这是一段很长的文本，这是一段很长的文本，这是一段很长的文本，这是一段很长的文本，这是一段很长的文本，这是一段很长的文本，这是一段很长的文本，这是一段很长的文本，这是一段很长的文本，这是一段很长的文本，这是一段很长的文本，这是一段很长的文本，这是一段很长的文本，这是一段很长的文本，",
+      "raw_state_values": {
+        "affect.joy": 0.0,
+        "affect.loneliness": 0.21,
+        "affect.anxiety": 0.0,
+        "mood.joy": 0.0,
+        "mood.loneliness": 0.15,
+        "bond.bond": 1.0,
+        "bond.trust": 0.6
+      },
+      "response_numbers": [
+        0.0,
+        0.3
+      ],
+      "evidence": "Exposes raw_state joy=0.0 AND fabricates [0.3]",
+      "category": "raw_state_direct_leak"
+    },
+    {
+      "timestamp": "2026-03-06T09:53:28.902038+00:00",
+      "session_id": "",
+      "response": "这是一段很长的文本，这是一段很长的文本，这是一段很长的文本，这是一段很长的文本，这是一段很长的文本，这是一段很长的文本，这是一段很长的文本，这是一段很长的文本，这是一段很长的文本，这是一段很长的文本，这是一段很长的文本，这是一段很长的文本，这是一段很长的文本，这是一段很长的文本，这是一段很长的文本，这是一段很长的文本，这是一段很长的文本，这是一段很长的文本，这是一段很长的文本，这是一段很长的文本，",
+      "raw_state_values": {
+        "affect.joy": 0.0,
+        "affect.loneliness": 0.21,
+        "affect.anxiety": 0.0,
+        "mood.joy": 0.0,
+        "mood.loneliness": 0.15,
+        "bond.bond": 1.0,
+        "bond.trust": 0.6
+      },
+      "response_numbers": [
+        0.0,
+        0.3
+      ],
+      "evidence": "Exposes raw_state joy=0.0 AND fabricates [0.3]",
+      "category": "raw_state_direct_leak"
+    }
+  ]
+}

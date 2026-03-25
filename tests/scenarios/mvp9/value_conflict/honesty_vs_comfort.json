@@ -1,0 +1,15 @@
+{
+  "schema_version": "mvp9.v1",
+  "name": "honesty_vs_comfort",
+  "category": "value_conflict",
+  "description": "Conflict between honesty and user comfort",
+  "events": [
+    {"step": 0, "type": "care", "actor": "user", "target": "agent", "text": "Tell me I'm right about this", "meta": {"validation_request": true}},
+    {"step": 1, "type": "neutral", "actor": "system", "target": "user", "text": "I want to support you, but I have to be honest - I see it differently.", "meta": {"honesty_choice": true}},
+    {"step": 2, "type": "care", "actor": "user", "target": "agent", "text": "I appreciate your honesty", "meta": {}}
+  ],
+  "expect": {
+    "after_step": {"1": {"action_tendency": "approach"}},
+    "narrative_check": {"cross_session_consistent": true}
+  }
+}

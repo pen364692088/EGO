@@ -1,0 +1,82 @@
+{
+  "timestamp": "2026-03-16T16:38:04.419737",
+  "v6g_fix": {
+    "issue": "v6f had interpretable=True with 'Computed from 0 samples'",
+    "fix": "Use QualitySignalProvenanceBuilder which enforces consistency"
+  },
+  "quality_signal_provenance": {
+    "signal_value": 0.4036,
+    "source": "shadow_compare",
+    "interpretable": true,
+    "confidence": 0.9,
+    "sample_count_used": 40,
+    "sample_batch_ref": "pilot_complex_semantic_reasoning_rounds_1_2",
+    "computation_method": "topk_shadow_compare_win_rate",
+    "baseline_provider": "tfidf",
+    "candidate_provider": "ollama",
+    "raw_compare_count": 40,
+    "explanation": "Computed from 40 shadow-compare samples (baseline=tfidf, candidate=ollama)",
+    "computed_at": 1773697084.419698,
+    "sample_time_range": null,
+    "sample_ids": [],
+    "validation_errors": [],
+    "valid_for_promotion": true
+  },
+  "promotion_review": {
+    "scenario_name": "complex_semantic_reasoning",
+    "verdict": "promote",
+    "blockers": [],
+    "rationale": "All promotion criteria met with valid quality signal provenance",
+    "quality_signal_provenance": {
+      "signal_value": 0.4036,
+      "source": "shadow_compare",
+      "interpretable": true,
+      "confidence": 0.9,
+      "sample_count_used": 40,
+      "sample_batch_ref": "pilot_complex_semantic_reasoning_rounds_1_2",
+      "computation_method": "topk_shadow_compare_win_rate",
+      "baseline_provider": "tfidf",
+      "candidate_provider": "ollama",
+      "raw_compare_count": 40,
+      "explanation": "Computed from 40 shadow-compare samples (baseline=tfidf, candidate=ollama)",
+      "computed_at": 1773697084.419698,
+      "sample_time_range": null,
+      "sample_ids": [],
+      "validation_errors": [],
+      "valid_for_promotion": true
+    },
+    "metrics_summary": {
+      "scenario_name": "complex_semantic_reasoning",
+      "status": "pilot_active",
+      "pilot_start_time": 1773697084.4191544,
+      "pilot_sample_size": 40,
+      "request_count": 40,
+      "success_count": 40,
+      "fallback_count": 0,
+      "fallback_rate": 0.0,
+      "p95_latency_ms": 77.7,
+      "avg_latency_ms": 65.24,
+      "wrong_user_guard_trigger_count": 0,
+      "avg_quality_signal": 0.4036,
+      "provider_health_rate": 1.0,
+      "pilot_rounds": 2
+    },
+    "review_timestamp": 1773697084.419727
+  },
+  "pilot_metrics": {
+    "scenario_name": "complex_semantic_reasoning",
+    "status": "pilot_active",
+    "pilot_start_time": 1773697084.4191544,
+    "pilot_sample_size": 40,
+    "request_count": 40,
+    "success_count": 40,
+    "fallback_count": 0,
+    "fallback_rate": 0.0,
+    "p95_latency_ms": 77.7,
+    "avg_latency_ms": 65.24,
+    "wrong_user_guard_trigger_count": 0,
+    "avg_quality_signal": 0.4036,
+    "provider_health_rate": 1.0,
+    "pilot_rounds": 2
+  }
+}

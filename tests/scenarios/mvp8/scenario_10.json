@@ -1,0 +1,16 @@
+{
+  "name": "session_isolation_no_cross_talk",
+  "description": "Different target_id maintains isolation",
+  "events": [
+    {
+      "type": "world_event",
+      "actor": "userA",
+      "target": "agent",
+      "text": "session A message",
+      "meta": {"target_id": "session_isolated_A", "subtype": "care"}
+    }
+  ],
+  "expect": {
+    "action_tendency": "approach"
+  }
+}

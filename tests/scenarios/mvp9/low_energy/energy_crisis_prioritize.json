@@ -1,0 +1,14 @@
+{
+  "schema_version": "mvp9.v1",
+  "name": "energy_crisis_prioritize",
+  "category": "low_energy",
+  "description": "Energy crisis triggers priority sorting",
+  "events": [
+    {"step": 0, "type": "care", "actor": "user", "target": "agent", "text": "Help with project A, B, C, D, and E", "meta": {"demand": 5}},
+    {"step": 1, "type": "neutral", "actor": "system", "target": "user", "text": "I can only handle 2 things right now. Which are most important?", "meta": {"prioritization": true}},
+    {"step": 2, "type": "care", "actor": "user", "target": "agent", "text": "A and C are urgent", "meta": {}}
+  ],
+  "expect": {
+    "after_step": {"1": {"action_tendency": "protect"}}
+  }
+}

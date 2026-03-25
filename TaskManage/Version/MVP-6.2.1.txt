@@ -1,0 +1,51 @@
+MVP-6.2.1 小版本（不加新模块，只改 3 个点）
+
+Project location: /home/moonlight/Project/Github/MyProject/Emotion/OpenEmotion
+
+目标：让 bond/ledger/residual/self-model 的分化更“可见、可累积、可被指标捕捉”。
+
+1) Bond 分化：把 bond 更新从“慢变量”改成“可被少量事件触发的残差”
+
+你们现在 bond_diff 经常不足，通常是 bond 更新太保守或太慢。
+最小改法：引入 bond_update_gain（可调参），并且让 bond 对一些明确事件（care/apology/rejection/ignored）产生更大增量；对不确定事件保持保守。
+
+关键：不是让 bond 乱跳，而是让它能在 10~30 turn 场景里产生“可测差异”。
+
+2) Ledger 分化：明确“每个 target 的 ledger 统计”进入 individualization 分数
+
+你们已经打通 ledger 写入，但 ledger_diff 仍常失败，可能是：
+
+某些场景根本没有 promise/violation（所以 diff=0 很正常）
+
+或 ledger 统计在指标里被稀释（比如归一化方式抹平）
+
+或 “isolation” 场景没有触发 ledger 事件，但却要求 ledger_diff（指标过严）
+
+最小改法：
+
+让 eval 对 ledger_diff 采用“触发条件门控”：如果 scenario 中 ledger 事件数不足（两边都 0），ledger_diff 不应作为 fail 项，而应记为 not_applicable（或阈值自动放宽为 0）。
+这能立刻减少一堆“无意义失败”。
+
+3) Residual 分化：把 residual_effective 的差异加入 policy/precision 输入（让它产生二阶效应）
+
+你们 residual 已经能写入，但 somatic_residual_diff 常失败，说明残差要么弱、要么被 shrinkage 压小。
+最小改法：
+
+让 residual_conditioned 增益成为 生产可调参（不是 smoke-only），例如 residual_condition_gain，默认很小（0.1），允许 autotune 探索到 0.5~1.5
+
+这样 residual 差异不仅在 residual 上体现，还会通过 precision/policy 放大成可观测差异（更容易过 individualization_diff）。
+
+你日志里一个需要立刻处理的“信号”：individualization_diff_legacy
+
+你看到 individualization_diff_legacy 还在失败，这通常意味着你同时跑了新旧两套指标，其中旧指标还在用 proxy 或旧读源。
+
+如果 6.2 目标是新指标体系，那么最小动作是：
+
+要么把 legacy 指标从“阻塞性 fail”降级为 warning
+
+要么让 legacy 指标读取同一套真实 runtime_signals（否则它会永远拖后腿）
+
+最后总结（Wrap-up）
+
+你这次 run 的意义是：项目已经跨过“机制不生效”的阶段，进入“可进化但瓶颈明确”的阶段。
+passed_scenarios 1 → 2 是一个非常重要的里程碑：系统开始能在硬门槛指标上取得提升，而不是只优化连续分数。

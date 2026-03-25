@@ -1,0 +1,65 @@
+{
+  "scenario_name": "complex_semantic_reasoning",
+  "evaluation": {
+    "scenario_name": "complex_semantic_reasoning",
+    "verdict": "stable_keep_promoted",
+    "blockers": [],
+    "rationale": "All stability criteria met, scenario remains in production whitelist",
+    "next_allowed_action": "Continue monitoring, consider reducing observation frequency",
+    "metrics_summary": {
+      "request_count": 150,
+      "fallback_rate": 0.0,
+      "p95_latency_ms": 89.18241918893652,
+      "wrong_user_guard_trigger_count": 0,
+      "provider_health_rate": 1.0,
+      "quality_gain_signal": 0.3978485291117828,
+      "observation_rounds": 3
+    },
+    "observation_rounds": 3,
+    "timestamp": 1773700857.6963413,
+    "datetime": "2026-03-16T17:40:57.696341"
+  },
+  "round_receipts": [
+    {
+      "round_id": 7,
+      "scenario_name": "complex_semantic_reasoning",
+      "sample_count": 50,
+      "fallback_rate": 0.0,
+      "p95_latency_ms": 84.76813078192566,
+      "wrong_user_guard_trigger_count": 0,
+      "provider_health_rate": 1.0,
+      "quality_gain_signal": 0.3979734217998394,
+      "guard_status": "none",
+      "timestamp": 1773700857.65177,
+      "datetime": "2026-03-16T17:40:57.651770"
+    },
+    {
+      "round_id": 8,
+      "scenario_name": "complex_semantic_reasoning",
+      "sample_count": 50,
+      "fallback_rate": 0.0,
+      "p95_latency_ms": 89.14380713629924,
+      "wrong_user_guard_trigger_count": 0,
+      "provider_health_rate": 1.0,
+      "quality_gain_signal": 0.39933836933348776,
+      "guard_status": "none",
+      "timestamp": 1773700857.6733341,
+      "datetime": "2026-03-16T17:40:57.673334"
+    },
+    {
+      "round_id": 9,
+      "scenario_name": "complex_semantic_reasoning",
+      "sample_count": 50,
+      "fallback_rate": 0.0,
+      "p95_latency_ms": 89.18241918893652,
+      "wrong_user_guard_trigger_count": 0,
+      "provider_health_rate": 1.0,
+      "quality_gain_signal": 0.3978485291117828,
+      "guard_status": "none",
+      "timestamp": 1773700857.696003,
+      "datetime": "2026-03-16T17:40:57.696003"
+    }
+  ],
+  "total_rounds": 3,
+  "generated_at": "2026-03-16T17:40:57.696371"
+}

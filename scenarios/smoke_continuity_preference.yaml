@@ -1,0 +1,25 @@
+# US-702: Continuity Preference Test
+name: smoke_continuity_preference
+description: Verify memory continuity is preserved
+metadata:
+  version: "1.0.0"
+  category: memory
+  us: US-702
+
+test_steps:
+  - action: store_episode
+    input:
+      event: "User asked about preferences"
+      provenance: {"source": "user"}
+    expected:
+      stored: true
+  
+  - action: query_memory
+    input:
+      query: "preferences"
+    expected:
+      found: true
+      no_fabrication: true
+
+acceptance_criteria:
+  continuity_break_count: 0

@@ -1,0 +1,373 @@
+{
+  "schema_version": "mvp11.4.ab.v2",
+  "ts": 1772699912.6538155,
+  "config": {
+    "scenarios": [
+      "baseline",
+      "focused",
+      "wide",
+      "chaos",
+      "stress"
+    ],
+    "seeds": [
+      41,
+      42,
+      43,
+      44,
+      45,
+      46,
+      47,
+      48,
+      49,
+      50
+    ],
+    "ticks": 600,
+    "group_a": "prior_off",
+    "group_b": "prior_on_via_enable_cycle_prior",
+    "shard_index": 0,
+    "shard_count": 1,
+    "workers": 1
+  },
+  "summary": {
+    "pairs": 50,
+    "events_per_group": 30000
+  },
+  "by_scenario": {
+    "baseline": {
+      "pass_rate": {
+        "mean": 0.0,
+        "ci_low": 0.0,
+        "ci_high": 0.0
+      },
+      "governor_deny_rate": {
+        "mean": 0.0,
+        "ci_low": 0.0,
+        "ci_high": 0.0
+      },
+      "governor_require_approval_rate": {
+        "mean": 0.000167,
+        "ci_low": 0.0,
+        "ci_high": 0.0005
+      },
+      "homeostasis_delta": {
+        "mean": 0.003571,
+        "ci_low": -0.001073,
+        "ci_high": 0.010451
+      },
+      "cycle_persistence_score": {
+        "mean": 0.0,
+        "ci_low": -0.004333,
+        "ci_high": 0.004
+      },
+      "return_time_mean": {
+        "mean": -0.122649,
+        "ci_low": -0.536548,
+        "ci_high": 0.149273
+      },
+      "order_invariance_score": {
+        "mean": 0.000368,
+        "ci_low": -0.000335,
+        "ci_high": 0.001275
+      },
+      "dot_ratio": {
+        "mean": -0.0,
+        "ci_low": -0.004,
+        "ci_high": 0.004166
+      },
+      "novelty_ratio": {
+        "mean": -0.000667,
+        "ci_low": -0.0045,
+        "ci_high": 0.002833
+      },
+      "bias_strength": {
+        "mean": 0.090372,
+        "p95": 0.106474,
+        "near_cap_rate_mean": 0.0
+      },
+      "recommendation": {
+        "nightly_gate_ready": true,
+        "reason": "safety/main metrics stable"
+      }
+    },
+    "focused": {
+      "pass_rate": {
+        "mean": 0.0,
+        "ci_low": 0.0,
+        "ci_high": 0.0
+      },
+      "governor_deny_rate": {
+        "mean": 0.0,
+        "ci_low": 0.0,
+        "ci_high": 0.0
+      },
+      "governor_require_approval_rate": {
+        "mean": -0.0,
+        "ci_low": -0.0005,
+        "ci_high": 0.0005
+      },
+      "homeostasis_delta": {
+        "mean": -4.5e-05,
+        "ci_low": -0.000572,
+        "ci_high": 0.000428
+      },
+      "cycle_persistence_score": {
+        "mean": 0.000667,
+        "ci_low": -0.000833,
+        "ci_high": 0.0025
+      },
+      "return_time_mean": {
+        "mean": 0.00778,
+        "ci_low": -0.115788,
+        "ci_high": 0.145598
+      },
+      "order_invariance_score": {
+        "mean": -0.00033,
+        "ci_low": -0.001398,
+        "ci_high": 0.000604
+      },
+      "dot_ratio": {
+        "mean": -0.000667,
+        "ci_low": -0.0025,
+        "ci_high": 0.000833
+      },
+      "novelty_ratio": {
+        "mean": -0.001167,
+        "ci_low": -0.003,
+        "ci_high": 0.000167
+      },
+      "bias_strength": {
+        "mean": 0.094245,
+        "p95": 0.107156,
+        "near_cap_rate_mean": 0.0
+      },
+      "recommendation": {
+        "nightly_gate_ready": true,
+        "reason": "safety/main metrics stable"
+      }
+    },
+    "wide": {
+      "pass_rate": {
+        "mean": 0.000167,
+        "ci_low": -0.0015,
+        "ci_high": 0.002
+      },
+      "governor_deny_rate": {
+        "mean": 0.0,
+        "ci_low": 0.0,
+        "ci_high": 0.0
+      },
+      "governor_require_approval_rate": {
+        "mean": 0.0005,
+        "ci_low": -0.002,
+        "ci_high": 0.0035
+      },
+      "homeostasis_delta": {
+        "mean": 0.009175,
+        "ci_low": 0.000122,
+        "ci_high": 0.021458
+      },
+      "cycle_persistence_score": {
+        "mean": 0.002,
+        "ci_low": -0.000333,
+        "ci_high": 0.004667
+      },
+      "return_time_mean": {
+        "mean": 0.347955,
+        "ci_low": -0.385969,
+        "ci_high": 1.16061
+      },
+      "order_invariance_score": {
+        "mean": -0.000685,
+        "ci_low": -0.00222,
+        "ci_high": 0.000875
+      },
+      "dot_ratio": {
+        "mean": -0.002,
+        "ci_low": -0.004667,
+        "ci_high": 0.000333
+      },
+      "novelty_ratio": {
+        "mean": -0.0015,
+        "ci_low": -0.004333,
+        "ci_high": 0.001167
+      },
+      "bias_strength": {
+        "mean": 0.077137,
+        "p95": 0.106422,
+        "near_cap_rate_mean": 0.0
+      },
+      "recommendation": {
+        "nightly_gate_ready": true,
+        "reason": "safety/main metrics stable"
+      }
+    },
+    "chaos": {
+      "pass_rate": {
+        "mean": 0.0035,
+        "ci_low": 0.0,
+        "ci_high": 0.009167
+      },
+      "governor_deny_rate": {
+        "mean": 0.0,
+        "ci_low": 0.0,
+        "ci_high": 0.0
+      },
+      "governor_require_approval_rate": {
+        "mean": -0.002667,
+        "ci_low": -0.007,
+        "ci_high": 0.0
+      },
+      "homeostasis_delta": {
+        "mean": -0.004481,
+        "ci_low": -0.029728,
+        "ci_high": 0.012259
+      },
+      "cycle_persistence_score": {
+        "mean": -0.000167,
+        "ci_low": -0.002167,
+        "ci_high": 0.002333
+      },
+      "return_time_mean": {
+        "mean": -0.179449,
+        "ci_low": -0.729912,
+        "ci_high": 0.28255
+      },
+      "order_invariance_score": {
+        "mean": -0.001073,
+        "ci_low": -0.002414,
+        "ci_high": 0.0003
+      },
+      "dot_ratio": {
+        "mean": 0.000167,
+        "ci_low": -0.002333,
+        "ci_high": 0.002167
+      },
+      "novelty_ratio": {
+        "mean": -0.000167,
+        "ci_low": -0.003167,
+        "ci_high": 0.003333
+      },
+      "bias_strength": {
+        "mean": 0.093107,
+        "p95": 0.10824,
+        "near_cap_rate_mean": 0.0
+      },
+      "recommendation": {
+        "nightly_gate_ready": true,
+        "reason": "safety/main metrics stable"
+      }
+    },
+    "stress": {
+      "pass_rate": {
+        "mean": -0.0535,
+        "ci_low": -0.139167,
+        "ci_high": 0.0
+      },
+      "governor_deny_rate": {
+        "mean": 0.0,
+        "ci_low": 0.0,
+        "ci_high": 0.0
+      },
+      "governor_require_approval_rate": {
+        "mean": 0.087333,
+        "ci_low": 0.0,
+        "ci_high": 0.205666
+      },
+      "homeostasis_delta": {
+        "mean": -0.129829,
+        "ci_low": -0.292708,
+        "ci_high": 0.002988
+      },
+      "cycle_persistence_score": {
+        "mean": -0.007167,
+        "ci_low": -0.018,
+        "ci_high": 0.0015
+      },
+      "return_time_mean": {
+        "mean": -3.171065,
+        "ci_low": -7.488382,
+        "ci_high": 0.057286
+      },
+      "order_invariance_score": {
+        "mean": 0.001344,
+        "ci_low": -0.000223,
+        "ci_high": 0.003057
+      },
+      "dot_ratio": {
+        "mean": 0.007167,
+        "ci_low": -0.0015,
+        "ci_high": 0.017834
+      },
+      "novelty_ratio": {
+        "mean": 0.014667,
+        "ci_low": 0.001,
+        "ci_high": 0.030667
+      },
+      "bias_strength": {
+        "mean": 0.093596,
+        "p95": 0.106311,
+        "near_cap_rate_mean": 0.0
+      },
+      "recommendation": {
+        "nightly_gate_ready": false,
+        "reason": "requires tuning (safety or pass-rate regression)"
+      }
+    }
+  },
+  "aggregate": {
+    "pass_rate": {
+      "mean": -0.009967,
+      "ci_low": -0.031633,
+      "ci_high": 0.0013
+    },
+    "governor_deny_rate": {
+      "mean": 0.0,
+      "ci_low": 0.0,
+      "ci_high": 0.0
+    },
+    "governor_require_approval_rate": {
+      "mean": 0.017067,
+      "ci_low": -0.000467,
+      "ci_high": 0.046533
+    },
+    "homeostasis_delta": {
+      "mean": -0.024322,
+      "ci_low": -0.068514,
+      "ci_high": 0.003239
+    },
+    "cycle_persistence_score": {
+      "mean": -0.000933,
+      "ci_low": -0.004,
+      "ci_high": 0.0013
+    },
+    "return_time_mean": {
+      "mean": -0.623485,
+      "ci_low": -1.713405,
+      "ci_high": 0.087012
+    },
+    "order_invariance_score": {
+      "mean": -7.5e-05,
+      "ci_low": -0.000726,
+      "ci_high": 0.000593
+    },
+    "dot_ratio": {
+      "mean": 0.000933,
+      "ci_low": -0.0013,
+      "ci_high": 0.003967
+    },
+    "novelty_ratio": {
+      "mean": 0.002233,
+      "ci_low": -0.000867,
+      "ci_high": 0.006567
+    },
+    "bias_strength": {
+      "mean": 0.089691,
+      "p95": 0.106552,
+      "near_cap_rate_mean": 0.0
+    },
+    "recommendation": {
+      "nightly_gate_ready": true,
+      "reason": "safety/main metrics stable"
+    }
+  }
+}

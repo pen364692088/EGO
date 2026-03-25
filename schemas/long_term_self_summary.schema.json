@@ -1,0 +1,359 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "long_term_self_summary.schema.json",
+  "title": "Long-Term Self Summary Contract",
+  "description": "长期自我摘要。主体的压缩表示，用于跨天恢复。",
+  "schema_version": "1.0.0",
+  "type": "object",
+  "required": [
+    "schema_version",
+    "summary_id",
+    "identity_handle_ref",
+    "summary_created_at",
+    "summary_period_start",
+    "summary_period_end",
+    "identity_summary",
+    "current_phase_summary",
+    "capability_summary",
+    "constraint_summary",
+    "active_commitments_summary",
+    "recent_key_events_summary",
+    "stable_conclusions",
+    "open_questions",
+    "self_model_version_ref",
+    "last_modified_at",
+    "modification_audit_trail"
+  ],
+  "properties": {
+    "schema_version": {
+      "type": "string",
+      "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+$",
+      "description": "Schema 版本号",
+      "default": "1.0.0"
+    },
+    "summary_id": {
+      "type": "string",
+      "pattern": "^summary_[a-zA-Z0-9_-]+$",
+      "description": "摘要唯一标识"
+    },
+    "identity_handle_ref": {
+      "type": "string",
+      "description": "关联的 identity_handle",
+      "pattern": "^[a-z][a-z0-9_]*$"
+    },
+    "summary_created_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "摘要创建时间"
+    },
+    "summary_period_start": {
+      "type": "string",
+      "format": "date-time",
+      "description": "摘要覆盖期起始时间"
+    },
+    "summary_period_end": {
+      "type": "string",
+      "format": "date-time",
+      "description": "摘要覆盖期结束时间"
+    },
+    "identity_summary": {
+      "type": "object",
+      "description": "身份摘要（引用 identity invariants）",
+      "required": ["core_name", "core_role", "primary_owner"],
+      "properties": {
+        "core_name": {
+          "type": "string",
+          "description": "核心名称"
+        },
+        "core_role": {
+          "type": "string",
+          "description": "核心角色"
+        },
+        "primary_owner": {
+          "type": "string",
+          "description": "主要所有者"
+        },
+        "identity_stability_note": {
+          "type": "string",
+          "description": "身份稳定性说明"
+        }
+      }
+    },
+    "current_phase_summary": {
+      "type": "object",
+      "description": "当前阶段摘要",
+      "required": ["phase_name", "primary_focus"],
+      "properties": {
+        "phase_name": {
+          "type": "string",
+          "description": "阶段名称"
+        },
+        "phase_start": {
+          "type": "string",
+          "format": "date-time",
+          "description": "阶段开始时间"
+        },
+        "primary_focus": {
+          "type": "string",
+          "description": "主要关注点"
+        },
+        "key_activities": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "关键活动"
+        },
+        "progress_indicators": {
+          "type": "object",
+          "description": "进度指标",
+          "additionalProperties": { "type": "number" }
+        }
+      }
+    },
+    "capability_summary": {
+      "type": "object",
+      "description": "能力摘要（引用 self-model）",
+      "required": ["strong_domains", "developing_domains"],
+      "properties": {
+        "strong_domains": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "优势领域"
+        },
+        "developing_domains": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "发展中领域"
+        },
+        "known_limitations": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "已知限制"
+        },
+        "capability_trend": {
+          "type": "string",
+          "enum": ["growing", "stable", "constrained"],
+          "description": "能力趋势"
+        }
+      }
+    },
+    "constraint_summary": {
+      "type": "object",
+      "description": "约束摘要",
+      "required": ["hard_constraints", "soft_constraints"],
+      "properties": {
+        "hard_constraints": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "硬约束（不可违反）"
+        },
+        "soft_constraints": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "软约束（可协商）"
+        },
+        "temporary_constraints": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "临时约束"
+        }
+      }
+    },
+    "active_commitments_summary": {
+      "type": "object",
+      "description": "活跃承诺摘要",
+      "required": ["standing_commitments"],
+      "properties": {
+        "standing_commitments": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "持续承诺列表"
+        },
+        "recent_new_commitments": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "近期新增承诺"
+        },
+        "commitments_fulfilled": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "已履行的承诺"
+        }
+      }
+    },
+    "recent_key_events_summary": {
+      "type": "array",
+      "description": "近期关键事件摘要（不是详细流水账，是压缩表示）",
+      "items": {
+        "type": "object",
+        "required": ["event_type", "summary", "significance"],
+        "properties": {
+          "event_type": {
+            "type": "string",
+            "description": "事件类型"
+          },
+          "summary": {
+            "type": "string",
+            "description": "事件摘要"
+          },
+          "significance": {
+            "type": "string",
+            "enum": ["high", "medium", "low"],
+            "description": "重要性"
+          },
+          "timestamp": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "maxItems": 20
+    },
+    "stable_conclusions": {
+      "type": "array",
+      "description": "稳定结论（经过验证的结论，可用于后续决策）",
+      "items": {
+        "type": "object",
+        "required": ["conclusion_id", "statement", "confidence", "basis"],
+        "properties": {
+          "conclusion_id": {
+            "type": "string",
+            "description": "结论标识"
+          },
+          "statement": {
+            "type": "string",
+            "description": "结论陈述"
+          },
+          "confidence": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 1,
+            "description": "置信度"
+          },
+          "basis": {
+            "type": "string",
+            "description": "依据"
+          },
+          "formed_at": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      }
+    },
+    "open_questions": {
+      "type": "array",
+      "description": "开放问题（待解决或待验证）",
+      "items": {
+        "type": "object",
+        "required": ["question_id", "question", "priority"],
+        "properties": {
+          "question_id": {
+            "type": "string"
+          },
+          "question": {
+            "type": "string"
+          },
+          "priority": {
+            "type": "string",
+            "enum": ["high", "medium", "low"]
+          },
+          "blocking": {
+            "type": "boolean",
+            "default": false,
+            "description": "是否阻塞关键路径"
+          }
+        }
+      }
+    },
+    "self_model_version_ref": {
+      "type": "object",
+      "description": "引用的 self-model 版本",
+      "required": ["model_handle", "snapshot_timestamp"],
+      "properties": {
+        "model_handle": {
+          "type": "string"
+        },
+        "snapshot_timestamp": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "hash": {
+          "type": "string",
+          "description": "内容哈希（可选）"
+        }
+      }
+    },
+    "recovery_hints": {
+      "type": "object",
+      "description": "恢复提示（用于跨天恢复时快速定位状态）",
+      "properties": {
+        "last_active_context": {
+          "type": "string",
+          "description": "最后活跃上下文"
+        },
+        "suggested_start_actions": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "建议的启动动作"
+        },
+        "pending_tasks": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "待处理任务"
+        }
+      }
+    },
+    "metadata": {
+      "type": "object",
+      "description": "元数据",
+      "properties": {
+        "compression_ratio": {
+          "type": "number",
+          "description": "压缩比（原始数据/摘要大小）"
+        },
+        "generation_method": {
+          "type": "string",
+          "description": "生成方法"
+        },
+        "verified": {
+          "type": "boolean",
+          "description": "是否已验证"
+        }
+      }
+    },
+    "last_modified_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "最后修改时间"
+    },
+    "modification_audit_trail": {
+      "type": "array",
+      "description": "修改审计轨迹",
+      "items": {
+        "type": "object",
+        "required": ["timestamp", "action", "authorized"],
+        "properties": {
+          "timestamp": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "action": {
+            "type": "string",
+            "enum": ["created", "refreshed", "updated", "verified"],
+            "description": "动作类型"
+          },
+          "authorized": {
+            "type": "boolean"
+          },
+          "trigger": {
+            "type": "string"
+          },
+          "changes_summary": {
+            "type": "string"
+          }
+        }
+      }
+    }
+  },
+  "additionalProperties": false
+}

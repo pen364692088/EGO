@@ -1,0 +1,69 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+share/python-wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+
+# Virtual environments
+venv/
+env/
+ENV/
+.env/
+.venv
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Database
+data/openemotion.db
+*.db
+*.sqlite
+
+# Logs
+*.log
+logs/
+
+# Temporary files
+*.tmp
+*.temp
+
+# Security: Token files (never commit)
+.emotiond_token
+**/.emotiond_token
+emotiond_token
+
+# Local evaluation outputs (not source)
+reports/
+
+# Virtual environments (catch-all)
+venv*/
+tmp/
+
+# MVP11 large log files
+artifacts/mvp11/*.jsonl
+
+# Large artifact files
+artifacts/mvp11/*.jsonl
+artifacts/mvp11_test/*.jsonl
+reports/*.json

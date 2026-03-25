@@ -1,0 +1,114 @@
+{
+  "schema_version": "mvp11.hard_gate.v2",
+  "ts": 1773432945.5398273,
+  "mode": "shadow",
+  "entries_analyzed": 0,
+  "date_range": null,
+  "overall_status": "PASS",
+  "should_fail": false,
+  "gates": [
+    {
+      "gate": "replay_hash_match",
+      "status": "PASS",
+      "reason": "hash_match_rate >= 1.000 for all entries",
+      "should_fail": false,
+      "threshold": 1.0,
+      "threshold_source": "default"
+    },
+    {
+      "gate": "sanity_consecutive",
+      "status": "UNKNOWN",
+      "should_fail": false,
+      "reason": "No entries",
+      "threshold": 2,
+      "threshold_source": "default"
+    },
+    {
+      "gate": "concentration_consecutive",
+      "status": "UNKNOWN",
+      "should_fail": false,
+      "reason": "No entries",
+      "top1_threshold": 0.55,
+      "consecutive_threshold": 2
+    },
+    {
+      "gate": "bias_consecutive",
+      "status": "UNKNOWN",
+      "should_fail": false,
+      "reason": "No entries",
+      "bias_threshold": 0.12,
+      "consecutive_threshold": 2
+    }
+  ],
+  "testbot": {
+    "loaded": true,
+    "overall_status": "PASS",
+    "gates": {
+      "tape_hash_match": {
+        "status": "PASS",
+        "value": true,
+        "reason": "All scenarios replay hash matched"
+      },
+      "phi_top1_share": {
+        "status": "PASS",
+        "value": 0.280952,
+        "threshold": 0.6,
+        "reason": "phi_top1_share=0.281 <= threshold=0.600"
+      },
+      "unique_signatures": {
+        "status": "PASS",
+        "value": 14,
+        "threshold": 5,
+        "reason": "unique_signatures=14 >= floor=5"
+      }
+    },
+    "metrics": {
+      "loaded": true,
+      "tape_hash_match": true,
+      "phi_top1_share": 0.280952,
+      "unique_signatures": 14,
+      "scenarios_count": 3,
+      "scenarios_failed": 0,
+      "scenarios": [
+        {
+          "name": "simple_greeting",
+          "status": "PASS",
+          "hash_match": true
+        },
+        {
+          "name": "multi_turn_conversation",
+          "status": "PASS",
+          "hash_match": true
+        },
+        {
+          "name": "commitment_scenario",
+          "status": "PASS",
+          "hash_match": true
+        }
+      ],
+      "error": null
+    },
+    "thresholds_used": {
+      "phi_top1_share_max": 0.6,
+      "unique_signatures_min": 5
+    }
+  },
+  "threshold_info": {
+    "source": "calibrated",
+    "calibration_path": "reports/mvp11_threshold_calibration.json",
+    "loaded_keys": [
+      {
+        "key": "sanity_consecutive_days",
+        "value": 2,
+        "confidence": "insufficient",
+        "rationale": "Insufficient data (1 days)"
+      },
+      {
+        "key": "bias_p95_threshold",
+        "value": 0.12,
+        "confidence": "insufficient",
+        "rationale": "Insufficient data (1 samples), keeping current threshold"
+      }
+    ]
+  }
+}
