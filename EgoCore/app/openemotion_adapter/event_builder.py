@@ -194,9 +194,12 @@ class EventBuilder:
         }
 
         # 安全上下文 (必须)
+        # P0-R2 修复：添加 "risk" 字段映射到 OpenEmotion 期望的字段名
         safety_ctx = ctx_dict.get("safety_context", {})
+        risk_level_value = safety_ctx.get("risk_level", "low")
         event["safety_context"] = {
-            "risk_level": safety_ctx.get("risk_level", "low"),
+            "risk": risk_level_value,  # OpenEmotion 期望的字段名
+            "risk_level": risk_level_value,  # 保留原字段名
             "requires_approval": safety_ctx.get("requires_approval", False),
         }
 

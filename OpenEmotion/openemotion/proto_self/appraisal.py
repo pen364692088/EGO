@@ -87,19 +87,23 @@ def _score_novelty(event: KernelEvent, state: ProtoSelfState) -> float:
 def _score_identity_conflict(event: KernelEvent, state: ProtoSelfState) -> float:
     """
     评估身份冲突程度。
-    
+
     简化实现：检查 safety_context 和 user_intent 是否触及核心边界。
     """
     if not event.safety_context:
         return 0.0
-    
+
     # 如果 safety_context 标记了风险，检查是否触及核心边界
-    risk_level = event.safety_context.get("risk_level", 0.0)
+    # P0-R2 修复：risk_level 是字符串，需要映射为数值
+    risk_level_str = event.safety_context.get("risk", "low")
+    risk_level_map = {"low": 0.1, "medium": 0.3, "high": 0.5, "critical": 0.8}
+    risk_level = risk_level_map.get(risk_level_str, 0.1)
+
     boundary_touched = event.safety_context.get("boundary_touched", False)
-    
+
     if boundary_touched:
         return min(1.0, risk_level * 2.0)
-    
+
     return risk_level * 0.5
 
 
@@ -121,11 +125,15 @@ def _score_unfinished_commitment(event: KernelEvent, state: ProtoSelfState) -> f
 def _score_risk(safety_context: Dict[str, Any]) -> float:
     """
     评估风险信号。
+
+    P0-R2 修复：risk 是字符串，需要映射为数值。
     """
     if not safety_context:
         return 0.0
-    
-    return safety_context.get("risk_level", 0.0)
+
+    risk_level_str = safety_context.get("risk", "low")
+    risk_level_map = {"low": 0.1, "medium": 0.3, "high": 0.5, "critical": 0.8}
+    return risk_level_map.get(risk_level_str, 0.1)
 
 
 def _score_relation_mismatch(event: KernelEvent, state: ProtoSelfState) -> float:

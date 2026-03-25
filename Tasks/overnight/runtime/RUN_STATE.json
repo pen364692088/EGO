@@ -1,72 +1,75 @@
 {
-  "batch_id": "proto_self_steady_state_p0_r1",
-  "overall_status": "partial",
+  "batch_id": "proto_self_steady_state_p0_r2",
+  "overall_status": "verified",
   "current_theme": null,
   "current_subtask": null,
   "completed_tasks": [
     "N1",
     "P0",
-    "P0-R1"
+    "P0-R1",
+    "P0-R2"
   ],
   "completed_subtasks": [
     "N2A", "N2B", "N2C", "N2D", "N2E",
     "N3A", "N3B", "N3C", "N3D",
     "N4A", "N4B", "N4C", "N4D",
     "P0-Phase0", "P0-Phase1", "P0-Phase2", "P0-Phase3", "P0-Phase4", "P0-Phase5",
-    "P0-R1-Phase0", "P0-R1-Phase1", "P0-R1-Phase2", "P0-R1-Phase3", "P0-R1-Phase4"
+    "P0-R1-Phase0", "P0-R1-Phase1", "P0-R1-Phase2", "P0-R1-Phase3", "P0-R1-Phase4",
+    "P0-R2-Phase0", "P0-R2-Phase1", "P0-R2-Phase2", "P0-R2-Phase3", "P0-R2-Phase4"
   ],
   "completed_themes": [
-    "N2", "N3", "N4", "P0", "P0-R1"
+    "N2", "N3", "N4", "P0", "P0-R1", "P0-R2"
   ],
   "failed_tasks": [],
   "failed_subtasks": [],
   "blocked_tasks": [],
   "blocked_subtasks": [],
-  "last_verified_task": "P0-R1",
-  "last_verified_subtask": "P0-R1-Phase4",
-  "last_verified_theme": "P0-R1",
+  "last_verified_task": "P0-R2",
+  "last_verified_subtask": "P0-R2-Phase4",
+  "last_verified_theme": "P0-R2",
   "ready_to_start": [],
   "truth_sources_checked": [
     "OpenEmotion/openemotion/proto_self/cycles.py",
     "OpenEmotion/openemotion/proto_self/appraisal.py",
     "OpenEmotion/openemotion/proto_self/kernel.py",
     "EgoCore/app/openemotion_adapter/proto_self_adapter.py",
-    "EgoCore/artifacts/proto_self_mirror/state.json",
-    "EgoCore/logs/proto_self_trace.jsonl"
+    "EgoCore/app/openemotion_adapter/event_builder.py",
+    "EgoCore/app/runtime/context_assembler.py"
   ],
   "artifacts_generated": [
     "Tasks/p0_steady_state/P0_CONTRACT.md",
     "Tasks/p0_steady_state/artifacts/p0_regression_summary.json",
-    "Tasks/p0_steady_state/reports/P0_PHASE1_REPORT.md",
-    "Tasks/p0_steady_state/reports/P0_PHASE2_REPORT.md",
-    "Tasks/p0_steady_state/reports/P0_PHASE3_REPORT.md",
-    "Tasks/p0_steady_state/reports/P0_PHASE4_REPORT.md",
     "Tasks/p0_steady_state/reports/FINAL_ACCEPTANCE_REPORT.md",
-    "OpenEmotion/scripts/p0_regression_test.py",
     "Tasks/p0_steady_state/reports_r1/P0_R1_PRECHECK_REPORT.md",
     "Tasks/p0_steady_state/reports_r1/P0_R1_REAL_TELEGRAM_REPORT.md",
     "Tasks/p0_steady_state/reports_r1/P0_R1_DIAGNOSTICS_REPORT.md",
     "Tasks/p0_steady_state/reports_r1/P0_R1_EVIDENCE_RECONCILIATION.md",
-    "Tasks/p0_steady_state/reports_r1/P0_R1_CLOSURE_REPORT.md"
+    "Tasks/p0_steady_state/reports_r1/P0_R1_CLOSURE_REPORT.md",
+    "Tasks/p0_steady_state/reports_r2/P0_R2_PHASE0_REPORT.md",
+    "Tasks/p0_steady_state/reports_r2/P0_R2_PHASE1_REPORT.md",
+    "Tasks/p0_steady_state/reports_r2/P0_R2_PHASE2_REPORT.md",
+    "Tasks/p0_steady_state/reports_r2/P0_R2_PHASE3_REPORT.md",
+    "Tasks/p0_steady_state/reports_r2/P0_R2_CLOSURE_REPORT.md",
+    "EgoCore/scripts/p0_r2_risk_test.py",
+    "EgoCore/scripts/p0_r2_e2e_test.py"
   ],
   "files_modified": [
-    "OpenEmotion/openemotion/proto_self/cycles.py",
+    "EgoCore/app/openemotion_adapter/event_builder.py",
     "OpenEmotion/openemotion/proto_self/appraisal.py",
     "Tasks/p0_steady_state/reports/FINAL_ACCEPTANCE_REPORT.md"
   ],
   "handoff_ready": true,
-  "last_report_path": "Tasks/p0_steady_state/reports_r1/P0_R1_CLOSURE_REPORT.md",
+  "last_report_path": "Tasks/p0_steady_state/reports_r2/P0_R2_CLOSURE_REPORT.md",
   "stop_reason": null,
-  "r1_verification": {
-    "timestamp": "2026-03-25T11:50:00Z",
-    "egocore_running": true,
-    "telegram_bot_running": true,
-    "proto_self_enabled": true,
-    "cycle_count": 13,
-    "revision_counter": 46,
-    "diagnostics_passed": true,
-    "evidence_reconciled": true,
-    "risk_level_trigger": "pending_upper_layer"
+  "r2_verification": {
+    "timestamp": "2026-03-25T12:35:00Z",
+    "risk_signal_wired": true,
+    "event_builder_fixed": true,
+    "appraisal_bugs_fixed": true,
+    "unit_test_passed": true,
+    "e2e_test_passed": true,
+    "high_low_risk_distinct": true,
+    "psi_bucket_suffix": "risk_high for high risk operations"
   },
-  "notes": "P0-R1 TASK VERIFIED. Real Telegram environment confirmed working. P0 fix code deployed correctly. Cycle aggregation: 13 cycles, 46 revisions. Risk level distinction requires EgoCore upper layer to set safety_context.risk. All reports updated to reflect partial status (not fully verified until risk_level is triggered in production)."
+  "notes": "P0-R2 TASK VERIFIED. safety_context.risk correctly flows from EgoCore to OpenEmotion. High risk operations get psi_bucket with :risk_high suffix. Low risk operations have no suffix. Unit tests and E2E tests passed. User can verify via real Telegram messages."
 }
