@@ -57,6 +57,7 @@ from app.runtime_v2 import (
 from app.core_bus import BusEvent, get_message_bus, get_session_worker_pool
 from app.session_store import SessionLogManager
 from app.agent_core import NativeToolCallingLoop
+from app.openemotion_hooks import NativeOpenEmotionHooks
 
 # Ingestion Layer
 from app.ingestion import (
@@ -114,6 +115,7 @@ class TelegramBot:
         self.runtime_v2_loop = RuntimeV2Loop() if use_runtime_v2 else None
         self.runtime_v2_bridge = RuntimeV2TelegramBridge() if use_runtime_v2 else None
         self.native_loop = NativeToolCallingLoop() if use_runtime_v2 else None
+        self.native_openemotion_hooks = NativeOpenEmotionHooks() if use_runtime_v2 else None
         self._setup_complete = False
         self._run_started = False
         # Stale reply suppression: remember latest ingress message per session.
@@ -970,6 +972,19 @@ class TelegramBot:
         state,
         ack_text: Optional[str],
     ) -> RuntimeV2TurnResult:
+        turn_id = state.active_turn_id or state.start_turn()
+        if self.native_openemotion_hooks and self.native_openemotion_hooks.enabled:
+            try:
+                self.native_openemotion_hooks.process_ingress(
+                    session_id=session_key,
+                    turn_id=turn_id,
+                    source="telegram",
+                    user_input=text,
+                    state=state,
+                )
+            except Exception as e:
+                logger.exception("native_openemotion.ingress.failed session=%s err=%s", session_key, e)
+
         if ack_text:
             state.mark_task_started(goal=text)
             try:
@@ -985,23 +1000,33 @@ class TelegramBot:
         )
 
         if result.tool_results:
-            last = result.tool_results[-1]
-            tool_result = last.get("result") or {}
-            state.last_tool_result = {
-                "success": tool_result.get("success"),
-                "tool": last.get("tool_name"),
-                "stdout": str(tool_result.get("output") or ""),
-                "stderr": str(tool_result.get("error") or ""),
-                "exit_code": 0 if tool_result.get("success") else 1,
-                "metadata": tool_result.get("metadata") or {},
-                "raw": tool_result,
-            }
-            state.current_step = f"tool:{last.get('tool_name')}"
-            state.task_status = "running"
+            for step_index, tool_entry in enumerate(result.tool_results):
+                tool_result = tool_entry.get("result") or {}
+                state.last_tool_result = {
+                    "success": tool_result.get("success"),
+                    "tool": tool_entry.get("tool_name"),
+                    "stdout": str(tool_result.get("output") or ""),
+                    "stderr": str(tool_result.get("error") or ""),
+                    "exit_code": 0 if tool_result.get("success") else 1,
+                    "metadata": tool_result.get("metadata") or {},
+                    "raw": tool_result,
+                }
+                state.current_step = f"tool:{tool_entry.get('tool_name')}"
+                state.task_status = "running"
+                if self.native_openemotion_hooks and self.native_openemotion_hooks.enabled:
+                    try:
+                        self.native_openemotion_hooks.process_external_result(
+                            session_id=session_key,
+                            turn_id=turn_id,
+                            step=step_index,
+                            state=state,
+                        )
+                    except Exception as e:
+                        logger.exception("native_openemotion.external_result.failed session=%s err=%s", session_key, e)
 
         if result.reply_text:
             state.mark_task_completed()
-            return RuntimeV2TurnResult(
+            turn_result = RuntimeV2TurnResult(
                 status="completed_verified",
                 state=state,
                 reply=RuntimeV2Reply(
@@ -1010,10 +1035,16 @@ class TelegramBot:
                     status="completed_verified",
                 ),
             )
+            if self.native_openemotion_hooks and self.native_openemotion_hooks.enabled:
+                try:
+                    self.native_openemotion_hooks.capture_response_plan(result=turn_result)
+                except Exception as e:
+                    logger.exception("native_openemotion.response_plan.failed session=%s err=%s", session_key, e)
+            return turn_result
 
         state.task_status = "waiting_input"
         state.waiting_for_user_input = True
-        return RuntimeV2TurnResult(
+        turn_result = RuntimeV2TurnResult(
             status="waiting_input",
             state=state,
             reply=RuntimeV2Reply(
@@ -1023,6 +1054,12 @@ class TelegramBot:
                 suppressible=True,
             ),
         )
+        if self.native_openemotion_hooks and self.native_openemotion_hooks.enabled:
+            try:
+                self.native_openemotion_hooks.capture_response_plan(result=turn_result)
+            except Exception as e:
+                logger.exception("native_openemotion.response_plan.failed session=%s err=%s", session_key, e)
+        return turn_result
 
     async def _deliver_runtime_v2_result(
         self,
