@@ -926,12 +926,12 @@ class TelegramBot:
     def _should_use_native_loop(self, ingress, state) -> bool:
         if self.native_loop is None:
             return False
-        runtime_action = getattr(ingress, "_runtime_action", None)
-        if runtime_action != "execute_task":
-            return False
         if getattr(ingress, "is_file_only", False):
             return False
         if state.waiting_for_user_input:
+            return False
+        runtime_action = getattr(ingress, "_runtime_action", None)
+        if runtime_action == "return_runtime_status":
             return False
         return True
 
@@ -946,6 +946,11 @@ class TelegramBot:
     ) -> RuntimeV2TurnResult:
         if self._should_use_native_loop(ingress, state):
             try:
+                await self._publish_phase1_event(
+                    session_key=session_key,
+                    kind="primary_path_selected",
+                    payload={"path": "native_loop", "runtime_action": getattr(ingress, "_runtime_action", None)},
+                )
                 return await self._run_native_loop_turn(
                     update=update,
                     session_key=session_key,
@@ -955,7 +960,17 @@ class TelegramBot:
                 )
             except Exception as e:
                 logger.exception("native_loop.failed session=%s err=%s; falling back to runtime_v2", session_key, e)
+                await self._publish_phase1_event(
+                    session_key=session_key,
+                    kind="primary_path_fallback",
+                    payload={"from": "native_loop", "to": "runtime_v2", "error": str(e)},
+                )
 
+        await self._publish_phase1_event(
+            session_key=session_key,
+            kind="primary_path_selected",
+            payload={"path": "runtime_v2", "runtime_action": getattr(ingress, "_runtime_action", None)},
+        )
         return await self._run_runtime_v2_turn(
             update=update,
             session_key=session_key,
@@ -1023,6 +1038,16 @@ class TelegramBot:
                         )
                     except Exception as e:
                         logger.exception("native_openemotion.external_result.failed session=%s err=%s", session_key, e)
+                await self._publish_phase1_event(
+                    session_key=session_key,
+                    kind="native_tool_result",
+                    payload={
+                        "tool_name": tool_entry.get("tool_name"),
+                        "success": tool_result.get("success"),
+                        "output_preview": str(tool_result.get("output") or "")[:300],
+                        "error_preview": str(tool_result.get("error") or "")[:200],
+                    },
+                )
 
         if result.reply_text:
             state.mark_task_completed()
