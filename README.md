@@ -4,7 +4,7 @@ EGO 是 AI Agent 项目的总仓，负责集成 EgoCore（宿主）和 OpenEmoti
 
 ## 当前状态
 
-**Proto-Self Kernel v1** 已完成稳态收口：
+**Proto-Self Kernel v1** 已完成主链基础接线，并形成当前最高到 E5 准入的证据：
 - ✅ Cycle 聚合机制正常工作
 - ✅ Reflection 机制正常工作
 - ✅ 高风险操作与低风险操作被正确区分
@@ -26,7 +26,7 @@ EGO 是 AI Agent 项目的总仓，负责集成 EgoCore（宿主）和 OpenEmoti
 ### 2026-03-25: P0-R3 runtime 主链接线修复
 - 修复 `runtime_v2/loop.py` 硬编码 `safety_context` 为空的问题
 - 高风险消息 psi_bucket 包含 `:risk_high` 后缀
-- 真实 Telegram 双样本验证通过
+- 真实 Telegram 已形成样本级验证证据
 
 ### 2026-03-25: P0-R2 Risk Signal 接线
 - 修复 `safety_context.risk` 字段名不匹配问题
@@ -84,7 +84,7 @@ git push origin main
 - 高低风险操作被分配到不同 cycle
 
 ### 2026-03-25: P0-R1 真实 Telegram 验证
-- EgoCore 服务在真实 Telegram 环境正常运行
+- EgoCore 服务在真实 Telegram 环境形成样本级触发证据
 - Cycle 聚合机制工作正常
 - Reflection 机制工作正常
 
