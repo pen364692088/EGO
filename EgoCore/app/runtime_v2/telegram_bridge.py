@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import re
 from dataclasses import dataclass
+from pathlib import PurePosixPath, PureWindowsPath
 from typing import Any, Dict, List, Optional
 
 from .progress_events import ProgressEvent, is_terminal_event
@@ -242,6 +243,7 @@ class TelegramIngressDecision:
     is_confirm_execution: bool = False  # 对建议的肯定，不发 ack
     ack_text: Optional[str] = None
     busy_notice_text: Optional[str] = None
+    requested_output: Optional[Dict[str, Any]] = None
     # Phase 0：统一语义解析结果
     _parsed_intent_graph: Optional[ParsedIntentGraph] = None
     _runtime_action: Optional[str] = None
@@ -266,6 +268,92 @@ class TelegramDeliveryAction:
 
 class RuntimeV2TelegramBridge:
     AMBIGUOUS_PRESENCE_PROBES = {"在吗", "还在吗", "还在不", "在不在"}
+    WINDOWS_PATH_RE = re.compile(r"[A-Za-z]:[\\/](?:[A-Za-z0-9._() -]+[\\/])*[A-Za-z0-9._() -]+")
+    UNIX_PATH_RE = re.compile(r"(?:/mnt|/home|/tmp|/Users)(?:/[A-Za-z0-9._() -]+)+")
+
+    def _extract_requested_output(self, text: str) -> Optional[Dict[str, Any]]:
+        raw_path = self._extract_first_path(text)
+        if not raw_path:
+            return None
+
+        lowered = (text or "").lower()
+        has_task_signal = any(token in text or token in lowered for token in (
+            "创建", "新建", "生成", "写", "制作", "做", "修改", "改", "更新", "重写", "修复", "优化", "换",
+            "create", "generate", "write", "make", "build", "modify", "update", "edit", "rewrite", "fix",
+        ))
+        has_page_signal = any(token in text or token in lowered for token in (
+            "页面", "网页", "html", "html网页", "html页面", "page", "webpage", "website",
+        ))
+        if not has_task_signal and not has_page_signal:
+            return None
+
+        output_format = self._infer_output_format(text, raw_path)
+        is_directory = self._looks_like_directory(raw_path)
+        topic = self._infer_topic(text)
+        suggested_filename = None
+        effective_path = raw_path
+        if is_directory:
+            suggested_filename = self._suggest_filename(topic, output_format or "html")
+            effective_path = self._join_path(raw_path, suggested_filename)
+
+        return {
+            "kind": "html_page" if output_format == "html" else "file",
+            "format": output_format,
+            "target_path": raw_path,
+            "target_is_directory": is_directory,
+            "suggested_filename": suggested_filename,
+            "effective_path": effective_path,
+            "topic": topic,
+            "sufficient": bool(effective_path and output_format),
+        }
+
+    def _extract_first_path(self, text: str) -> Optional[str]:
+        for pattern in (self.WINDOWS_PATH_RE, self.UNIX_PATH_RE):
+            match = pattern.search(text or "")
+            if match:
+                return match.group(0).rstrip(".,!?，。！？")
+        return None
+
+    def _infer_output_format(self, text: str, path: str) -> Optional[str]:
+        lowered = (text or "").lower()
+        if any(token in text or token in lowered for token in ("html", "页面", "网页", "html网页", "html页面")):
+            return "html"
+        if path.lower().endswith((".html", ".htm")):
+            return "html"
+        if path.lower().endswith(".md") or "markdown" in lowered:
+            return "markdown"
+        return None
+
+    def _infer_topic(self, text: str) -> Optional[str]:
+        for pattern in (r"介绍\s*([A-Za-z][A-Za-z0-9_-]*)", r"关于\s*([A-Za-z][A-Za-z0-9_-]*)", r"about\s+([A-Za-z][A-Za-z0-9_-]*)"):
+            match = re.search(pattern, text or "", flags=re.IGNORECASE)
+            if match:
+                topic = match.group(1)
+                return "EgoCore" if topic.lower() == "egocore" else topic
+        if re.search(r"\begocore\b", text or "", flags=re.IGNORECASE):
+            return "EgoCore"
+        return None
+
+    def _looks_like_directory(self, path: str) -> bool:
+        lowered = path.lower()
+        if lowered.endswith(("\\", "/")):
+            return True
+        return "." not in PureWindowsPath(path).name and "." not in PurePosixPath(path).name
+
+    def _suggest_filename(self, topic: Optional[str], output_format: str) -> str:
+        if topic and topic.lower() == "egocore":
+            stem = "egocore_intro"
+        elif topic:
+            stem = re.sub(r"[^a-z0-9]+", "_", topic.lower()).strip("_") or "page"
+        else:
+            stem = "page"
+        suffix = ".html" if output_format == "html" else ".md"
+        return f"{stem}{suffix}"
+
+    def _join_path(self, path: str, filename: str) -> str:
+        if re.match(r"^[A-Za-z]:[\\/]", path or ""):
+            return str(PureWindowsPath(path) / filename)
+        return str(PurePosixPath(path) / filename)
 
     def _normalize_ambiguous_probe(
         self,
@@ -304,6 +392,12 @@ class RuntimeV2TelegramBridge:
                     break
         target_action = request_mode or decision.inferred_action
         resolved_target = state.resolve_target(target_action) if target_action in {"execute", "compare", "analyze"} else None
+        if resolved_target is None and decision.requested_output:
+            resolved_target = {
+                "path": decision.requested_output.get("effective_path"),
+                "source": "explicit_output_request",
+                "format": decision.requested_output.get("format"),
+            }
         return {
             "parser_source": graph.parser_source if graph else "chat_default",
             "primary_intent": graph.primary_intent if graph else "chat",
@@ -319,6 +413,7 @@ class RuntimeV2TelegramBridge:
             "pending_artifacts_count": len(state.pending_artifacts),
             "last_uploaded_artifact": state.last_uploaded_artifact,
             "resolved_target": resolved_target,
+            "requested_output": decision.requested_output,
         }
 
     # =========================================================================
@@ -361,6 +456,8 @@ class RuntimeV2TelegramBridge:
             f"has_correction={graph.has_correction} "
             f"segments={len(graph.segments)}"
         )
+
+        requested_output = self._extract_requested_output(text)
         
         # 根据 graph 决定 runtime 动作
         runtime_action = decide_runtime_action(graph, state)
@@ -419,6 +516,7 @@ class RuntimeV2TelegramBridge:
             is_confirm_execution=is_confirm_execution,
             ack_text=None,  # 不再发送 generic ACK
             busy_notice_text=None,
+            requested_output=requested_output,
             _parsed_intent_graph=graph,  # 附加 graph 供后续使用
             _runtime_action=runtime_action,
         )
@@ -438,6 +536,7 @@ class RuntimeV2TelegramBridge:
         当无法使用语义解析器时，会回退到 heuristic parser。
         """
         graph = self._normalize_ambiguous_probe(text, heuristic_parse(text), state)
+        requested_output = self._extract_requested_output(text)
         runtime_action = decide_runtime_action(graph, state)
 
         looks_like_task = (
@@ -476,6 +575,7 @@ class RuntimeV2TelegramBridge:
             is_confirm_execution=is_confirm_execution,
             ack_text=None,
             busy_notice_text=None,
+            requested_output=requested_output,
             _parsed_intent_graph=graph,
             _runtime_action=runtime_action,
         )

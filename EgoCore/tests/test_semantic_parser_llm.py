@@ -56,18 +56,26 @@ class TestHeuristicParser:
         assert graph.parser_source == "heuristic_parser"
     
     def test_file_path(self):
-        """路径 + 自然语言 → reference_material（heuristic 只识别显式硬信号，不处理执行动词）"""
+        """路径 + 明确修改任务 → task_request。"""
         graph = heuristic_parse("/home/moonlight/test.html 配色改成蓝色")
-        # heuristic_parser 不再处理执行动词判定，路径 → reference_material
-        assert graph.primary_intent == "reference_material"
-        assert graph.requires_clarification is True
+        assert graph.primary_intent == "task_request"
+        assert graph.requires_clarification is False
+        assert graph.segments[0].request_mode == "write"
         assert graph.parser_source == "heuristic_parser"
-    
+
     def test_file_path_only(self):
         """只有路径，无执行动词 → reference_material"""
         graph = heuristic_parse("/home/moonlight/test.html")
         assert graph.primary_intent == "reference_material"
         assert graph.requires_clarification is True
+
+    def test_directory_page_creation_request(self):
+        graph = heuristic_parse(r"你能帮我在D:\Project\AIProject\MyProject\Test里创建一个介绍egocore的页面吗")
+        assert graph.primary_intent == "task_request"
+        assert graph.segments[0].request_mode == "write"
+        assert graph.segments[0].target_ref == r"D:\Project\AIProject\MyProject\Test"
+        assert "format:html" in graph.constraints
+        assert "topic:EgoCore" in graph.acceptance_criteria
     
     def test_attachment(self):
         graph = heuristic_parse("[用户发送了文件: test.html]")
@@ -429,12 +437,11 @@ class TestDesignContractSamples:
         assert graph.primary_intent == "status_query"
 
     def test_sample_3_task_with_path(self):
-        """样例3：路径 + 自然语言 → reference_material（heuristic 只识别显式硬信号，不处理执行动词）"""
+        """样例3：路径 + 明确修改任务 → task_request。"""
         graph = heuristic_parse("把 /home/x.html 改成蓝色")
-        # heuristic_parser 不再处理执行动词判定，路径 → reference_material
-        # task_request 的识别应该由 semantic_parser（LLM）处理
-        assert graph.primary_intent == "reference_material"
-        assert graph.requires_clarification is True
+        assert graph.primary_intent == "task_request"
+        assert graph.requires_clarification is False
+        assert graph.segments[0].request_mode == "write"
         assert graph.parser_source == "heuristic_parser"
 
     def test_sample_8_attachment(self):

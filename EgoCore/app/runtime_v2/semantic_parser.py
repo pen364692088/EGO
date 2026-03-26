@@ -47,6 +47,16 @@ SHORT_CORRECTION_PATTERNS = {
     "没看到改动",
 }
 
+WINDOWS_PATH_RE = re.compile(r"[A-Za-z]:[\\/](?:[A-Za-z0-9._() -]+[\\/])*[A-Za-z0-9._() -]+")
+UNIX_PATH_RE = re.compile(r"(?:/mnt|/home|/tmp|/Users)(?:/[A-Za-z0-9._() -]+)+")
+
+EXPLICIT_FILE_TASK_PATTERNS = (
+    (("创建", "新建", "生成", "做", "制作", "写"), ("页面", "网页", "html", "html网页", "html页面", "page", "webpage", "website")),
+    (("修改", "改", "更新", "重写", "修复", "优化", "换"), tuple()),
+    (("create", "generate", "write", "make", "build"), ("html", "page", "webpage", "website", "file")),
+    (("modify", "update", "edit", "fix", "rewrite"), tuple()),
+)
+
 
 # =============================================================================
 # 数据结构（最终版）
@@ -289,14 +299,36 @@ def heuristic_parse(text: str) -> ParsedIntentGraph:
             parser_source="heuristic_parser",
         )
 
+    explicit_paths = _extract_explicit_paths(text)
+    explicit_file_task = _extract_explicit_file_task(text, explicit_paths)
+    if explicit_file_task is not None:
+        logger.info(
+            "heuristic_parse: detected explicit file task, parser_source=heuristic_parser, primary_intent=task_request, mode=%s, target=%s",
+            explicit_file_task["request_mode"],
+            explicit_file_task["target_ref"],
+        )
+        segment = SemanticSegment(
+            text=text,
+            kind="task_request",
+            request_mode=explicit_file_task["request_mode"],
+            target_ref=explicit_file_task["target_ref"],
+            confidence=0.96,
+        )
+        graph = ParsedIntentGraph(
+            segments=[segment],
+            primary_intent="task_request",
+            parser_source="heuristic_parser",
+        )
+        graph.actionable_targets.append(explicit_file_task["target_ref"])
+        if explicit_file_task.get("format_hint"):
+            graph.constraints.append(f"format:{explicit_file_task['format_hint']}")
+        if explicit_file_task.get("topic_hint"):
+            graph.acceptance_criteria.append(f"topic:{explicit_file_task['topic_hint']}")
+        return graph
+
     # 检测路径（显式硬信号）- 支持 Unix 和 Windows 路径
-    unix_path = "/home/" in text or "/mnt/" in text or "/tmp/" in text or "/Users/" in text
-    # Windows 路径检测：检查 C: 或 D: 后跟反斜杠或斜杠
-    has_c_drive = "C:" in text and "\\" in text
-    has_d_drive = "D:" in text and "\\" in text
-    windows_path = has_c_drive or has_d_drive
     generic_path = text.startswith("/") and "." in text.split()[0]  # /path/to/file.ext 模式
-    has_path = unix_path or windows_path or generic_path
+    has_path = bool(explicit_paths) or generic_path
     # 文件路径检测
     if has_path:
         logger.info(f"heuristic_parse: detected path, parser_source=heuristic_parser, primary_intent=reference_material")
@@ -353,6 +385,75 @@ def heuristic_parse(text: str) -> ParsedIntentGraph:
 def _normalize_short_probe(text: str) -> str:
     normalized = re.sub(r"\s+", "", (text or "").strip().lower())
     return normalized.strip("?!？！。,.，")
+
+
+def _extract_explicit_paths(text: str) -> List[str]:
+    paths: List[str] = []
+    for pattern in (WINDOWS_PATH_RE, UNIX_PATH_RE):
+        for match in pattern.finditer(text or ""):
+            candidate = match.group(0).rstrip(".,!?，。！？")
+            if candidate not in paths:
+                paths.append(candidate)
+    return paths
+
+
+def _extract_explicit_file_task(text: str, paths: List[str]) -> Optional[Dict[str, str]]:
+    if not text or not paths:
+        return None
+
+    lowered = text.lower()
+    request_mode = None
+    for verbs, nouns in EXPLICIT_FILE_TASK_PATTERNS:
+        has_verb = any(verb in text or verb in lowered for verb in verbs)
+        if not has_verb:
+            continue
+        if nouns and not any(noun in text or noun in lowered for noun in nouns):
+            continue
+        request_mode = "write" if any(
+            marker in text or marker in lowered
+            for marker in ("创建", "新建", "生成", "写", "制作", "html", "页面", "网页", "create", "generate", "write", "build", "page", "website")
+        ) else "execute"
+        break
+
+    if request_mode is None:
+        return None
+
+    target_ref = paths[0]
+    format_hint = _infer_format_hint(text, target_ref)
+    topic_hint = _infer_topic_hint(text)
+    return {
+        "target_ref": target_ref,
+        "request_mode": request_mode,
+        "format_hint": format_hint or "",
+        "topic_hint": topic_hint or "",
+    }
+
+
+def _infer_format_hint(text: str, path: str) -> Optional[str]:
+    lowered = (text or "").lower()
+    if any(marker in lowered or marker in text for marker in ("html", "页面", "网页", "html网页", "html页面")):
+        return "html"
+    if path.lower().endswith((".html", ".htm")):
+        return "html"
+    if path.lower().endswith(".md") or "markdown" in lowered:
+        return "markdown"
+    return None
+
+
+def _infer_topic_hint(text: str) -> Optional[str]:
+    patterns = (
+        r"介绍\s*([A-Za-z][A-Za-z0-9_-]*)",
+        r"关于\s*([A-Za-z][A-Za-z0-9_-]*)",
+        r"about\s+([A-Za-z][A-Za-z0-9_-]*)",
+    )
+    for pattern in patterns:
+        match = re.search(pattern, text or "", flags=re.IGNORECASE)
+        if match:
+            topic = match.group(1)
+            return "EgoCore" if topic.lower() == "egocore" else topic
+    if re.search(r"\begocore\b", text or "", flags=re.IGNORECASE):
+        return "EgoCore"
+    return None
 
 
 # =============================================================================

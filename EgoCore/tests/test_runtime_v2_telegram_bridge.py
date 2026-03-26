@@ -2,26 +2,26 @@ from app.runtime_v2 import RuntimeV2TelegramBridge
 from app.runtime_v2.state import RuntimeV2State
 
 
-def test_telegram_bridge_path_is_reference_material():
-    """
-    路径应被识别为 reference_material，不等于自动执行。
-    
-    这是设计合同的正确行为：
-    - 显式路径默认为 reference_material
-    - 只有语义明确请求执行时才是 task_request
-    - heuristic parser 不处理自然语言语义
-    """
+def test_telegram_bridge_explicit_file_task_with_path_is_task_request():
+    """路径 + 明确修改任务应直达 task_request，不要误降成 reference_material。"""
     bridge = RuntimeV2TelegramBridge()
     state = RuntimeV2State(session_id="telegram:dm:1")
     decision = bridge.inspect_ingress("/home/moonlight/test.html 配色不太好看,你换一个好看的颜色", state)
-    
-    # 路径被识别为 reference_material
+
+    assert decision.looks_like_task is True
+    assert decision._parsed_intent_graph.primary_intent == "task_request"
+    assert decision._parsed_intent_graph.requires_clarification is False
+    assert decision.ack_text is None  # 不再发送 generic ACK
+
+    assert decision._runtime_action == "execute_task"
+
+
+def test_telegram_bridge_path_only_is_reference_material():
+    bridge = RuntimeV2TelegramBridge()
+    state = RuntimeV2State(session_id="telegram:dm:1")
+    decision = bridge.inspect_ingress("/home/moonlight/test.html", state)
     assert decision.looks_like_task is False
     assert decision._parsed_intent_graph.primary_intent == "reference_material"
-    assert decision._parsed_intent_graph.requires_clarification is True
-    assert decision.ack_text is None  # 不再发送 generic ACK
-    
-    # runtime action 应该是 waiting_input
     assert decision._runtime_action == "waiting_input"
 
 
@@ -98,3 +98,18 @@ def test_telegram_bridge_chat_default():
     
     assert decision.looks_like_task is False
     assert decision._parsed_intent_graph.primary_intent == "chat"
+
+
+def test_telegram_bridge_extracts_requested_output_for_html_page():
+    bridge = RuntimeV2TelegramBridge()
+    state = RuntimeV2State(session_id="telegram:dm:1")
+    text = r"你能帮我在D:\Project\AIProject\MyProject\Test里创建一个介绍egocore的页面吗"
+    decision = bridge.inspect_ingress(text, state)
+    ingress = bridge.build_ingress_context(decision, state)
+
+    assert decision.looks_like_task is True
+    assert decision._runtime_action == "execute_task"
+    assert ingress["requested_output"]["format"] == "html"
+    assert ingress["requested_output"]["target_is_directory"] is True
+    assert ingress["requested_output"]["effective_path"] == r"D:\Project\AIProject\MyProject\Test\egocore_intro.html"
+    assert ingress["requested_output"]["topic"] == "EgoCore"

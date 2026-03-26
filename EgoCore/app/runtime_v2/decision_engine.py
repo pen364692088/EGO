@@ -90,6 +90,7 @@ class RuntimeV2DecisionEngine:
                 ),
             },
         ]
+        max_tokens = self._decide_max_tokens(state)
         try:
             if self.llm_client is None:
                 self.llm_client = get_llm_client(provider="qianfan", model="glm-5")
@@ -97,7 +98,7 @@ class RuntimeV2DecisionEngine:
                 self.llm_client.generate_with_messages,
                 messages,
                 temperature=0.1,
-                max_tokens=500,
+                max_tokens=max_tokens,
                 timeout=30,
             )
             # Record token usage if available
@@ -112,3 +113,12 @@ class RuntimeV2DecisionEngine:
                 question=f"Runtime v2 当前模型决策不可用：{e}",
                 raw={"type": "ask", "error": str(e)},
             )
+
+    def _decide_max_tokens(self, state: RuntimeV2State) -> int:
+        ingress = state.ingress_context or {}
+        requested_output = ingress.get("requested_output") or {}
+        if requested_output.get("format") in {"html", "markdown"}:
+            return 8000
+        if ingress.get("request_mode") == "write":
+            return 4000
+        return 1200
