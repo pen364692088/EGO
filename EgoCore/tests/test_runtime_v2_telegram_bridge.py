@@ -113,3 +113,22 @@ def test_telegram_bridge_extracts_requested_output_for_html_page():
     assert ingress["requested_output"]["target_is_directory"] is True
     assert ingress["requested_output"]["effective_path"] == r"D:\Project\AIProject\MyProject\Test\egocore_intro.html"
     assert ingress["requested_output"]["topic"] == "EgoCore"
+
+
+def test_telegram_bridge_promotes_execute_confirmation_for_pending_task():
+    bridge = RuntimeV2TelegramBridge()
+    state = RuntimeV2State(session_id="telegram:dm:1")
+    state.add_pending_artifact("artifact://task", "任务单.txt", "artifact://task")
+    state.last_inferred_action = "execute"
+    state.task_status = "waiting_input"
+    state.waiting_for_user_input = True
+
+    decision = bridge.inspect_ingress("执行", state)
+    ingress = bridge.build_ingress_context(decision, state)
+
+    assert decision.is_confirm_execution is True
+    assert decision.looks_like_task is True
+    assert decision._parsed_intent_graph.primary_intent == "task_request"
+    assert decision._runtime_action == "execute_task"
+    assert ingress["request_mode"] == "execute"
+    assert ingress["resolved_target"]["artifact_id"] == "artifact://task"

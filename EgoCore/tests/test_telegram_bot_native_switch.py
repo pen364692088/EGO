@@ -141,6 +141,17 @@ def test_should_not_use_native_loop_for_status_fast_path():
     assert bot._should_use_native_loop(ingress, state) is False
 
 
+def test_should_use_native_loop_for_execute_confirmation_while_waiting_input():
+    bot = TelegramBot(token="dummy", use_runtime_v2=True)
+    bot.native_loop = object()
+    state = bot._get_runtime_state("telegram:dm:1")
+    state.task_status = "waiting_input"
+    state.waiting_for_user_input = True
+    ingress = SimpleNamespace(_runtime_action="execute_task", is_file_only=False, is_confirm_execution=True)
+
+    assert bot._should_use_native_loop(ingress, state) is True
+
+
 @pytest.mark.asyncio
 async def test_native_loop_turn_calls_openemotion_hooks(monkeypatch):
     bot = TelegramBot(token="dummy", use_runtime_v2=True)

@@ -1000,7 +1000,7 @@ class TelegramBot:
             return False
         if getattr(ingress, "is_file_only", False):
             return False
-        if state.waiting_for_user_input:
+        if state.waiting_for_user_input and not getattr(ingress, "is_confirm_execution", False):
             return False
         runtime_action = getattr(ingress, "_runtime_action", None)
         if runtime_action == "return_runtime_status":
@@ -1062,6 +1062,9 @@ class TelegramBot:
         native_loop = self._get_native_loop()
         native_hooks = self._get_native_openemotion_hooks()
         turn_id = state.active_turn_id or state.start_turn()
+        runtime_action = (state.ingress_context or {}).get("runtime_action")
+        if runtime_action == "execute_task" and state.task_status in {"idle", "waiting_input"}:
+            state.mark_task_started(goal=text)
         if native_hooks and native_hooks.enabled:
             try:
                 native_hooks.process_ingress(

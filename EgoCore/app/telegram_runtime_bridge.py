@@ -9,7 +9,7 @@ from typing import Any, Dict, List, Optional
 from app.telegram_runtime_result import TelegramTurnResult
 
 from app.runtime_v2.progress_events import ProgressEvent, is_terminal_event
-from app.runtime_v2.semantic_parser import ParsedIntentGraph, build_runtime_status_reply, decide_runtime_action, heuristic_parse
+from app.runtime_v2.semantic_parser import ParsedIntentGraph, SemanticSegment, build_runtime_status_reply, decide_runtime_action, heuristic_parse
 from app.runtime_v2.state import RuntimeV2State
 
 logger = logging.getLogger(__name__)
@@ -209,6 +209,18 @@ class TelegramDeliveryAction:
 
 class TelegramRuntimeBridge:
     AMBIGUOUS_PRESENCE_PROBES = {"在吗", "还在吗", "还在不", "在不在"}
+    CONFIRM_EXECUTION_PATTERNS = {
+        "执行",
+        "执行吧",
+        "开始执行",
+        "开始",
+        "开始吧",
+        "按这个执行",
+        "按这个做",
+        "就按这个做",
+        "按这个走",
+        "就按这个走",
+    }
     WINDOWS_PATH_RE = re.compile(r"[A-Za-z]:[\\/](?:[A-Za-z0-9._() -]+[\\/])*[A-Za-z0-9._() -]+")
     UNIX_PATH_RE = re.compile(r"(?:/mnt|/home|/tmp|/Users)(?:/[A-Za-z0-9._() -]+)+")
 
@@ -318,6 +330,52 @@ class TelegramRuntimeBridge:
         graph.parser_source = "heuristic_parser"
         return graph
 
+    def _looks_like_execution_confirmation(self, text: str, state: RuntimeV2State) -> bool:
+        normalized = re.sub(r"\s+", "", (text or "").strip().lower()).strip("?!？！。,.，\"'“”‘’")
+        if normalized not in self.CONFIRM_EXECUTION_PATTERNS:
+            return False
+        if not getattr(state, "pending_artifacts", []):
+            return False
+        if getattr(state, "last_inferred_action", None) == "execute":
+            return True
+        if getattr(state, "waiting_for_user_input", False):
+            return True
+        return False
+
+    def _promote_execution_confirmation(
+        self,
+        text: str,
+        graph: ParsedIntentGraph,
+        state: RuntimeV2State,
+    ) -> ParsedIntentGraph:
+        if not self._looks_like_execution_confirmation(text, state):
+            return graph
+
+        target = state.resolve_target("execute")
+        target_ref = None
+        if target:
+            target_ref = target.get("artifact_id") or target.get("artifact_ref") or target.get("filename")
+
+        segment = SemanticSegment(
+            text=text,
+            kind="task_request",
+            confidence=0.98,
+            refers_to_previous=True,
+            target_ref=target_ref,
+            request_mode="execute",
+            priority=0,
+        )
+        promoted = ParsedIntentGraph(
+            segments=[segment],
+            primary_intent="task_request",
+            secondary_intents=[],
+            parser_source="heuristic_parser",
+            graph_version=graph.graph_version,
+        )
+        if target_ref:
+            promoted.actionable_targets.append(target_ref)
+        return promoted
+
     def build_ingress_context(
         self,
         decision: TelegramIngressDecision,
@@ -330,6 +388,8 @@ class TelegramRuntimeBridge:
                 if seg.request_mode:
                     request_mode = seg.request_mode
                     break
+        if request_mode is None and decision.is_confirm_execution:
+            request_mode = "execute"
         target_action = request_mode or decision.inferred_action
         resolved_target = state.resolve_target(target_action) if target_action in {"execute", "compare", "analyze"} else None
         if resolved_target is None and decision.requested_output:
@@ -363,6 +423,7 @@ class TelegramRuntimeBridge:
         llm_client: Any = None,
     ) -> TelegramIngressDecision:
         graph = self._normalize_ambiguous_probe(text, heuristic_parse(text), state)
+        graph = self._promote_execution_confirmation(text, graph, state)
 
         logger.info(
             "SEMANTIC_AUDIT: text[:50]=%r parser_source=%s primary_intent=%s requires_clarification=%s has_status_query=%s has_correction=%s segments=%s",
@@ -400,7 +461,7 @@ class TelegramRuntimeBridge:
                 inferred_filename = seg.target_ref
                 break
 
-        is_confirm_execution = looks_like_task and bool(getattr(state, "pending_artifacts", []))
+        is_confirm_execution = self._looks_like_execution_confirmation(text, state)
 
         return TelegramIngressDecision(
             looks_like_task=looks_like_task,
@@ -423,6 +484,7 @@ class TelegramRuntimeBridge:
 
     def inspect_ingress(self, text: str, state: RuntimeV2State) -> TelegramIngressDecision:
         graph = self._normalize_ambiguous_probe(text, heuristic_parse(text), state)
+        graph = self._promote_execution_confirmation(text, graph, state)
         requested_output = self._extract_requested_output(text)
         runtime_action = decide_runtime_action(graph, state)
 
@@ -441,7 +503,7 @@ class TelegramRuntimeBridge:
                 inferred_action = seg.request_mode
                 break
 
-        is_confirm_execution = looks_like_task and bool(getattr(state, "pending_artifacts", []))
+        is_confirm_execution = self._looks_like_execution_confirmation(text, state)
 
         return TelegramIngressDecision(
             looks_like_task=looks_like_task,
