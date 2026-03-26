@@ -7,7 +7,8 @@ File read/write operations with security controls.
 import logging
 import os
 import shutil
-from pathlib import Path
+import re
+from pathlib import Path, PureWindowsPath
 from typing import Any, Dict, List, Optional, Set
 
 from app.tools.base import (
@@ -16,6 +17,22 @@ from app.tools.base import (
 
 
 logger = logging.getLogger(__name__)
+
+WINDOWS_ABS_PATH_RE = re.compile(r"^[A-Za-z]:[\\/]")
+
+
+def _normalize_policy_path(path_str: str) -> str:
+    if WINDOWS_ABS_PATH_RE.match(path_str or ""):
+        return str(PureWindowsPath(path_str)).replace("/", "\\").lower().rstrip("\\")
+    return str(Path(path_str).resolve())
+
+
+def _is_within_path(candidate: str, allowed: str) -> bool:
+    if candidate == allowed:
+        return True
+    if WINDOWS_ABS_PATH_RE.match(candidate):
+        return candidate.startswith(allowed + "\\")
+    return candidate.startswith(allowed.rstrip("/") + "/")
 
 
 class FileTool(Tool):
@@ -188,25 +205,27 @@ class FileTool(Tool):
         Raises:
             ToolSecurityError: If path is not allowed
         """
-        # Resolve to absolute path
-        path = Path(path_str).resolve()
-        path_str_resolved = str(path)
+        # Resolve to absolute path / canonical policy form
+        is_windows_abs = WINDOWS_ABS_PATH_RE.match(path_str or "") is not None
+        path = Path(path_str).resolve() if not is_windows_abs else Path(str(PureWindowsPath(path_str)))
+        path_str_resolved = _normalize_policy_path(path_str)
         
         # Check forbidden paths (exact match for system dirs, prefix for hidden dirs)
         for forbidden in self.FORBIDDEN_PATHS:
             if forbidden.startswith('/'):
                 # System paths: exact match only (don't block subdirectories)
-                if path_str_resolved == forbidden:
+                if path_str_resolved == _normalize_policy_path(forbidden):
                     raise ToolSecurityError(f"Access to path forbidden: {path_str}")
             else:
                 # Hidden dirs (like .env, .git): prefix match
-                if path_str_resolved.startswith(forbidden) or path_str_resolved == forbidden:
+                forbidden_norm = forbidden.lower()
+                if path_str_resolved.startswith(forbidden_norm) or path_str_resolved == forbidden_norm:
                     raise ToolSecurityError(f"Access to path forbidden: {path_str}")
         
         # Check denied paths from config
         for denied in self.denied_paths:
-            denied_resolved = Path(denied).resolve()
-            if path_str_resolved.startswith(str(denied_resolved)):
+            denied_resolved = _normalize_policy_path(denied)
+            if _is_within_path(path_str_resolved, denied_resolved):
                 raise ToolSecurityError(f"Access to path denied by config: {path_str}")
         
         # Check if path is in allowed paths
@@ -214,15 +233,15 @@ class FileTool(Tool):
         
         # P2-A.2: Check default allowed path prefixes (user project directories)
         for allowed_prefix in self.DEFAULT_ALLOWED_PATH_PREFIXES:
-            if path_str_resolved.startswith(allowed_prefix):
+            if _is_within_path(path_str_resolved, _normalize_policy_path(allowed_prefix)):
                 in_allowed = True
                 break
         
         # Check config allowed paths
         if not in_allowed:
             for allowed in self.allowed_paths:
-                allowed_resolved = Path(allowed).resolve()
-                if path_str_resolved.startswith(str(allowed_resolved)):
+                allowed_resolved = _normalize_policy_path(allowed)
+                if _is_within_path(path_str_resolved, allowed_resolved):
                     in_allowed = True
                     break
         
