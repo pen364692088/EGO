@@ -53,6 +53,7 @@ from app.runtime_v2 import (
     RuntimeV2TelegramBridge,
     RuntimeV2Reply,
     RuntimeV2TurnResult,
+    RuntimeV2State,
 )
 from app.core_bus import BusEvent, get_message_bus, get_session_worker_pool
 from app.session_store import SessionLogManager
@@ -125,6 +126,7 @@ class TelegramBot:
         self._session_worker_pool = get_session_worker_pool()
         self._session_log_manager = SessionLogManager()
         self._phase1_bus_ready = False
+        self._runtime_states: dict[str, RuntimeV2State] = {}
         # Ingestion Manager
         self._ingestion_manager: Optional[IngestionManager] = None
 
@@ -166,6 +168,37 @@ class TelegramBot:
         if self.runtime_v2_loop is None:
             self.runtime_v2_loop = RuntimeV2Loop()
         return self.runtime_v2_loop
+
+    def _get_runtime_state(self, session_key: str) -> RuntimeV2State:
+        state = self._runtime_states.get(session_key)
+        if state is None:
+            state = RuntimeV2State(session_id=session_key)
+            self._runtime_states[session_key] = state
+        return state
+
+    def _reset_runtime_state(self, session_key: str) -> RuntimeV2State:
+        state = self._get_runtime_state(session_key)
+        state.increment_generation()
+        state.history = []
+        state.pending_artifacts = []
+        state.last_uploaded_artifact = None
+        state.last_explicit_target = None
+        state.last_inferred_action = None
+        state.last_inferred_target = None
+        state.pending_bundle_summary = None
+        state.last_tool_result = None
+        state.last_verification_result = None
+        state.ingress_context = None
+        state.proto_self_context = None
+        runtime_loop = self.runtime_v2_loop
+        if runtime_loop is not None:
+            runtime_loop._states[session_key] = state
+        return state
+
+    def _sync_state_into_runtime_v2_loop(self, session_key: str, state: RuntimeV2State) -> RuntimeV2Loop:
+        runtime_loop = self._get_runtime_v2_loop()
+        runtime_loop._states[session_key] = state
+        return runtime_loop
 
     def _get_native_loop(self) -> Optional[NativeToolCallingLoop]:
         if not self.use_runtime_v2:
@@ -312,9 +345,7 @@ class TelegramBot:
         session_key = self._resolve_session_key(update, chat_id, user_id)
         context_store = get_session_context_store()
         context_store.clear_session(session_key)
-        runtime_loop = self._get_runtime_v2_loop()
-        if runtime_loop is not None:
-            runtime_loop.reset_session(session_key)
+        self._reset_runtime_state(session_key)
         self._latest_message_id_by_session.pop(session_key, None)
         verb = "started fresh" if command == "new" else "reset"
         return CommandResult(
@@ -333,8 +364,7 @@ class TelegramBot:
         session_key = self._resolve_session_key(update, chat_id, user_id)
         context_store = get_session_context_store()
         recent_turns = context_store.get_recent_turns(session_key, limit=20)
-        runtime_loop = self._get_runtime_v2_loop()
-        state = runtime_loop.get_state(session_key) if runtime_loop is not None else None
+        state = self._get_runtime_state(session_key) if self.use_runtime_v2 else None
         prompt_bundle = RuntimeV2PromptFiles().load() if self.use_runtime_v2 else None
 
         # Real token data from state
@@ -427,7 +457,7 @@ class TelegramBot:
         ]
 
         if self.use_runtime_v2:
-            state = self._get_runtime_v2_loop().get_state(session_key)
+            state = self._get_runtime_state(session_key)
             prompt_bundle = RuntimeV2PromptFiles().load()
             lines.extend([
                 "",
@@ -622,7 +652,7 @@ class TelegramBot:
                     artifact_id = ingested.attachments[0].artifact_id
 
                 session_key = self._resolve_session_key(update, chat_id, user_id)
-                state = self._get_runtime_v2_loop().get_state(session_key)
+                state = self._get_runtime_state(session_key)
                 if artifact_id:
                     state.add_pending_artifact(
                         artifact_id=artifact_id,
@@ -757,7 +787,7 @@ class TelegramBot:
                 artifact_id = ingested.artifact_refs[0]
 
             # 更新 state 的 pending_artifacts
-            state = self._get_runtime_v2_loop().get_state(session_key)
+            state = self._get_runtime_state(session_key)
             if artifact_id:
                 state.add_pending_artifact(
                     artifact_id=artifact_id,
@@ -811,10 +841,7 @@ class TelegramBot:
         extra_context: Optional[str] = None,
     ) -> None:
         session_key = self._resolve_session_key(update, chat_id, user_id)
-        runtime_loop = self._get_runtime_v2_loop()
-        if runtime_loop is None:
-            raise RuntimeError("runtime_v2 mainline requested without runtime_v2 loop enabled")
-        state = runtime_loop.get_state(session_key)
+        state = self._get_runtime_state(session_key)
 
         # 记录 ingress 信息
         ingress_message_id = update.message.message_id if update.message else None
@@ -945,6 +972,7 @@ class TelegramBot:
                 filename = state.last_uploaded_artifact.get("filename", "未知文件")
                 enhanced_input = f"{text}\n\n[目标文件: {filename}]"
 
+            runtime_loop = self._sync_state_into_runtime_v2_loop(session_key, state)
             return await runtime_loop.run_turn_typed(session_id=session_key, user_input=enhanced_input)
 
         return await run_once()

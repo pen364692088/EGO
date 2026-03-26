@@ -28,13 +28,14 @@ async def test_context_list_command_shows_runtime_state():
         effective_chat = DummyChat()
         effective_user = DummyUser()
 
-    state = bot._get_runtime_v2_loop().get_state("telegram:dm:456")
+    state = bot._get_runtime_state("telegram:dm:456")
     state.task_status = "running"
     state.current_goal = "修改 hello.html 配色"
     state.current_step = "tool:file"
     state.record("user", {"text": "hello"})
 
     await bot.handle_command(DummyUpdate(), None)
+    assert bot.runtime_v2_loop is None
     assert "Loaded Context" in DummyUpdate.message.last_text
     assert "Runtime State" in DummyUpdate.message.last_text
     assert "task\\_status" in DummyUpdate.message.last_text
