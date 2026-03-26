@@ -21,6 +21,7 @@ from typing import Optional
 import json
 import time
 from contextlib import asynccontextmanager
+from copy import deepcopy
 
 from telegram import BotCommand, Update
 from telegram.error import Conflict
@@ -59,6 +60,8 @@ from app.openemotion_hooks import NativeOpenEmotionHooks
 from app.telegram_runtime_fallback import TelegramRuntimeFallbackRunner
 from app.telegram_runtime_bridge import TelegramRuntimeBridge
 from app.telegram_runtime_result import TelegramTurnReply, TelegramTurnResult
+from app.ingestion.artifact_store import get_artifact_store
+from app.compaction import ReadRequest, get_compaction_manager
 
 # Ingestion Layer
 from app.ingestion import (
@@ -132,6 +135,40 @@ class TelegramBot:
         self._runtime_states: dict[str, RuntimeV2State] = {}
         # Ingestion Manager
         self._ingestion_manager: Optional[IngestionManager] = None
+
+    def _hydrate_artifact_ingress_context(self, state: RuntimeV2State) -> dict:
+        ingress_context = deepcopy(state.ingress_context or {})
+        target = ingress_context.get("resolved_target") or {}
+        artifact_id = target.get("artifact_id") or target.get("artifact_ref")
+        if not artifact_id or not str(artifact_id).startswith("artifact://"):
+            return ingress_context
+
+        artifact_text = None
+        if str(artifact_id).startswith("artifact://compacted/"):
+            manager = get_compaction_manager()
+            result = manager.read(ReadRequest(artifact_id=str(artifact_id), mode="raw"))
+            if result.success:
+                artifact_text = result.content
+        elif str(artifact_id).startswith("artifact://ingested/"):
+            artifact_text = get_artifact_store().read_raw(str(artifact_id))
+
+        if artifact_text:
+            ingress_context["resolved_artifact_text"] = artifact_text[:12000]
+            ingress_context["resolved_artifact_filename"] = target.get("filename")
+        return ingress_context
+
+    def _build_native_failure_reply(self, state: RuntimeV2State) -> str:
+        tool_result = state.last_tool_result or {}
+        error = str(tool_result.get("stderr") or tool_result.get("raw", {}).get("error") or "").strip()
+        target = (state.ingress_context or {}).get("resolved_target") or {}
+        artifact_name = target.get("filename") or "任务内容"
+        if not error:
+            return "执行时遇到问题，我已经停止继续尝试。请让我改用更直接的方式继续。"
+        return (
+            f"执行「{artifact_name}」时遇到问题，我已经停止继续尝试。\n\n"
+            f"错误：{error}\n\n"
+            "如果你愿意，我可以基于这份任务内容直接继续执行，并在出错时立即汇报。"
+        )
 
     def _ensure_phase1_bus(self) -> None:
         if self._phase1_bus_ready:
@@ -1087,7 +1124,7 @@ class TelegramBot:
         result = await native_loop.run_turn(
             session_key=session_key,
             user_input=text,
-            ingress_context=state.ingress_context,
+            ingress_context=self._hydrate_artifact_ingress_context(state),
             proto_self_context=state.proto_self_context,
         )
 
@@ -1135,6 +1172,26 @@ class TelegramBot:
                     reply_text=result.reply_text,
                     delivery_kind="final",
                     status="completed_verified",
+                ),
+            )
+            if native_hooks and native_hooks.enabled:
+                try:
+                    native_hooks.capture_response_plan(result=turn_result)
+                except Exception as e:
+                    logger.exception("native_openemotion.response_plan.failed session=%s err=%s", session_key, e)
+            return turn_result
+
+        failed_tool = bool(state.last_tool_result) and not bool(state.last_tool_result.get("success"))
+        if failed_tool:
+            state.task_status = "blocked"
+            state.waiting_for_user_input = True
+            turn_result = TelegramTurnResult(
+                status="blocked",
+                state=state,
+                reply=TelegramTurnReply(
+                    reply_text=self._build_native_failure_reply(state),
+                    delivery_kind="final",
+                    status="blocked",
                 ),
             )
             if native_hooks and native_hooks.enabled:

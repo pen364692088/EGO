@@ -148,3 +148,35 @@ async def test_execute_confirmation_ingress_is_bound_to_pending_task(monkeypatch
     assert ingress_context["runtime_action"] == "execute_task"
     assert ingress_context["request_mode"] == "execute"
     assert ingress_context["resolved_target"]["artifact_id"] == "artifact://task-sheet"
+
+
+@pytest.mark.asyncio
+async def test_execute_confirmation_hydrates_artifact_text_into_native_context(monkeypatch):
+    bot = TelegramBot(token="dummy", use_runtime_v2=True)
+    session_key = "telegram:dm:8420019401"
+    state = bot._get_runtime_state(session_key)
+    state.add_pending_artifact("artifact://compacted/task-sheet", "任务单.txt", "artifact://compacted/task-sheet")
+    state.task_status = "waiting_input"
+    state.waiting_for_user_input = True
+    state.last_inferred_action = "execute"
+    state.ingress_context = {
+        "runtime_action": "execute_task",
+        "resolved_target": {
+            "artifact_id": "artifact://compacted/task-sheet",
+            "artifact_ref": "artifact://compacted/task-sheet",
+            "filename": "任务单.txt",
+        },
+    }
+
+    monkeypatch.setattr(
+        "app.telegram_bot.get_compaction_manager",
+        lambda: type(
+            "M",
+            (),
+            {"read": lambda self, request: type("R", (), {"success": True, "content": "在D:\\Project\\AIProject\\MyProject\\Test下创建html页面"})()},
+        )(),
+    )
+
+    hydrated = bot._hydrate_artifact_ingress_context(state)
+    assert hydrated["resolved_artifact_filename"] == "任务单.txt"
+    assert "创建html页面" in hydrated["resolved_artifact_text"]

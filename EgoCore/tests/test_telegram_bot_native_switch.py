@@ -247,3 +247,44 @@ async def test_native_loop_turn_publishes_tool_result_event(monkeypatch):
 
     assert result.reply_text == "native done"
     assert any(event["kind"] == "native_tool_result" for event in events)
+
+
+@pytest.mark.asyncio
+async def test_native_loop_turn_returns_blocked_reply_on_failed_tool_without_final(monkeypatch):
+    bot = TelegramBot(token="dummy", use_runtime_v2=True)
+    state = bot._get_runtime_state("telegram:dm:1")
+    state.ingress_context = {
+        "runtime_action": "execute_task",
+        "resolved_target": {"filename": "任务单.txt"},
+    }
+
+    class Hook:
+        enabled = False
+
+    class NativeResult:
+        reply_text = ""
+        tool_results = [
+            {
+                "tool_name": "file",
+                "result": {"success": False, "output": "", "error": "File extension not allowed: .example", "metadata": {}},
+            }
+        ]
+
+    async def fake_run_turn(**kwargs):
+        return NativeResult()
+
+    bot.native_openemotion_hooks = Hook()
+    bot.native_loop = type("Loop", (), {"run_turn": None})()
+    monkeypatch.setattr(bot.native_loop, "run_turn", fake_run_turn)
+
+    result = await bot._run_native_loop_turn(
+        update=None,
+        session_key="telegram:dm:1",
+        text="执行",
+        state=state,
+        ack_text=None,
+    )
+
+    assert result.status == "blocked"
+    assert "File extension not allowed: .example" in result.reply_text
+    assert state.task_status == "blocked"

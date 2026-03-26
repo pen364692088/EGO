@@ -38,6 +38,20 @@ class NativeContextBuilder:
                     "content": f"canonical_ingress={ingress_context}",
                 }
             )
+            resolved_artifact_text = ingress_context.get("resolved_artifact_text")
+            if resolved_artifact_text:
+                artifact_name = ingress_context.get("resolved_artifact_filename") or "artifact"
+                messages.append(
+                    {
+                        "role": "system",
+                        "content": (
+                            f"resolved_artifact_filename={artifact_name}\n"
+                            "Use this artifact content as the authoritative task/reference source for this turn. "
+                            "Do not scan unrelated workspace files to infer the task.\n"
+                            f"resolved_artifact_content:\n{resolved_artifact_text}"
+                        ),
+                    }
+                )
         if proto_self_context:
             messages.append(
                 {
