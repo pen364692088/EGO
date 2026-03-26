@@ -995,7 +995,7 @@ async def _ensure_tools_ready() -> None:
     registry = get_registry()
     if registry.list_tools():
         return
-    setup_tools(cfg.tools if hasattr(cfg, 'tools') else {})
+    setup_tools(cfg.get("tools", {}) if hasattr(cfg, "get") else {})
 
 
 async def _execute_tools(

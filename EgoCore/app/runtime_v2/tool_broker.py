@@ -62,7 +62,7 @@ class RuntimeV2ToolBroker:
             cfg = get_config()
         except Exception:
             cfg = load_config(validate=False)
-        setup_tools(cfg.tools if hasattr(cfg, "tools") else {})
+        setup_tools(cfg.get("tools", {}) if hasattr(cfg, "get") else {})
         # 两个 artifact 系统
         self.artifact_store = get_artifact_store()
         self.compaction_manager = get_compaction_manager()

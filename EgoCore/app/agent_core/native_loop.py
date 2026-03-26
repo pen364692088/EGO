@@ -37,7 +37,7 @@ class NativeToolCallingLoop:
             cfg = load_config(validate=False)
         registry = get_registry()
         if not registry.list_tools():
-            setup_tools(cfg.tools if hasattr(cfg, "tools") else {})
+            setup_tools(cfg.get("tools", {}) if hasattr(cfg, "get") else {})
 
     def _build_tool_definitions(self) -> List[Dict[str, Any]]:
         registry = get_registry()
