@@ -20,6 +20,7 @@ import uuid
 from typing import Optional
 import json
 import time
+from contextlib import asynccontextmanager
 
 from telegram import BotCommand, Update
 from telegram.error import Conflict
@@ -441,18 +442,21 @@ class TelegramBot:
         # 检查是否是超长消息（>8KB），如果是则走 ingestion 流程
         if self.use_runtime_v2 and self._is_long_message(text):
             logger.info(f"[trace={trace_id}] long message detected ({len(text)} chars), routing through ingestion")
-            await self._handle_long_message_with_ingestion(
-                update, text, chat_id, user_id, username, trace_id, msg_id, session_key
-            )
+            async with self._typing_indicator(update):
+                await self._handle_long_message_with_ingestion(
+                    update, text, chat_id, user_id, username, trace_id, msg_id, session_key
+                )
             return
 
         if self.use_runtime_v2:
-            await self._handle_with_runtime_v2(update, text, chat_id, user_id, username, trace_id=trace_id)
+            async with self._typing_indicator(update):
+                await self._handle_with_runtime_v2(update, text, chat_id, user_id, username, trace_id=trace_id)
         elif self.use_new_runtime:
             if not self._legacy_runtime_notice_logged:
                 logger.warning("TelegramBot compatibility path in use: _handle_with_new_runtime is legacy/non-mainline; prefer Runtime v2")
                 self._legacy_runtime_notice_logged = True
-            await self._handle_with_new_runtime(update, text, chat_id, user_id, username, trace_id=trace_id)
+            async with self._typing_indicator(update):
+                await self._handle_with_new_runtime(update, text, chat_id, user_id, username, trace_id=trace_id)
         else:
             if not self._legacy_runtime_notice_logged:
                 logger.warning("TelegramBot legacy router path in use: _handle_with_legacy_router is compatibility-only; prefer Runtime v2")
@@ -505,90 +509,81 @@ class TelegramBot:
             )
             return
 
-        # 下载文件
-        try:
-            file = await context.bot.get_file(document.file_id)
-            content = await file.download_as_bytearray()
-            content = bytes(content)
-        except Exception as e:
-            logger.error(f"[trace={trace_id}] failed to download file: {e}")
-            await update.message.reply_text(f"文件下载失败：{e}")
-            return
+        async with self._typing_indicator(update):
+            # 下载文件
+            try:
+                file = await context.bot.get_file(document.file_id)
+                content = await file.download_as_bytearray()
+                content = bytes(content)
+            except Exception as e:
+                logger.error(f"[trace={trace_id}] failed to download file: {e}")
+                await update.message.reply_text(f"文件下载失败：{e}")
+                return
 
-        # 构建文档信息
-        doc_info = TelegramDocumentInfo(
-            file_id=document.file_id,
-            file_unique_id=document.file_unique_id,
-            filename=document.file_name,
-            mime_type=document.mime_type or "text/plain",
-            file_size=document.file_size,
-            message_id=msg_id,
-            caption=update.message.caption,
-        )
-
-        # 不再单独发文件确认，由 bridge 统一控制（避免双消息）
-
-        # 摄入
-        result = await self._ingestion_manager.ingest_telegram_document(
-            document_info=doc_info,
-            content=content,
-            session_key=session_key,
-        )
-
-        if not result.success:
-            logger.error(f"[trace={trace_id}] ingestion failed: {result.error}")
-            await update.message.reply_text(f"文件处理失败：{result.error}")
-            return
-
-        ingested = result.ingested_input
-        logger.info(
-            f"[trace={trace_id}] document ingested: "
-            f"artifact_id={ingested.attachments[0].artifact_id if ingested.attachments else 'none'}"
-        )
-
-        # 注入 Runtime v2
-        if self.use_runtime_v2:
-            # 获取 artifact 信息
-            artifact_id = None
-            if ingested._compacted_artifact:
-                artifact_id = ingested._compacted_artifact.artifact_id
-            elif ingested.artifact_refs:
-                artifact_id = ingested.artifact_refs[0]
-            elif ingested.attachments:
-                artifact_id = ingested.attachments[0].artifact_id
-
-            # 更新 state 的 pending_artifacts
-            session_key = self._resolve_session_key(update, chat_id, user_id)
-            state = self.runtime_v2_loop.get_state(session_key)
-            if artifact_id:
-                state.add_pending_artifact(
-                    artifact_id=artifact_id,
-                    filename=document.file_name,
-                    artifact_ref=artifact_id,
-                )
-
-            # 构建 prompt context
-            prompt_context = ingested.to_prompt_context()
-
-            # 如果有 caption，作为用户输入
-            user_input = ingested.user_text or f"[用户发送了文件: {document.file_name}]"
-
-            await self._handle_with_runtime_v2(
-                update=update,
-                text=user_input,
-                chat_id=chat_id,
-                user_id=user_id,
-                username=username,
-                trace_id=trace_id,
-                extra_context=prompt_context,
+            # 构建文档信息
+            doc_info = TelegramDocumentInfo(
+                file_id=document.file_id,
+                file_unique_id=document.file_unique_id,
+                filename=document.file_name,
+                mime_type=document.mime_type or "text/plain",
+                file_size=document.file_size,
+                message_id=msg_id,
+                caption=update.message.caption,
             )
-        else:
-            # 降级：简单回复
-            summary = ingested.summary or "文件已处理完成。"
-            reply = f"文件「{document.file_name}」已处理。\n\n{summary[:500]}"
-            if len(summary) > 500:
-                reply += "\n... (摘要已截断)"
-            await update.message.reply_text(reply)
+
+            result = await self._ingestion_manager.ingest_telegram_document(
+                document_info=doc_info,
+                content=content,
+                session_key=session_key,
+            )
+
+            if not result.success:
+                logger.error(f"[trace={trace_id}] ingestion failed: {result.error}")
+                await update.message.reply_text(f"文件处理失败：{result.error}")
+                return
+
+            ingested = result.ingested_input
+            logger.info(
+                f"[trace={trace_id}] document ingested: "
+                f"artifact_id={ingested.attachments[0].artifact_id if ingested.attachments else 'none'}"
+            )
+
+            if self.use_runtime_v2:
+                artifact_id = None
+                if ingested._compacted_artifact:
+                    artifact_id = ingested._compacted_artifact.artifact_id
+                elif ingested.artifact_refs:
+                    artifact_id = ingested.artifact_refs[0]
+                elif ingested.attachments:
+                    artifact_id = ingested.attachments[0].artifact_id
+
+                session_key = self._resolve_session_key(update, chat_id, user_id)
+                state = self.runtime_v2_loop.get_state(session_key)
+                if artifact_id:
+                    state.add_pending_artifact(
+                        artifact_id=artifact_id,
+                        filename=document.file_name,
+                        artifact_ref=artifact_id,
+                    )
+
+                prompt_context = ingested.to_prompt_context()
+                user_input = ingested.user_text or f"[用户发送了文件: {document.file_name}]"
+
+                await self._handle_with_runtime_v2(
+                    update=update,
+                    text=user_input,
+                    chat_id=chat_id,
+                    user_id=user_id,
+                    username=username,
+                    trace_id=trace_id,
+                    extra_context=prompt_context,
+                )
+            else:
+                summary = ingested.summary or "文件已处理完成。"
+                reply = f"文件「{document.file_name}」已处理。\n\n{summary[:500]}"
+                if len(summary) > 500:
+                    reply += "\n... (摘要已截断)"
+                await update.message.reply_text(reply)
 
     def _resolve_session_key(self, update: Update, chat_id: int, user_id: int) -> str:
         """Resolve canonical session key for Telegram ingress."""
@@ -851,7 +846,7 @@ class TelegramBot:
 
             return await self.runtime_v2_loop.run_turn_typed(session_id=session_key, user_input=enhanced_input)
 
-        return await self._with_typing(update, run_once)
+        return await run_once()
 
     async def _deliver_runtime_v2_result(
         self,
@@ -920,25 +915,6 @@ class TelegramBot:
         # 不再发送 generic ACK（兼容路径也统一行为）
         # typing 指示器已足够表示系统在处理
 
-        # typing 指示器：先立即发送第一拍，再启动循环
-        try:
-            await self.app.bot.send_chat_action(chat_id=chat_id, action="typing")
-        except Exception:
-            pass
-
-        stop_typing = asyncio.Event()
-        async def typing_loop():
-            while not stop_typing.is_set():
-                try:
-                    await self.app.bot.send_chat_action(chat_id=chat_id, action="typing")
-                except Exception:
-                    pass
-                try:
-                    await asyncio.wait_for(stop_typing.wait(), timeout=4.0)
-                except asyncio.TimeoutError:
-                    continue
-
-        typing_task = asyncio.create_task(typing_loop())
         result = None
         try:
             # 任务类消息偶发卡住时，不能静默：加超时并兜底回复
@@ -966,12 +942,6 @@ class TelegramBot:
             logger.exception(f"[trace={trace_id}] run_agent crashed: session={session_key} text={text[:120]} err={e}")
             await self._send_reply(update, "我这一步中断了，但请求已经收到。请再发一次，我继续处理。")
             return
-        finally:
-            stop_typing.set()
-            try:
-                await typing_task
-            except Exception:
-                pass
 
         logger.info(
             f"[trace={trace_id}] New runtime: session={session_key} status={result.status.value} "
@@ -1027,23 +997,37 @@ class TelegramBot:
         await self._send_result(update, result)
 
     async def _with_typing(self, update: Update, coro_factory):
+        async with self._typing_indicator(update):
+            return await coro_factory()
+
+    @asynccontextmanager
+    async def _typing_indicator(self, update: Update):
+        if not self.app or not getattr(self.app, "bot", None) or not update.effective_chat:
+            yield
+            return
+
         chat_id = update.effective_chat.id
         stop_typing = asyncio.Event()
+
+        try:
+            await self.app.bot.send_chat_action(chat_id=chat_id, action="typing")
+        except Exception:
+            pass
 
         async def typing_loop():
             while not stop_typing.is_set():
                 try:
-                    await self.app.bot.send_chat_action(chat_id=chat_id, action='typing')
-                except Exception:
-                    pass
-                try:
                     await asyncio.wait_for(stop_typing.wait(), timeout=4.0)
+                    break
                 except asyncio.TimeoutError:
-                    continue
+                    try:
+                        await self.app.bot.send_chat_action(chat_id=chat_id, action="typing")
+                    except Exception:
+                        pass
 
         typing_task = asyncio.create_task(typing_loop())
         try:
-            return await coro_factory()
+            yield
         finally:
             stop_typing.set()
             try:

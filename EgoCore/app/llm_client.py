@@ -422,6 +422,7 @@ class LLMClient:
 
 # Global LLM client instance
 _llm_client: Optional[LLMClient] = None
+_llm_client_overrides: Dict[tuple[Optional[str], Optional[str]], LLMClient] = {}
 
 
 def get_llm_client(provider: Optional[str] = None, model: Optional[str] = None) -> LLMClient:
@@ -438,8 +439,12 @@ def get_llm_client(provider: Optional[str] = None, model: Optional[str] = None) 
     global _llm_client
     
     if provider or model:
-        # Create new instance with overrides
-        return LLMClient(provider=provider, model=model)
+        key = (provider, model)
+        cached = _llm_client_overrides.get(key)
+        if cached is None:
+            cached = LLMClient(provider=provider, model=model)
+            _llm_client_overrides[key] = cached
+        return cached
     
     if _llm_client is None:
         _llm_client = LLMClient()

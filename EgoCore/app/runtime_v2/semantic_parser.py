@@ -17,10 +17,35 @@ from __future__ import annotations
 import asyncio
 import json
 import logging
+import re
 from dataclasses import dataclass, field
 from typing import Any, Dict, List, Optional
 
 logger = logging.getLogger(__name__)
+
+SHORT_STATUS_PATTERNS = {
+    "还在吗",
+    "还在不",
+    "在吗",
+    "到哪了",
+    "进度呢",
+    "怎么样了",
+    "好了没",
+    "好了吗",
+    "完成了吗",
+    "处理到哪了",
+}
+
+SHORT_CORRECTION_PATTERNS = {
+    "你没改啊",
+    "没改啊",
+    "你没做啊",
+    "还是不对",
+    "不是这个",
+    "不是这个意思",
+    "我说的不是这个",
+    "没看到改动",
+}
 
 
 # =============================================================================
@@ -234,6 +259,35 @@ def heuristic_parse(text: str) -> ParsedIntentGraph:
     logger.debug(f"heuristic_parse: input text[:50]={text[:50] if len(text) > 50 else text}")
 
     segments = []
+    normalized = _normalize_short_probe(text)
+
+    if normalized in SHORT_STATUS_PATTERNS:
+        logger.info("heuristic_parse: detected short status probe, parser_source=heuristic_parser, primary_intent=status_query")
+        segments.append(SemanticSegment(
+            text=text,
+            kind="status_query",
+            confidence=0.95,
+        ))
+        return ParsedIntentGraph(
+            segments=segments,
+            primary_intent="status_query",
+            has_status_query=True,
+            parser_source="heuristic_parser",
+        )
+
+    if normalized in SHORT_CORRECTION_PATTERNS:
+        logger.info("heuristic_parse: detected short correction, parser_source=heuristic_parser, primary_intent=correction")
+        segments.append(SemanticSegment(
+            text=text,
+            kind="correction",
+            confidence=0.95,
+        ))
+        return ParsedIntentGraph(
+            segments=segments,
+            primary_intent="correction",
+            has_correction=True,
+            parser_source="heuristic_parser",
+        )
 
     # 检测路径（显式硬信号）- 支持 Unix 和 Windows 路径
     unix_path = "/home/" in text or "/mnt/" in text or "/tmp/" in text or "/Users/" in text
@@ -296,6 +350,11 @@ def heuristic_parse(text: str) -> ParsedIntentGraph:
     )
 
 
+def _normalize_short_probe(text: str) -> str:
+    normalized = re.sub(r"\s+", "", (text or "").strip().lower())
+    return normalized.strip("?!？！。,.，")
+
+
 # =============================================================================
 # 主解析函数
 # =============================================================================
@@ -310,7 +369,7 @@ async def semantic_parse_message(
     recent_turns: List[Dict[str, Any]],
     runtime_snapshot: Dict[str, Any],
     llm_client: Any = None,
-    timeout: float = 30.0,  # 增加到 30 秒
+    timeout: float = 8.0,
 ) -> ParsedIntentGraph:
     """
     唯一语义解析入口。
@@ -331,7 +390,7 @@ async def semantic_parse_message(
     - 不写 runtime state
     
     性能约束：
-    - 超时：30 秒
+    - 超时：8 秒
     - LLM 调用次数：最多 1 次
     - 不重试 LLM
     """
@@ -339,6 +398,15 @@ async def semantic_parse_message(
     if llm_client is None:
         logger.info("semantic_parse: no LLM client, using heuristic_parse")
         return heuristic_parse(text)
+
+    heuristic_graph = heuristic_parse(text)
+    if heuristic_graph.parser_source == "heuristic_parser":
+        logger.info(
+            "semantic_parse: fast heuristic hit, parser_source=%s, primary_intent=%s",
+            heuristic_graph.parser_source,
+            heuristic_graph.primary_intent,
+        )
+        return heuristic_graph
 
     # 构建 prompt
     recent_turns_str = json.dumps(recent_turns[-6:], ensure_ascii=False, indent=2)

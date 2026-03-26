@@ -14,6 +14,7 @@ from .state import RuntimeV2State
 class RuntimeV2DecisionEngine:
     def __init__(self) -> None:
         self.prompt_files = RuntimeV2PromptFiles()
+        self.llm_client = None
 
     def build_system_prompt(self) -> str:
         bundle = self.prompt_files.load()
@@ -90,9 +91,10 @@ class RuntimeV2DecisionEngine:
             },
         ]
         try:
-            client = get_llm_client(provider="qianfan", model="glm-5")
+            if self.llm_client is None:
+                self.llm_client = get_llm_client(provider="qianfan", model="glm-5")
             response = await asyncio.to_thread(
-                client.generate_with_messages,
+                self.llm_client.generate_with_messages,
                 messages,
                 temperature=0.1,
                 max_tokens=500,

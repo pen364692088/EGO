@@ -1,7 +1,10 @@
+import asyncio
+
 import pytest
 
 from app.runtime_v2.action_protocol import RuntimeV2Action
 from app.runtime_v2.loop import RuntimeV2Loop
+from app.runtime_v2.semantic_parser import semantic_parse_message
 from app.telegram_bot import TelegramBot
 
 
@@ -74,3 +77,82 @@ async def test_challenge_turn_does_not_get_absorbed_as_busy_placeholder(monkeypa
     monkeypatch.setattr(bot.runtime_v2_loop, 'run_turn_typed', fake_run_turn_typed)
     await bot.handle_message(DummyUpdate(), None)
     assert DummyUpdate.message.last_text == '我继续检查刚才那个文件。'
+
+
+@pytest.mark.asyncio
+async def test_runtime_v2_typing_starts_before_semantic_parse_finishes(monkeypatch):
+    bot = TelegramBot(token='test-token', use_runtime_v2=True)
+    observed = {"typing_calls": 0, "typing_seen_before_parse_release": False}
+    parse_gate = asyncio.Event()
+
+    class DummyBot:
+        async def send_chat_action(self, chat_id, action):
+            if action == "typing":
+                observed["typing_calls"] += 1
+
+    class DummyMessage:
+        text = '帮我改一下 hello.html 配色'
+        message_id = 10
+        reply_to_message = None
+        sent = []
+
+        async def reply_text(self, text, parse_mode=None):
+            self.sent.append(text)
+
+    class DummyChat:
+        id = 123
+        type = 'private'
+
+    class DummyUser:
+        id = 456
+        username = 'moonlight'
+
+    class DummyUpdate:
+        message = DummyMessage()
+        effective_chat = DummyChat()
+        effective_user = DummyUser()
+
+    bot.app = type('A', (), {'bot': DummyBot()})()
+
+    async def fake_inspect(text, state, llm_client):
+        observed["typing_seen_before_parse_release"] = observed["typing_calls"] > 0
+        await parse_gate.wait()
+        return bot.runtime_v2_bridge.inspect_ingress(text, state)
+
+    async def fake_run_turn_typed(session_id, user_input):
+        from app.runtime_v2.runtime_reply import RuntimeV2Reply, RuntimeV2TurnResult
+        state = bot.runtime_v2_loop.get_state(session_id)
+        return RuntimeV2TurnResult(
+            status='chat',
+            state=state,
+            reply=RuntimeV2Reply(reply_text='已收到。', delivery_kind='chat', status='chat'),
+        )
+
+    monkeypatch.setattr(bot.runtime_v2_bridge, 'inspect_ingress_semantic', fake_inspect)
+    monkeypatch.setattr(bot.runtime_v2_loop, 'run_turn_typed', fake_run_turn_typed)
+
+    task = asyncio.create_task(bot.handle_message(DummyUpdate(), None))
+    await asyncio.sleep(0.05)
+    parse_gate.set()
+    await task
+
+    assert observed["typing_seen_before_parse_release"] is True
+    assert observed["typing_calls"] >= 1
+
+
+@pytest.mark.asyncio
+async def test_semantic_parse_short_probe_uses_fast_heuristic_without_llm():
+    class FailingClient:
+        def generate(self, prompt):
+            raise AssertionError("fast heuristic should bypass LLM")
+
+    graph = await semantic_parse_message(
+        text="你没改啊",
+        recent_turns=[],
+        runtime_snapshot={},
+        llm_client=FailingClient(),
+    )
+
+    assert graph.parser_source == "heuristic_parser"
+    assert graph.primary_intent == "correction"
+    assert graph.has_correction is True
