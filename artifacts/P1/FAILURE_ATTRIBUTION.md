@@ -77,11 +77,18 @@ C:\Users\LEO\AppData\Local\Temp\pytest-of-LEO\pytest-1\test_runtime_v2_loop_runs
   - `transition / state / decision`
   - 真实 Telegram / integration / simulated runner
 
+## 当前状态
+- 已修复
+- 修复方式：`EgoCore/tests/test_runtime_v2_minimal.py` 改为使用 `json.dumps(..., ensure_ascii=False)` 构造 `plan / act / complete` action
+- 修复后验证：
+  - `cmd.exe /c py -3 -m pytest tests\test_runtime_v2_minimal.py::test_runtime_v2_loop_runs_plan_act_complete tests\test_runtime_v2_proto_self_runtime.py tests\test_runtime_v2_turn_result.py -q`
+  - 结果：`8 passed`
+
 ## 当前能证明什么
 - 能证明这条失败首先是测试构造的 Windows JSON 路径转义问题
 - 能证明它不足以单独判定为 P1 新主链回归
 
 ## 当前不能证明什么
 - 不能证明 P1 完全没有其他副作用
-- 不能证明修完该测试后，所有 runtime 最小回归都会通过
+- 不能证明修完该测试后，所有 runtime 全量回归都会通过
 - 不能证明更深层 state / transition / decision 完全无语义残留

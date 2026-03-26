@@ -4,7 +4,7 @@
 
 | failure_id | type | location | observed_issue | risk_if_ignored | current_disposition |
 |---|---|---|---|---|---|
-| P1-F-001 | test_contract_mismatch | `EgoCore/tests/test_runtime_v2_minimal.py::test_runtime_v2_loop_runs_plan_act_complete` | Windows `pytest` 下把 `tmp_path` 直接拼进 JSON，导致 `RuntimeV2Action.from_model_output()` 返回 `invalid_json -> ask -> waiting_input` | 如果直接忽略，会把“测试自身跨平台失配”误报成“P1 主链新回归” | 已完成归因，待决定是否修测试 |
+| P1-F-001 | test_contract_mismatch | `EgoCore/tests/test_runtime_v2_minimal.py::test_runtime_v2_loop_runs_plan_act_complete` | Windows `pytest` 下把 `tmp_path` 直接拼进 JSON，导致 `RuntimeV2Action.from_model_output()` 返回 `invalid_json -> ask -> waiting_input` | 如果直接忽略，会把“测试自身跨平台失配”误报成“P1 主链新回归” | 已修复（测试改为 `json.dumps`） |
 
 ## 历史失败样本（与 P1 直接相关的上下文）
 

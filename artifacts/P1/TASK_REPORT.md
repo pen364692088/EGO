@@ -52,21 +52,22 @@ P1：RuntimeV2Loop 主链瘦身手术
 ## 验证结果
 - `python3 -m py_compile EgoCore/app/runtime_v2/loop.py EgoCore/app/runtime_v2/proto_self_runtime.py EgoCore/tests/test_runtime_v2_proto_self_runtime.py`：通过
 - `cmd.exe /c py -3 -m pytest tests\\test_runtime_v2_proto_self_runtime.py tests\\test_runtime_v2_turn_result.py -q`：`7 passed`
-- `cmd.exe /c py -3 -m pytest tests\\test_runtime_v2_proto_self_runtime.py tests\\test_runtime_v2_minimal.py tests\\test_runtime_v2_turn_result.py -q`：`9 passed, 1 failed`
-- 当前唯一失败样本：`tests/test_runtime_v2_minimal.py::test_runtime_v2_loop_runs_plan_act_complete`
-- 失败归因见：`artifacts/P1/FAILURE_ATTRIBUTION.md`
+- `cmd.exe /c py -3 -m pytest tests\\test_runtime_v2_minimal.py::test_runtime_v2_loop_runs_plan_act_complete tests\\test_runtime_v2_proto_self_runtime.py tests\\test_runtime_v2_turn_result.py -q`：`8 passed`
+- 历史失败样本 `tests/test_runtime_v2_minimal.py::test_runtime_v2_loop_runs_plan_act_complete` 已归因为测试契约失配并修复
+- 失败归因与修复见：`artifacts/P1/FAILURE_ATTRIBUTION.md`
 - 结构量化：`loop.py` 从 `376` 行降到 `259` 行；proto-self 相关宿主职责迁移到 `proto_self_runtime.py`
 
 ## 行为保持说明
 - 本轮没有主动改 `run_turn_typed()` 的对外签名
 - 没有把 Proto-Self 逻辑平移进 adapter
 - 没有改 Telegram / integration / simulated 的 runner 接口
-- 但由于存在 1 条最小回归未完全解释，本轮只能保守报告“主链瘦身已完成主要拆分，且多数最小回归通过”
+- 当前已修复 1 条由测试契约失配造成的最小回归；因此本轮可安全表述为“主链瘦身完成，且当前已验证的最小回归恢复通过”
 
 ## 本次结论能证明什么
 - 能证明 `RuntimeV2Loop` 已显著瘦身，内联职责已拆到宿主 helper
 - 能证明 proto-self ingress / feedback / evidence capture 的结构化边界比重构前更清晰
 - 能证明新增 helper 的关键数据形状已被单测约束
+- 能证明先前那条最小回归的首要问题属于测试 JSON 构造失配，而非已证实的 P1 主链语义回归
 
 ## 本次结论不能证明什么
 - 不能证明 runtime 全量回归已全部通过
@@ -75,6 +76,5 @@ P1：RuntimeV2Loop 主链瘦身手术
 - 不能证明 P2 已可无风险展开
 
 ## 离 P2 还差什么
-- 需要决定是否修复 `test_runtime_v2_minimal.py` 的 Windows JSON 路径失配，以恢复 P1 最小回归的可信度
 - 需要确认 `loop.py` 之外的 state / transition / decision 还剩多少跨层状态语义
 - 需要把本轮 helper 的“临时宿主归属”在 P2 前进一步固定，避免再次堆积

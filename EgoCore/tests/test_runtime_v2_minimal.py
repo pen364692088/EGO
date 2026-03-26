@@ -1,3 +1,5 @@
+import json
+
 import pytest
 
 from app.runtime_v2.action_protocol import RuntimeV2Action
@@ -25,9 +27,29 @@ async def test_runtime_v2_loop_runs_plan_act_complete(monkeypatch, tmp_path):
     target.write_text("background: modern", encoding="utf-8")
 
     actions = iter([
-        RuntimeV2Action.from_model_output('{"type":"plan","goal":"改配色","steps":["修改文件","验证结果"]}'),
-        RuntimeV2Action.from_model_output('{"type":"act","tool":"file","input":{"operation":"read","path":"' + str(target) + '"}}'),
-        RuntimeV2Action.from_model_output('{"type":"complete","summary":"已完成","verification":{"target":"' + str(target) + '","expected":"modern"}}'),
+        RuntimeV2Action.from_model_output(
+            json.dumps({"type": "plan", "goal": "改配色", "steps": ["修改文件", "验证结果"]}, ensure_ascii=False)
+        ),
+        RuntimeV2Action.from_model_output(
+            json.dumps(
+                {
+                    "type": "act",
+                    "tool": "file",
+                    "input": {"operation": "read", "path": str(target)},
+                },
+                ensure_ascii=False,
+            )
+        ),
+        RuntimeV2Action.from_model_output(
+            json.dumps(
+                {
+                    "type": "complete",
+                    "summary": "已完成",
+                    "verification": {"target": str(target), "expected": "modern"},
+                },
+                ensure_ascii=False,
+            )
+        ),
     ])
 
     async def fake_decide(_state):
