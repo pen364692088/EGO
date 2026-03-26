@@ -135,7 +135,7 @@ E4
 已启用（样本级）
 
 ## 结论口径
-已进入 E4，已获得真实 Telegram 首个样本级证据；待观察
+已进入 E4，已获得真实 Telegram 样本级证据；待观察
 
 ## 真实触发证据
 - 原始 Telegram update: {sample_dir / 'raw_update.json'}

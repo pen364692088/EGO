@@ -3,7 +3,7 @@
 > 正式验证体系文档
 > 版本：v1.0
 > 证据层级：E2-E4
-> 状态：E4 样本级已验证，待 E5 观察期准入判定
+> 状态：E4 样本级已验证，E5 准入通过，待执行观察期
 
 ---
 
@@ -135,6 +135,7 @@ tape:
 | `scripts/run_telegram_simulated_smoke.py` | E2 | 模拟验证 |
 | `scripts/run_telegram_integration_e2e.py` | E3 | 集成验证 |
 | `scripts/run_telegram_real_channel_capture.py` | E4 | 真实渠道捕获 |
+| `scripts/start_egocore_telegram_windows.ps1` | - | Windows 环境启动真实 Telegram bot 采样 |
 | `scripts/replay_real_failure_cases.py` | - | 失败样本回归 |
 
 ### 统一 runner 约束

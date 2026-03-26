@@ -16,13 +16,13 @@ E4
 已启用（样本级）
 
 ## 结论口径
-已进入 E4，已获得真实 Telegram 首个样本级证据；待观察
+已进入 E4，已获得真实 Telegram 样本级证据；待观察
 
 ## 真实触发证据
-- 原始 Telegram update: /mnt/d/Project/AIProject/MyProject/Ego/artifacts/telegram_real_mainline_v1/real_telegram/sample_20260325_180013_540e7b4e/raw_update.json
-- normalized event: /mnt/d/Project/AIProject/MyProject/Ego/artifacts/telegram_real_mainline_v1/real_telegram/sample_20260325_180013_540e7b4e/normalized_event.json
-- OpenEmotion 结构化结果: /mnt/d/Project/AIProject/MyProject/Ego/artifacts/telegram_real_mainline_v1/real_telegram/sample_20260325_180013_540e7b4e/openemotion_result.json
-- 实际发送记录: /mnt/d/Project/AIProject/MyProject/Ego/artifacts/telegram_real_mainline_v1/real_telegram/sample_20260325_180013_540e7b4e/outbox_record.json
+- 原始 Telegram update: D:\Project\AIProject\MyProject\Ego\artifacts\telegram_real_mainline_v1\real_telegram\sample_20260325_200847_4d2b5dae\raw_update.json
+- normalized event: D:\Project\AIProject\MyProject\Ego\artifacts\telegram_real_mainline_v1\real_telegram\sample_20260325_200847_4d2b5dae\normalized_event.json
+- OpenEmotion 结构化结果: D:\Project\AIProject\MyProject\Ego\artifacts\telegram_real_mainline_v1\real_telegram\sample_20260325_200847_4d2b5dae\openemotion_result.json
+- 实际发送记录: D:\Project\AIProject\MyProject\Ego\artifacts\telegram_real_mainline_v1\real_telegram\sample_20260325_200847_4d2b5dae\outbox_record.json
 
 ## 当前确定项
 - 真实用户消息进入 Telegram 主链并生成完整 evidence bundle
@@ -41,7 +41,7 @@ E4
 - 不能证明未来替换其他通讯软件后无需再做真实渠道验证
 
 ## 成功样本列表
-- sample_20260325_180013_540e7b4e | 2026-03-25T18:00:13.784566 | 完整 | /mnt/d/Project/AIProject/MyProject/Ego/artifacts/telegram_real_mainline_v1/real_telegram/sample_20260325_180013_540e7b4e
+- sample_20260325_200847_4d2b5dae | 2026-03-25T20:08:47.181260 | 完整 | D:\Project\AIProject\MyProject\Ego\artifacts\telegram_real_mainline_v1\real_telegram\sample_20260325_200847_4d2b5dae
 
 ## 失败样本列表
 - 无
@@ -49,14 +49,14 @@ E4
 ## 证据清单
 | evidence_id | evidence_level | source_type | artifact_path | what_it_proves | what_it_does_not_prove |
 |---|---|---|---|---|---|
-| E-E4-001 | E4 | real_channel | /mnt/d/Project/AIProject/MyProject/Ego/artifacts/telegram_real_mainline_v1/real_telegram/sample_20260325_180013_540e7b4e/raw_update.json | 真实 Telegram 原始输入已落盘 | 不证明所有真实输入都能稳定处理 |
-| E-E4-002 | E4 | real_channel | /mnt/d/Project/AIProject/MyProject/Ego/artifacts/telegram_real_mainline_v1/real_telegram/sample_20260325_180013_540e7b4e/normalized_event.json | 主体入口标准化事件已生成 | 不证明所有边界情况都正确归一化 |
-| E-E4-003 | E4 | real_channel | /mnt/d/Project/AIProject/MyProject/Ego/artifacts/telegram_real_mainline_v1/real_telegram/sample_20260325_180013_540e7b4e/openemotion_result.json | OpenEmotion 结构化结果已生成 | 不证明所有主体推断都正确 |
-| E-E4-004 | E4 | real_channel | /mnt/d/Project/AIProject/MyProject/Ego/artifacts/telegram_real_mainline_v1/real_telegram/sample_20260325_180013_540e7b4e/response_plan.json | EgoCore response plan 已生成 | 不证明所有计划都正确执行 |
-| E-E4-005 | E4 | real_channel | /mnt/d/Project/AIProject/MyProject/Ego/artifacts/telegram_real_mainline_v1/real_telegram/sample_20260325_180013_540e7b4e/outbox_record.json | 实际发送记录已存在 | 不证明长期发送稳定性 |
-| E-E4-006 | E4 | real_channel | /mnt/d/Project/AIProject/MyProject/Ego/artifacts/telegram_real_mainline_v1/real_telegram/sample_20260325_180013_540e7b4e/timeline.json | 处理时间线可追踪 | 不证明全链路长期无丢失 |
-| E-E4-007 | E4 | real_channel | /mnt/d/Project/AIProject/MyProject/Ego/artifacts/telegram_real_mainline_v1/real_telegram/sample_20260325_180013_540e7b4e/tape.json | 样本审计带已生成 | 不证明多样本回放一致性 |
-| E-E4-008 | E4 | real_channel | /mnt/d/Project/AIProject/MyProject/Ego/artifacts/telegram_real_mainline_v1/real_telegram/sample_20260325_180013_540e7b4e/replay.json | 样本可按 artifact 引用回放 | 不证明长期回放治理已收口 |
+| E-E4-001 | E4 | real_channel | D:\Project\AIProject\MyProject\Ego\artifacts\telegram_real_mainline_v1\real_telegram\sample_20260325_200847_4d2b5dae\raw_update.json | 真实 Telegram 原始输入已落盘 | 不证明所有真实输入都能稳定处理 |
+| E-E4-002 | E4 | real_channel | D:\Project\AIProject\MyProject\Ego\artifacts\telegram_real_mainline_v1\real_telegram\sample_20260325_200847_4d2b5dae\normalized_event.json | 主体入口标准化事件已生成 | 不证明所有边界情况都正确归一化 |
+| E-E4-003 | E4 | real_channel | D:\Project\AIProject\MyProject\Ego\artifacts\telegram_real_mainline_v1\real_telegram\sample_20260325_200847_4d2b5dae\openemotion_result.json | OpenEmotion 结构化结果已生成 | 不证明所有主体推断都正确 |
+| E-E4-004 | E4 | real_channel | D:\Project\AIProject\MyProject\Ego\artifacts\telegram_real_mainline_v1\real_telegram\sample_20260325_200847_4d2b5dae\response_plan.json | EgoCore response plan 已生成 | 不证明所有计划都正确执行 |
+| E-E4-005 | E4 | real_channel | D:\Project\AIProject\MyProject\Ego\artifacts\telegram_real_mainline_v1\real_telegram\sample_20260325_200847_4d2b5dae\outbox_record.json | 实际发送记录已存在 | 不证明长期发送稳定性 |
+| E-E4-006 | E4 | real_channel | D:\Project\AIProject\MyProject\Ego\artifacts\telegram_real_mainline_v1\real_telegram\sample_20260325_200847_4d2b5dae\timeline.json | 处理时间线可追踪 | 不证明全链路长期无丢失 |
+| E-E4-007 | E4 | real_channel | D:\Project\AIProject\MyProject\Ego\artifacts\telegram_real_mainline_v1\real_telegram\sample_20260325_200847_4d2b5dae\tape.json | 样本审计带已生成 | 不证明多样本回放一致性 |
+| E-E4-008 | E4 | real_channel | D:\Project\AIProject\MyProject\Ego\artifacts\telegram_real_mainline_v1\real_telegram\sample_20260325_200847_4d2b5dae\replay.json | 样本可按 artifact 引用回放 | 不证明长期回放治理已收口 |
 
 ## 证据完整性
 - 缺失文件: 无
