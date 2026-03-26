@@ -27,6 +27,7 @@
 - 先看 EgoCore `app/telegram_bot.py`
 - 再看 `app/runtime_v2/*`
 - 再看 tests `test_runtime_v2_*`
+- 再看 `docs/TELEGRAM_TEST_PROCESS.md`
 
 ### 想改主体/记忆/身份
 - 先看 OpenEmotion `openemotion/*`
@@ -58,6 +59,10 @@
 - contract test
 - adapter test
 - route/flow regression test
+
+若改的是 Telegram 主链，必须额外执行：
+- `tools/run_telegram_mainline_regression.sh`
+- 如来自真实故障，先补回归再修
 
 ## 提交与交接要求
 
