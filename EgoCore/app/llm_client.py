@@ -5,10 +5,11 @@ Unified LLM client supporting multiple providers.
 Configuration-driven model selection.
 """
 
+import json
 import os
 from typing import Optional, Dict, Any, List
 from abc import ABC, abstractmethod
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 import httpx
 
 from app.config import get_config
@@ -26,6 +27,11 @@ class LLMResponse:
     usage: Optional[Dict[str, int]] = None
     finish_reason: Optional[str] = None
     raw_response: Optional[Dict[str, Any]] = None
+    tool_calls: List[Dict[str, Any]] = field(default_factory=list)
+
+    @property
+    def has_tool_calls(self) -> bool:
+        return bool(self.tool_calls)
 
 
 class BaseLLMClient(ABC):
@@ -54,6 +60,44 @@ class BaseLLMClient(ABC):
     ) -> LLMResponse:
         """Generate response from message list."""
         pass
+
+    @abstractmethod
+    def chat_with_tools(
+        self,
+        messages: List[Dict[str, Any]],
+        tools: List[Dict[str, Any]],
+        **kwargs
+    ) -> LLMResponse:
+        """Generate response with native tool-calling support."""
+        pass
+
+
+def _normalize_tool_call_arguments(arguments: Any) -> Dict[str, Any]:
+    if isinstance(arguments, dict):
+        return arguments
+    if isinstance(arguments, str):
+        try:
+            parsed = json.loads(arguments)
+            if isinstance(parsed, dict):
+                return parsed
+        except Exception:
+            return {"raw": arguments}
+    return {}
+
+
+def _extract_openai_tool_calls(message: Dict[str, Any]) -> List[Dict[str, Any]]:
+    out: List[Dict[str, Any]] = []
+    for call in message.get("tool_calls") or []:
+        function = call.get("function") or {}
+        out.append(
+            {
+                "id": call.get("id"),
+                "type": call.get("type", "function"),
+                "name": function.get("name"),
+                "arguments": _normalize_tool_call_arguments(function.get("arguments")),
+            }
+        )
+    return out
 
 
 class OpenAIClient(BaseLLMClient):
@@ -109,14 +153,51 @@ class OpenAIClient(BaseLLMClient):
             result = response.json()
         
         choice = result["choices"][0]
+        message = choice.get("message", {})
         
         return LLMResponse(
-            content=choice["message"]["content"],
+            content=message.get("content") or "",
             model=result["model"],
             provider="openai",
             usage=result.get("usage"),
             finish_reason=choice.get("finish_reason"),
-            raw_response=result
+            raw_response=result,
+            tool_calls=_extract_openai_tool_calls(message),
+        )
+
+    def chat_with_tools(
+        self,
+        messages: List[Dict[str, Any]],
+        tools: List[Dict[str, Any]],
+        **kwargs
+    ) -> LLMResponse:
+        url = f"{self.BASE_URL}/chat/completions"
+        headers = {
+            "Authorization": f"Bearer {self.api_key}",
+            "Content-Type": "application/json"
+        }
+        data = {
+            "model": self.model,
+            "messages": messages,
+            "tools": tools,
+            "tool_choice": kwargs.get("tool_choice", "auto"),
+            "temperature": kwargs.get("temperature", self.config.get("temperature", 0.2)),
+            "max_tokens": kwargs.get("max_tokens", self.config.get("max_tokens", 4096)),
+        }
+        with httpx.Client(timeout=kwargs.get("timeout", 60)) as client:
+            response = client.post(url, headers=headers, json=data)
+            response.raise_for_status()
+            result = response.json()
+        choice = result["choices"][0]
+        message = choice.get("message", {})
+        return LLMResponse(
+            content=message.get("content") or "",
+            model=result.get("model", self.model),
+            provider="openai",
+            usage=result.get("usage"),
+            finish_reason=choice.get("finish_reason"),
+            raw_response=result,
+            tool_calls=_extract_openai_tool_calls(message),
         )
 
 
@@ -192,6 +273,14 @@ class AnthropicClient(BaseLLMClient):
         prompt = "\n".join([f"{m['role']}: {m['content']}" for m in converted_messages])
         return self.generate(prompt, system_prompt=system_prompt, **kwargs)
 
+    def chat_with_tools(
+        self,
+        messages: List[Dict[str, Any]],
+        tools: List[Dict[str, Any]],
+        **kwargs
+    ) -> LLMResponse:
+        raise NotImplementedError("Anthropic native tool calling is not wired in EgoCore yet")
+
 
 class DeepSeekClient(BaseLLMClient):
     """DeepSeek API client (OpenAI-compatible)."""
@@ -238,14 +327,51 @@ class DeepSeekClient(BaseLLMClient):
             result = response.json()
         
         choice = result["choices"][0]
+        message = choice.get("message", {})
         
         return LLMResponse(
-            content=choice["message"]["content"],
+            content=message.get("content") or "",
             model=result["model"],
             provider="deepseek",
             usage=result.get("usage"),
             finish_reason=choice.get("finish_reason"),
-            raw_response=result
+            raw_response=result,
+            tool_calls=_extract_openai_tool_calls(message),
+        )
+
+    def chat_with_tools(
+        self,
+        messages: List[Dict[str, Any]],
+        tools: List[Dict[str, Any]],
+        **kwargs
+    ) -> LLMResponse:
+        url = f"{self.BASE_URL}/chat/completions"
+        headers = {
+            "Authorization": f"Bearer {self.api_key}",
+            "Content-Type": "application/json"
+        }
+        data = {
+            "model": self.model,
+            "messages": messages,
+            "tools": tools,
+            "tool_choice": kwargs.get("tool_choice", "auto"),
+            "temperature": kwargs.get("temperature", self.config.get("temperature", 0.2)),
+            "max_tokens": kwargs.get("max_tokens", self.config.get("max_tokens", 4096)),
+        }
+        with httpx.Client(timeout=kwargs.get("timeout", 60)) as client:
+            response = client.post(url, headers=headers, json=data)
+            response.raise_for_status()
+            result = response.json()
+        choice = result["choices"][0]
+        message = choice.get("message", {})
+        return LLMResponse(
+            content=message.get("content") or "",
+            model=result.get("model", self.model),
+            provider="deepseek",
+            usage=result.get("usage"),
+            finish_reason=choice.get("finish_reason"),
+            raw_response=result,
+            tool_calls=_extract_openai_tool_calls(message),
         )
 
 
@@ -295,14 +421,51 @@ class QianfanClient(BaseLLMClient):
             result = response.json()
         
         choice = result["choices"][0]
+        message = choice.get("message", {})
         
         return LLMResponse(
-            content=choice["message"]["content"],
+            content=message.get("content") or "",
             model=result.get("model", self.model),
             provider="qianfan",
             usage=result.get("usage"),
             finish_reason=choice.get("finish_reason"),
-            raw_response=result
+            raw_response=result,
+            tool_calls=_extract_openai_tool_calls(message),
+        )
+
+    def chat_with_tools(
+        self,
+        messages: List[Dict[str, Any]],
+        tools: List[Dict[str, Any]],
+        **kwargs
+    ) -> LLMResponse:
+        url = f"{self.BASE_URL}/chat/completions"
+        headers = {
+            "Authorization": f"Bearer {self.api_key}",
+            "Content-Type": "application/json"
+        }
+        data = {
+            "model": self.model,
+            "messages": messages,
+            "tools": tools,
+            "tool_choice": kwargs.get("tool_choice", "auto"),
+            "temperature": kwargs.get("temperature", self.config.get("temperature", 0.2)),
+            "max_tokens": kwargs.get("max_tokens", self.config.get("max_tokens", 4096)),
+        }
+        with httpx.Client(timeout=kwargs.get("timeout", 60)) as client:
+            response = client.post(url, headers=headers, json=data)
+            response.raise_for_status()
+            result = response.json()
+        choice = result["choices"][0]
+        message = choice.get("message", {})
+        return LLMResponse(
+            content=message.get("content") or "",
+            model=result.get("model", self.model),
+            provider="qianfan",
+            usage=result.get("usage"),
+            finish_reason=choice.get("finish_reason"),
+            raw_response=result,
+            tool_calls=_extract_openai_tool_calls(message),
         )
 
 
@@ -405,6 +568,14 @@ class LLMClient:
             LLMResponse
         """
         return self.client.generate_with_messages(messages, **kwargs)
+
+    def chat_with_tools(
+        self,
+        messages: List[Dict[str, Any]],
+        tools: List[Dict[str, Any]],
+        **kwargs
+    ) -> LLMResponse:
+        return self.client.chat_with_tools(messages, tools, **kwargs)
     
     def get_prompt(self, prompt_name: str) -> str:
         """
