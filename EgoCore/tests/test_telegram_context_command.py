@@ -4,7 +4,7 @@ from app.telegram_bot import TelegramBot
 
 
 @pytest.mark.asyncio
-async def test_context_list_command_shows_runtime_v2_state():
+async def test_context_list_command_shows_runtime_state():
     bot = TelegramBot(token="test-token", use_runtime_v2=True)
 
     class DummyMessage:
@@ -28,7 +28,7 @@ async def test_context_list_command_shows_runtime_v2_state():
         effective_chat = DummyChat()
         effective_user = DummyUser()
 
-    state = bot.runtime_v2_loop.get_state("telegram:dm:456")
+    state = bot._get_runtime_v2_loop().get_state("telegram:dm:456")
     state.task_status = "running"
     state.current_goal = "修改 hello.html 配色"
     state.current_step = "tool:file"
@@ -36,9 +36,10 @@ async def test_context_list_command_shows_runtime_v2_state():
 
     await bot.handle_command(DummyUpdate(), None)
     assert "Loaded Context" in DummyUpdate.message.last_text
-    assert "Runtime v2 State" in DummyUpdate.message.last_text
-    assert "task_status: `running`" in DummyUpdate.message.last_text
-    assert "loaded_prompt_files:" in DummyUpdate.message.last_text
+    assert "Runtime State" in DummyUpdate.message.last_text
+    assert "task\\_status" in DummyUpdate.message.last_text
+    assert "running" in DummyUpdate.message.last_text
+    assert "loaded\\_prompt\\_files:" in DummyUpdate.message.last_text
 
 
 def test_context_unknown_subcommand_returns_usage():

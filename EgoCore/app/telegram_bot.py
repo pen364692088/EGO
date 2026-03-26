@@ -112,10 +112,10 @@ class TelegramBot:
         self.use_new_runtime = use_new_runtime
         self.use_runtime_v2 = use_runtime_v2
         self._legacy_runtime_notice_logged = False
-        self.runtime_v2_loop = RuntimeV2Loop() if use_runtime_v2 else None
+        self.runtime_v2_loop = None
         self.runtime_v2_bridge = RuntimeV2TelegramBridge() if use_runtime_v2 else None
-        self.native_loop = NativeToolCallingLoop() if use_runtime_v2 else None
-        self.native_openemotion_hooks = NativeOpenEmotionHooks() if use_runtime_v2 else None
+        self.native_loop = None
+        self.native_openemotion_hooks = None
         self._setup_complete = False
         self._run_started = False
         # Stale reply suppression: remember latest ingress message per session.
@@ -159,6 +159,27 @@ class TelegramBot:
                 message_id=message_id,
             )
         )
+
+    def _get_runtime_v2_loop(self) -> Optional[RuntimeV2Loop]:
+        if not self.use_runtime_v2:
+            return None
+        if self.runtime_v2_loop is None:
+            self.runtime_v2_loop = RuntimeV2Loop()
+        return self.runtime_v2_loop
+
+    def _get_native_loop(self) -> Optional[NativeToolCallingLoop]:
+        if not self.use_runtime_v2:
+            return None
+        if self.native_loop is None:
+            self.native_loop = NativeToolCallingLoop()
+        return self.native_loop
+
+    def _get_native_openemotion_hooks(self) -> Optional[NativeOpenEmotionHooks]:
+        if not self.use_runtime_v2:
+            return None
+        if self.native_openemotion_hooks is None:
+            self.native_openemotion_hooks = NativeOpenEmotionHooks()
+        return self.native_openemotion_hooks
 
     def is_allowed(self, chat_id: int) -> bool:
         """Check if chat ID is allowed to interact with bot."""
@@ -291,8 +312,9 @@ class TelegramBot:
         session_key = self._resolve_session_key(update, chat_id, user_id)
         context_store = get_session_context_store()
         context_store.clear_session(session_key)
-        if self.runtime_v2_loop is not None:
-            self.runtime_v2_loop.reset_session(session_key)
+        runtime_loop = self._get_runtime_v2_loop()
+        if runtime_loop is not None:
+            runtime_loop.reset_session(session_key)
         self._latest_message_id_by_session.pop(session_key, None)
         verb = "started fresh" if command == "new" else "reset"
         return CommandResult(
@@ -302,7 +324,7 @@ class TelegramBot:
                 f"- session_key: `{session_key}`\n"
                 f"- action: `{verb}`\n"
                 "- context: cleared\n"
-                "- runtime_v2_state: reset"
+                "- runtime_state: reset"
             ),
             data={"session_key": session_key, "action": command, "reset": True},
         )
@@ -311,7 +333,8 @@ class TelegramBot:
         session_key = self._resolve_session_key(update, chat_id, user_id)
         context_store = get_session_context_store()
         recent_turns = context_store.get_recent_turns(session_key, limit=20)
-        state = self.runtime_v2_loop.get_state(session_key) if self.runtime_v2_loop is not None else None
+        runtime_loop = self._get_runtime_v2_loop()
+        state = runtime_loop.get_state(session_key) if runtime_loop is not None else None
         prompt_bundle = RuntimeV2PromptFiles().load() if self.use_runtime_v2 else None
 
         # Real token data from state
@@ -354,7 +377,7 @@ class TelegramBot:
             f"Session ID: `{session_key}`",
             f"📜 History: `available` · file: `{history_file}`",
             f"🧵 Session: `{session_key}` • updated {updated_text}",
-            "⚙️ Runtime: `runtime_v2` · Think: `off`",
+            "⚙️ Runtime: `native_loop` primary · `runtime_v2` fallback",
             f"🪢 Queue: `collect` (depth 0) · LLM calls: `{llm_calls}`",
         ]
 
@@ -403,12 +426,12 @@ class TelegramBot:
             f"- turn_index: `{turn_index}`",
         ]
 
-        if self.use_runtime_v2 and self.runtime_v2_loop is not None:
-            state = self.runtime_v2_loop.get_state(session_key)
+        if self.use_runtime_v2:
+            state = self._get_runtime_v2_loop().get_state(session_key)
             prompt_bundle = RuntimeV2PromptFiles().load()
             lines.extend([
                 "",
-                "*Runtime v2 State*",
+                "*Runtime State*",
                 f"- task_status: `{state.task_status}`",
                 f"- task_id: `{state.task_id or '-'} `",
                 f"- current_goal: `{(state.current_goal or '-')[:120]}`",
@@ -599,7 +622,7 @@ class TelegramBot:
                     artifact_id = ingested.attachments[0].artifact_id
 
                 session_key = self._resolve_session_key(update, chat_id, user_id)
-                state = self.runtime_v2_loop.get_state(session_key)
+                state = self._get_runtime_v2_loop().get_state(session_key)
                 if artifact_id:
                     state.add_pending_artifact(
                         artifact_id=artifact_id,
@@ -734,7 +757,7 @@ class TelegramBot:
                 artifact_id = ingested.artifact_refs[0]
 
             # 更新 state 的 pending_artifacts
-            state = self.runtime_v2_loop.get_state(session_key)
+            state = self._get_runtime_v2_loop().get_state(session_key)
             if artifact_id:
                 state.add_pending_artifact(
                     artifact_id=artifact_id,
@@ -788,7 +811,10 @@ class TelegramBot:
         extra_context: Optional[str] = None,
     ) -> None:
         session_key = self._resolve_session_key(update, chat_id, user_id)
-        state = self.runtime_v2_loop.get_state(session_key)
+        runtime_loop = self._get_runtime_v2_loop()
+        if runtime_loop is None:
+            raise RuntimeError("runtime_v2 mainline requested without runtime_v2 loop enabled")
+        state = runtime_loop.get_state(session_key)
 
         # 记录 ingress 信息
         ingress_message_id = update.message.message_id if update.message else None
@@ -919,12 +945,12 @@ class TelegramBot:
                 filename = state.last_uploaded_artifact.get("filename", "未知文件")
                 enhanced_input = f"{text}\n\n[目标文件: {filename}]"
 
-            return await self.runtime_v2_loop.run_turn_typed(session_id=session_key, user_input=enhanced_input)
+            return await runtime_loop.run_turn_typed(session_id=session_key, user_input=enhanced_input)
 
         return await run_once()
 
     def _should_use_native_loop(self, ingress, state) -> bool:
-        if self.native_loop is None:
+        if self._get_native_loop() is None:
             return False
         if getattr(ingress, "is_file_only", False):
             return False
@@ -987,10 +1013,12 @@ class TelegramBot:
         state,
         ack_text: Optional[str],
     ) -> RuntimeV2TurnResult:
+        native_loop = self._get_native_loop()
+        native_hooks = self._get_native_openemotion_hooks()
         turn_id = state.active_turn_id or state.start_turn()
-        if self.native_openemotion_hooks and self.native_openemotion_hooks.enabled:
+        if native_hooks and native_hooks.enabled:
             try:
-                self.native_openemotion_hooks.process_ingress(
+                native_hooks.process_ingress(
                     session_id=session_key,
                     turn_id=turn_id,
                     source="telegram",
@@ -1007,7 +1035,7 @@ class TelegramBot:
             except Exception:
                 pass
 
-        result = await self.native_loop.run_turn(
+        result = await native_loop.run_turn(
             session_key=session_key,
             user_input=text,
             ingress_context=state.ingress_context,
@@ -1028,9 +1056,9 @@ class TelegramBot:
                 }
                 state.current_step = f"tool:{tool_entry.get('tool_name')}"
                 state.task_status = "running"
-                if self.native_openemotion_hooks and self.native_openemotion_hooks.enabled:
+                if native_hooks and native_hooks.enabled:
                     try:
-                        self.native_openemotion_hooks.process_external_result(
+                        native_hooks.process_external_result(
                             session_id=session_key,
                             turn_id=turn_id,
                             step=step_index,
@@ -1060,9 +1088,9 @@ class TelegramBot:
                     status="completed_verified",
                 ),
             )
-            if self.native_openemotion_hooks and self.native_openemotion_hooks.enabled:
+            if native_hooks and native_hooks.enabled:
                 try:
-                    self.native_openemotion_hooks.capture_response_plan(result=turn_result)
+                    native_hooks.capture_response_plan(result=turn_result)
                 except Exception as e:
                     logger.exception("native_openemotion.response_plan.failed session=%s err=%s", session_key, e)
             return turn_result
@@ -1079,9 +1107,9 @@ class TelegramBot:
                 suppressible=True,
             ),
         )
-        if self.native_openemotion_hooks and self.native_openemotion_hooks.enabled:
+        if native_hooks and native_hooks.enabled:
             try:
-                self.native_openemotion_hooks.capture_response_plan(result=turn_result)
+                native_hooks.capture_response_plan(result=turn_result)
             except Exception as e:
                 logger.exception("native_openemotion.response_plan.failed session=%s err=%s", session_key, e)
         return turn_result

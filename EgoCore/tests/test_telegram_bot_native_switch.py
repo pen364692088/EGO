@@ -9,7 +9,8 @@ from app.runtime_v2 import RuntimeV2Reply, RuntimeV2TurnResult
 @pytest.mark.asyncio
 async def test_primary_turn_prefers_native_loop_for_execute_task(monkeypatch):
     bot = TelegramBot(token="dummy", use_runtime_v2=True)
-    state = bot.runtime_v2_loop.get_state("telegram:dm:1")
+    bot.native_loop = object()
+    state = bot._get_runtime_v2_loop().get_state("telegram:dm:1")
     ingress = SimpleNamespace(_runtime_action="execute_task", is_file_only=False)
 
     async def fail_runtime(*args, **kwargs):
@@ -40,7 +41,8 @@ async def test_primary_turn_prefers_native_loop_for_execute_task(monkeypatch):
 @pytest.mark.asyncio
 async def test_primary_turn_falls_back_when_native_loop_fails(monkeypatch):
     bot = TelegramBot(token="dummy", use_runtime_v2=True)
-    state = bot.runtime_v2_loop.get_state("telegram:dm:1")
+    bot.native_loop = object()
+    state = bot._get_runtime_v2_loop().get_state("telegram:dm:1")
     ingress = SimpleNamespace(_runtime_action="execute_task", is_file_only=False)
 
     async def native(*args, **kwargs):
@@ -70,7 +72,8 @@ async def test_primary_turn_falls_back_when_native_loop_fails(monkeypatch):
 
 def test_should_use_native_loop_for_chat_like_turns():
     bot = TelegramBot(token="dummy", use_runtime_v2=True)
-    state = bot.runtime_v2_loop.get_state("telegram:dm:1")
+    bot.native_loop = object()
+    state = bot._get_runtime_v2_loop().get_state("telegram:dm:1")
     ingress = SimpleNamespace(_runtime_action="chat", is_file_only=False)
 
     assert bot._should_use_native_loop(ingress, state) is True
@@ -78,7 +81,8 @@ def test_should_use_native_loop_for_chat_like_turns():
 
 def test_should_not_use_native_loop_for_status_fast_path():
     bot = TelegramBot(token="dummy", use_runtime_v2=True)
-    state = bot.runtime_v2_loop.get_state("telegram:dm:1")
+    bot.native_loop = object()
+    state = bot._get_runtime_v2_loop().get_state("telegram:dm:1")
     ingress = SimpleNamespace(_runtime_action="return_runtime_status", is_file_only=False)
 
     assert bot._should_use_native_loop(ingress, state) is False
@@ -87,7 +91,7 @@ def test_should_not_use_native_loop_for_status_fast_path():
 @pytest.mark.asyncio
 async def test_native_loop_turn_calls_openemotion_hooks(monkeypatch):
     bot = TelegramBot(token="dummy", use_runtime_v2=True)
-    state = bot.runtime_v2_loop.get_state("telegram:dm:1")
+    state = bot._get_runtime_v2_loop().get_state("telegram:dm:1")
     calls = []
 
     class Hook:
@@ -118,6 +122,7 @@ async def test_native_loop_turn_calls_openemotion_hooks(monkeypatch):
         return NativeResult()
 
     bot.native_openemotion_hooks = Hook()
+    bot.native_loop = type("Loop", (), {"run_turn": None})()
     monkeypatch.setattr(bot, "_send_reply", fake_send_reply)
     monkeypatch.setattr(bot.native_loop, "run_turn", fake_run_turn)
 
@@ -138,7 +143,7 @@ async def test_native_loop_turn_calls_openemotion_hooks(monkeypatch):
 @pytest.mark.asyncio
 async def test_native_loop_turn_publishes_tool_result_event(monkeypatch):
     bot = TelegramBot(token="dummy", use_runtime_v2=True)
-    state = bot.runtime_v2_loop.get_state("telegram:dm:1")
+    state = bot._get_runtime_v2_loop().get_state("telegram:dm:1")
     events = []
 
     class Hook:
@@ -163,6 +168,7 @@ async def test_native_loop_turn_publishes_tool_result_event(monkeypatch):
         events.append(kwargs)
 
     bot.native_openemotion_hooks = Hook()
+    bot.native_loop = type("Loop", (), {"run_turn": None})()
     monkeypatch.setattr(bot, "_send_reply", fake_send_reply)
     monkeypatch.setattr(bot.native_loop, "run_turn", fake_run_turn)
     monkeypatch.setattr(bot, "_publish_phase1_event", fake_publish)

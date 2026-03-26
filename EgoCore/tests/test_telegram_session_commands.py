@@ -30,13 +30,13 @@ async def test_new_command_resets_runtime_v2_session():
         effective_user = DummyUser()
 
     session_key = "telegram:dm:456"
-    state = bot.runtime_v2_loop.get_state(session_key)
+    state = bot._get_runtime_v2_loop().get_state(session_key)
     state.task_status = "running"
     state.current_goal = "修改 hello.html"
     get_session_context_store().add_turn(session_key, "user", "hello")
 
     await bot.handle_command(DummyUpdate(), None)
-    new_state = bot.runtime_v2_loop.get_state(session_key)
+    new_state = bot._get_runtime_v2_loop().get_state(session_key)
     assert "Session Reset" in DummyUpdate.message.last_text
     assert new_state.task_status == "idle"
     assert new_state.current_goal is None
@@ -69,7 +69,7 @@ async def test_status_command_returns_runtime_style_card():
         effective_user = DummyUser()
 
     session_key = "telegram:dm:456"
-    state = bot.runtime_v2_loop.get_state(session_key)
+    state = bot._get_runtime_v2_loop().get_state(session_key)
     state.task_status = "running"
     state.task_id = "task_abc123"
     state.current_goal = "连续性验证"
@@ -77,8 +77,9 @@ async def test_status_command_returns_runtime_style_card():
 
     await bot.handle_command(DummyUpdate(), None)
     text = DummyUpdate.message.last_text
-    assert "🦞 *EgoCore Runtime*" in text
-    assert "Model: `qianfan/glm-5`" in text
+    assert "EgoCore Runtime" in text
+    assert "qianfan/glm-5" in text
     assert "Session ID:" in text
-    assert "task_status: `running`" in text
+    assert "native\\_loop" in text
+    assert "task\\_status" in text and "running" in text
     assert "loaded:" in text
