@@ -1,0 +1,120 @@
+{
+  "sample_type": "synthetic_local",
+  "trace_schema": "contract_runtime_v1",
+  "status": "waiting_input",
+  "reply_text": "需要重新锁定。",
+  "events": [
+    {
+      "kind": "contract_locked",
+      "payload": {
+        "trace_schema": "contract_runtime_v1",
+        "event_kind": "contract_locked",
+        "contract_phase": "contract_locked",
+        "task_id": "contract_demo_1",
+        "goal": "create html page",
+        "success_criteria": [
+          "target file exists",
+          "contains html"
+        ],
+        "hard_constraints": [
+          "write only target"
+        ],
+        "risk_level": "medium",
+        "ask_needed": false,
+        "step_id": null,
+        "action_type": null,
+        "expected_signal": null,
+        "tool_name": null,
+        "need_relock": false,
+        "expected_signal_matched": null,
+        "stop_reason": null,
+        "contract_delta": {}
+      }
+    },
+    {
+      "kind": "next_step_decided",
+      "payload": {
+        "trace_schema": "contract_runtime_v1",
+        "event_kind": "next_step_decided",
+        "contract_phase": "step_selected",
+        "task_id": "contract_demo_1",
+        "goal": "create html page",
+        "success_criteria": [
+          "target file exists",
+          "contains html"
+        ],
+        "hard_constraints": [
+          "write only target"
+        ],
+        "risk_level": "medium",
+        "ask_needed": false,
+        "step_id": "step_demo_1",
+        "action_type": "call_tool",
+        "expected_signal": "target file exists",
+        "tool_name": "file",
+        "need_relock": false,
+        "expected_signal_matched": null,
+        "stop_reason": null,
+        "contract_delta": {}
+      }
+    },
+    {
+      "kind": "step_verified",
+      "payload": {
+        "trace_schema": "contract_runtime_v1",
+        "event_kind": "step_verified",
+        "contract_phase": "re_lock_needed",
+        "task_id": "contract_demo_1",
+        "goal": "create html page",
+        "success_criteria": [
+          "target file exists",
+          "contains html"
+        ],
+        "hard_constraints": [
+          "write only target"
+        ],
+        "risk_level": "medium",
+        "ask_needed": false,
+        "step_id": "step_demo_1",
+        "action_type": "call_tool",
+        "expected_signal": "target file exists",
+        "tool_name": "file",
+        "need_relock": true,
+        "expected_signal_matched": false,
+        "stop_reason": "verification_failed",
+        "contract_delta": {
+          "reason": "target_missing"
+        }
+      }
+    },
+    {
+      "kind": "need_relock",
+      "payload": {
+        "trace_schema": "contract_runtime_v1",
+        "event_kind": "need_relock",
+        "contract_phase": "re_lock_needed",
+        "task_id": "contract_demo_1",
+        "goal": "create html page",
+        "success_criteria": [
+          "target file exists",
+          "contains html"
+        ],
+        "hard_constraints": [
+          "write only target"
+        ],
+        "risk_level": "medium",
+        "ask_needed": false,
+        "step_id": "step_demo_1",
+        "action_type": "call_tool",
+        "expected_signal": "target file exists",
+        "tool_name": "file",
+        "need_relock": true,
+        "expected_signal_matched": false,
+        "stop_reason": "verification_failed",
+        "contract_delta": {
+          "reason": "target_missing"
+        }
+      }
+    }
+  ]
+}

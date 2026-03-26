@@ -179,6 +179,38 @@ class TelegramBot:
         artifact_id = target.get("artifact_id") or target.get("artifact_ref")
         return bool(str(artifact_id).startswith("artifact://"))
 
+    def _build_contract_event_payload(
+        self,
+        *,
+        state: RuntimeV2State,
+        event_kind: str,
+        contract: Optional[dict] = None,
+        next_step: Optional[dict] = None,
+        verification: Optional[dict] = None,
+    ) -> dict:
+        contract = contract or state.task_contract or {}
+        next_step = next_step or state.next_step_decision or {}
+        verification = verification or state.last_verification_result or {}
+        return {
+            "trace_schema": "contract_runtime_v1",
+            "event_kind": event_kind,
+            "contract_phase": state.contract_phase,
+            "task_id": contract.get("task_id"),
+            "goal": contract.get("goal"),
+            "success_criteria": contract.get("success_criteria") or [],
+            "hard_constraints": contract.get("hard_constraints") or [],
+            "risk_level": contract.get("risk_level"),
+            "ask_needed": contract.get("ask_needed"),
+            "step_id": next_step.get("step_id"),
+            "action_type": next_step.get("action_type"),
+            "expected_signal": next_step.get("expected_signal"),
+            "tool_name": next_step.get("tool_name"),
+            "need_relock": verification.get("need_relock", state.need_relock),
+            "expected_signal_matched": verification.get("expected_signal_matched"),
+            "stop_reason": verification.get("stop_reason"),
+            "contract_delta": verification.get("contract_delta") or {},
+        }
+
     def _ensure_phase1_bus(self) -> None:
         if self._phase1_bus_ready:
             return
@@ -1166,14 +1198,22 @@ class TelegramBot:
             await self._publish_phase1_event(
                 session_key=session_key,
                 kind="contract_locked",
-                payload=task_contract,
+                payload=self._build_contract_event_payload(
+                    state=state,
+                    event_kind="contract_locked",
+                    contract=task_contract,
+                ),
             )
         if next_step_decision:
             state.set_next_step_decision(next_step_decision)
             await self._publish_phase1_event(
                 session_key=session_key,
                 kind="next_step_decided",
-                payload=next_step_decision,
+                payload=self._build_contract_event_payload(
+                    state=state,
+                    event_kind="next_step_decided",
+                    next_step=next_step_decision,
+                ),
             )
 
         if result.tool_results:
@@ -1215,8 +1255,22 @@ class TelegramBot:
             await self._publish_phase1_event(
                 session_key=session_key,
                 kind="step_verified",
-                payload=verification_result,
+                payload=self._build_contract_event_payload(
+                    state=state,
+                    event_kind="step_verified",
+                    verification=verification_result,
+                ),
             )
+            if verification_result.get("need_relock"):
+                await self._publish_phase1_event(
+                    session_key=session_key,
+                    kind="need_relock",
+                    payload=self._build_contract_event_payload(
+                        state=state,
+                        event_kind="need_relock",
+                        verification=verification_result,
+                    ),
+                )
 
         if result.reply_text:
             verification = verification_result or {}

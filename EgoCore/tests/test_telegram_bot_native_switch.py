@@ -288,6 +288,70 @@ async def test_native_loop_turn_publishes_tool_result_event(monkeypatch):
 
 
 @pytest.mark.asyncio
+async def test_native_loop_turn_publishes_contract_runtime_events(monkeypatch):
+    bot = TelegramBot(token="dummy", use_runtime_v2=True)
+    state = bot._get_runtime_state("telegram:dm:1")
+    events = []
+
+    class Hook:
+        enabled = False
+
+    class NativeResult:
+        reply_text = "需要重新锁定。"
+        tool_results = []
+        task_contract = {
+            "task_id": "contract_1",
+            "goal": "create file",
+            "success_criteria": ["file exists"],
+            "hard_constraints": ["write only target"],
+            "risk_level": "medium",
+            "ask_needed": False,
+        }
+        next_step_decision = {
+            "step_id": "step_1",
+            "action_type": "call_tool",
+            "expected_signal": "file exists",
+            "tool_name": "file",
+        }
+        verification_result = {
+            "step_id": "step_1",
+            "expected_signal_matched": False,
+            "need_relock": True,
+            "stop_reason": "verification_failed",
+            "contract_delta": {"reason": "target_missing"},
+        }
+
+    async def fake_run_turn(**kwargs):
+        return NativeResult()
+
+    async def fake_publish(**kwargs):
+        events.append(kwargs)
+
+    bot.native_openemotion_hooks = Hook()
+    bot.native_loop = type("Loop", (), {"run_turn": None})()
+    monkeypatch.setattr(bot.native_loop, "run_turn", fake_run_turn)
+    monkeypatch.setattr(bot, "_publish_phase1_event", fake_publish)
+
+    result = await bot._run_native_loop_turn(
+        update=None,
+        session_key="telegram:dm:1",
+        text="create page",
+        state=state,
+        ack_text=None,
+    )
+
+    assert result.status == "waiting_input"
+    kinds = [event["kind"] for event in events]
+    assert "contract_locked" in kinds
+    assert "next_step_decided" in kinds
+    assert "step_verified" in kinds
+    assert "need_relock" in kinds
+    relock_payload = next(event["payload"] for event in events if event["kind"] == "need_relock")
+    assert relock_payload["trace_schema"] == "contract_runtime_v1"
+    assert relock_payload["need_relock"] is True
+
+
+@pytest.mark.asyncio
 async def test_native_loop_turn_returns_blocked_reply_on_failed_tool_without_final(monkeypatch):
     bot = TelegramBot(token="dummy", use_runtime_v2=True)
     state = bot._get_runtime_state("telegram:dm:1")

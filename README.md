@@ -11,6 +11,15 @@ EGO 是 AI Agent 项目的总仓，负责集成 EgoCore（宿主）和 OpenEmoti
 - ✅ `safety_context.risk` 从 EgoCore 正确传递到 OpenEmotion
 - ✅ **真实 Telegram 已满足 E5 准入门槛，可进入 E5 观察期**
 
+**EgoCore Telegram 宿主主链** 当前正式口径：
+- `Telegram Adapter -> Host Bridge -> NativeToolCallingLoop -> OpenEmotion hooks -> Delivery`
+- 旧 `runtime_v2` 保留为 fallback，不再是 Telegram 首选执行协议
+- 2026-03-26 起，native 主链已接入最小 `Contract Lock -> Next Step -> Verify -> Re-lock`
+- 当前代码证据：`EgoCore/app/agent_core/contract_runtime.py`
+- 当前测试门：`EgoCore/tests/test_contract_runtime.py`、`EgoCore/tests/test_native_loop_contract_runtime.py`、`EgoCore/tools/run_telegram_mainline_regression.sh`
+- 当前事件链：`contract_locked`、`next_step_decided`、`step_verified`、`need_relock`
+- 当前证据等级：代码与本地回归已通过；真实 Telegram 样本需继续补齐后，才升口径到“样本级生效”
+
 ## 最近更新
 
 ### 2026-03-25: 高风险真实样本补齐与 E5 准入复判
@@ -58,6 +67,8 @@ EGO/
 **关键规则：子仓是本体权威源，总仓是集成承载层。**
 
 详细规则见：[docs/SUBTREE_COLLABORATION_RULES.md](docs/SUBTREE_COLLABORATION_RULES.md)
+
+新 agent 快速上手见：[docs/AGENT_DEVELOPMENT_PLAYBOOK.md](docs/AGENT_DEVELOPMENT_PLAYBOOK.md)
 
 ### 快速更新命令
 

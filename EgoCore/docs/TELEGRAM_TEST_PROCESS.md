@@ -1,6 +1,31 @@
 # Telegram Mainline Test Process
 
-适用范围：`EgoCore` Telegram 宿主主链，包括 ingress、bridge、session state、native loop 选择、fallback、delivery、文件上传后续轮次。
+适用范围：`EgoCore` Telegram 宿主主链，包括 ingress、bridge、session state、native loop 选择、fallback、delivery、文件上传后续轮次，以及 `Contract Lock -> Next Step -> Verify -> Re-lock` 事件链。
+
+## Contract Runtime Gate
+
+只要改了这些文件或同类职责，就必须额外跑 contract runtime 门：
+- `app/agent_core/contract_runtime.py`
+- `app/agent_core/native_loop.py`
+- `app/agent_core/context_builder.py`
+- `app/telegram_bot.py`
+- `app/runtime_v2/state.py`
+
+最低门：
+- `tests/test_contract_runtime.py`
+- `tests/test_native_loop_contract_runtime.py`
+- `tests/test_telegram_bot_native_switch.py`
+
+必须观察的事件：
+- `contract_locked`
+- `next_step_decided`
+- `step_verified`
+- `need_relock`
+
+固定要求：
+- `trace_schema` 必须稳定为 `contract_runtime_v1`
+- 一个 turn 最多执行一个工具动作
+- `need_relock` 不能只存在内存里，必须落 event
 
 目标：让任何 agent 在改 Telegram 主链后，都按同一流程验证，不再依赖“记得多测一点”。
 

@@ -1,9 +1,9 @@
 # PROGRAM_STATE_UNIFIED.yaml - EgoCore
 # 双仓共享唯一真相源
 
-ledger_version: 16
-updated_at: "2026-03-24T21:55:00Z"
-updated_by: "Claude Code"
+ledger_version: 17
+updated_at: "2026-03-26T23:40:00Z"
+updated_by: "Codex"
 owner: "dual-repo-program-state"
 
 truth_source_priority:
@@ -191,12 +191,59 @@ decision:
 sync_status:
   OpenEmotion_README: "aligned"
   OpenEmotion_PROGRAM_STATE: "aligned"
-  EgoCore_README: "aligned"
+  EgoCore_README: "pending_refresh"
   EgoCore_PROGRAM_STATE: "aligned"
   DUAL_REPO_STATUS_UNIFIED: "aligned"
 
+host_runtime_contract:
+  canonical_entry:
+    - "EgoCore/app/telegram_bot.py"
+    - "EgoCore/app/telegram_runtime_bridge.py"
+    - "EgoCore/app/agent_core/native_loop.py"
+    - "EgoCore/app/agent_core/contract_runtime.py"
+  formal_flow:
+    - "contract_lock"
+    - "next_step"
+    - "single_step_execute"
+    - "verify"
+    - "re_lock"
+  event_schema: "contract_runtime_v1"
+  trace_events:
+    - "contract_locked"
+    - "next_step_decided"
+    - "step_verified"
+    - "need_relock"
+  code_state: "implemented_local_and_regression_verified"
+  evidence_state: "real_telegram_sample_pending"
+  guards:
+    - "single_step_only"
+    - "openemotion_advisory_only"
+    - "need_relock_is_observable"
+  tests:
+    - "EgoCore/tests/test_contract_runtime.py"
+    - "EgoCore/tests/test_native_loop_contract_runtime.py"
+    - "EgoCore/tools/run_telegram_mainline_regression.sh"
+
 
 changelog:
+  - version: 17
+    updated_at: "2026-03-26T23:40:00Z"
+    updated_by: "Codex"
+    trigger: "Telegram native mainline 接入最小 Contract Runtime"
+    changes:
+      - "新增 TaskContract / NextStepDecision / VerificationResult"
+      - "新增最小主链：Contract Lock -> Next Step -> Verify -> Re-lock"
+      - "Telegram native path 落盘 contract_locked / next_step_decided / step_verified / need_relock"
+      - "need_relock 升为可观测事件，不再只是 state 内部布尔值"
+    evidence:
+      - "EgoCore/app/agent_core/contract_runtime.py"
+      - "EgoCore/tests/test_contract_runtime.py"
+      - "EgoCore/tests/test_native_loop_contract_runtime.py"
+      - "EgoCore/tools/run_telegram_mainline_regression.sh"
+    impact:
+      - "公开真相源开始反映 Contract Runtime"
+      - "真实 Telegram 样本仍待补齐后才能升口径到样本级生效"
+
   - version: 16
     updated_at: "2026-03-24T21:55:00Z"
     updated_by: "Claude Code"
