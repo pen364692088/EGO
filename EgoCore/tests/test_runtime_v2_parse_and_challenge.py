@@ -62,7 +62,7 @@ async def test_challenge_turn_does_not_get_absorbed_as_busy_placeholder(monkeypa
         effective_user = DummyUser()
 
     bot.app = type('A', (), {'bot': DummyBot()})()
-    state = bot.runtime_v2_loop.get_state('telegram:dm:456')
+    state = bot._get_runtime_state('telegram:dm:456')
     state.task_status = 'running'
     state.current_goal = '修改 test.html 配色'
 
@@ -74,7 +74,11 @@ async def test_challenge_turn_does_not_get_absorbed_as_busy_placeholder(monkeypa
             reply=RuntimeV2Reply(reply_text='我继续检查刚才那个文件。', delivery_kind='progress', status='waiting_input'),
         )
 
-    monkeypatch.setattr(bot.runtime_v2_loop, 'run_turn_typed', fake_run_turn_typed)
+    async def fake_runner_run_turn(*, session_key, user_input, state):
+        return bot.runtime_v2_fallback_runner.adapt_result(await fake_run_turn_typed(session_key, user_input))
+
+    monkeypatch.setattr(bot, '_should_use_native_loop', lambda ingress, state: False)
+    monkeypatch.setattr(bot.runtime_v2_fallback_runner, 'run_turn', fake_runner_run_turn)
     await bot.handle_message(DummyUpdate(), None)
     assert DummyUpdate.message.last_text == '我继续检查刚才那个文件。'
 
@@ -121,7 +125,7 @@ async def test_runtime_v2_typing_starts_before_semantic_parse_finishes(monkeypat
 
     async def fake_run_turn_typed(session_id, user_input):
         from app.runtime_v2.runtime_reply import RuntimeV2Reply, RuntimeV2TurnResult
-        state = bot.runtime_v2_loop.get_state(session_id)
+        state = bot._get_runtime_state(session_id)
         return RuntimeV2TurnResult(
             status='chat',
             state=state,
@@ -129,7 +133,10 @@ async def test_runtime_v2_typing_starts_before_semantic_parse_finishes(monkeypat
         )
 
     monkeypatch.setattr(bot.runtime_v2_bridge, 'inspect_ingress_semantic', fake_inspect)
-    monkeypatch.setattr(bot.runtime_v2_loop, 'run_turn_typed', fake_run_turn_typed)
+    async def fake_runner_run_turn(*, session_key, user_input, state):
+        return bot.runtime_v2_fallback_runner.adapt_result(await fake_run_turn_typed(session_key, user_input))
+
+    monkeypatch.setattr(bot.runtime_v2_fallback_runner, 'run_turn', fake_runner_run_turn)
 
     task = asyncio.create_task(bot.handle_message(DummyUpdate(), None))
     await asyncio.sleep(0.05)
