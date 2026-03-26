@@ -51,10 +51,12 @@ from app.runtime_v2 import (
     RuntimeV2Loop,
     RuntimeV2PromptFiles,
     RuntimeV2TelegramBridge,
+    RuntimeV2Reply,
     RuntimeV2TurnResult,
 )
 from app.core_bus import BusEvent, get_message_bus, get_session_worker_pool
 from app.session_store import SessionLogManager
+from app.agent_core import NativeToolCallingLoop
 
 # Ingestion Layer
 from app.ingestion import (
@@ -111,6 +113,7 @@ class TelegramBot:
         self._legacy_runtime_notice_logged = False
         self.runtime_v2_loop = RuntimeV2Loop() if use_runtime_v2 else None
         self.runtime_v2_bridge = RuntimeV2TelegramBridge() if use_runtime_v2 else None
+        self.native_loop = NativeToolCallingLoop() if use_runtime_v2 else None
         self._setup_complete = False
         self._run_started = False
         # Stale reply suppression: remember latest ingress message per session.
@@ -841,11 +844,12 @@ class TelegramBot:
             logger.info("runtime_v2.turn.early_return session=%s reason=pre_runtime busy_notice=%r", session_key, pre_runtime.busy_notice_text)
             return
 
-        result = await self._run_runtime_v2_turn(
+        result = await self._run_primary_turn(
             update=update,
             session_key=session_key,
             text=text,
             state=state,
+            ingress=ingress,
             ack_text=pre_runtime.ack_text,
         )
         logger.info("runtime_v2.turn.result session=%s status=%s reply=%r step=%r tool=%r verification=%r", session_key, result.status, result.reply_text[:200], state.current_step, state.last_tool_result, state.last_verification_result)
@@ -916,6 +920,109 @@ class TelegramBot:
             return await self.runtime_v2_loop.run_turn_typed(session_id=session_key, user_input=enhanced_input)
 
         return await run_once()
+
+    def _should_use_native_loop(self, ingress, state) -> bool:
+        if self.native_loop is None:
+            return False
+        runtime_action = getattr(ingress, "_runtime_action", None)
+        if runtime_action != "execute_task":
+            return False
+        if getattr(ingress, "is_file_only", False):
+            return False
+        if state.waiting_for_user_input:
+            return False
+        return True
+
+    async def _run_primary_turn(
+        self,
+        update: Update,
+        session_key: str,
+        text: str,
+        state,
+        ingress,
+        ack_text: Optional[str],
+    ) -> RuntimeV2TurnResult:
+        if self._should_use_native_loop(ingress, state):
+            try:
+                return await self._run_native_loop_turn(
+                    update=update,
+                    session_key=session_key,
+                    text=text,
+                    state=state,
+                    ack_text=ack_text,
+                )
+            except Exception as e:
+                logger.exception("native_loop.failed session=%s err=%s; falling back to runtime_v2", session_key, e)
+
+        return await self._run_runtime_v2_turn(
+            update=update,
+            session_key=session_key,
+            text=text,
+            state=state,
+            ack_text=ack_text,
+        )
+
+    async def _run_native_loop_turn(
+        self,
+        update: Update,
+        session_key: str,
+        text: str,
+        state,
+        ack_text: Optional[str],
+    ) -> RuntimeV2TurnResult:
+        if ack_text:
+            state.mark_task_started(goal=text)
+            try:
+                await self._send_reply(update, ack_text)
+            except Exception:
+                pass
+
+        result = await self.native_loop.run_turn(
+            session_key=session_key,
+            user_input=text,
+            ingress_context=state.ingress_context,
+            proto_self_context=state.proto_self_context,
+        )
+
+        if result.tool_results:
+            last = result.tool_results[-1]
+            tool_result = last.get("result") or {}
+            state.last_tool_result = {
+                "success": tool_result.get("success"),
+                "tool": last.get("tool_name"),
+                "stdout": str(tool_result.get("output") or ""),
+                "stderr": str(tool_result.get("error") or ""),
+                "exit_code": 0 if tool_result.get("success") else 1,
+                "metadata": tool_result.get("metadata") or {},
+                "raw": tool_result,
+            }
+            state.current_step = f"tool:{last.get('tool_name')}"
+            state.task_status = "running"
+
+        if result.reply_text:
+            state.mark_task_completed()
+            return RuntimeV2TurnResult(
+                status="completed_verified",
+                state=state,
+                reply=RuntimeV2Reply(
+                    reply_text=result.reply_text,
+                    delivery_kind="final",
+                    status="completed_verified",
+                ),
+            )
+
+        state.task_status = "waiting_input"
+        state.waiting_for_user_input = True
+        return RuntimeV2TurnResult(
+            status="waiting_input",
+            state=state,
+            reply=RuntimeV2Reply(
+                reply_text="",
+                delivery_kind="progress",
+                status="waiting_input",
+                suppressible=True,
+            ),
+        )
 
     async def _deliver_runtime_v2_result(
         self,
