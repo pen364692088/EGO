@@ -1,7 +1,15 @@
 from __future__ import annotations
 
+import sys
+from pathlib import Path
+
+# Add OpenEmotion to path BEFORE any OpenEmotion imports
+_openemotion_path = Path(__file__).parent.parent.parent.parent / "OpenEmotion"
+if _openemotion_path.exists() and str(_openemotion_path) not in sys.path:
+    sys.path.insert(0, str(_openemotion_path))
+
 import uuid
-from typing import Dict
+from typing import Any, Dict, Optional
 from datetime import datetime
 
 from .action_protocol import RuntimeV2Action
@@ -16,13 +24,29 @@ from .verifier import RuntimeV2Verifier
 try:
     from app.openemotion_adapter import ProtoSelfAdapter, ProtoSelfTraceBridge
     _PROTO_SELF_IMPORT_OK = True
-except ImportError:
+except ImportError as e:
+    import logging
+    logging.warning(f"[PSK-IMPORT] ImportError: {e}")
+    _PROTO_SELF_IMPORT_OK = False
+    ProtoSelfAdapter = None
+    ProtoSelfTraceBridge = None
+except Exception as e:
+    import logging
+    logging.warning(f"[PSK-IMPORT] Unexpected error: {e}")
     _PROTO_SELF_IMPORT_OK = False
     ProtoSelfAdapter = None
     ProtoSelfTraceBridge = None
 
 # Config check deferred to runtime - module import may happen before load_config()
 _PROTO_SELF_ENABLED = None  # None means not yet checked
+
+# E4 Evidence Collector - for capturing normalized_event and openemotion_result
+_EVIDENCE_COLLECTOR_AVAILABLE = False
+try:
+    from app.telegram_evidence_collector import get_evidence_collector
+    _EVIDENCE_COLLECTOR_AVAILABLE = True
+except ImportError:
+    pass
 
 def _check_proto_self_enabled() -> bool:
     """Runtime check for Proto-Self enabled status."""
@@ -41,6 +65,38 @@ def _check_proto_self_enabled() -> bool:
 
 # 用户输入截断阈值
 MAX_USER_INPUT_IN_STATE = 300  # 字符（更严格）
+
+
+# P0-R3: 风险评估关键词（与 context_assembler.py 保持一致）
+_HIGH_RISK_KEYWORDS = ["删除", "delete", "rm ", "格式化", "format", "drop "]
+_MEDIUM_RISK_KEYWORDS = ["修改", "chmod", "chown", "git push", "deploy"]
+
+
+def _assess_risk_level(user_input: str) -> str:
+    """
+    评估用户输入的风险等级。
+
+    P0-R3: 在 runtime 主链中为 Proto-Self Kernel 提供 risk 信号。
+
+    Args:
+        user_input: 用户输入文本
+
+    Returns:
+        风险等级: "high", "medium", "low"
+    """
+    user_lower = user_input.lower()
+
+    # 检查高风险关键词
+    for keyword in _HIGH_RISK_KEYWORDS:
+        if keyword in user_lower:
+            return "high"
+
+    # 检查中等风险关键词
+    for keyword in _MEDIUM_RISK_KEYWORDS:
+        if keyword in user_lower:
+            return "medium"
+
+    return "low"
 
 
 def _truncate_user_input(text: str) -> str:
@@ -99,7 +155,15 @@ class RuntimeV2Loop:
             self._states[session_id] = RuntimeV2State(session_id=session_id)
             return self._states[session_id]
 
-    async def run_turn_typed(self, session_id: str, user_input: str, max_steps: int = 6) -> RuntimeV2TurnResult:
+    async def run_turn_typed(
+        self,
+        session_id: str,
+        user_input: str,
+        max_steps: int = 6,
+        *,
+        source: str = "telegram",
+        evidence_collector: Optional[Any] = None,
+    ) -> RuntimeV2TurnResult:
         logger.info(f"[PSK-TG-TRACE-01] run_turn_typed called session_id={session_id}, user_input={user_input[:50]}...")
         state = self.get_state(session_id)
         if not state.task_id:
@@ -120,11 +184,16 @@ class RuntimeV2Loop:
         if self.proto_self_adapter:
             try:
                 logger.info(f"[PSK-TG-TRACE-04] Building proto_self_event for {session_id}_{turn_id}")
+
+                # P0-R3: 评估用户输入的风险等级，不再硬编码空 safety_context
+                risk_level = _assess_risk_level(truncated_input)
+                logger.info(f"[PSK-TG-TRACE-04b] Risk assessment: risk_level={risk_level}")
+
                 proto_self_event = {
                     "event_id": f"{session_id}_{turn_id}",
                     "timestamp": datetime.now().isoformat(),
                     "actor": "user",
-                    "source": "telegram",
+                    "source": source,
                     "event_type": "user_message",
                     "user_intent": truncated_input[:100] if truncated_input else None,
                     "raw_text": truncated_input,
@@ -132,12 +201,25 @@ class RuntimeV2Loop:
                         "pending_tasks": 1 if state.current_goal else 0,
                         "blocked_tasks": 0,
                     },
-                    "safety_context": {},
+                    "safety_context": {
+                        "risk": risk_level,  # OpenEmotion 期望的字段名
+                        "risk_level": risk_level,  # 保留原字段名
+                    },
                     "external_result": None,
                 }
                 logger.info(f"[PSK-TG-TRACE-05] Calling adapter.handle_event...")
                 proto_self_result = self.proto_self_adapter.handle_event(proto_self_event)
                 logger.info(f"[PSK-TG-TRACE-06] adapter.handle_event returned: {proto_self_result is not None}")
+
+                # E4 Evidence: Capture normalized_event and openemotion_result
+                if _EVIDENCE_COLLECTOR_AVAILABLE:
+                    try:
+                        collector = evidence_collector or get_evidence_collector()
+                        collector.capture_normalized_event(proto_self_event)
+                        collector.capture_openemotion_result(proto_self_result)
+                        logger.info(f"[E4-EVIDENCE] Captured normalized_event and openemotion_result")
+                    except Exception as e:
+                        logger.warning(f"[E4-EVIDENCE] Failed to capture: {e}")
 
                 # 注入到 state
                 state.proto_self_context = {
@@ -258,6 +340,21 @@ class RuntimeV2Loop:
                 if result.reply:
                     result.reply.generation_id = generation_id
                     result.reply.turn_id = turn_id
+
+                # E4 Evidence: Capture response_plan
+                if _EVIDENCE_COLLECTOR_AVAILABLE:
+                    try:
+                        collector = evidence_collector or get_evidence_collector()
+                        response_plan = {
+                            "status": result.status,
+                            "delivery_kind": result.delivery_kind if result.reply else None,
+                            "reply_length": len(result.reply_text) if result.reply_text else 0,
+                        }
+                        collector.capture_response_plan(response_plan)
+                        logger.info(f"[E4-EVIDENCE] Captured response_plan: status={result.status}")
+                    except Exception as e:
+                        logger.warning(f"[E4-EVIDENCE] Failed to capture response_plan: {e}")
+
                 return result
 
         state.task_status = "waiting_input"
