@@ -14,6 +14,80 @@ from typing import Any, Dict, Optional
 SCHEMA_VERSION = "proto_self.v1"
 
 
+def _normalize_risk_level_value(value: Any) -> str:
+    if isinstance(value, str):
+        lowered = value.strip().lower()
+        if lowered in {"low", "medium", "high", "critical"}:
+            return lowered
+        if lowered in {"normal", "safe", "none"}:
+            return "low"
+        if lowered in {"warning", "warn"}:
+            return "medium"
+        if lowered in {"danger", "risky"}:
+            return "high"
+        if lowered in {"emergency", "fatal"}:
+            return "critical"
+        return "low"
+    if isinstance(value, (int, float)):
+        numeric = float(value)
+        if numeric >= 0.8:
+            return "critical"
+        if numeric >= 0.5:
+            return "high"
+        if numeric >= 0.3:
+            return "medium"
+        return "low"
+    return "low"
+
+
+def normalize_safety_context(safety_context: Optional[Dict[str, Any]]) -> Dict[str, Any]:
+    """
+    Normalize safety_context to the single canonical field set.
+
+    Canonical rule:
+    - `risk_level` is the only official risk field
+    - legacy `risk` is compatibility-only input and is absorbed here
+    """
+    raw = dict(safety_context or {})
+    legacy_risk = raw.pop("risk", None)
+    if "risk_level" not in raw and legacy_risk is not None:
+        raw["risk_level"] = legacy_risk
+    if "risk_level" in raw:
+        raw["risk_level"] = _normalize_risk_level_value(raw["risk_level"])
+    return raw
+
+
+def kernel_event_from_payload(payload: Dict[str, Any]) -> "KernelEvent":
+    """
+    Build a canonical KernelEvent from host payload.
+
+    Compatibility is intentionally centralized here instead of spread across
+    multiple EgoCore call sites.
+    """
+    return KernelEvent(
+        schema_version=payload.get("schema_version", SCHEMA_VERSION),
+        event_id=payload.get("event_id", ""),
+        timestamp=payload.get("timestamp", ""),
+        actor=payload.get("actor", ""),
+        source=payload.get("source", ""),
+        event_type=payload.get("event_type", ""),
+        user_intent=payload.get("user_intent"),
+        raw_text=payload.get("raw_text"),
+        conversation_context=payload.get("conversation_context", {}),
+        task_context=payload.get("task_context", {}),
+        runtime_summary=payload.get("runtime_summary", {}),
+        safety_context=normalize_safety_context(payload.get("safety_context")),
+        external_result=payload.get("external_result"),
+    )
+
+
+def serialize_kernel_output(output: "KernelOutput") -> Dict[str, Any]:
+    """
+    Serialize KernelOutput using the canonical output contract.
+    """
+    return output.to_dict()
+
+
 # ============================================================================
 # Input: EgoCore → OpenEmotion
 # ============================================================================
@@ -45,6 +119,9 @@ class KernelEvent:
     # 后果回流（一等输入）
     external_result: Optional[Dict[str, Any]] = None
 
+    def __post_init__(self) -> None:
+        self.safety_context = normalize_safety_context(self.safety_context)
+
     def to_dict(self) -> Dict[str, Any]:
         """序列化为字典，用于 trace 写入。"""
         return {
@@ -59,7 +136,7 @@ class KernelEvent:
             "conversation_context": self.conversation_context,
             "task_context": self.task_context,
             "runtime_summary": self.runtime_summary,
-            "safety_context": self.safety_context,
+            "safety_context": normalize_safety_context(self.safety_context),
             "external_result": self.external_result,
         }
 

@@ -18,6 +18,8 @@ from datetime import datetime, timezone
 from typing import Any, Optional
 from uuid import uuid4
 
+from app.risk_signal import normalize_safety_context
+
 # 从 OpenEmotion import 类型定义（如果可导入）
 # 否则使用本地定义
 try:
@@ -194,12 +196,10 @@ class EventBuilder:
         }
 
         # 安全上下文 (必须)
-        # P0-R2 修复：添加 "risk" 字段映射到 OpenEmotion 期望的字段名
-        safety_ctx = ctx_dict.get("safety_context", {})
+        safety_ctx = normalize_safety_context(ctx_dict.get("safety_context", {}))
         risk_level_value = safety_ctx.get("risk_level", "low")
         event["safety_context"] = {
-            "risk": risk_level_value,  # OpenEmotion 期望的字段名
-            "risk_level": risk_level_value,  # 保留原字段名
+            "risk_level": risk_level_value,
             "requires_approval": safety_ctx.get("requires_approval", False),
         }
 
@@ -365,3 +365,171 @@ class EventBuilder:
 
 # 默认实例
 default_event_builder = EventBuilder()
+
+
+def build_from_telegram_update(update: dict) -> dict[str, Any]:
+    """
+    从 Telegram Update 构建标准化事件。
+
+    这是 Telegram 集成的正式入口函数，用于将原始 Telegram update
+    转换为 OpenEmotion 标准 EventV1 格式。
+
+    Args:
+        update: Telegram API 返回的 Update 对象（字典形式）
+            包含 update_id, message, edited_message 等字段
+
+    Returns:
+        OpenEmotionEventV1 格式的字典，包含：
+        - event_id: 唯一事件标识
+        - timestamp: ISO 格式时间戳
+        - actor: 用户ID
+        - source: "telegram"
+        - event_type: 事件类型
+        - content: 消息内容
+        - conversation_context: 对话上下文
+        - metadata: 原始 update 等
+
+    Raises:
+        ValueError: 如果 update 格式无效
+
+    Example:
+        >>> update = {"update_id": 123, "message": {...}}
+        >>> event = build_from_telegram_update(update)
+        >>> event["source"]
+        'telegram'
+    """
+    if not isinstance(update, dict):
+        raise ValueError(f"update must be dict, got {type(update)}")
+
+    update_id = update.get("update_id")
+    if update_id is None:
+        raise ValueError("update must have 'update_id' field")
+
+    # 提取消息对象
+    message = update.get("message") or update.get("edited_message") or update.get("channel_post")
+
+    if message is None:
+        # 非消息类 update（如 inline_query 等）
+        return _build_from_non_message_update(update)
+
+    # 提取用户信息
+    from_user = message.get("from", {})
+    chat = message.get("chat", {})
+
+    user_id = str(from_user.get("id", "unknown"))
+    chat_id = str(chat.get("id", ""))
+    username = from_user.get("username", "")
+
+    # 提取消息内容
+    text = message.get("text", "")
+    caption = message.get("caption", "")
+    content = text or caption or ""
+
+    # 构建事件
+    event_id = f"evt_{uuid4().hex[:16]}"
+    timestamp = datetime.now(timezone.utc)
+
+    # 确定事件类型
+    if message.get("text"):
+        event_type = EventType.USER_MESSAGE.value
+    elif message.get("photo") or message.get("document") or message.get("video"):
+        event_type = EventType.USER_MESSAGE.value  # 媒体消息也作为用户消息
+        content = content or "[媒体消息]"
+    else:
+        event_type = EventType.USER_MESSAGE.value
+        content = content or "[其他消息类型]"
+
+    event = {
+        "event_id": event_id,
+        "timestamp": timestamp.isoformat(),
+        "actor": user_id,
+        "source": EventSource.TELEGRAM.value,
+        "event_type": event_type,
+        "content": content,
+        "conversation_context": {
+            "session_id": chat_id,  # Telegram 用 chat_id 作为 session
+            "chat_id": chat_id,
+            "user_id": user_id,
+            "username": username,
+            "message_id": message.get("message_id"),
+            "turn_index": 0,
+            "recent_messages": [],
+        },
+        "metadata": {
+            "update_id": update_id,
+            "message_date": message.get("date"),
+            "chat_type": chat.get("type"),
+            "raw_update": update,  # 保留原始 update 用于调试
+        },
+    }
+
+    return event
+
+
+def _build_from_non_message_update(update: dict) -> dict[str, Any]:
+    """
+    处理非消息类 Telegram update。
+
+    包括：inline_query, chosen_inline_result, callback_query 等。
+    """
+    event_id = f"evt_{uuid4().hex[:16]}"
+    timestamp = datetime.now(timezone.utc)
+    update_id = update.get("update_id", 0)
+
+    # 确定类型
+    if "inline_query" in update:
+        inline = update["inline_query"]
+        return {
+            "event_id": event_id,
+            "timestamp": timestamp.isoformat(),
+            "actor": str(inline.get("from", {}).get("id", "unknown")),
+            "source": EventSource.TELEGRAM.value,
+            "event_type": "inline_query",
+            "content": inline.get("query", ""),
+            "conversation_context": {
+                "session_id": str(inline.get("from", {}).get("id", "")),
+            },
+            "metadata": {
+                "update_id": update_id,
+                "inline_query_id": inline.get("id"),
+                "raw_update": update,
+            },
+        }
+
+    if "callback_query" in update:
+        callback = update["callback_query"]
+        message = callback.get("message", {})
+        chat = message.get("chat", {})
+        return {
+            "event_id": event_id,
+            "timestamp": timestamp.isoformat(),
+            "actor": str(callback.get("from", {}).get("id", "unknown")),
+            "source": EventSource.TELEGRAM.value,
+            "event_type": "callback_query",
+            "content": callback.get("data", ""),
+            "conversation_context": {
+                "session_id": str(chat.get("id", "")),
+                "chat_id": str(chat.get("id", "")),
+                "message_id": message.get("message_id"),
+            },
+            "metadata": {
+                "update_id": update_id,
+                "callback_query_id": callback.get("id"),
+                "raw_update": update,
+            },
+        }
+
+    # 默认：未知类型
+    return {
+        "event_id": event_id,
+        "timestamp": timestamp.isoformat(),
+        "actor": "unknown",
+        "source": EventSource.TELEGRAM.value,
+        "event_type": "unknown_update",
+        "content": "",
+        "conversation_context": {},
+        "metadata": {
+            "update_id": update_id,
+            "raw_update": update,
+        },
+    }

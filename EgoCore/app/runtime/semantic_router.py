@@ -9,6 +9,8 @@ from dataclasses import dataclass
 from typing import Optional, Dict, Any, List
 import re
 
+from app.risk_signal import is_high_risk_message
+
 # Phase 2: 统一语义解析器集成
 from app.runtime_v2.semantic_parser import ParsedIntentGraph
 
@@ -102,18 +104,6 @@ class SemanticRouter:
     # Command patterns
     COMMAND_PATTERN = r"^/[a-zA-Z_]+"
     
-    # High-risk patterns (require confirmation)
-    HIGH_RISK_PATTERNS = [
-        r"(删除|删除文件|删除目录|remove|delete)",
-        r"(rm\s*-rf|rmdir|格式化|format)",
-        r"(修改|修改文件|覆写|overwrite)",
-        r"(推送|push|提交|commit)",
-        r"(重启|restart|重启服务)",
-        r"(执行命令|运行命令|执行脚本)",
-        r"(wget.*\|\s*sh|wget.*\|\s*bash)",
-        r"(curl.*\|\s*sh|curl.*\|\s*bash)",
-    ]
-    
     def __init__(self):
         """Initialize semantic router."""
         self._compile_patterns()
@@ -125,7 +115,6 @@ class SemanticRouter:
         self._new_task_re = [re.compile(p, re.IGNORECASE) for p in self.NEW_TASK_PATTERNS]
         self._continue_re = [re.compile(p, re.IGNORECASE) for p in self.CONTINUE_PATTERNS]
         self._command_re = re.compile(self.COMMAND_PATTERN)
-        self._high_risk_re = [re.compile(p, re.IGNORECASE) for p in self.HIGH_RISK_PATTERNS]
     
     def _is_short_question(self, message: str) -> bool:
         """
@@ -342,11 +331,7 @@ class SemanticRouter:
         Returns:
             True if message requires confirmation
         """
-        message_lower = message.lower()
-        for pattern in self._high_risk_re:
-            if pattern.search(message_lower):
-                return True
-        return False
+        return is_high_risk_message(message)
     
     def extract_task_content(self, message: str) -> Optional[str]:
         """

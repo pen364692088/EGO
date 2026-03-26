@@ -22,37 +22,22 @@ def test_risk_assessment():
     print(" P0-R2 Risk Assessment Test")
     print("=" * 60)
 
-    # 高风险关键词
-    high_risk_keywords = ["删除", "delete", "rm ", "格式化", "format", "drop "]
-    medium_risk_keywords = ["修改", "chmod", "chown", "git push", "deploy"]
+    from app.risk_signal import assess_message_risk_level
 
     # 测试用例
     test_cases = [
         ("读取文件 test.txt", "low"),
         ("查看配置文件", "low"),
         ("删除临时文件", "high"),
-        ("删除生产数据库", "high"),
+        ("删除生产数据库", "critical"),
         ("delete the database", "high"),
         ("修改配置", "medium"),
+        ("git push origin main", "high"),
     ]
 
     print("\n[1] Testing risk assessment...")
     for user_input, expected_risk in test_cases:
-        user_lower = user_input.lower()
-        risk_level = "low"
-
-        # 检查高风险关键词
-        for keyword in high_risk_keywords:
-            if keyword in user_lower:
-                risk_level = "high"
-                break
-
-        # 检查中等风险
-        if risk_level == "low":
-            for keyword in medium_risk_keywords:
-                if keyword in user_lower:
-                    risk_level = "medium"
-                    break
+        risk_level = assess_message_risk_level(user_input)
 
         status = "✅" if risk_level == expected_risk else "❌"
         print(f"  {status} '{user_input}' → risk_level={risk_level} (expected: {expected_risk})")
@@ -86,7 +71,7 @@ def test_psi_bucket_construction():
     def build_psi_bucket(source: str, event_type: str, intent: str, safety_context: dict) -> str:
         """构建 psi_bucket"""
         coarse_intent = coarse_intent_classify(intent)
-        risk_level = safety_context.get("risk", "normal") if safety_context else "normal"
+        risk_level = safety_context.get("risk_level", "low") if safety_context else "low"
 
         if risk_level in ["critical", "high"]:
             return f"{source}:{event_type}:{coarse_intent}:risk_{risk_level}"
@@ -97,18 +82,18 @@ def test_psi_bucket_construction():
     test_cases = [
         {
             "intent": "读取文件 test.txt",
-            "safety_context": {"risk": "low", "risk_level": "low"},
+            "safety_context": {"risk_level": "low"},
             "expected_suffix": None,  # 无 risk 后缀
         },
         {
             "intent": "删除临时文件",
-            "safety_context": {"risk": "high", "risk_level": "high"},
+            "safety_context": {"risk_level": "high"},
             "expected_suffix": "risk_high",
         },
         {
             "intent": "删除生产数据库",
-            "safety_context": {"risk": "high", "risk_level": "high"},
-            "expected_suffix": "risk_high",
+            "safety_context": {"risk_level": "critical"},
+            "expected_suffix": "risk_critical",
         },
     ]
 
@@ -128,8 +113,8 @@ def test_psi_bucket_construction():
             print(f"  ✅ '{tc['intent']}' → {psi_bucket}")
 
     # 验证高低风险区分
-    low_bucket = build_psi_bucket("telegram", "user_message", "读取文件", {"risk": "low"})
-    high_bucket = build_psi_bucket("telegram", "user_message", "删除生产数据库", {"risk": "high"})
+    low_bucket = build_psi_bucket("telegram", "user_message", "读取文件", {"risk_level": "low"})
+    high_bucket = build_psi_bucket("telegram", "user_message", "删除生产数据库", {"risk_level": "critical"})
 
     print(f"\n  低风险 psi_bucket: {low_bucket}")
     print(f"  高风险 psi_bucket: {high_bucket}")
@@ -151,14 +136,16 @@ def test_event_builder_fix():
     """测试 EventBuilder 修复"""
     print("\n[3] Testing EventBuilder safety_context mapping...")
 
+    from app.risk_signal import normalize_safety_context
+
     # 模拟 event_builder 的行为
     def build_safety_context(safety_ctx_input: dict) -> dict:
         """模拟 event_builder.build_from_execution_context 中的 safety_context 构建"""
-        risk_level_value = safety_ctx_input.get("risk_level", "low")
+        normalized = normalize_safety_context(safety_ctx_input)
+        risk_level_value = normalized.get("risk_level", "low")
         return {
-            "risk": risk_level_value,  # OpenEmotion 期望的字段名
-            "risk_level": risk_level_value,  # 保留原字段名
-            "requires_approval": safety_ctx_input.get("requires_approval", False),
+            "risk_level": risk_level_value,
+            "requires_approval": normalized.get("requires_approval", False),
         }
 
     # 测试高风险场景
@@ -168,15 +155,15 @@ def test_event_builder_fix():
     print(f"  Input safety_context: {input_ctx}")
     print(f"  Output safety_context: {output_ctx}")
 
-    assert "risk" in output_ctx, "Missing 'risk' field!"
-    assert output_ctx["risk"] == "high", f"Expected 'risk'='high', got '{output_ctx['risk']}'"
-    print("  ✅ 'risk' field correctly mapped from 'risk_level'")
+    assert "risk" not in output_ctx, "Legacy 'risk' field should not be emitted"
+    assert output_ctx["risk_level"] == "high", f"Expected 'risk_level'='high', got '{output_ctx['risk_level']}'"
+    print("  ✅ canonical 'risk_level' field preserved")
 
     # 测试低风险场景
     input_ctx_low = {"risk_level": "low", "requires_approval": False}
     output_ctx_low = build_safety_context(input_ctx_low)
 
-    assert output_ctx_low["risk"] == "low", f"Expected 'risk'='low', got '{output_ctx_low['risk']}'"
+    assert output_ctx_low["risk_level"] == "low", f"Expected 'risk_level'='low', got '{output_ctx_low['risk_level']}'"
     print("  ✅ Low risk also correctly mapped")
 
 
@@ -189,8 +176,8 @@ if __name__ == "__main__":
         print("\n" + "=" * 60)
         print(" ALL TESTS PASSED!")
         print("=" * 60)
-        print("\n修复验证成功：risk_level 正确从 EgoCore 传递到 Proto-Self Kernel")
-        print("高风险操作的 psi_bucket 将包含 :risk_high 后缀")
+        print("\n修复验证成功：canonical risk_level 正确从 EgoCore 传递到 Proto-Self Kernel")
+        print("高风险操作的 psi_bucket 将包含 :risk_high 或 :risk_critical 后缀")
         print("低风险操作的 psi_bucket 将不包含 risk 后缀")
         sys.exit(0)
     except AssertionError as e:

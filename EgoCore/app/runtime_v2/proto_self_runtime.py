@@ -6,23 +6,17 @@ from typing import Any, Dict, Optional
 
 import logging
 
+from app.risk_signal import (
+    assess_message_risk_level,
+    risk_level_from_external_result,
+)
 from .state import RuntimeV2State
 
 logger = logging.getLogger(__name__)
 
-_HIGH_RISK_KEYWORDS = ["删除", "delete", "rm ", "格式化", "format", "drop "]
-_MEDIUM_RISK_KEYWORDS = ["修改", "chmod", "chown", "git push", "deploy"]
-
 
 def assess_risk_level(user_input: str) -> str:
-    user_lower = user_input.lower()
-    for keyword in _HIGH_RISK_KEYWORDS:
-        if keyword in user_lower:
-            return "high"
-    for keyword in _MEDIUM_RISK_KEYWORDS:
-        if keyword in user_lower:
-            return "medium"
-    return "low"
+    return assess_message_risk_level(user_input)
 
 
 def build_proto_self_ingress_event(
@@ -42,12 +36,20 @@ def build_proto_self_ingress_event(
         "event_type": "user_message",
         "user_intent": user_input[:100] if user_input else None,
         "raw_text": user_input,
+        "conversation_context": {
+            "session_id": session_id,
+            "thread_id": session_id,
+            "turn_id": turn_id,
+        },
         "task_context": {
             "pending_tasks": 1 if state.current_goal else 0,
             "blocked_tasks": 0,
         },
+        "runtime_summary": {
+            "runtime": "runtime_v2",
+            "state_scope": "agent_global",
+        },
         "safety_context": {
-            "risk": risk_level,
             "risk_level": risk_level,
         },
         "external_result": None,
@@ -71,12 +73,21 @@ def build_external_result_event(
         "event_type": "tool_result",
         "user_intent": None,
         "raw_text": None,
+        "conversation_context": {
+            "session_id": session_id,
+            "thread_id": session_id,
+            "turn_id": turn_id,
+        },
         "task_context": {
             "pending_tasks": 1 if state.current_goal else 0,
             "blocked_tasks": 1 if failed else 0,
         },
+        "runtime_summary": {
+            "runtime": "runtime_v2",
+            "state_scope": "agent_global",
+        },
         "safety_context": {
-            "risk_level": 0.5 if failed else 0.0,
+            "risk_level": risk_level_from_external_result(failed=failed),
         },
         "external_result": {
             "success": tool_result.get("success", False),
@@ -112,6 +123,24 @@ class RuntimeV2ProtoSelfRuntime:
             logger.warning(f"[E4-EVIDENCE] Failed to resolve collector: {exc}")
             return None
 
+    def _capture_trace_in_ledger_or_bridge(
+        self,
+        *,
+        proto_self_result: Dict[str, Any],
+        collector: Optional[Any],
+        bridge_stage: str,
+    ) -> None:
+        trace_payload = proto_self_result.get("trace_payload")
+        if not trace_payload:
+            return
+
+        if collector is not None and hasattr(collector, "capture_openemotion_trace"):
+            collector.capture_openemotion_trace(trace_payload, stage=bridge_stage)
+            return
+
+        if self.trace_bridge:
+            self.trace_bridge.write(trace_payload)
+
     def process_ingress(
         self,
         *,
@@ -134,21 +163,16 @@ class RuntimeV2ProtoSelfRuntime:
         if collector is not None:
             collector.capture_normalized_event(proto_self_event)
             collector.capture_openemotion_result(proto_self_result)
+        self._capture_trace_in_ledger_or_bridge(
+            proto_self_result=proto_self_result,
+            collector=collector,
+            bridge_stage="ingress_kernel_trace",
+        )
         state.proto_self_context = {
             "policy_hint": proto_self_result.get("policy_hint"),
             "response_tendency": proto_self_result.get("response_tendency"),
             "reflection_note": proto_self_result.get("reflection_note"),
         }
-        if self.trace_bridge:
-            self.trace_bridge.write(
-                {
-                    "event_id": proto_self_event["event_id"],
-                    "session_id": session_id,
-                    "turn_id": turn_id,
-                    "policy_hint": proto_self_result.get("policy_hint"),
-                    "response_tendency": proto_self_result.get("response_tendency"),
-                }
-            )
         state.record(
             "proto_self",
             {
@@ -168,6 +192,7 @@ class RuntimeV2ProtoSelfRuntime:
         turn_id: str,
         step: int,
         state: RuntimeV2State,
+        evidence_collector: Optional[Any] = None,
     ) -> None:
         if not state.last_tool_result:
             return
@@ -179,6 +204,14 @@ class RuntimeV2ProtoSelfRuntime:
             state=state,
         )
         external_result = self.adapter.handle_event(external_result_event)
+        collector = self._resolve_collector(evidence_collector)
+        if collector is not None:
+            collector.capture_openemotion_result(external_result)
+        self._capture_trace_in_ledger_or_bridge(
+            proto_self_result=external_result,
+            collector=collector,
+            bridge_stage="external_result_kernel_trace",
+        )
         if state.proto_self_context is None:
             state.proto_self_context = {}
         state.proto_self_context["external_result"] = external_result
@@ -189,21 +222,6 @@ class RuntimeV2ProtoSelfRuntime:
                     "trigger": external_result.get("reflection_note", {}).get("trigger"),
                     "diagnosis": external_result.get("reflection_note", {}).get("diagnosis"),
                 },
-            )
-        if self.trace_bridge:
-            self.trace_bridge.write(
-                {
-                    "event_id": external_result_event["event_id"],
-                    "session_id": session_id,
-                    "turn_id": turn_id,
-                    "step": step,
-                    "type": "external_result",
-                    "reflection_trigger": (
-                        external_result.get("reflection_note", {}).get("trigger")
-                        if external_result.get("reflection_note")
-                        else None
-                    ),
-                }
             )
 
     def capture_response_plan(self, *, result: Any, evidence_collector: Optional[Any] = None) -> None:

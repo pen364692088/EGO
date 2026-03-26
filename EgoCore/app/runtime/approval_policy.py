@@ -14,8 +14,8 @@ Core principle: Ask user when:
 from dataclasses import dataclass, field
 from typing import Optional, List, Dict, Any, Set
 from enum import Enum
-import re
 
+from app.risk_signal import is_high_risk_message
 from app.runtime.execution_result import FailureClass
 from app.runtime.intent_mapper import OperationType, OperationIntent
 
@@ -105,35 +105,6 @@ class ApprovalRequest:
 # High-Risk Operations
 # ============================================================================
 
-HIGH_RISK_PATTERNS: Set[str] = {
-    # Delete operations
-    r"\bdelete\b",
-    r"\bremove\b",
-    r"\brm\b",
-    r"\bunlink\b",
-    r"\bwipe\b",
-    
-    # Overwrite operations
-    r"\boverwrite\b",
-    r"\breplace\b",
-    r"\btruncate\b",
-    
-    # System operations
-    r"\bformat\b",
-    r"\breboot\b",
-    r"\bshutdown\b",
-    r"\brestart\b",
-    
-    # Network operations
-    r"\bpush\b",
-    r"\bdeploy\b",
-    r"\bupload\b",
-    
-    # Permission operations
-    r"\bchmod\b",
-    r"\bchown\b",
-}
-
 HIGH_RISK_PATHS: Set[str] = {
     "/etc",
     "/usr",
@@ -157,13 +128,7 @@ def is_high_risk_operation(step_description: str) -> bool:
     Returns:
         True if high-risk operation detected
     """
-    desc_lower = step_description.lower()
-    
-    for pattern in HIGH_RISK_PATTERNS:
-        if re.search(pattern, desc_lower):
-            return True
-    
-    return False
+    return is_high_risk_message(step_description)
 
 
 def is_high_risk_path(path: str) -> bool:

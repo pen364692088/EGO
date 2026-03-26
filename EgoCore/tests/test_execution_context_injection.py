@@ -101,6 +101,20 @@ class TestContextAssembler:
         assert context.safety_context.risk_level == "high"
         assert context.safety_context.requires_approval is True
 
+    def test_safety_context_matches_canonical_git_push(self):
+        """git push 应与 canonical risk scorer 一致归到高风险。"""
+        from app.runtime.context_assembler import ContextAssembler
+
+        assembler = ContextAssembler()
+        context = assembler.assemble(
+            user_input="git push origin main",
+            session_id="test_session",
+            user_id="test_user",
+        )
+
+        assert context.safety_context.risk_level == "high"
+        assert context.safety_context.requires_approval is True
+
 
 class TestCompletionGuard:
     """测试 CompletionGuard"""

@@ -15,6 +15,8 @@ from dataclasses import dataclass, field
 from datetime import datetime, timezone
 import logging
 
+from app.risk_signal import assess_message_risk_level
+
 logger = logging.getLogger(__name__)
 
 
@@ -332,29 +334,14 @@ class ContextAssembler:
         task_ctx: TaskContext,
     ) -> SafetyContext:
         """组装安全上下文"""
-        risk_level = "low"
+        risk_level = assess_message_risk_level(user_input)
         requires_approval = False
         approval_reason = None
         blocked_operations = []
-        
-        # 检查高风险操作
-        high_risk_keywords = ["删除", "delete", "rm ", "格式化", "format", "drop "]
-        user_lower = user_input.lower()
-        
-        for keyword in high_risk_keywords:
-            if keyword in user_lower:
-                risk_level = "high"
-                requires_approval = True
-                approval_reason = f"检测到高风险操作: {keyword}"
-                break
-        
-        # 检查中等风险
-        if risk_level == "low":
-            medium_risk_keywords = ["修改", "chmod", "chown", "git push", "deploy"]
-            for keyword in medium_risk_keywords:
-                if keyword in user_lower:
-                    risk_level = "medium"
-                    break
+
+        if risk_level in {"high", "critical"}:
+            requires_approval = True
+            approval_reason = f"检测到高风险操作: {risk_level}"
         
         return SafetyContext(
             risk_level=risk_level,
