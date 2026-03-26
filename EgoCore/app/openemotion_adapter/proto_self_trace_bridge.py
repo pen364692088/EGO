@@ -1,12 +1,12 @@
 """
 Proto-Self Kernel Trace Bridge
 
-Trace 写入桥接：把 Proto-Self Kernel 输出桥接到 EgoCore trace 系统。
+Trace 写入桥接：把 Proto-Self Kernel trace 导出为兼容镜像。
 
 设计约束：
-- 只做 trace 写入桥接
+- 只做兼容镜像写入，不做主账本
 - 不改变 trace 内容
-- 必须支持 trace-driven replay
+- 主账本存在时，bridge 只能作为 fallback / mirror
 """
 
 import json
@@ -17,12 +17,12 @@ from typing import Any, Dict, Optional
 
 class ProtoSelfTraceBridge:
     """
-    Proto-Self Kernel trace 桥接器。
+    Proto-Self Kernel trace 兼容桥接器。
     
     职责：
     - 接收 kernel 输出的 trace_payload
-    - 写入 EgoCore trace 系统（run.jsonl）
-    - 支持回放时读取
+    - 写入兼容 jsonl 镜像
+    - 供历史回放/调试读取
     """
 
     def __init__(

@@ -18,9 +18,6 @@ import logging
 import random
 from typing import Dict, Any, List, Optional
 
-import sys
-sys.path.insert(0, '/home/moonlight/Project/Github/MyProject/EgoCore')
-
 from egocore.contracts.outward_response_package_v1 import (
     OutwardResponsePackage,
     ResponsePlan,

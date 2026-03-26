@@ -38,9 +38,6 @@ v2.1 改进 (2026-03-19):
 import logging
 from typing import Optional, Dict, Any
 
-import sys
-sys.path.insert(0, '/home/moonlight/Project/Github/MyProject/EgoCore')
-
 from egocore.contracts.interaction_event_envelope_v1 import InteractionEventEnvelope
 from egocore.contracts.runtime_decision_envelope_v1 import RuntimeDecisionEnvelope
 from egocore.contracts.outward_response_package_v1 import OutwardResponsePackage

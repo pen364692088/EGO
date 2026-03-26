@@ -10,7 +10,6 @@ Proto-Self Kernel Adapter for EgoCore
 - 所有主体本体语义必须留在 OpenEmotion
 """
 
-import json
 import logging
 from datetime import datetime
 from pathlib import Path
@@ -21,12 +20,14 @@ logger = logging.getLogger(__name__)
 # OpenEmotion imports
 from openemotion.proto_self import (
     KernelEvent,
-    KernelOutput,
     ProtoSelfState,
     SCHEMA_VERSION,
+    kernel_event_from_payload,
+    serialize_kernel_output,
 )
 from openemotion.proto_self.kernel import process_event
 from openemotion.proto_self.boundary import assert_no_direct_execution
+from app.openemotion_adapter.proto_self_state_store import ProtoSelfStateStore
 
 
 class ProtoSelfAdapter:
@@ -44,10 +45,12 @@ class ProtoSelfAdapter:
     def __init__(
         self,
         mirror_dir: Optional[Path] = None,
+        state_store: Optional[ProtoSelfStateStore] = None,
         trace_bridge: Optional[Any] = None,
     ):
         self.mirror_dir = mirror_dir or Path("artifacts/proto_self_mirror")
         self.mirror_dir.mkdir(parents=True, exist_ok=True)
+        self.state_store = state_store or ProtoSelfStateStore(legacy_mirror_dir=self.mirror_dir)
         self.trace_bridge = trace_bridge
 
     def handle_event(self, egocore_event: Dict[str, Any]) -> Dict[str, Any]:
@@ -68,10 +71,11 @@ class ProtoSelfAdapter:
         # 1. 标准化事件
         logger.info(f"[PSK-ADAPTER-02] Normalizing event...")
         kernel_event = normalize_to_kernel_event(egocore_event)
+        event_context = _extract_host_state_context(kernel_event)
 
         # 2. 加载状态
-        logger.info(f"[PSK-ADAPTER-03] Loading state from {self.mirror_dir}")
-        state = self.load_latest_state()
+        logger.info(f"[PSK-ADAPTER-03] Loading state via host store rooted at {self.state_store.root_dir}")
+        state = self.load_latest_state(event_context=event_context)
         logger.info(f"[PSK-ADAPTER-04] State loaded, cycles={len(state.cycle_store.signatures) if hasattr(state, 'cycle_store') else 'N/A'}")
 
         # 3. 调用 kernel
@@ -85,8 +89,20 @@ class ProtoSelfAdapter:
         # 5. 保存镜像
         mirror_path = self.mirror_dir / "state.json"
         logger.info(f"[PSK-ADAPTER-07] Saving mirror to {mirror_path}")
-        self.save_mirror(state)
+        self.save_mirror(state, event_context=event_context)
         logger.info(f"[PSK-ADAPTER-08] Mirror saved, exists={mirror_path.exists()}")
+
+        session_id = event_context.get("session_id")
+        if session_id:
+            self.state_store.record_event_binding(
+                session_id=session_id,
+                thread_id=event_context.get("thread_id"),
+                source=kernel_event.source or "unknown",
+                event_id=kernel_event.event_id,
+                turn_id=event_context.get("turn_id"),
+                event_type=kernel_event.event_type or "unknown",
+                context=event_context,
+            )
 
         # 6. 写 trace
         if self.trace_bridge:
@@ -98,32 +114,15 @@ class ProtoSelfAdapter:
 
         # 7. 返回结果
         logger.info(f"[PSK-ADAPTER-11] Returning result")
-        return {
-            "policy_hint": result.policy_hint,
-            "response_tendency": result.response_tendency.to_dict() if result.response_tendency else None,
-            "identity_state_delta": result.identity_state_delta,
-            "self_model_delta": result.self_model_delta,
-            "appraisal_state_delta": result.appraisal_state_delta,
-            "reflection_note": result.reflection_note.to_dict() if result.reflection_note else None,
-        }
+        return serialize_kernel_output(result)
 
-    def load_latest_state(self) -> ProtoSelfState:
+    def load_latest_state(self, *, event_context: Optional[Dict[str, Any]] = None) -> ProtoSelfState:
         """加载最新状态镜像。"""
-        mirror_file = self.mirror_dir / "state.json"
-        if mirror_file.exists():
-            try:
-                with open(mirror_file, "r") as f:
-                    data = json.load(f)
-                return ProtoSelfState.from_dict(data)
-            except Exception:
-                pass
-        return ProtoSelfState.empty()
+        return self.state_store.load_state(event_context)
 
-    def save_mirror(self, state: ProtoSelfState) -> None:
+    def save_mirror(self, state: ProtoSelfState, *, event_context: Optional[Dict[str, Any]] = None) -> None:
         """保存状态镜像。"""
-        mirror_file = self.mirror_dir / "state.json"
-        with open(mirror_file, "w") as f:
-            json.dump(state.to_dict(), f, indent=2, default=str)
+        self.state_store.save_state(state, event_context)
 
 
 def normalize_to_kernel_event(egocore_event: Dict[str, Any]) -> KernelEvent:
@@ -132,18 +131,24 @@ def normalize_to_kernel_event(egocore_event: Dict[str, Any]) -> KernelEvent:
     
     这是 adapter 的核心职责：确保事件格式一致。
     """
-    return KernelEvent(
-        schema_version=SCHEMA_VERSION,
-        event_id=egocore_event.get("event_id", ""),
-        timestamp=egocore_event.get("timestamp", datetime.now().isoformat()),
-        actor=egocore_event.get("actor", "unknown"),
-        source=egocore_event.get("source", "unknown"),
-        event_type=egocore_event.get("event_type", "unknown"),
-        user_intent=egocore_event.get("user_intent"),
-        raw_text=egocore_event.get("raw_text"),
-        conversation_context=egocore_event.get("conversation_context", {}),
-        task_context=egocore_event.get("task_context", {}),
-        runtime_summary=egocore_event.get("runtime_summary", {}),
-        safety_context=egocore_event.get("safety_context", {}),
-        external_result=egocore_event.get("external_result"),
-    )
+    payload = dict(egocore_event)
+    payload.setdefault("schema_version", SCHEMA_VERSION)
+    payload.setdefault("timestamp", datetime.now().isoformat())
+    payload.setdefault("actor", "unknown")
+    payload.setdefault("source", "unknown")
+    payload.setdefault("event_type", "unknown")
+    return kernel_event_from_payload(payload)
+
+
+def _extract_host_state_context(kernel_event: KernelEvent) -> Dict[str, Any]:
+    conversation_context = kernel_event.conversation_context or {}
+    runtime_summary = kernel_event.runtime_summary or {}
+    return {
+        "session_id": conversation_context.get("session_id"),
+        "thread_id": conversation_context.get("thread_id") or conversation_context.get("conversation_id"),
+        "turn_id": conversation_context.get("turn_id"),
+        "source": kernel_event.source,
+        "event_type": kernel_event.event_type,
+        "state_scope": runtime_summary.get("state_scope"),
+        "experiment_id": runtime_summary.get("experiment_id"),
+    }

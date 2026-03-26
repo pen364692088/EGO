@@ -19,6 +19,9 @@ from openemotion.proto_self.schemas import (
     ReflectionNote,
     ResponseTendency,
     SCHEMA_VERSION,
+    kernel_event_from_payload,
+    normalize_safety_context,
+    serialize_kernel_output,
 )
 from openemotion.proto_self.state import (
     CycleSignature,
@@ -42,6 +45,9 @@ __all__ = [
     "ReflectionNote",
     "ResponseTendency",
     "SCHEMA_VERSION",
+    "kernel_event_from_payload",
+    "normalize_safety_context",
+    "serialize_kernel_output",
     # State
     "ProtoSelfState",
     "IdentityInvariants",

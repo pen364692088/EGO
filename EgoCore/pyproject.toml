@@ -1,0 +1,40 @@
+[project]
+name = "egocore-host"
+version = "0.1.0"
+description = "EgoCore host runtime for OpenEmotion integration"
+requires-python = ">=3.10"
+dependencies = [
+    "python-dotenv>=1.0.0",
+    "pyyaml>=6.0",
+    "python-telegram-bot>=20.0",
+    "openai>=1.0.0",
+    "anthropic>=0.18.0",
+    "httpx>=0.25.0",
+    "pydantic>=2.0.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=7.0.0",
+    "pytest-asyncio>=0.21.0",
+]
+proto-self = [
+    "openemotion>=0.1.0",
+]
+
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools]
+include-package-data = true
+
+[tool.setuptools.packages.find]
+include = [
+    "app*",
+    "egocore*",
+    "system_core*",
+    "runtime_metrics_aggregator*",
+    "emotion_context_formatter*",
+]
+where = ["."]

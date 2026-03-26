@@ -10,21 +10,11 @@ Usage:
     python -m app.main --status     # Show status only
 """
 
-import sys
 import os
 import socket
 import tempfile
 import argparse
 from pathlib import Path
-
-# Add parent directory to path for imports
-sys.path.insert(0, str(Path(__file__).parent.parent))
-
-# Add OpenEmotion to path for proto_self imports
-# This is required for Proto-Self Kernel integration
-_openemotion_path = Path(__file__).parent.parent.parent / "OpenEmotion"
-if _openemotion_path.exists():
-    sys.path.insert(0, str(_openemotion_path))
 
 from app.config import load_config, get_config, ConfigError
 from app.logger import init_logging, get_logger

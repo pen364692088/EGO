@@ -25,6 +25,7 @@ Telegram Evidence Collector - E4 真实证据采集
 
 import json
 import hashlib
+from copy import deepcopy
 from datetime import datetime
 from pathlib import Path
 from typing import Dict, Any, Optional, List
@@ -36,6 +37,7 @@ class E4EvidenceSample:
     """E4 证据样本"""
     sample_id: str
     timestamp: str
+    ledger_version: str = "host.evidence.ledger.v1"
     evidence_level: str = "E4"
     source_type: str = "real_channel"
     channel: str = "telegram"
@@ -44,14 +46,17 @@ class E4EvidenceSample:
     raw_update: Optional[Dict[str, Any]] = None
     normalized_event: Optional[Dict[str, Any]] = None
     openemotion_result: Optional[Dict[str, Any]] = None
+    openemotion_trace: Optional[Dict[str, Any]] = None
     response_plan: Optional[Dict[str, Any]] = None
     outbox_record: Optional[Dict[str, Any]] = None
 
     # 审计链
     timeline: List[Dict[str, Any]] = field(default_factory=list)
+    openemotion_events: List[Dict[str, Any]] = field(default_factory=list)
     tape: Optional[Dict[str, Any]] = None
     replay: Optional[Dict[str, Any]] = None
     replay_hash: Optional[str] = None
+    ledger: Optional[Dict[str, Any]] = None
 
     # 完整性检查
     evidence_completeness: Dict[str, bool] = field(default_factory=dict)
@@ -62,6 +67,7 @@ class E4EvidenceSample:
             "raw_update": self.raw_update is not None,
             "normalized_event": self.normalized_event is not None,
             "openemotion_result": self.openemotion_result is not None,
+            "openemotion_trace": self.openemotion_trace is not None,
             "response_plan": self.response_plan is not None,
             "outbox_record": self.outbox_record is not None,
             "timeline": len(self.timeline) > 0,
@@ -77,6 +83,7 @@ class E4EvidenceSample:
             "raw_update",
             "normalized_event",
             "openemotion_result",
+            "openemotion_trace",
             "response_plan",
             "outbox_record",
             "timeline",
@@ -164,9 +171,37 @@ class TelegramEvidenceCollector:
             return
 
         self._current_sample.openemotion_result = result
+        trace_payload = result.get("trace_payload")
+        if trace_payload:
+            self._current_sample.openemotion_trace = trace_payload
+        self._current_sample.openemotion_events.append({
+            "stage": "kernel_output",
+            "timestamp": datetime.now().isoformat(),
+            "event_id": result.get("event_id"),
+            "has_trace_payload": bool(trace_payload),
+        })
         self._current_sample.timeline.append({
             "stage": "openemotion_processed",
             "timestamp": datetime.now().isoformat(),
+            "event_id": result.get("event_id"),
+        })
+
+    def capture_openemotion_trace(
+        self,
+        trace_payload: Dict[str, Any],
+        *,
+        stage: str = "kernel_trace_mirror",
+    ) -> None:
+        """把 OpenEmotion trace 纳入主账本，而不是另起独立真相源。"""
+        if not self._current_sample or not trace_payload:
+            return
+
+        self._current_sample.openemotion_trace = trace_payload
+        self._current_sample.openemotion_events.append({
+            "stage": stage,
+            "timestamp": datetime.now().isoformat(),
+            "event_id": trace_payload.get("event_id"),
+            "trace_schema_version": trace_payload.get("schema_version"),
         })
 
     def capture_response_plan(self, plan: Dict[str, Any]) -> None:
@@ -214,11 +249,13 @@ class TelegramEvidenceCollector:
                 self._current_sample.normalized_event.get("event_id")
                 if self._current_sample.normalized_event else None
             ),
+            "ledger_ref": "ledger.json",
         }
         self._current_sample.replay = self._build_replay()
 
         # 检查完整性
         self._current_sample.check_completeness()
+        self._current_sample.ledger = self._build_ledger()
 
         # 保存到文件
         self._save_sample(self._current_sample)
@@ -288,9 +325,16 @@ class TelegramEvidenceCollector:
             "source_type": sample.source_type,
             "channel": sample.channel,
             "sample_id": sample.sample_id,
+            "primary_ledger_ref": "ledger.json",
+            "replay_input_source": {
+                "type": "ledger",
+                "path": "openemotion.trace_payload",
+                "authority": "OpenEmotion",
+            },
             "raw_update_ref": "raw_update.json" if sample.raw_update else None,
             "normalized_event_ref": "normalized_event.json" if sample.normalized_event else None,
             "openemotion_result_ref": "openemotion_result.json" if sample.openemotion_result else None,
+            "openemotion_trace_ref": "openemotion_trace.json" if sample.openemotion_trace else None,
             "response_plan_ref": "response_plan.json" if sample.response_plan else None,
             "outbox_record_ref": "outbox_record.json" if sample.outbox_record else None,
             "timeline_ref": "timeline.json" if sample.timeline else None,
@@ -298,16 +342,111 @@ class TelegramEvidenceCollector:
             "replay_hash": sample.replay_hash,
         }
 
+    def _build_ledger(self) -> Dict[str, Any]:
+        sample = self._current_sample
+        if sample is None:
+            return {}
+
+        normalized_event = sample.normalized_event or {}
+        conversation_context = normalized_event.get("conversation_context") or {}
+        trace_payload = sample.openemotion_trace or {}
+        result_payload = sample.openemotion_result or {}
+
+        return {
+            "ledger_version": sample.ledger_version,
+            "sample_id": sample.sample_id,
+            "timestamp": sample.timestamp,
+            "evidence_level": sample.evidence_level,
+            "source_type": sample.source_type,
+            "channel": sample.channel,
+            "ownership": {
+                "primary_ledger_owner": "EgoCore host evidence ledger",
+                "openemotion_trace_owner": "OpenEmotion trace_payload",
+                "compatibility_mirrors_owner": "EgoCore compatibility exports",
+                "bridge_policy": "ProtoSelfTraceBridge is compatibility-only and must not become an independent authority source.",
+            },
+            "ids": {
+                "sample_id": sample.sample_id,
+                "event_id": normalized_event.get("event_id") or trace_payload.get("event_id") or result_payload.get("event_id"),
+                "session_id": conversation_context.get("session_id"),
+                "thread_id": conversation_context.get("thread_id"),
+                "turn_id": conversation_context.get("turn_id"),
+                "update_id": (sample.raw_update or {}).get("update_id"),
+                "replay_id": (sample.replay or {}).get("replay_id"),
+                "tape_id": (sample.tape or {}).get("tape_id"),
+            },
+            "inputs": {
+                "raw_update": sample.raw_update,
+                "normalized_event": normalized_event,
+            },
+            "openemotion": {
+                "result": result_payload,
+                "trace_payload": trace_payload,
+                "events": sample.openemotion_events,
+                "trace_schema_version": trace_payload.get("schema_version"),
+                "result_schema_version": result_payload.get("schema_version"),
+            },
+            "host": {
+                "response_plan": sample.response_plan,
+                "outbox_record": sample.outbox_record,
+                "timeline": sample.timeline,
+            },
+            "replay_input": {
+                "authority": "OpenEmotion trace_payload within ledger.json",
+                "required_sections": [
+                    "inputs.normalized_event",
+                    "openemotion.trace_payload",
+                ],
+                "optional_sections": [
+                    "openemotion.result",
+                    "host.response_plan",
+                    "host.outbox_record",
+                ],
+                "compatibility_refs": {
+                    "replay_json": "replay.json",
+                    "openemotion_trace_json": "openemotion_trace.json" if sample.openemotion_trace else None,
+                },
+            },
+            "report_sources": {
+                "sample_summary": "ledger.json",
+                "acceptance_reports": [
+                    "ledger.json",
+                    "replay.json",
+                    "tape.json",
+                ],
+            },
+            "compatibility_mirrors": [
+                "sample.json",
+                "raw_update.json",
+                "normalized_event.json",
+                "openemotion_result.json",
+                "openemotion_trace.json" if sample.openemotion_trace else None,
+                "response_plan.json",
+                "outbox_record.json",
+                "timeline.json",
+                "tape.json",
+                "replay.json",
+                "summary.md",
+            ],
+            "replay_hash": sample.replay_hash,
+            "evidence_completeness": sample.evidence_completeness,
+        }
+
     def _save_sample(self, sample: E4EvidenceSample) -> Path:
         """保存样本到文件"""
         sample_dir = self.artifacts_dir / sample.sample_id
         sample_dir.mkdir(parents=True, exist_ok=True)
+
+        ledger = sample.ledger or {}
+        with open(sample_dir / "ledger.json", "w", encoding="utf-8") as f:
+            json.dump(ledger, f, indent=2, ensure_ascii=False)
 
         # 保存各部分证据
         evidence_files = {
             "raw_update.json": sample.raw_update,
             "normalized_event.json": sample.normalized_event,
             "openemotion_result.json": sample.openemotion_result,
+            "openemotion_trace.json": sample.openemotion_trace,
             "response_plan.json": sample.response_plan,
             "outbox_record.json": sample.outbox_record,
             "timeline.json": sample.timeline,
@@ -321,8 +460,11 @@ class TelegramEvidenceCollector:
                     json.dump(content, f, indent=2, ensure_ascii=False)
 
         # 保存完整样本
+        compat_sample = deepcopy(asdict(sample))
+        compat_sample["ledger_ref"] = "ledger.json"
+        compat_sample["authority"] = "compatibility_mirror"
         with open(sample_dir / "sample.json", "w", encoding="utf-8") as f:
-            json.dump(asdict(sample), f, indent=2, ensure_ascii=False)
+            json.dump(compat_sample, f, indent=2, ensure_ascii=False)
 
         # 生成 summary.md
         self._generate_summary(sample, sample_dir)
@@ -332,6 +474,8 @@ class TelegramEvidenceCollector:
     def _generate_summary(self, sample: E4EvidenceSample, sample_dir: Path) -> None:
         """生成样本摘要"""
         completeness = sample.evidence_completeness
+        ledger = sample.ledger or {}
+        replay_input = (ledger.get("replay_input") or {}).get("authority", "ledger.json")
 
         summary = f"""# E4 证据样本: {sample.sample_id}
 
@@ -350,11 +494,18 @@ class TelegramEvidenceCollector:
 | raw_update | {"✅" if completeness.get("raw_update") else "❌"} |
 | normalized_event | {"✅" if completeness.get("normalized_event") else "❌"} |
 | openemotion_result | {"✅" if completeness.get("openemotion_result") else "❌"} |
+| openemotion_trace | {"✅" if completeness.get("openemotion_trace") else "❌"} |
 | response_plan | {"✅" if completeness.get("response_plan") else "❌"} |
 | outbox_record | {"✅" if completeness.get("outbox_record") else "❌"} |
 | timeline | {"✅" if completeness.get("timeline") else "❌"} |
 | tape | {"✅" if completeness.get("tape") else "❌"} |
 | replay | {"✅" if completeness.get("replay") else "❌"} |
+
+## 统一账本
+
+- 主账本: `ledger.json`
+- OpenEmotion trace 权威输入: `{replay_input}`
+- 兼容镜像: `sample.json / replay.json / tape.json / openemotion_trace.json`
 
 ## 时间线
 
@@ -377,7 +528,7 @@ class TelegramEvidenceCollector:
 - 不证明跨渠道一致稳定
 
 ---
-*此样本由 TelegramEvidenceCollector 自动生成*
+*此样本由 TelegramEvidenceCollector 从 ledger.json 派生生成*
 """
 
         with open(sample_dir / "summary.md", "w", encoding="utf-8") as f:

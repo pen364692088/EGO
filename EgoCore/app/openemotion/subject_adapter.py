@@ -16,9 +16,6 @@ import time
 import httpx
 from typing import Optional, Dict, Any
 
-import sys
-sys.path.insert(0, '/home/moonlight/Project/Github/MyProject/EgoCore')
-
 from egocore.contracts.interaction_event_envelope_v1 import InteractionEventEnvelope
 
 logger = logging.getLogger(__name__)

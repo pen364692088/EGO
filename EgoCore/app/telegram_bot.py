@@ -10,6 +10,8 @@ v2.0.0 (2026-03-19):
 - Reply 通过 ReplyDispatcher 分发
 """
 
+import sys
+
 import asyncio
 import logging
 import os
@@ -39,6 +41,13 @@ from app.runtime import (
     DeliveryDedupePolicy,
 )
 from app.interaction.session_context_store import get_session_context_store
+
+# E4 Evidence Collector - for capturing outbox_record
+try:
+    from app.telegram_evidence_collector import get_evidence_collector
+    _EVIDENCE_COLLECTOR_AVAILABLE = True
+except ImportError:
+    _EVIDENCE_COLLECTOR_AVAILABLE = False
 from app.runtime_v2 import (
     RuntimeV2Loop,
     RuntimeV2PromptFiles,
@@ -393,6 +402,26 @@ class TelegramBot:
             return
 
         text = update.message.text
+
+        # E4 Evidence: Start capturing for real Telegram messages
+        if _EVIDENCE_COLLECTOR_AVAILABLE:
+            try:
+                collector = get_evidence_collector()
+                # Convert Update to dict for capture
+                update_dict = update.to_dict() if hasattr(update, 'to_dict') else {
+                    "update_id": update.update_id,
+                    "message": {
+                        "message_id": update.message.message_id,
+                        "date": update.message.date.isoformat() if update.message.date else None,
+                        "chat": {"id": chat_id, "type": "private"},
+                        "from": {"id": user_id, "username": username},
+                        "text": text,
+                    }
+                }
+                collector.start_sample(update_dict)
+                logger.info(f"[E4-EVIDENCE] Started evidence capture for update_id={update.update_id}")
+            except Exception as e:
+                logger.warning(f"[E4-EVIDENCE] Failed to start capture: {e}")
 
         # Skip only known commands (avoid treating file paths like /home/... as commands)
         if text.strip().startswith('/'):
@@ -1030,27 +1059,49 @@ class TelegramBot:
             text: 消息文本
             use_markdown: 是否使用 Markdown 格式（仅用于代码生成的可控消息）
         """
+        sent_message = None
         try:
             if use_markdown:
                 # 对 Markdown 特殊字符进行转义
                 from telegram.helpers import escape_markdown
                 escaped_text = escape_markdown(text, version=1)
-                await update.message.reply_text(escaped_text, parse_mode="Markdown")
+                sent_message = await update.message.reply_text(escaped_text, parse_mode="Markdown")
             else:
-                await update.message.reply_text(text)
+                sent_message = await update.message.reply_text(text)
         except Exception as e:
             logger.warning(f"Send failed (markdown={use_markdown}): {e}")
             # Fallback to plain text
             try:
-                await update.message.reply_text(text)
+                sent_message = await update.message.reply_text(text)
             except Exception as e2:
                 logger.error(f"Failed to send plain text: {e2}")
                 # 最后尝试截断
                 if len(text) > 4000:
                     try:
-                        await update.message.reply_text(text[:4000] + "\n... (已截断)")
+                        sent_message = await update.message.reply_text(text[:4000] + "\n... (已截断)")
                     except Exception as e3:
                         logger.error(f"Failed to send truncated: {e3}")
+
+        # E4 Evidence: Capture outbox_record
+        if sent_message and _EVIDENCE_COLLECTOR_AVAILABLE:
+            try:
+                collector = get_evidence_collector()
+                outbox_record = {
+                    "chat_id": sent_message.chat.id if sent_message.chat else None,
+                    "message_id": sent_message.message_id,
+                    "date": sent_message.date.isoformat() if sent_message.date else None,
+                    "text_length": len(text),
+                    "success": True,
+                }
+                collector.capture_outbox_record(outbox_record)
+                logger.info(f"[E4-EVIDENCE] outbox_record captured: chat_id={outbox_record['chat_id']} msg_id={outbox_record['message_id']}")
+
+                # Finalize and save the sample
+                sample = collector.finalize_sample()
+                if sample:
+                    logger.info(f"[E4-EVIDENCE] Sample finalized: {sample.sample_id} complete={sample.is_complete()}")
+            except Exception as e:
+                logger.warning(f"[E4-EVIDENCE] Failed to capture outbox_record: {e}")
 
     async def _send_result(self, update: Update, result: CommandResult) -> None:
         """Send CommandResult as Telegram message.

@@ -1,13 +1,5 @@
 from __future__ import annotations
 
-import sys
-from pathlib import Path
-
-# Add OpenEmotion to path BEFORE any OpenEmotion imports
-_openemotion_path = Path(__file__).parent.parent.parent.parent / "OpenEmotion"
-if _openemotion_path.exists() and str(_openemotion_path) not in sys.path:
-    sys.path.insert(0, str(_openemotion_path))
-
 import uuid
 from typing import Any, Dict, Optional
 from datetime import datetime
@@ -129,9 +121,31 @@ class RuntimeV2Loop:
             state.last_explicit_target = None
             state.last_inferred_action = None
             state.pending_bundle_summary = None
+            if self.proto_self_adapter is not None and hasattr(self.proto_self_adapter, "state_store"):
+                try:
+                    self.proto_self_adapter.state_store.record_session_reset(
+                        session_id=session_id,
+                        thread_id=session_id,
+                        source="runtime_v2",
+                        command="reset_session",
+                        generation_id=state.generation_id,
+                    )
+                except Exception as exc:
+                    logger.warning(f"[PSK-RESET] Failed to record session reset for {session_id}: {exc}")
             return state
         else:
             self._states[session_id] = RuntimeV2State(session_id=session_id)
+            if self.proto_self_adapter is not None and hasattr(self.proto_self_adapter, "state_store"):
+                try:
+                    self.proto_self_adapter.state_store.record_session_reset(
+                        session_id=session_id,
+                        thread_id=session_id,
+                        source="runtime_v2",
+                        command="reset_session",
+                        generation_id=self._states[session_id].generation_id,
+                    )
+                except Exception as exc:
+                    logger.warning(f"[PSK-RESET] Failed to record initial session reset for {session_id}: {exc}")
             return self._states[session_id]
 
     async def run_turn_typed(
@@ -213,6 +227,7 @@ class RuntimeV2Loop:
                         turn_id=turn_id,
                         step=step,
                         state=state,
+                        evidence_collector=evidence_collector,
                     )
                 except Exception as e:
                     # Proto-Self Kernel 失败不影响主流程

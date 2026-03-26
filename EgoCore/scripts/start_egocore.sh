@@ -11,7 +11,6 @@ EGOCORE_DIR="$PROJECT_ROOT"
 cd "$EGOCORE_DIR"
 
 # Configuration
-PYTHONPATH="D:/Project/AIProject/MyProject/Ego/OpenEmotion"
 LOCK_FILE="${TEMP:-/tmp}/egocore-telegram-poller.lock"
 LOG_DIR="$EGOCORE_DIR/logs"
 PID_FILE="$LOG_DIR/egocore.pid"
@@ -77,13 +76,14 @@ echo "  ✓ Log directory ready"
 
 # Step 4: Verify environment
 echo "[3/4] Verifying environment..."
-export PYTHONPATH
-if ! python -c "from app.openemotion_adapter import ProtoSelfAdapter" 2>/dev/null; then
-    echo "ERROR: Cannot import ProtoSelfAdapter"
-    echo "PYTHONPATH: $PYTHONPATH"
+if ! python -c "import openemotion; from app.openemotion_adapter import ProtoSelfAdapter" 2>/dev/null; then
+    echo "ERROR: package bootstrap incomplete"
+    echo "Install from repo root with:"
+    echo "  python -m pip install -e OpenEmotion"
+    echo "  python -m pip install -e EgoCore"
     exit 1
 fi
-echo "  ✓ Environment verified (PYTHONPATH: $PYTHONPATH)"
+echo "  ✓ Environment verified (editable packages importable)"
 
 # Step 5: Start EgoCore
 echo "[4/4] Starting EgoCore..."

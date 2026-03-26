@@ -1,15 +1,19 @@
 #!/bin/bash
-# EgoCore startup script with proper environment for Windows/Git Bash
+# EgoCore startup script with package-based imports
 
-# Get script directory (Windows format)
-SCRIPT_DIR="D:/Project/AIProject/MyProject/Ego/EgoCore"
-OPENEMOTION_DIR="D:/Project/AIProject/MyProject/Ego/OpenEmotion"
+set -e
 
-# Set Python path to include OpenEmotion (Windows format with semicolon)
-export PYTHONPATH="${OPENEMOTION_DIR};${PYTHONPATH}"
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
 echo "Starting EgoCore with Proto-Self support..."
-echo "PYTHONPATH: ${PYTHONPATH}"
+
+if ! python -c "import openemotion; import app.main" 2>/dev/null; then
+    echo "ERROR: missing installed packages. Expected 'openemotion' and 'app' to be importable."
+    echo "Install from repo root with:"
+    echo "  python -m pip install -e OpenEmotion"
+    echo "  python -m pip install -e EgoCore"
+    exit 1
+fi
 
 # Clean up any stale lock (Windows TEMP)
 rm -f "${TEMP}/egocore-telegram-poller.lock" 2>/dev/null

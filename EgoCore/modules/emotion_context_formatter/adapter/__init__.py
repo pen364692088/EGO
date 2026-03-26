@@ -1,0 +1,1 @@
+"""Emotion context formatter adapters."""

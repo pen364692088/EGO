@@ -10,14 +10,7 @@ Feature Flag: runtime_metrics_enabled
 """
 
 import os
-import sys
 from typing import Dict, Any, Optional
-from pathlib import Path
-
-# 添加 modules 到路径 (for both direct run and import)
-_modules_path = str(Path(__file__).parent.parent / "modules")
-if _modules_path not in sys.path:
-    sys.path.insert(0, _modules_path)
 
 from runtime_metrics_aggregator.adapter.metrics_adapter import create_adapter, MetricsAdapter
 from runtime_metrics_aggregator.config.feature_flags import FeatureFlagManager, MetricsFeatureConfig

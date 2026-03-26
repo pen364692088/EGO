@@ -111,9 +111,9 @@ def _build_psi_bucket(perceived: Dict[str, Any]) -> str:
     例如：多次文件操作请求会命中同一 cycle，实现 strengthen。
 
     v1.1 更新：
-    - 追加 safety_context.risk 到 psi_bucket
+    - 追加 safety_context.risk_level 到 psi_bucket
     - 高风险操作与低风险操作将被区分到不同 cycle
-    - 向后兼容：缺失 risk 时默认 "normal"
+    - 向后兼容由 schema 层吸收，缺失时默认 "normal"
     """
     intent = perceived.get("intent", "unknown") or "unknown"
     event_type = perceived.get("event_type", "unknown") or "unknown"
@@ -125,7 +125,7 @@ def _build_psi_bucket(perceived: Dict[str, Any]) -> str:
     # 结构化上下文：风险等级
     # 高风险操作应与低风险操作区分
     safety_ctx = perceived.get("safety_context", {})
-    risk_level = safety_ctx.get("risk", "normal") if safety_ctx else "normal"
+    risk_level = safety_ctx.get("risk_level", "normal") if safety_ctx else "normal"
 
     # 分层聚合策略：
     # - high/critical 风险：追加 risk 后缀，强制区分

@@ -94,8 +94,7 @@ def _score_identity_conflict(event: KernelEvent, state: ProtoSelfState) -> float
         return 0.0
 
     # 如果 safety_context 标记了风险，检查是否触及核心边界
-    # P0-R2 修复：risk_level 是字符串，需要映射为数值
-    risk_level_str = event.safety_context.get("risk", "low")
+    risk_level_str = event.safety_context.get("risk_level", "low")
     risk_level_map = {"low": 0.1, "medium": 0.3, "high": 0.5, "critical": 0.8}
     risk_level = risk_level_map.get(risk_level_str, 0.1)
 
@@ -126,12 +125,12 @@ def _score_risk(safety_context: Dict[str, Any]) -> float:
     """
     评估风险信号。
 
-    P0-R2 修复：risk 是字符串，需要映射为数值。
+    risk_level 是 canonical 字段；legacy risk 已在 schema 层吸收。
     """
     if not safety_context:
         return 0.0
 
-    risk_level_str = safety_context.get("risk", "low")
+    risk_level_str = safety_context.get("risk_level", "low")
     risk_level_map = {"low": 0.1, "medium": 0.3, "high": 0.5, "critical": 0.8}
     return risk_level_map.get(risk_level_str, 0.1)
 

@@ -9,11 +9,11 @@ Proto-Self Kernel Restore Module
 - 恢复逻辑必须在 EgoCore 侧
 """
 
-import json
 from pathlib import Path
 from typing import Any, Dict, Optional
 
 from openemotion.proto_self import ProtoSelfState
+from app.openemotion_adapter.proto_self_state_store import ProtoSelfStateStore
 
 
 class ProtoSelfRestore:
@@ -28,18 +28,11 @@ class ProtoSelfRestore:
 
     def __init__(self, mirror_dir: Optional[Path] = None):
         self.mirror_dir = mirror_dir or Path("artifacts/proto_self_mirror")
+        self.state_store = ProtoSelfStateStore(legacy_mirror_dir=self.mirror_dir)
 
     def restore_from_mirror(self) -> ProtoSelfState:
         """从镜像文件恢复状态。"""
-        mirror_file = self.mirror_dir / "state.json"
-        if mirror_file.exists():
-            try:
-                with open(mirror_file, "r") as f:
-                    data = json.load(f)
-                return ProtoSelfState.from_dict(data)
-            except Exception:
-                pass
-        return ProtoSelfState.empty()
+        return self.state_store.load_agent_global_state()
 
     def restore_from_trace(self, trace_data: Dict[str, Any]) -> ProtoSelfState:
         """
