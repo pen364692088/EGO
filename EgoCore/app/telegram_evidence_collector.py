@@ -228,6 +228,24 @@ class TelegramEvidenceCollector:
             "timestamp": datetime.now().isoformat(),
         })
 
+    def capture_host_response_plan(
+        self,
+        *,
+        status: str,
+        delivery_kind: str,
+        reply_text: str,
+        inferred: bool = False,
+    ) -> None:
+        """为命令/宿主直回路径记录最小 response plan。"""
+        plan = {
+            "status": status,
+            "delivery_kind": delivery_kind,
+            "reply_length": len(reply_text or ""),
+        }
+        if inferred:
+            plan["inferred"] = True
+        self.capture_response_plan(plan)
+
     def capture_outbox_record(self, record: Dict[str, Any]) -> None:
         """捕获实际发送记录"""
         sample = self._get_active_sample()
@@ -248,6 +266,16 @@ class TelegramEvidenceCollector:
         sample = self._get_active_sample()
         if not sample:
             return None
+
+        if sample.response_plan is None and sample.outbox_record is not None:
+            # command / fallback 路径仍属于 EgoCore host response contract，
+            # 允许在 finalize 前按已发送结果回填最小 response_plan。
+            self.capture_host_response_plan(
+                status="delivered_without_explicit_plan",
+                delivery_kind="final",
+                reply_text="x" * int(sample.outbox_record.get("text_length") or 0),
+                inferred=True,
+            )
 
         # 生成 replay hash
         sample.replay_hash = self._generate_replay_hash(sample)

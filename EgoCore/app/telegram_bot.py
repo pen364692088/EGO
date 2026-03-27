@@ -322,6 +322,59 @@ class TelegramBot:
             return True
         return chat_id in self.allowed_chat_ids
 
+    def _start_evidence_capture_for_update(
+        self,
+        update: Update,
+        *,
+        chat_id: int,
+        user_id: int,
+        username: Optional[str],
+        text: str,
+    ) -> None:
+        if not _EVIDENCE_COLLECTOR_AVAILABLE:
+            return
+        try:
+            collector = get_evidence_collector()
+            update_id = getattr(update, "update_id", None)
+            update_dict = update.to_dict() if hasattr(update, "to_dict") else {
+                "update_id": update_id,
+                "message": {
+                    "message_id": update.message.message_id if update.message else None,
+                    "date": update.message.date.isoformat() if update.message and update.message.date else None,
+                    "chat": {"id": chat_id, "type": "private"},
+                    "from": {"id": user_id, "username": username},
+                    "text": text,
+                },
+            }
+            collector.start_sample(update_dict)
+            logger.info(f"[E4-EVIDENCE] Started evidence capture for update_id={update_id}")
+        except Exception as e:
+            logger.warning(f"[E4-EVIDENCE] Failed to start capture: {e}")
+
+    def _capture_command_ingress(
+        self,
+        *,
+        update: Update,
+        session_key: str,
+        text: str,
+    ) -> None:
+        native_hooks = self._get_native_openemotion_hooks()
+        if not (native_hooks and native_hooks.enabled):
+            return
+        state = self._get_runtime_state(session_key)
+        turn_id = f"cmd_{update.message.message_id if update.message else uuid.uuid4().hex[:8]}"
+        try:
+            native_hooks.process_ingress(
+                session_id=session_key,
+                turn_id=turn_id,
+                source="telegram",
+                user_input=text,
+                state=state,
+                evidence_collector=get_evidence_collector() if _EVIDENCE_COLLECTOR_AVAILABLE else None,
+            )
+        except Exception as e:
+            logger.exception("native_openemotion.command_ingress.failed session=%s err=%s", session_key, e)
+
     async def handle_command(self, update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
         """Handle Telegram commands."""
         if not update.message or not update.message.text:
@@ -342,6 +395,20 @@ class TelegramBot:
         # Parse command
         text = update.message.text
         command, args = self.router.parse_command(text)
+        session_key = self._resolve_session_key(update, chat_id, user_id)
+
+        self._start_evidence_capture_for_update(
+            update,
+            chat_id=chat_id,
+            user_id=user_id,
+            username=username,
+            text=text,
+        )
+        self._capture_command_ingress(
+            update=update,
+            session_key=session_key,
+            text=text,
+        )
 
         logger.info(f"Command received: /{command} from user {username or user_id}")
 
@@ -447,7 +514,27 @@ class TelegramBot:
         session_key = self._resolve_session_key(update, chat_id, user_id)
         context_store = get_session_context_store()
         context_store.clear_session(session_key)
-        self._reset_runtime_state(session_key)
+        runtime_loop = self.runtime_v2_loop
+        if runtime_loop is not None:
+            state = runtime_loop.reset_session(session_key, command=f"/{command}")
+            self._runtime_states[session_key] = state
+        else:
+            state = self._reset_runtime_state(session_key)
+            native_hooks = self._get_native_openemotion_hooks()
+            runtime = getattr(native_hooks, "runtime", None) if native_hooks else None
+            adapter = getattr(runtime, "adapter", None) if runtime else None
+            state_store = getattr(adapter, "state_store", None)
+            if state_store is not None:
+                try:
+                    state_store.record_session_reset(
+                        session_id=session_key,
+                        thread_id=session_key,
+                        source="telegram_command",
+                        command=f"/{command}",
+                        generation_id=state.generation_id,
+                    )
+                except Exception as e:
+                    logger.warning(f"[PSK-RESET] Failed to record command reset for {session_key}: {e}")
         self._latest_message_id_by_session.pop(session_key, None)
         verb = "started fresh" if command == "new" else "reset"
         return CommandResult(
@@ -1677,24 +1764,54 @@ class TelegramBot:
 
         CommandResult 通常是代码生成的格式化输出，支持 Markdown。
         """
+        if _EVIDENCE_COLLECTOR_AVAILABLE:
+            try:
+                collector = get_evidence_collector()
+                collector.capture_host_response_plan(
+                    status="command_result",
+                    delivery_kind="final",
+                    reply_text=result.message,
+                )
+            except Exception as e:
+                logger.warning(f"[E4-EVIDENCE] Failed to capture command response_plan: {e}")
+
+        sent_message = None
+        sent_text = result.message
         try:
             from telegram.helpers import escape_markdown
             escaped_message = escape_markdown(result.message, version=1)
-            await update.message.reply_text(escaped_message, parse_mode="Markdown")
+            sent_message = await update.message.reply_text(escaped_message, parse_mode="Markdown")
         except Exception as e:
             logger.warning(f"Markdown send failed: {e}")
             # Fallback to plain text
             try:
-                await update.message.reply_text(result.message)
+                sent_message = await update.message.reply_text(result.message)
             except Exception as e2:
                 logger.error(f"Failed to send plain text: {e2}")
                 # 最后尝试截断
                 if len(result.message) > 4000:
                     try:
                         truncated = result.message[:4000] + "\n... (已截断)"
-                        await update.message.reply_text(truncated)
+                        sent_text = truncated
+                        sent_message = await update.message.reply_text(truncated)
                     except Exception as e3:
                         logger.error(f"Failed to send truncated: {e3}")
+
+        if sent_message and _EVIDENCE_COLLECTOR_AVAILABLE:
+            try:
+                collector = get_evidence_collector()
+                collector.capture_outbox_record(
+                    {
+                        "chat_id": sent_message.chat.id if sent_message.chat else None,
+                        "message_id": sent_message.message_id,
+                        "date": sent_message.date.isoformat() if sent_message.date else None,
+                        "text_length": len(sent_text),
+                        "success": True,
+                    }
+                )
+                collector.finalize_sample()
+            except Exception as e:
+                logger.warning(f"[E4-EVIDENCE] Failed to finalize command sample: {e}")
 
     def setup(self) -> None:
         """Set up bot handlers."""

@@ -134,3 +134,35 @@ def test_collector_keeps_parallel_message_samples_isolated(tmp_path):
     assert sample_a.sample_id != sample_b.sample_id
     assert sample_a.normalized_event["event_id"] == "session:test_turn_a"
     assert sample_b.normalized_event["event_id"] == "session:test_turn_b"
+
+
+def test_finalize_infers_minimal_response_plan_from_outbox(tmp_path):
+    collector = TelegramEvidenceCollector(artifacts_dir=tmp_path)
+    collector.start_sample(
+        {
+            "update_id": 3001,
+            "message": {
+                "message_id": 401,
+                "date": 1774483897,
+                "chat": {"id": 42, "type": "private"},
+                "from": {"id": 7, "is_bot": False, "username": "tester"},
+                "text": "/new",
+            },
+        }
+    )
+    collector.capture_outbox_record(
+        {
+            "chat_id": 42,
+            "message_id": 402,
+            "date": "2026-03-25T19:11:40.560504",
+            "text_length": 120,
+            "success": True,
+        }
+    )
+
+    sample = collector.finalize_sample()
+    assert sample is not None
+    assert sample.response_plan is not None
+    assert sample.response_plan["status"] == "delivered_without_explicit_plan"
+    assert sample.response_plan["reply_length"] == 120
+    assert sample.response_plan["inferred"] is True

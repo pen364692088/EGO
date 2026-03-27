@@ -105,7 +105,7 @@ class RuntimeV2Loop:
             self._states[session_id] = RuntimeV2State(session_id=session_id)
         return self._states[session_id]
 
-    def reset_session(self, session_id: str) -> RuntimeV2State:
+    def reset_session(self, session_id: str, *, command: str = "reset_session") -> RuntimeV2State:
         """
         重置 session，递增 generation_id 隔离旧消息。
         
@@ -127,7 +127,7 @@ class RuntimeV2Loop:
                         session_id=session_id,
                         thread_id=session_id,
                         source="runtime_v2",
-                        command="reset_session",
+                        command=command,
                         generation_id=state.generation_id,
                     )
                 except Exception as exc:
@@ -141,7 +141,7 @@ class RuntimeV2Loop:
                         session_id=session_id,
                         thread_id=session_id,
                         source="runtime_v2",
-                        command="reset_session",
+                        command=command,
                         generation_id=self._states[session_id].generation_id,
                     )
                 except Exception as exc:

@@ -1,8 +1,10 @@
 #!/usr/bin/env python3
 """
-Telegram Bot API E2E Test Harness - Real Telegram Testing (v2)
+Telegram Bot API E2E Test Harness - Telegram Outbound Probe (v2)
 
-使用真实 Telegram Bot API 进行 E2E 测试。
+使用真实 Telegram Bot API 进行 bot 侧 outbound probe。
+**它不会生成 user -> bot 的真实 ingress 更新**，因此不能单独作为
+`/new` / `restart` / `restore` 这类 O1 直接样本的采集工具。
 **只发送消息，不轮询 getUpdates**（避免与 EgoCore 冲突）。
 通过本地 artifact 验证结果：
 - logs/proto_self_trace.jsonl
@@ -10,16 +12,16 @@ Telegram Bot API E2E Test Harness - Real Telegram Testing (v2)
 - EgoCore 运行日志
 
 Usage:
-    # 发送单条消息，通过本地 artifact 验证
+    # 发送单条 bot 侧消息，通过本地 artifact 验证
     python scripts/telegram_bot_api_e2e.py --token "YOUR_BOT_TOKEN" --chat-id 123456789 --message "读取文件 /tmp/test.txt"
 
-    # 运行预定义测试套件
+    # 运行预定义测试套件（仍是 bot 侧 outbound probe）
     python scripts/telegram_bot_api_e2e.py --token "YOUR_BOT_TOKEN" --chat-id 123456789 --suite file_read
 
     # 验证 Proto-Self cycle（通过本地 state）
     python scripts/telegram_bot_api_e2e.py --token "YOUR_BOT_TOKEN" --chat-id 123456789 --message "读取文件" --verify-cycle
 
-    # 指定等待时间（让 EgoCore 处理消息）
+    # 指定等待时间（让 EgoCore 处理 bot 侧消息）
     python scripts/telegram_bot_api_e2e.py --token "YOUR_BOT_TOKEN" --chat-id 123456789 --message "测试" --wait-time 10
 
 Environment:
@@ -28,13 +30,14 @@ Environment:
     - TELEGRAM_CHAT_ID: Target chat ID
 
 Outputs:
-    - 消息发送状态
+    - bot 侧消息发送状态
     - 本地 artifact 验证结果
     - Proto-Self trace/state 变化
     - Pass/fail verdict
 
 Constraints:
     - 仅使用 Bot API (python-telegram-bot)，不使用 TDLib/Telethon
+    - 只能创建 bot -> user 消息，不能替代真实用户入站消息
     - **不轮询 getUpdates**（避免与 EgoCore 冲突）
     - 通过本地 artifact 验证结果
     - 测试逻辑在 harness 层，不侵入主体
@@ -66,11 +69,11 @@ except ImportError:
 
 class TelegramBotAPIE2E:
     """
-    真实 Telegram Bot API E2E 测试工具。
+    真实 Telegram Bot API outbound probe 工具。
 
     职责：
-    - 使用 Bot API 发送测试消息
-    - 轮询 getUpdates 获取回复
+    - 使用 Bot API 发送 bot 侧消息
+    - 通过本地 artifact 观察处理结果
     - 验证回复内容和格式
     - 检查 Proto-Self trace/state
     """
@@ -89,7 +92,11 @@ class TelegramBotAPIE2E:
 
     async def send_message(self, text: str, wait_time: int = 10) -> Dict[str, Any]:
         """
-        发送消息，等待 EgoCore 处理，通过本地 artifact 验证。
+        发送 bot 侧消息，等待 EgoCore 处理，通过本地 artifact 验证。
+
+        注意：
+        - 这不会制造 user -> bot 的真实 Telegram ingress
+        - 不能用来证明 `/new` / `restart` / `restore` 的 O1 直接样本
 
         Args:
             text: 要发送的消息文本
@@ -444,7 +451,7 @@ async def run_suite(args) -> int:
 def main() -> int:
     """Main entry point."""
     parser = argparse.ArgumentParser(
-        description="Telegram Bot API E2E Test Harness",
+        description="Telegram Bot API outbound probe harness",
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""
 Examples:
@@ -497,6 +504,9 @@ Available Suites:
         parser.error("请指定 --message 或 --suite")
 
     # Run appropriate mode
+    print("[INFO] This harness sends bot-side outbound messages only.")
+    print("[INFO] It cannot create user->bot ingress updates for O1 direct sample capture.")
+
     if args.suite:
         return asyncio.run(run_suite(args))
     else:
