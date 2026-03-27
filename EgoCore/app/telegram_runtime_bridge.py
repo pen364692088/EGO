@@ -212,6 +212,10 @@ class TelegramRuntimeBridge:
     CONFIRM_EXECUTION_PATTERNS = {
         "执行",
         "执行吧",
+        "继续",
+        "继续执行",
+        "接着",
+        "接着做",
         "开始执行",
         "开始",
         "开始吧",
@@ -334,6 +338,8 @@ class TelegramRuntimeBridge:
         normalized = re.sub(r"\s+", "", (text or "").strip().lower()).strip("?!？！。,.，\"'“”‘’")
         if normalized not in self.CONFIRM_EXECUTION_PATTERNS:
             return False
+        if getattr(state, "task_contract", None) and getattr(state, "contract_phase", None) in {"step_selected", "planning_stalled", "re_lock_needed", "executing"}:
+            return True
         if not getattr(state, "pending_artifacts", []):
             return False
         if getattr(state, "last_inferred_action", None) == "execute":

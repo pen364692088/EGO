@@ -420,6 +420,53 @@ async def test_native_loop_turn_publishes_artifact_stage_events(monkeypatch):
 
 
 @pytest.mark.asyncio
+async def test_native_loop_turn_preserves_state_for_planning_timeout(monkeypatch):
+    bot = TelegramBot(token="dummy", use_runtime_v2=True)
+    state = bot._get_runtime_state("telegram:dm:1")
+    state.ingress_context = {
+        "runtime_action": "execute_task",
+        "resolved_target": {
+            "artifact_id": "artifact://compacted/demo",
+            "artifact_ref": "artifact://compacted/demo",
+            "filename": "任务单.txt",
+        },
+    }
+
+    class Hook:
+        enabled = False
+
+    class NativeResult:
+        status = "waiting_input"
+        finish_reason = "planning_timeout"
+        reply_text = "下一步规划超时，当前任务状态已保留。回复“继续”可从当前步骤继续。"
+        task_contract = {"task_id": "contract_1", "goal": "x", "success_criteria": [], "hard_constraints": [], "risk_level": "medium", "ask_needed": False}
+        next_step_decision = {"step_id": "step_2", "action_type": "call_tool", "expected_signal": "write target file", "tool_name": "file"}
+        verification_result = {"step_id": "step_2", "expected_signal_matched": False, "need_relock": False, "stop_reason": "planning_timeout", "contract_delta": {"stage_error_code": "planning_timeout"}}
+        tool_results = [{"tool_name": "read_artifact", "result": {"success": True, "output": "在D:\\Project\\AIProject\\MyProject\\Test\\task_output.html创建html页面", "error": None, "metadata": {"stage_error_code": None}}}]
+
+    async def fake_run_turn(**kwargs):
+        return NativeResult()
+
+    bot.native_openemotion_hooks = Hook()
+    bot.native_loop = type("Loop", (), {"run_turn": None})()
+    monkeypatch.setattr(bot.native_loop, "run_turn", fake_run_turn)
+
+    result = await bot._run_native_loop_turn(
+        update=None,
+        session_key="telegram:dm:1",
+        text="[用户发送了文件: 任务单.txt]",
+        state=state,
+        ack_text=None,
+    )
+
+    assert result.status == "waiting_input"
+    assert state.task_status == "waiting_input"
+    assert state.contract_phase == "planning_stalled"
+    assert state.waiting_for_user_input is True
+    assert state.ingress_context["resolved_artifact_text"].startswith("在D:\\Project")
+
+
+@pytest.mark.asyncio
 async def test_native_loop_turn_returns_blocked_reply_on_failed_tool_without_final(monkeypatch):
     bot = TelegramBot(token="dummy", use_runtime_v2=True)
     state = bot._get_runtime_state("telegram:dm:1")

@@ -132,3 +132,22 @@ def test_telegram_bridge_promotes_execute_confirmation_for_pending_task():
     assert decision._runtime_action == "execute_task"
     assert ingress["request_mode"] == "execute"
     assert ingress["resolved_target"]["artifact_id"] == "artifact://task"
+
+
+def test_telegram_bridge_promotes_continue_for_planning_stalled_task():
+    bridge = RuntimeV2TelegramBridge()
+    state = RuntimeV2State(session_id="telegram:dm:1")
+    state.add_pending_artifact("artifact://task", "任务单.txt", "artifact://task")
+    state.last_inferred_action = "execute"
+    state.task_contract = {"task_id": "contract_1"}
+    state.contract_phase = "planning_stalled"
+    state.task_status = "waiting_input"
+    state.waiting_for_user_input = True
+
+    decision = bridge.inspect_ingress("继续", state)
+    ingress = bridge.build_ingress_context(decision, state)
+
+    assert decision.is_confirm_execution is True
+    assert decision._runtime_action == "execute_task"
+    assert ingress["request_mode"] == "execute"
+    assert ingress["resolved_target"]["artifact_id"] == "artifact://task"

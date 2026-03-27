@@ -1241,6 +1241,10 @@ class TelegramBot:
             for step_index, tool_entry in enumerate(result.tool_results):
                 tool_result = tool_entry.get("result") or {}
                 if tool_entry.get("tool_name") == "read_artifact":
+                    if tool_result.get("success") and tool_result.get("output"):
+                        state.ingress_context = state.ingress_context or {}
+                        state.ingress_context["resolved_artifact_text"] = tool_result.get("output")
+                        state.last_inferred_action = "execute"
                     await self._publish_phase1_event(
                         session_key=session_key,
                         kind="artifact_read_started",
@@ -1317,7 +1321,11 @@ class TelegramBot:
 
         if result.reply_text:
             verification = verification_result or {}
-            if verification.get("need_relock"):
+            if getattr(result, "status", None) == "waiting_input" and getattr(result, "finish_reason", None) == "planning_timeout":
+                state.task_status = "waiting_input"
+                state.waiting_for_user_input = True
+                state.contract_phase = "planning_stalled"
+            elif verification.get("need_relock"):
                 state.task_status = "blocked"
                 state.waiting_for_user_input = True
                 state.contract_phase = "re_lock_needed"

@@ -167,7 +167,7 @@ def test_native_loop_reads_artifact_as_explicit_step(monkeypatch):
     assert "页面已创建" in result.reply_text
 
 
-def test_native_loop_fast_paths_html_write_after_artifact_relock(tmp_path, monkeypatch):
+def test_native_loop_preserves_state_when_planning_times_out_after_artifact_relock(tmp_path, monkeypatch):
     client = FakeLLMClient()
     loop = NativeToolCallingLoop(llm_client=client)
     target = tmp_path / "task_output.html"
@@ -184,29 +184,10 @@ def test_native_loop_fast_paths_html_write_after_artifact_relock(tmp_path, monke
         },
     )
 
-    def fail_model_call(**kwargs):
-        raise AssertionError("fast-path html write should not call the model")
+    def timeout_model_call(**kwargs):
+        raise TimeoutError("The read operation timed out")
 
-    monkeypatch.setattr(loop.contract_runtime, "execute_single_step_with_model", fail_model_call)
-
-    def fake_execute_tool(tool_name, arguments, *_args):
-        target.write_text(arguments["content"], encoding="utf-8")
-        return type(
-            "ToolExecution",
-            (),
-            {
-                "to_dict": lambda self: {
-                    "success": True,
-                    "output": "ok",
-                    "error": None,
-                    "status": "success",
-                    "metadata": {"path": arguments["path"]},
-                    "execution_time_ms": 1.0,
-                }
-            },
-        )()
-
-    monkeypatch.setattr("app.agent_core.contract_runtime.execute_tool", fake_execute_tool)
+    monkeypatch.setattr(loop.contract_runtime, "execute_single_step_with_model", timeout_model_call)
 
     import asyncio
 
@@ -231,8 +212,10 @@ def test_native_loop_fast_paths_html_write_after_artifact_relock(tmp_path, monke
         )
     )
 
-    assert result.finish_reason == "fast_html_write"
+    assert result.finish_reason == "planning_timeout"
+    assert result.status == "waiting_input"
     assert result.tool_results[0]["tool_name"] == "read_artifact"
-    assert result.tool_results[1]["tool_name"] == "file"
-    assert target.exists() is True
-    assert "<html" in target.read_text(encoding="utf-8").lower()
+    assert result.next_step_decision["action_type"] == "call_tool"
+    assert result.task_contract["target_path"] == str(target)
+    assert result.verification_result["stop_reason"] == "planning_timeout"
+    assert "回复“继续”可从当前步骤继续" in result.reply_text

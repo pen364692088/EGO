@@ -8,13 +8,14 @@ from app.config import get_config, load_config
 from app.llm_client import LLMClient, get_llm_client
 from app.tools import get_registry, setup_tools
 
-from .contract_runtime import ContractRuntimeEngine, NextStepDecision, TaskContract, VerificationResult
+from .contract_runtime import ContractRuntimeEngine, NextStepDecision, PlanningTimeoutError, TaskContract, VerificationResult
 from .context_builder import NativeContextBuilder
 
 
 @dataclass
 class NativeLoopResult:
     reply_text: str
+    status: str = "completed_verified"
     tool_results: List[Dict[str, Any]] = field(default_factory=list)
     usage: List[Dict[str, Any]] = field(default_factory=list)
     finish_reason: Optional[str] = None
@@ -87,6 +88,7 @@ class NativeToolCallingLoop:
                 reply_text=reply_text,
             )
             return NativeLoopResult(
+                status="waiting_input",
                 reply_text=reply_text,
                 tool_results=[],
                 usage=[],
@@ -122,6 +124,7 @@ class NativeToolCallingLoop:
                         reply_text=reply_text,
                     )
                     return NativeLoopResult(
+                        status="waiting_input",
                         reply_text=reply_text,
                         tool_results=accumulated_tool_results,
                         usage=[],
@@ -138,6 +141,7 @@ class NativeToolCallingLoop:
                     reply_text="",
                 )
                 return NativeLoopResult(
+                    status="blocked",
                     reply_text=self.contract_runtime.build_read_artifact_reply(contract, verification),
                     tool_results=accumulated_tool_results,
                     usage=[],
@@ -155,42 +159,42 @@ class NativeToolCallingLoop:
             task_contract=contract.to_dict(),
             next_step=next_step.to_dict(),
         )
-        if self.contract_runtime.should_fast_path_html_write(contract, ingress_context):
-            tool_entry = self.contract_runtime.execute_fast_html_write_step(
-                contract=contract,
-                ingress_context=ingress_context,
-                session_key=session_key,
-            )
-            tool_results = accumulated_tool_results + [tool_entry]
-            tool_result_payload = tool_entry["result"]
-            verification = self.contract_runtime.verify_step(
-                contract=contract,
-                step=next_step,
-                tool_result=tool_result_payload,
-                reply_text="页面已创建。",
-            )
-            return NativeLoopResult(
-                reply_text="页面已创建。",
-                tool_results=tool_results,
-                usage=[],
-                finish_reason="fast_html_write",
-                task_contract=contract.to_dict(),
-                next_step_decision=next_step.to_dict(),
-                verification_result=verification.to_dict(),
-            )
         tools = self._build_tool_definitions()
         execution_messages = self.contract_runtime.build_execution_messages(
             base_messages=messages,
             contract=contract,
             step=next_step,
         )
-        reply_text, tool_results, usage, last_finish_reason = await asyncio.to_thread(
-            self.contract_runtime.execute_single_step_with_model,
-            llm_client=self.llm_client,
-            messages=execution_messages,
-            tools=tools,
-            session_key=session_key,
-        )
+        planning_timeout = 90 if contract.output_format == "html" and contract.target_path else 60
+        reply_timeout = 60 if contract.output_format == "html" else 45
+        try:
+            reply_text, tool_results, usage, last_finish_reason = await asyncio.to_thread(
+                self.contract_runtime.execute_single_step_with_model,
+                llm_client=self.llm_client,
+                messages=execution_messages,
+                tools=tools,
+                session_key=session_key,
+                planning_timeout=planning_timeout,
+                reply_timeout=reply_timeout,
+            )
+        except (PlanningTimeoutError, TimeoutError) as exc:
+            return NativeLoopResult(
+                status="waiting_input",
+                reply_text="下一步规划超时，当前任务状态已保留。回复“继续”可从当前步骤继续。",
+                tool_results=accumulated_tool_results,
+                usage=[],
+                finish_reason="planning_timeout",
+                task_contract=contract.to_dict(),
+                next_step_decision=next_step.to_dict(),
+                verification_result={
+                    "step_id": next_step.step_id,
+                    "observed_result": {"reply_text": "", "error": str(exc)},
+                    "expected_signal_matched": False,
+                    "contract_delta": {"reason": str(exc), "stage_error_code": "planning_timeout"},
+                    "need_relock": False,
+                    "stop_reason": "planning_timeout",
+                },
+            )
         if asyncio.iscoroutine(reply_text):
             reply_text, tool_results, usage, last_finish_reason = await reply_text
         tool_result_payload = tool_results[0]["result"] if tool_results else None
@@ -201,6 +205,7 @@ class NativeToolCallingLoop:
             reply_text=reply_text,
         )
         return NativeLoopResult(
+            status="completed_verified",
             reply_text=reply_text,
             tool_results=accumulated_tool_results + tool_results,
             usage=usage,
