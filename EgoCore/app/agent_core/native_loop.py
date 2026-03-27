@@ -70,6 +70,7 @@ class NativeToolCallingLoop:
         proto_self_context: Optional[Dict[str, Any]] = None,
         max_rounds: int = 6,
     ) -> NativeLoopResult:
+        accumulated_tool_results: List[Dict[str, Any]] = []
         contract = self.contract_runtime.lock_contract(
             session_key=session_key,
             user_input=user_input,
@@ -96,34 +97,55 @@ class NativeToolCallingLoop:
             )
         if next_step.action_type == "read_artifact":
             artifact_result = self.contract_runtime.execute_artifact_read_step(contract.source_artifact_id or "")
+            accumulated_tool_results.append(
+                {
+                    "tool_name": "read_artifact",
+                    "arguments": {"artifact_id": contract.source_artifact_id},
+                    "result": artifact_result,
+                }
+            )
             if artifact_result.get("success") and artifact_result.get("output"):
+                ingress_context = {**(ingress_context or {}), "resolved_artifact_text": artifact_result.get("output")}
                 contract = self.contract_runtime.lock_contract(
                     session_key=session_key,
                     user_input=user_input,
-                    ingress_context={**(ingress_context or {}), "resolved_artifact_text": artifact_result.get("output")},
+                    ingress_context=ingress_context,
                     proto_self_context=proto_self_context,
                 )
-            verification = self.contract_runtime.verify_step(
-                contract=contract,
-                step=next_step,
-                tool_result=artifact_result,
-                reply_text="",
-            )
-            return NativeLoopResult(
-                reply_text=self.contract_runtime.build_read_artifact_reply(contract, verification),
-                tool_results=[
-                    {
-                        "tool_name": "read_artifact",
-                        "arguments": {"artifact_id": contract.source_artifact_id},
-                        "result": artifact_result,
-                    }
-                ],
-                usage=[],
-                finish_reason="artifact_read_step",
-                task_contract=contract.to_dict(),
-                next_step_decision=next_step.to_dict(),
-                verification_result=verification.to_dict(),
-            )
+                next_step = self.contract_runtime.decide_next_step(contract=contract, ingress_context=ingress_context)
+                if next_step.action_type == "ask_user":
+                    reply_text = self.contract_runtime.build_ask_reply(contract)
+                    verification = self.contract_runtime.verify_step(
+                        contract=contract,
+                        step=next_step,
+                        tool_result=None,
+                        reply_text=reply_text,
+                    )
+                    return NativeLoopResult(
+                        reply_text=reply_text,
+                        tool_results=accumulated_tool_results,
+                        usage=[],
+                        finish_reason="ask_user_after_relock",
+                        task_contract=contract.to_dict(),
+                        next_step_decision=next_step.to_dict(),
+                        verification_result=verification.to_dict(),
+                    )
+            else:
+                verification = self.contract_runtime.verify_step(
+                    contract=contract,
+                    step=next_step,
+                    tool_result=artifact_result,
+                    reply_text="",
+                )
+                return NativeLoopResult(
+                    reply_text=self.contract_runtime.build_read_artifact_reply(contract, verification),
+                    tool_results=accumulated_tool_results,
+                    usage=[],
+                    finish_reason="artifact_read_step",
+                    task_contract=contract.to_dict(),
+                    next_step_decision=next_step.to_dict(),
+                    verification_result=verification.to_dict(),
+                )
 
         messages = self.context_builder.build_messages(
             session_key=session_key,
@@ -157,7 +179,7 @@ class NativeToolCallingLoop:
         )
         return NativeLoopResult(
             reply_text=reply_text,
-            tool_results=tool_results,
+            tool_results=accumulated_tool_results + tool_results,
             usage=usage,
             finish_reason=last_finish_reason,
             task_contract=contract.to_dict(),

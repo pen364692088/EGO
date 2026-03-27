@@ -120,6 +120,28 @@ def test_native_loop_reads_artifact_as_explicit_step(monkeypatch):
             "execution_time_ms": 1.0,
         },
     )
+    monkeypatch.setattr(
+        loop.contract_runtime,
+        "execute_single_step_with_model",
+        lambda **kwargs: (
+            "页面已创建。",
+            [
+                {
+                    "tool_name": "file",
+                    "arguments": {"operation": "write", "path": "D:\\Project\\AIProject\\MyProject\\Test\\task_output.html"},
+                    "result": {
+                        "success": True,
+                        "output": "ok",
+                        "error": None,
+                        "metadata": {"path": "D:\\Project\\AIProject\\MyProject\\Test\\task_output.html"},
+                        "execution_time_ms": 1.0,
+                    },
+                }
+            ],
+            [],
+            "stop",
+        ),
+    )
 
     import asyncio
 
@@ -139,6 +161,7 @@ def test_native_loop_reads_artifact_as_explicit_step(monkeypatch):
         )
     )
 
-    assert result.next_step_decision["action_type"] == "read_artifact"
+    assert result.next_step_decision["action_type"] in {"call_tool", "reply"}
     assert result.tool_results[0]["tool_name"] == "read_artifact"
-    assert result.verification_result["need_relock"] is True
+    assert len(result.tool_results) >= 2
+    assert "页面已创建" in result.reply_text
