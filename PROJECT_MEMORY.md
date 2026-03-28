@@ -50,6 +50,12 @@
 - **其他仓库**: 等待用户确认后推送
 - 当前环境提交/推送口径: 优先使用 Windows `cmd` 执行 `git commit` / `git push`；不要默认切到 PowerShell 口径
 
+### 默认开发闭环
+- 正式改动默认执行 `Spec -> Author -> Reviewer -> Verifier -> Publisher`
+- 默认状态流转: `pending -> spec_ready -> author_done -> review_passed -> verify_passed -> published`
+- 默认发布门槛: 只有 `review_passed + verify_passed` 才允许自动推远端
+- 正式说明文档: `docs/CODEX_CLOSED_LOOP_SELF_REVIEW_WORKFLOW.md`
+
 ### Codex Assistant Memory
 - 稳定记忆索引: `CODEX_MEMORY.md`
 - 结构化源文件: `.codex/memory/project_truth.jsonl` + `.codex/memory/user_preferences.jsonl`
@@ -79,6 +85,7 @@
 | 环境执行口径 | 当前工作区内 E2/E3 runner 以 Windows `py -3` 实跑通过；Linux `python3` 仅适合静态检查，依赖不完整 |
 | Git shell 口径 | 当前环境下正式 `git commit` / `git push` 以 Windows `cmd` 最稳；不要把 PowerShell 当默认发布口径 |
 | Git index.lock 陷阱 | 若提交时报 `.git/index.lock`，先确认没有活跃 git 进程；残留锁常来自挂住的 git 查询或异常中断。清理旧锁后再继续提交，不要在锁存在时反复重试 |
+| 默认开发闭环 | 正式改动默认走 `Spec -> Author -> Reviewer -> Verifier -> Publisher`；自 review 无阻断项且验证通过前，不得自动推远端 |
 | E5 准入门槛 | 进入观察期前，至少要有 1 个完整普通 real 样本 + 1 个完整且命中高风险路径的 real 样本 |
 | Cycle 身份升级 | `cycle_id` 已从纯 `psi_bucket` 聚合升级为 closure-sensitive signature，可区分 success / failure / repair 等 closure；仍未达到 full multi-step closure graph identity |
 | P4 修复口径 | `closure_family_id` 现由 coarse `family_bucket + action_signature` 决定，不再被 `risk_high` 这类 psi 后缀拆开；真实 `tool:file` blocked -> retry success 已可点亮一次 `repair_closure=true` |
@@ -123,6 +130,7 @@
 | 2026-03-27 | `restart continuity` 已拿到跨证据链正证据：`restart_egocore.sh --telegram` 真实重启日志 + post-restart `A3` 命中同一 `profile_rule`；但 `restore` 仍缺，post-restart 命中样本仍非完整单样本 E4 bundle |
 | 2026-03-27 / 2026-03-28 | `restore continuity` 已完成正式主链接线并拿到 `direct_real` 真实证据：显式 `--restore --telegram` 主链 + 首条 post-restore 完整 E4 样本 + post-restore continuity probe 均已落盘 |
 | 2026-03-28 | Codex 开发助手结构化记忆层完成首轮真实新会话验收：稳定记忆恢复、TaskHandoff 优先级、同任务 SessionCapsule 正向采用、异任务 capsule 拒绝污染均已验证 |
+| 2026-03-28 | 默认开发流程升级为闭环自审流：在“双速 Spec + Build/Verify/Observe 三泳道”之上，正式改动默认强制 `Author -> Reviewer -> Verifier -> Publisher`，并收口到统一模板与说明文档 |
 
 ---
 

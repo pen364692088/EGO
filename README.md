@@ -19,6 +19,10 @@ EGO 是 AI Agent 项目的总仓，负责集成 EgoCore（宿主）和 OpenEmoti
   - `TaskHandoffRecord` 为当前任务主权威
   - 同任务 `SessionCapsule` 可补充连续性，异任务 capsule 会被明确拒绝
   - 当前仍是手动喂入/脚本辅助启动，不是全自动注入
+- **默认开发流程**：已升级为闭环自审流
+  - 正式改动默认执行 `Spec -> Author -> Reviewer -> Verifier -> Publisher`
+  - 只有 `review_passed + verify_passed` 才允许自动推远端
+  - 正式说明文档：`docs/CODEX_CLOSED_LOOP_SELF_REVIEW_WORKFLOW.md`
 - **EgoCore Telegram 正式主线** 是：
   - `telegram_bot -> telegram_runtime_bridge -> native_loop -> contract_runtime -> openemotion hooks -> delivery`
   - 旧 `runtime_v2` 保留为兼容/桥接层，不再是 Telegram 当前正式执行口径
@@ -32,6 +36,11 @@ EGO 是 AI Agent 项目的总仓，负责集成 EgoCore（宿主）和 OpenEmoti
   - `PROJECT_MEMORY.md`
 
 ## 最近更新
+
+### 2026-03-28: 闭环自审开发流落地
+- 默认开发流程已从“分层混合 + 高强度自检”进一步收口为正式闭环：`Spec -> Author -> Reviewer -> Verifier -> Publisher`
+- 任务模板、快速启动模板、收口模板和记忆入口已同步到这套新流程
+- 自动推远端的门槛也已收紧到 `review_passed + verify_passed`
 
 ### 2026-03-28: Codex 记忆层新会话验收通过
 - 开发助手侧结构化记忆已在真实新会话中验证：稳定记忆恢复、TaskHandoff 优先级、同任务 SessionCapsule 采用、异任务 capsule 拒绝污染均已成立

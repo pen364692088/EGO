@@ -26,6 +26,7 @@
 | project-git-publish-v1 | 本仓提交流程 | PROJECT_MEMORY.md#Git 工作流;AGENTS.md#CLAUDE.md - 代码代理专用版 | revalidate_when_git_workflow_changes |
 | project-git-shell-default-v1 | Git shell 默认口径 | PROJECT_MEMORY.md#Git 工作流;PROJECT_MEMORY.md#已验证的关键发现 | revalidate_when_git_workflow_changes |
 | project-git-index-lock-v1 | Git index.lock 处理口径 | PROJECT_MEMORY.md#已验证的关键发现 | revalidate_when_git_workflow_changes |
+| project-closed-loop-workflow-v1 | 默认闭环自审开发流 | PROJECT_MEMORY.md#默认开发闭环;docs/CODEX_CLOSED_LOOP_SELF_REVIEW_WORKFLOW.md | revalidate_when_workflow_contract_changes |
 | project-codex-memory-acceptance-v1 | Codex 结构化记忆层新会话验收 | PROJECT_MEMORY.md#已验证的关键发现 | revalidate_when_memory_injection_contract_changes |
 
 ## 长期用户偏好
@@ -33,9 +34,10 @@
 | ID | 标题 | 来源 | 复核规则 |
 |---|---|---|---|
 | pref-auto-push-remote | 默认自动推送远端 | user_confirmation:2026-03-27:auto_push_remote | until_user_overrides |
-| pref-self-review-high | 默认高强度自检 | user_confirmation:2026-03-27:self_review_high | until_user_overrides |
-| pref-workflow-layered | 默认分层混合开发流 | user_confirmation:2026-03-27:layered_mixed_workflow | until_user_overrides |
+| pref-self-review-high | 默认高强度自检 | user_confirmation:2026-03-27:self_review_high;user_confirmation:2026-03-28:closed_loop_self_review | until_user_overrides |
+| pref-workflow-layered | 默认分层混合开发流 | user_confirmation:2026-03-27:layered_mixed_workflow;user_confirmation:2026-03-28:closed_loop_self_review | until_user_overrides |
 | pref-session-discipline | 保留任务边界新开会话纪律 | user_confirmation:2026-03-27:task_boundary_new_session | until_user_overrides |
+| pref-report-four-blocks | 默认四段交付格式 | user_confirmation:2026-03-28:closed_loop_self_review | until_user_overrides |
 
 ## 本地目录
 
