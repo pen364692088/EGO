@@ -1459,6 +1459,33 @@ def score_action(
     return rel_score + pred_score + uncertainty_penalty
 
 
+def _get_owner_backed_action_bias(action: str, target: Optional[str]) -> float:
+    """
+    Step04E: use the formal-owner-backed decision surface when available.
+
+    The real mainline should prefer the converged OpenEmotion self-model
+    contract, while retaining legacy fallback only as bounded compatibility.
+    """
+    if not target:
+        return 0.0
+
+    self_bias_weight = float(get_auto_tune_param("self_bias_weight", 0.2))
+    if abs(self_bias_weight) <= 1e-9:
+        return 0.0
+
+    if _openemotion_self_model and ENABLE_OPENEMOTION_SELF_MODEL:
+        try:
+            return self_bias_weight * float(_openemotion_self_model.get_action_bias(action, target=target))
+        except Exception:
+            pass
+
+    try:
+        self_model_v0 = get_self_model_v0(target)
+        return self_bias_weight * float(self_model_v0.get_action_bias(action))
+    except Exception:
+        return 0.0
+
+
 def select_action(
     state: EmotionState,
     target: str,
@@ -1509,14 +1536,7 @@ def select_action(
                 score += resid_bias
             elif action in {"approach", "repair_offer"}:
                 score -= resid_bias
-        # MVP-7.6 Phase 2: Apply self_model action_bias
-        try:
-            self_model_v0 = get_self_model_v0(target)
-            self_bias = self_model_v0.get_action_bias(action)
-            self_bias_weight = float(get_auto_tune_param("self_bias_weight", 0.2))
-            score += self_bias_weight * self_bias
-        except Exception:
-            pass  # Self-model bias is optional enhancement
+        score += _get_owner_backed_action_bias(action, target)
         scores[action] = score
     
     if test_mode or TEST_MODE:
@@ -2026,15 +2046,7 @@ def score_action_with_target(
     
     total_score = rel_score + pred_score + uncertainty_penalty
     
-    # MVP-7.6 Phase 2: Apply self_model action_bias
-    if target:
-        try:
-            self_model_v0 = get_self_model_v0(target)
-            self_bias = self_model_v0.get_action_bias(action)
-            self_bias_weight = float(get_auto_tune_param("self_bias_weight", 0.2))
-            total_score += self_bias_weight * self_bias
-        except Exception:
-            pass  # Self-model bias is optional enhancement
+    total_score += _get_owner_backed_action_bias(action, target)
     
     return total_score, combined
 

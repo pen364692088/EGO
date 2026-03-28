@@ -229,6 +229,84 @@ class SelfModel:
             return True
         return False
 
+    @staticmethod
+    def _clamp_bias(value: float) -> float:
+        return max(-1.0, min(1.0, value))
+
+    @staticmethod
+    def _capability_level_to_bias(level: str) -> Optional[float]:
+        mapping = {
+            CapabilityLevel.NONE.value: -1.0,
+            CapabilityLevel.BASIC.value: -0.5,
+            CapabilityLevel.INTERMEDIATE.value: 0.0,
+            CapabilityLevel.ADVANCED.value: 0.5,
+            CapabilityLevel.EXPERT.value: 1.0,
+        }
+        return mapping.get(level)
+
+    @staticmethod
+    def _normalize_label(label: Optional[str]) -> str:
+        if not label:
+            return ""
+        return label.strip().lower().replace(" ", "_")
+
+    def _get_action_confidence_bias(self, action: str) -> Optional[float]:
+        action = self._normalize_label(action)
+        for key in (f"action:{action}", f"action.{action}"):
+            if key in self.confidence_by_domain:
+                return self._clamp_bias((float(self.confidence_by_domain[key]) * 2.0) - 1.0)
+        return None
+
+    def _get_action_capability_bias(self, action: str) -> Optional[float]:
+        normalized_candidates = {
+            action,
+            f"action:{action}",
+            f"action.{action}",
+            f"social_{action}",
+            f"social-{action}",
+        }
+        for capability in self.capabilities:
+            normalized_labels = {
+                self._normalize_label(capability.category),
+                self._normalize_label(capability.capability_id),
+                self._normalize_label(capability.name),
+            }
+            if normalized_candidates.intersection(normalized_labels):
+                bias = self._capability_level_to_bias(capability.current_level)
+                if bias is not None:
+                    return bias
+        return None
+
+    def get_action_bias(self, action: str) -> float:
+        """
+        Return a minimal downstream decision bias for an action.
+
+        Step04E chooses a conservative, owner-backed surface:
+        - prefer explicit `confidence_by_domain["action:<action>"]`
+        - optionally allow action-shaped capability categories
+
+        This keeps MVP13 behavioral influence anchored to the converged
+        formal owner contract without expanding the schema.
+        """
+        normalized_action = self._normalize_label(action)
+        if not normalized_action:
+            return 0.0
+
+        components: List[float] = []
+
+        confidence_bias = self._get_action_confidence_bias(normalized_action)
+        if confidence_bias is not None:
+            components.append(confidence_bias)
+
+        capability_bias = self._get_action_capability_bias(normalized_action)
+        if capability_bias is not None:
+            components.append(capability_bias)
+
+        if not components:
+            return 0.0
+
+        return self._clamp_bias(sum(components) / len(components))
+
 
 def create_default_self_model(identity_handle: str) -> SelfModel:
     """创建默认自我模型"""

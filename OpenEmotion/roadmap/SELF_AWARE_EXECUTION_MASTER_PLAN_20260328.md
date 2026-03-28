@@ -116,6 +116,18 @@ Step 03 开始前，先执行一个固定前置守门：
 
 目的不是重复诊断，而是在已经收敛好的 formal owner contract 上做 owner-backed 的行为影响证明。
 
+如果 `Step 04D` 发现 formal owner 还没有被主链真实消费成 downstream decision difference，则必须继续插入：
+
+- `SELF_AWARE_STEP_04E_owner_backed_decision_surface.md`
+
+目的不是绕路，而是先补一个最小、受治理、可 replay 的 formal-owner-backed decision surface。
+
+在 `Step 04E` 完成后，必须继续插入：
+
+- `SELF_AWARE_STEP_04F_behavioral_influence_formal_proof.md`
+
+目的不是重复搭桥，而是在已建立的 owner-backed decision surface 上完成 paired intervention/control 正式证明。
+
 ### Step 05 — MVP14 Formal Proof
 
 把 endogenous drives / self-maintenance 从“可运行结构”推进到“真实影响候选加权、优先级和维护行为”。
@@ -150,7 +162,9 @@ Step 03 开始前，先执行一个固定前置守门：
 - `Step 04A` 已完成并发布，正式结论为：`behavioral influence proof currently blocked by self-model authority split`
 - `Step 04B` 已完成并发布，正式结论为：`formal self-model owner = openemotion/self_model/*`
 - `Step 04C` 已完成并发布，正式结论为：`formal owner contract converged on openemotion/self_model/*`
-- 后续正式施工从 `Step 04D` 开始
+- `Step 04D` 已完成并发布，正式结论为：`behavioral proof currently blocked by missing owner-backed decision surface`
+- `Step 04E` 已完成并发布，正式结论为：`owner-backed decision surface now exists on the real mainline`
+- 后续正式施工从 `Step 04F` 开始
 `Step 04` 仍必须继续服从 `Step 03A` 与 `Step 03` 已落定的 scope guard。
 
 补充说明：
@@ -186,6 +200,8 @@ Step 03 开始前，先执行一个固定前置守门：
 - `OpenEmotion/roadmap/SELF_AWARE_STEP_04B_REVIEW_20260328.md`
 - `OpenEmotion/roadmap/SELF_AWARE_STEP_04C_EXECUTION_REPORT_20260328.md`
 - `OpenEmotion/roadmap/SELF_AWARE_STEP_04C_REVIEW_20260328.md`
+- `OpenEmotion/roadmap/SELF_AWARE_STEP_04D_EXECUTION_REPORT_20260329.md`
+- `OpenEmotion/roadmap/SELF_AWARE_STEP_04E_EXECUTION_REPORT_20260329.md`
 
 ### 6.2 版本 spec
 
@@ -207,6 +223,8 @@ Step 03 开始前，先执行一个固定前置守门：
 - `Tasks/active/SELF_AWARE_STEP_04B_self_model_authority_resolution.md`
 - `Tasks/active/SELF_AWARE_STEP_04C_mvp13_contract_convergence.md`
 - `Tasks/active/SELF_AWARE_STEP_04D_behavioral_influence_proof.md`
+- `Tasks/active/SELF_AWARE_STEP_04E_owner_backed_decision_surface.md`
+- `Tasks/active/SELF_AWARE_STEP_04F_behavioral_influence_formal_proof.md`
 - `Tasks/active/SELF_AWARE_STEP_05_mvp14_formal_proof.md`
 - `Tasks/active/SELF_AWARE_STEP_06_mvp15_formal_proof.md`
 - `Tasks/active/SELF_AWARE_STEP_07_mvp16_unblock.md`

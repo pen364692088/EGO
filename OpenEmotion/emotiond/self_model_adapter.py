@@ -182,6 +182,36 @@ class SelfModelAdapter:
                 result["legacy_error"] = str(e)
         
         return result
+
+    def get_action_bias(self, action: str, target: Optional[str] = None) -> float:
+        """
+        Return action bias for the real mainline decision surface.
+
+        Formal owner bias is preferred when available. Legacy remains a
+        bounded fallback so the mainline keeps working if the formal owner
+        adapter is unavailable.
+        """
+        self._metrics["total_calls"] += 1
+
+        legacy_bias: Optional[float] = None
+
+        if self._new_model and hasattr(self._new_model, "get_action_bias"):
+            self._metrics["new_model_calls"] += 1
+            try:
+                return float(self._new_model.get_action_bias(action))
+            except Exception as e:
+                logger.warning(f"[SelfModelAdapter] New model get_action_bias failed: {e}")
+                self._metrics["errors"] += 1
+
+        if self._legacy_model and hasattr(self._legacy_model, "get_action_bias"):
+            self._metrics["legacy_calls"] += 1
+            try:
+                legacy_bias = float(self._legacy_model.get_action_bias(action))
+            except Exception as e:
+                logger.warning(f"[SelfModelAdapter] Legacy get_action_bias failed: {e}")
+                self._metrics["errors"] += 1
+
+        return legacy_bias if legacy_bias is not None else 0.0
     
     def _record_shadow_artifact(self, new_state: Dict, legacy_state: Dict) -> None:
         """记录 shadow artifact"""

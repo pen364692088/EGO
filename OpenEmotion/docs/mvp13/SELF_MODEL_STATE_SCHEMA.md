@@ -46,6 +46,25 @@ are the fields that already exist on the formal owner contract:
 - `capabilities`
 - `limitations`
 
+### 3.1 Minimal Owner-Backed Decision Surface
+
+As of Step04E, the first formal-owner-backed downstream decision surface is:
+
+- `confidence_by_domain["action:<action>"]`
+- `confidence_by_domain["action.<action>"]`
+
+These namespaced entries are interpreted as structured action confidence
+signals for the real mainline action scoring path. This choice stays inside
+the converged formal owner contract, keeps the signal numeric and replayable,
+and avoids re-promoting legacy-only behavioral tendency fields.
+
+Naming rule:
+
+- the namespace must be `action:<action>` or `action.<action>`
+- `<action>` must match a real mainline action in `emotiond/core.py::ACTION_SPACE`
+- other arbitrary confidence keys must not be used as formal MVP13 behavioral
+  proof levers unless separately normalized into the contract
+
 These are the fields whose controlled intervention may later be used to prove
 that the persistent self-model changes downstream behavior.
 
