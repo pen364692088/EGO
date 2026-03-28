@@ -1,0 +1,64 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "egocore/contracts/proto_self_v2.schema.json",
+  "title": "Proto-Self UpdatePacketV2",
+  "type": "object",
+  "required": [
+    "schema_version",
+    "event_id",
+    "timestamp",
+    "event",
+    "runtime_summary",
+    "task_summary",
+    "conversation_summary",
+    "safety_context"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": "proto_self.v2"
+    },
+    "event_id": {
+      "type": "string"
+    },
+    "timestamp": {
+      "type": "string"
+    },
+    "event": {
+      "type": "object",
+      "required": ["actor", "source", "event_type"],
+      "properties": {
+        "actor": {"type": "string"},
+        "source": {"type": "string"},
+        "event_type": {"type": "string"},
+        "user_intent": {"type": ["string", "null"]},
+        "raw_text": {"type": ["string", "null"]}
+      },
+      "additionalProperties": true
+    },
+    "executed_action_prev": {
+      "type": ["object", "null"]
+    },
+    "external_outcome": {
+      "type": ["object", "null"]
+    },
+    "runtime_summary": {
+      "type": "object"
+    },
+    "task_summary": {
+      "type": "object"
+    },
+    "conversation_summary": {
+      "type": "object"
+    },
+    "safety_context": {
+      "type": "object"
+    },
+    "intervention_context": {
+      "type": "object"
+    },
+    "prediction_snapshot_prev": {
+      "type": "object"
+    }
+  },
+  "additionalProperties": false
+}

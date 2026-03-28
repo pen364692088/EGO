@@ -21,19 +21,27 @@ logger = logging.getLogger(__name__)
 from openemotion.proto_self import (
     KernelEvent,
     ProtoSelfState,
-    SCHEMA_VERSION,
+    SCHEMA_VERSION as V1_SCHEMA_VERSION,
     kernel_event_from_payload,
     serialize_kernel_output,
 )
 from openemotion.proto_self.kernel import process_event
 from openemotion.proto_self.boundary import assert_no_direct_execution
+from openemotion.proto_self_v2 import (
+    SCHEMA_VERSION as V2_SCHEMA_VERSION,
+    UpdatePacketV2,
+    is_proto_self_v2_payload,
+    process_update_packet,
+    serialize_kernel_output_v2,
+    update_packet_from_payload,
+)
 from app.openemotion_adapter.proto_self_state_store import ProtoSelfStateStore
 
 
 class ProtoSelfAdapter:
     """
     Proto-Self Kernel 适配器。
-    
+
     职责：
     - 事件标准化：把 EgoCore 事件转换为 KernelEvent
     - 状态加载：从 mirror 文件加载 ProtoSelfState
@@ -70,8 +78,8 @@ class ProtoSelfAdapter:
 
         # 1. 标准化事件
         logger.info(f"[PSK-ADAPTER-02] Normalizing event...")
-        kernel_event = normalize_to_kernel_event(egocore_event)
-        event_context = _extract_host_state_context(kernel_event)
+        proto_self_input = normalize_to_proto_self_input(egocore_event)
+        event_context = _extract_host_state_context(proto_self_input)
 
         # 2. 加载状态
         logger.info(f"[PSK-ADAPTER-03] Loading state via host store rooted at {self.state_store.root_dir}")
@@ -80,11 +88,18 @@ class ProtoSelfAdapter:
 
         # 3. 调用 kernel
         logger.info(f"[PSK-ADAPTER-05] Calling kernel process_event...")
-        result = process_event(state, kernel_event)
+        if isinstance(proto_self_input, UpdatePacketV2):
+            result = process_update_packet(state, proto_self_input)
+        else:
+            result = process_event(state, proto_self_input)
         logger.info(f"[PSK-ADAPTER-06] Kernel returned, has_policy_hint={result.policy_hint is not None}")
 
         # 4. 边界检查
-        assert_no_direct_execution(result.to_dict())
+        assert_no_direct_execution(
+            serialize_kernel_output_v2(result)
+            if isinstance(proto_self_input, UpdatePacketV2)
+            else result.to_dict()
+        )
 
         # 5. 保存镜像
         mirror_path = self.mirror_dir / "state.json"
@@ -97,10 +112,10 @@ class ProtoSelfAdapter:
             self.state_store.record_event_binding(
                 session_id=session_id,
                 thread_id=event_context.get("thread_id"),
-                source=kernel_event.source or "unknown",
-                event_id=kernel_event.event_id,
+                source=_input_source(proto_self_input),
+                event_id=_input_event_id(proto_self_input),
                 turn_id=event_context.get("turn_id"),
-                event_type=kernel_event.event_type or "unknown",
+                event_type=_input_event_type(proto_self_input),
                 context=event_context,
             )
 
@@ -114,6 +129,8 @@ class ProtoSelfAdapter:
 
         # 7. 返回结果
         logger.info(f"[PSK-ADAPTER-11] Returning result")
+        if isinstance(proto_self_input, UpdatePacketV2):
+            return serialize_kernel_output_v2(result)
         return serialize_kernel_output(result)
 
     def load_latest_state(self, *, event_context: Optional[Dict[str, Any]] = None) -> ProtoSelfState:
@@ -128,11 +145,11 @@ class ProtoSelfAdapter:
 def normalize_to_kernel_event(egocore_event: Dict[str, Any]) -> KernelEvent:
     """
     把 EgoCore 事件标准化为 KernelEvent。
-    
+
     这是 adapter 的核心职责：确保事件格式一致。
     """
     payload = dict(egocore_event)
-    payload.setdefault("schema_version", SCHEMA_VERSION)
+    payload.setdefault("schema_version", V1_SCHEMA_VERSION)
     payload.setdefault("timestamp", datetime.now().isoformat())
     payload.setdefault("actor", "unknown")
     payload.setdefault("source", "unknown")
@@ -140,15 +157,51 @@ def normalize_to_kernel_event(egocore_event: Dict[str, Any]) -> KernelEvent:
     return kernel_event_from_payload(payload)
 
 
-def _extract_host_state_context(kernel_event: KernelEvent) -> Dict[str, Any]:
-    conversation_context = kernel_event.conversation_context or {}
-    runtime_summary = kernel_event.runtime_summary or {}
+def normalize_to_proto_self_input(egocore_event: Dict[str, Any]) -> KernelEvent | UpdatePacketV2:
+    payload = dict(egocore_event)
+    payload.setdefault("timestamp", datetime.now().isoformat())
+    if is_proto_self_v2_payload(payload):
+        return update_packet_from_payload(payload)
+    payload.setdefault("schema_version", V1_SCHEMA_VERSION)
+    payload.setdefault("actor", "unknown")
+    payload.setdefault("source", "unknown")
+    payload.setdefault("event_type", "unknown")
+    return kernel_event_from_payload(payload)
+
+
+def _extract_host_state_context(proto_self_input: KernelEvent | UpdatePacketV2) -> Dict[str, Any]:
+    if isinstance(proto_self_input, UpdatePacketV2):
+        conversation_context = proto_self_input.conversation_summary or {}
+        runtime_summary = proto_self_input.runtime_summary or {}
+        source = proto_self_input.event.source
+        event_type = proto_self_input.event.event_type
+    else:
+        conversation_context = proto_self_input.conversation_context or {}
+        runtime_summary = proto_self_input.runtime_summary or {}
+        source = proto_self_input.source
+        event_type = proto_self_input.event_type
     return {
         "session_id": conversation_context.get("session_id"),
         "thread_id": conversation_context.get("thread_id") or conversation_context.get("conversation_id"),
         "turn_id": conversation_context.get("turn_id"),
-        "source": kernel_event.source,
-        "event_type": kernel_event.event_type,
+        "source": source,
+        "event_type": event_type,
         "state_scope": runtime_summary.get("state_scope"),
         "experiment_id": runtime_summary.get("experiment_id"),
     }
+
+
+def _input_event_id(proto_self_input: KernelEvent | UpdatePacketV2) -> str:
+    return proto_self_input.event_id
+
+
+def _input_source(proto_self_input: KernelEvent | UpdatePacketV2) -> str:
+    if isinstance(proto_self_input, UpdatePacketV2):
+        return proto_self_input.event.source or "unknown"
+    return proto_self_input.source or "unknown"
+
+
+def _input_event_type(proto_self_input: KernelEvent | UpdatePacketV2) -> str:
+    if isinstance(proto_self_input, UpdatePacketV2):
+        return proto_self_input.event.event_type or "unknown"
+    return proto_self_input.event_type or "unknown"

@@ -4,6 +4,7 @@ from app.runtime_v2.proto_self_runtime import (
     build_external_result_event,
     build_proto_self_ingress_event,
     build_response_plan_payload,
+    resolve_proto_self_schema_version,
 )
 from app.runtime_v2.runtime_reply import RuntimeV2Reply, RuntimeV2TurnResult
 from app.runtime_v2.state import RuntimeV2State
@@ -39,6 +40,33 @@ def test_build_proto_self_ingress_event_uses_runtime_shape():
     assert event["runtime_summary"]["restore_observation"]["restore_id"] == "restore_001"
 
 
+def test_resolve_proto_self_schema_version_defaults_to_v1():
+    state = RuntimeV2State(session_id="session:test")
+    assert resolve_proto_self_schema_version(state) == "proto_self.v1"
+
+
+def test_build_proto_self_ingress_event_supports_v2_shape():
+    state = RuntimeV2State(session_id="session:test")
+    state.ingress_context = {
+        "proto_self_version": "v2",
+        "prediction_snapshot_prev": {"expected_success": True},
+        "executed_action_prev": {"kind": "reply"},
+    }
+    event = build_proto_self_ingress_event(
+        session_id="session:test",
+        turn_id="turn_002",
+        source="telegram",
+        user_input="帮我看下 app.py",
+        state=state,
+    )
+
+    assert event["schema_version"] == "proto_self.v2"
+    assert event["event"]["source"] == "telegram"
+    assert event["safety_context"]["risk_level"] == "low"
+    assert event["prediction_snapshot_prev"]["expected_success"] is True
+    assert event["external_outcome"] is None
+
+
 def test_build_external_result_event_preserves_feedback_contract():
     state = RuntimeV2State(session_id="session:test")
     state.current_goal = "执行任务"
@@ -53,6 +81,27 @@ def test_build_external_result_event_preserves_feedback_contract():
     assert event["safety_context"]["risk_level"] == "high"
     assert event["external_result"]["success"] is False
     assert event["task_context"]["blocked_tasks"] == 1
+
+
+def test_build_external_result_event_supports_v2_shape():
+    state = RuntimeV2State(session_id="session:test")
+    state.current_goal = "执行任务"
+    state.ingress_context = {
+        "proto_self_version": "v2",
+        "executed_action_prev": {"kind": "tool"},
+    }
+    event = build_external_result_event(
+        session_id="session:test",
+        turn_id="turn_003",
+        step=1,
+        tool_result={"success": False, "tool": "shell", "exit_code": 1, "stderr": "boom"},
+        state=state,
+    )
+
+    assert event["schema_version"] == "proto_self.v2"
+    assert event["event"]["event_type"] == "tool_result"
+    assert event["external_outcome"]["success"] is False
+    assert event["executed_action_prev"]["kind"] == "tool"
 
 
 def test_build_external_result_event_does_not_steal_family_or_repair_semantics():

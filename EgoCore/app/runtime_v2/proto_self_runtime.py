@@ -19,6 +19,13 @@ def assess_risk_level(user_input: str) -> str:
     return assess_message_risk_level(user_input)
 
 
+def resolve_proto_self_schema_version(state: RuntimeV2State) -> str:
+    ingress_context = state.ingress_context or {}
+    if ingress_context.get("proto_self_version") == "v2":
+        return "proto_self.v2"
+    return "proto_self.v1"
+
+
 def build_proto_self_ingress_event(
     *,
     session_id: str,
@@ -29,6 +36,42 @@ def build_proto_self_ingress_event(
 ) -> Dict[str, Any]:
     risk_level = assess_risk_level(user_input)
     restore_observation = (state.ingress_context or {}).get("restore_observation")
+    schema_version = resolve_proto_self_schema_version(state)
+    if schema_version == "proto_self.v2":
+        ingress_context = state.ingress_context or {}
+        return {
+            "schema_version": schema_version,
+            "event_id": f"{session_id}_{turn_id}",
+            "timestamp": datetime.now().isoformat(),
+            "event": {
+                "actor": "user",
+                "source": source,
+                "event_type": "user_message",
+                "user_intent": user_input[:100] if user_input else None,
+                "raw_text": user_input,
+            },
+            "conversation_summary": {
+                "session_id": session_id,
+                "thread_id": session_id,
+                "turn_id": turn_id,
+            },
+            "task_summary": {
+                "pending_tasks": 1 if state.current_goal else 0,
+                "blocked_tasks": 0,
+            },
+            "runtime_summary": {
+                "runtime": "runtime_v2",
+                "state_scope": "agent_global",
+                "restore_observation": restore_observation,
+            },
+            "safety_context": {
+                "risk_level": risk_level,
+            },
+            "executed_action_prev": ingress_context.get("executed_action_prev"),
+            "external_outcome": None,
+            "intervention_context": ingress_context.get("intervention_context", {}),
+            "prediction_snapshot_prev": ingress_context.get("prediction_snapshot_prev", {}),
+        }
     return {
         "event_id": f"{session_id}_{turn_id}",
         "timestamp": datetime.now().isoformat(),
@@ -67,6 +110,46 @@ def build_external_result_event(
     state: RuntimeV2State,
 ) -> Dict[str, Any]:
     failed = not tool_result.get("success")
+    schema_version = resolve_proto_self_schema_version(state)
+    if schema_version == "proto_self.v2":
+        ingress_context = state.ingress_context or {}
+        return {
+            "schema_version": schema_version,
+            "event_id": f"{session_id}_{turn_id}_tool_{step}",
+            "timestamp": datetime.now().isoformat(),
+            "event": {
+                "actor": "system",
+                "source": "runtime",
+                "event_type": "tool_result",
+                "user_intent": None,
+                "raw_text": None,
+            },
+            "conversation_summary": {
+                "session_id": session_id,
+                "thread_id": session_id,
+                "turn_id": turn_id,
+            },
+            "task_summary": {
+                "pending_tasks": 1 if state.current_goal else 0,
+                "blocked_tasks": 1 if failed else 0,
+            },
+            "runtime_summary": {
+                "runtime": "runtime_v2",
+                "state_scope": "agent_global",
+            },
+            "safety_context": {
+                "risk_level": risk_level_from_external_result(failed=failed),
+            },
+            "executed_action_prev": ingress_context.get("executed_action_prev"),
+            "external_outcome": {
+                "success": tool_result.get("success", False),
+                "tool": tool_result.get("tool"),
+                "exit_code": tool_result.get("exit_code"),
+                "error": tool_result.get("stderr", "")[:200] if failed else None,
+            },
+            "intervention_context": ingress_context.get("intervention_context", {}),
+            "prediction_snapshot_prev": ingress_context.get("prediction_snapshot_prev", {}),
+        }
     return {
         "event_id": f"{session_id}_{turn_id}_tool_{step}",
         "timestamp": datetime.now().isoformat(),
