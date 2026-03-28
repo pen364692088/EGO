@@ -95,6 +95,11 @@ except ImportError:
 
 # MVP15: Shadow reflection mode (optional)
 ENABLE_MVP15_SHADOW = os.environ.get("ENABLE_MVP15_SHADOW", "true").lower() == "true"
+try:
+    from emotiond.reflection_adapter import get_reflection_adapter
+    _mvp15_reflection_adapter = get_reflection_adapter(enable_guidance=True)
+except ImportError:
+    _mvp15_reflection_adapter = None
 
 # MVP13: Mirror read mode (optional)
 ENABLE_MVP13_MIRROR = os.environ.get("ENABLE_MVP13_MIRROR", "true").lower() == "true"
@@ -1371,6 +1376,13 @@ async def generate_plan(request: PlanRequest) -> PlanResponse:
     if budget.is_low:
         key_points.append(f"Note: Low energy budget ({budget.budget:.2f}) - using concise responses")
         constraints.append("Keep response brief due to fatigue")
+
+    reflection_guidance = _build_reflection_guidance(
+        target=focus_target,
+        target_id=target_id,
+        relationship=target_relationship,
+        source="core.generate_plan",
+    )
     
     return PlanResponse(
         tone=tone, intent=intent, focus_target=focus_target, key_points=key_points, 
@@ -1386,7 +1398,8 @@ async def generate_plan(request: PlanRequest) -> PlanResponse:
         w_explore=w_explore_adjusted,
         learning_rate_multiplier=learning_rate_multiplier,
         self_report=self_report,
-        intent_contract=intent_contract
+        intent_contract=intent_contract,
+        reflection_guidance=reflection_guidance,
     )
 
 
@@ -1506,6 +1519,29 @@ def _get_drive_owner_backed_action_bias(action: str) -> float:
         return drive_bias_weight * float(_mvp14_adapter.get_owner_backed_action_bias(action))
     except Exception:
         return 0.0
+
+
+def _build_reflection_guidance(
+    *,
+    target: str,
+    target_id: str,
+    relationship: Dict[str, float],
+    source: str,
+) -> Optional[Dict[str, Any]]:
+    """Build bounded MVP15 reflection guidance for current mainline surfaces."""
+    if not _mvp15_reflection_adapter:
+        return None
+    try:
+        return _mvp15_reflection_adapter.build_guidance(
+            target=target,
+            target_id=target_id,
+            state=emotion_state,
+            relationship=relationship,
+            source=source,
+        )
+    except Exception as e:
+        logger.debug(f"[MVP15] reflection guidance unavailable: {e}")
+        return None
 
 
 def select_action(
@@ -2385,6 +2421,15 @@ async def generate_explanation_v31(
             "policy_override": policy_override,
         }
     }
+
+    reflection_guidance = _build_reflection_guidance(
+        target=target,
+        target_id=target_id,
+        relationship=relationship,
+        source="core.generate_explanation_v31",
+    )
+    if reflection_guidance is not None:
+        explanation["reflection_guidance"] = reflection_guidance
     
     return explanation
 

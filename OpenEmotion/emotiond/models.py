@@ -8,20 +8,20 @@ from typing import List, Dict, Any, Optional
 class Event(BaseModel):
     """
     Event model for POST /event
-    
+
     Layer semantics (MVP-7.4):
     - Self: agent's own emotional state (agent_id)
     - Relation: agent's relationship with counterparty (agent_id -> counterparty_id)
     - Other: agent's inference about counterparty's state (optional)
-    
+
     New fields (recommended):
     - agent_id: whose emotion/relationship is being updated (default: "agent")
     - counterparty_id: who the relationship is with (default: derived from actor)
-    
+
     Legacy fields (backward compatible):
     - actor: who initiated the event (for world_event, this is the counterparty)
     - target: who received the event
-    
+
     Audit fields (MVP-7.5):
     - correlation_id: trace ID for request tracing across hook → tool → emotiond → enforcer
     """
@@ -35,7 +35,7 @@ class Event(BaseModel):
     counterparty_id: Optional[str] = None  # Who the relationship is with
     # MVP-7.5: Audit trail
     correlation_id: Optional[str] = None  # Trace ID for request tracing
-    
+
     def get_agent_id(self) -> str:
         """Get agent_id with fallback."""
         if self.agent_id:
@@ -46,7 +46,7 @@ class Event(BaseModel):
         if self.type == "user_message":
             return self.target
         return self.target
-    
+
     def get_counterparty_id(self) -> str:
         """Get counterparty_id with fallback to legacy logic."""
         if self.counterparty_id:
@@ -64,7 +64,7 @@ class Event(BaseModel):
 class DecisionResponse(BaseModel):
     """
     MVP-7.5: Decision response with audit trail fields.
-    
+
     Used by /decision endpoints to return action selections with
     machine-parseable audit information for replay compatibility.
     """
@@ -82,14 +82,14 @@ class DecisionResponse(BaseModel):
 class PlanRequest(BaseModel):
     """
     Request model for POST /plan
-    
+
     Phase D (P1.1): Explicit identity/relationship fields
-    
+
     Field semantics:
     - target_id: 会话隔离键 (conversationId) - used for session isolation and prediction lookups
     - counterparty_id: 关系对象 - who the relationship is with
     - agent_id: 本体身份 - whose emotion/relationship is being managed
-    
+
     Backward compatibility:
     - If counterparty_id not provided, falls back to focus_target -> user_id
     - If target_id not provided, falls back to counterparty_id
@@ -101,7 +101,7 @@ class PlanRequest(BaseModel):
     target_id: Optional[str] = None  # 会话隔离键 (conversationId)
     counterparty_id: Optional[str] = None  # 关系对象
     agent_id: Optional[str] = None  # 本体身份
-    
+
     def get_counterparty_id(self) -> str:
         """Get counterparty_id with fallback to focus_target -> user_id."""
         if self.counterparty_id:
@@ -109,13 +109,13 @@ class PlanRequest(BaseModel):
         if self.focus_target:
             return self.focus_target
         return self.user_id
-    
+
     def get_target_id(self) -> str:
         """Get target_id with fallback to counterparty_id."""
         if self.target_id:
             return self.target_id
         return self.get_counterparty_id()
-    
+
     def get_agent_id(self) -> str:
         """Get agent_id with fallback to 'agent'."""
         return self.agent_id or "agent"
@@ -156,6 +156,7 @@ class PlanResponse(BaseModel):
     learning_rate_multiplier: Optional[float] = None  # Adjusted learning rate
     self_report: Optional[Dict[str, Any]] = None  # MVP-7: structured self-report (from self-model only)
     intent_contract: Optional[Dict[str, Any]] = None  # MVP11.5: response intent contract
+    reflection_guidance: Optional[Dict[str, Any]] = None  # MVP15: bounded reflection/counterfactual summary
 
 
 class AppraisalResult(BaseModel):
