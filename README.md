@@ -4,15 +4,21 @@ EGO 是 AI Agent 项目的总仓，负责集成 EgoCore（宿主）和 OpenEmoti
 
 ## 当前权威状态
 
-截至 2026-03-27，当前入口口径统一如下：
+截至 2026-03-28，当前入口口径统一如下：
 
 - **Proto-Self Kernel v1** 已完成真实 Telegram 主链接入，并完成 P4 真链修复
   - `tool:file` blocked / success 已在真实样本中同 family、不同 identity
   - 首次 retry-success 已在真实样本中点亮 `repair_closure=true`
-- **MVS E5 观察状态**：已拿到 `/new continuity` 与 `restart continuity` 的强真实正证据
+- **MVS E5 观察状态**：`/new continuity` 与 `restore continuity` 已有 `direct_real` 真实正证据，`restart continuity` 仍主要是跨证据链正证据
   - 显式默认规则现已在真实链路中由 `profile_memory` 持久化并在多次 `/new` 后继续命中
-  - `restart continuity` 已有“真实重启日志 + post-restart 命中样本”的跨证据链正证据
-  - 当前仍不能宣称 `E5 稳定成立` 或 `Developmental Self` 准入通过；`restore` 仍是最高优先级缺口
+  - `restore continuity` 已有显式 `--restore --telegram` 主链、首条 post-restore 完整 E4 样本、以及 post-restore continuity probe
+  - `restart continuity` 已有“真实重启日志 + post-restart 命中样本”的跨证据链正证据，但 post-restart 命中样本仍非完整单样本 E4 bundle
+  - 当前仍不能宣称 `E5 稳定成立` 或 `Developmental Self` 准入通过
+- **Codex Assistant Memory**：开发助手侧结构化持久记忆已完成首轮真实新会话验收
+  - `CODEX_MEMORY.md` 可恢复稳定项目真相与长期偏好
+  - `TaskHandoffRecord` 为当前任务主权威
+  - 同任务 `SessionCapsule` 可补充连续性，异任务 capsule 会被明确拒绝
+  - 当前仍是手动喂入/脚本辅助启动，不是全自动注入
 - **EgoCore Telegram 正式主线** 是：
   - `telegram_bot -> telegram_runtime_bridge -> native_loop -> contract_runtime -> openemotion hooks -> delivery`
   - 旧 `runtime_v2` 保留为兼容/桥接层，不再是 Telegram 当前正式执行口径
@@ -27,11 +33,21 @@ EGO 是 AI Agent 项目的总仓，负责集成 EgoCore（宿主）和 OpenEmoti
 
 ## 最近更新
 
+### 2026-03-28: Codex 记忆层新会话验收通过
+- 开发助手侧结构化记忆已在真实新会话中验证：稳定记忆恢复、TaskHandoff 优先级、同任务 SessionCapsule 采用、异任务 capsule 拒绝污染均已成立
+- 当前形态仍是“结构化记忆 + 手动喂入/脚本辅助启动”，不是全自动注入
+- 相关入口文档：`CODEX_MEMORY.md`、`.codex/memory/README.md`、`PROJECT_MEMORY.md`
+
+### 2026-03-27 / 2026-03-28: restore continuity 正式入账
+- `restore continuity` 已升级为 `direct_real`：显式 `--restore --telegram` 主链、首条 post-restore 完整 E4 样本、post-restore continuity probe 均已形成正式 evidence
+- `restart continuity` 仍主要是跨证据链正证据，当前最高优先级缺口已切到 post-restart 完整样本与剩余 evidence gap
+- 最新观察结论以 `artifacts/mvs_e5_observation/` 与 `artifacts/telegram_real_mainline_v1/dashboard_v1/` 下文档为准
+
 ### 2026-03-27: MVS E5 观察收口推进
 - `显式默认规则 -> profile_memory` 的真实链路已落地，并在 `猫娘流程` 样本中于多次 `/new` 后持续命中
 - `/new continuity` 已不再只靠 session/thread 旁证，而是有真实命中链与 `matched_rule_ids / authority_source=profile_memory` metadata
 - `restart continuity` 已拿到跨证据链正证据：真实重启日志 + post-restart 命中样本
-- 当前正式 blocker 已切到 `restore`，post-restart 命中样本仍不是完整单样本 E4 bundle
+- 该节保留为历史阶段记录；当前最新口径以上方 `2026-03-27 / 2026-03-28` 更新为准
 - 最新观察结论以 `artifacts/mvs_e5_observation/` 下文档为准
 
 ### 2026-03-26 / 2026-03-27: P3/P4 真链收口与文档对齐

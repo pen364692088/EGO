@@ -44,6 +44,18 @@
 3. 上一任务 closure
 4. 同任务 session capsule
 
+## 当前验收状态
+
+- 截至 `2026-03-28`，这套记忆层已经完成首轮真实新会话验收。
+- 已验证行为：
+  - 仅给 `CODEX_MEMORY.md` 时，可恢复稳定项目真相与长期偏好。
+  - `TaskHandoffRecord` 会覆盖旧会话噪声，作为当前任务主权威。
+  - 同任务 `SessionCapsule` 可被采用为连续性补充。
+  - 异任务 `SessionCapsule` 会被明确拒绝，不污染当前任务判断。
+- 当前边界：
+  - 这是开发助手侧结构化记忆，不接入 `EgoCore/OpenEmotion` runtime。
+  - 当前形态仍是手动喂入或脚本辅助启动，不是全自动注入。
+
 ## Git 策略
 
 - `project_truth.jsonl`、`user_preferences.jsonl`、`CODEX_MEMORY.md`、说明文档和脚本应纳入版本控制。
