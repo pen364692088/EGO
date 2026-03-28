@@ -36,7 +36,7 @@
 
 - `OE_MVP:16` 是当前执行目标版本
 - `ROADMAP_STATE.json` 仍为 `blocked`
-- blocker 已收敛为 `mvp15 formal proof gap`
+- blocker 已收敛为 `mvp15 reflection mainline writeback gap`
 - 仓库已有大量阶段 overview、exit criteria、tests、artifacts，但缺少统一编译层与正式 spec 收口
 
 ---
@@ -177,7 +177,8 @@ Step 03 开始前，先执行一个固定前置守门：
 - `Step 05A` 已完成并发布，正式结论为：`formal drive owner convergence target = emotiond/drives/*; next step is mainline wiring convergence`
 - `Step 05B` 已完成并发布，正式结论为：`emotiond/core.py` 的当前 API decision mainline 已 boundedly converge 到 `emotiond/drive_adapter.py`，但 formal-owner behavioral influence 仍未证明
 - `Step 05C` 已完成并发布，正式结论为：`emotiond/drives/*` 的 owner-backed behavioral influence 已在 boundedly converged 的 emotiond decision mainline 上拿到正式 paired proof
-- 后续正式施工从 `Step 06` 开始
+- `Step 06` 已完成并发布为诊断，正式结论为：`MVP15 formal proof currently blocked by shadow-only artifact path and missing mainline writeback consumer`
+- 后续正式施工从 `Step 06A` 开始
 `Step 04` 仍必须继续服从 `Step 03A` 与 `Step 03` 已落定的 scope guard。
 
 补充说明：
@@ -223,6 +224,8 @@ Step 03 开始前，先执行一个固定前置守门：
 - `OpenEmotion/roadmap/SELF_AWARE_STEP_05B_REVIEW_20260329.md`
 - `OpenEmotion/roadmap/SELF_AWARE_STEP_05C_EXECUTION_REPORT_20260329.md`
 - `OpenEmotion/roadmap/SELF_AWARE_STEP_05C_REVIEW_20260329.md`
+- `OpenEmotion/roadmap/SELF_AWARE_STEP_06_EXECUTION_REPORT_20260329.md`
+- `OpenEmotion/roadmap/SELF_AWARE_STEP_06_REVIEW_20260329.md`
 
 ### 6.2 版本 spec
 
@@ -251,6 +254,7 @@ Step 03 开始前，先执行一个固定前置守门：
 - `Tasks/active/SELF_AWARE_STEP_05B_drive_mainline_wiring.md`
 - `Tasks/active/SELF_AWARE_STEP_05C_drive_behavioral_influence_formal_proof.md`
 - `Tasks/active/SELF_AWARE_STEP_06_mvp15_formal_proof.md`
+- `Tasks/active/SELF_AWARE_STEP_06A_reflection_mainline_resolution.md`
 - `Tasks/active/SELF_AWARE_STEP_07_mvp16_unblock.md`
 - `Tasks/active/SELF_AWARE_STEP_08_admission_review.md`
 

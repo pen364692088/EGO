@@ -11,7 +11,7 @@
     "note": "Daily check now correctly returns insufficient_evidence when no real data exists. Persistence-backed verification is working."
   },
   "promotion_blocked": true,
-  "block_reason": "mvp15_formal_proof_not_proven",
+  "block_reason": "mvp15_reflection_mainline_writeback_not_proven",
   "next_version": null,
   "allowed_workstreams": [
     "verification_fix",
@@ -26,7 +26,7 @@
     "observation_based_promotion"
   ],
   "active_blockers": [
-    "MVP15 formal proof remains incomplete"
+    "MVP15 reflection / counterfactual formal owner lacks a mainline writeback consumer"
   ],
   "resolved_blockers": [
     {
@@ -50,14 +50,14 @@
   ],
   "mvp16_completion": {
     "status": "blocked",
-    "reason": "mvp15_formal_proof_not_proven",
+    "reason": "mvp15_reflection_mainline_writeback_not_proven",
     "tests": 30,
     "gates": [
       "A",
       "B",
       "C"
     ],
-    "exit_criteria_met": "blocked_by_mvp15_formal_proof"
+    "exit_criteria_met": "blocked_by_mvp15_mainline_writeback_gap"
   },
   "observation_metrics": {
     "status": "valid",
@@ -83,12 +83,12 @@
     },
     {
       "phase": "MVP15",
-      "audit_status": "Claimed but Unproven"
+      "audit_status": "Shadow Running"
     },
     {
       "phase": "MVP16",
       "audit_status": "Blocked",
-      "reason": "mvp15_formal_proof_not_proven"
+      "reason": "mvp15_reflection_mainline_writeback_not_proven"
     }
   ],
   "repair_verification": {

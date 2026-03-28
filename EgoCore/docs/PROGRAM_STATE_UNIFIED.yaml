@@ -2,7 +2,7 @@
 # 双仓共享唯一真相源
 
 ledger_version: 20
-updated_at: "2026-03-29T22:10:00Z"
+updated_at: "2026-03-29T23:10:00Z"
 updated_by: "Codex"
 owner: "dual-repo-program-state"
 
@@ -138,7 +138,8 @@ axes:
         note: "formal owner remains emotiond/drives/*; Step05B boundedly converged the current API decision mainline in emotiond/core.py through emotiond/drive_adapter.py, and Step05C now proves paired owner-backed behavioral influence for emotiond/drives/* on the same emotiond /decision/target mainline. This still does not automatically equal Stage 5 passed"
       - ref: "OE_MVP:15"
         state: "shadow_running"
-        evidence: "OpenEmotion/artifacts/mvp15/MVP15_PERSISTENCE_INTEGRITY_REPORT.md"
+        evidence: "OpenEmotion/artifacts/mvp15/MVP15_PERSISTENCE_INTEGRITY_REPORT.md, OpenEmotion/roadmap/SELF_AWARE_STEP_06_EXECUTION_REPORT_20260329.md"
+        note: "Step06 diagnostic confirms reflection artifacts and counterfactual infrastructure exist, but the current mainline only consumes reflection_shadow; no formal writeback / downstream behavior consumer is yet detected"
       - ref: "VERIFICATION_SYSTEM"
         state: "verified_e2e"
         evidence: "OpenEmotion/roadmap/ROADMAP_STATE.json resolved_blockers"
@@ -156,11 +157,11 @@ axes:
         state: "retrieval_quality_v6_partial"
         evidence: "OpenEmotion/docs/MEMORY_RETRIEVAL_ENHANCEMENT_V6_REPORT.md"
     blockers:
-      - "mvp15_formal_proof_not_proven"
+      - "mvp15_reflection_mainline_writeback_not_proven"
     allowed_next:
       - "monitor_shadow_mode"
       - "update_handoff_and_readme"
-      - "SELF_AWARE_STEP_06"
+      - "SELF_AWARE_STEP_06A"
 
   boundary_axis:
     namespace: "BOUNDARY"

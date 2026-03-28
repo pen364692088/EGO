@@ -7,7 +7,7 @@ owner: "Codex"
 layer: 3
 type: dual_repo
 repos: [EgoCore, OpenEmotion]
-status: pending
+status: published
 ```
 
 ## real_goal
@@ -31,7 +31,7 @@ status: pending
 
 ```yaml
 current_layer: verification
-main_chain_status: 启用
+main_chain_status: shadow artifacts present but mainline writeback consumer missing
 ```
 
 ## required_artifacts
@@ -49,7 +49,8 @@ main_chain_status: 启用
 
 - reflection 质量报告未自动等于行为因果证明
 - counterfactual 与后续策略修正链未正式收口
+- 当前 formal owner 仅有 shadow artifact 路径，缺少正式 writeback / downstream consumer
 
 ## next_minimal_closure_action
 
-补一条完整的 reflection causal chain，并定义 admission 可接受的最小证据包。
+本步已完成并发布为诊断；下一步切到 `SELF_AWARE_STEP_06A_reflection_mainline_resolution.md`。

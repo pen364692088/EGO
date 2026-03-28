@@ -1,6 +1,6 @@
 {
   "schema_version": "self_aware.normalized_state.v1",
-  "generated_at": "2026-03-29T22:10:00Z",
+  "generated_at": "2026-03-29T23:10:00Z",
   "owner": "Codex",
   "authority_priority": [
     "EgoCore/docs/PROGRAM_STATE_UNIFIED.yaml",
@@ -21,7 +21,7 @@
       "version": "MVP16",
       "phase": "Open Developmental Self",
       "status": "blocked",
-      "block_reason": "mvp15_formal_proof_not_proven"
+      "block_reason": "mvp15_reflection_mainline_writeback_not_proven"
     },
     "host_support": {
       "eg_phase_state": "shadow_running",
@@ -76,12 +76,12 @@
     {
       "ref": "OE_MVP:15",
       "status": "shadow_running",
-      "note": "reflection artifacts exist; causal writeback proof incomplete"
+      "note": "Step06 diagnostic now confirms reflection artifacts and counterfactual infrastructure exist, but the current mainline only consumes reflection_shadow; no formal writeback / downstream behavior consumer is yet detected"
     },
     {
       "ref": "OE_MVP:16",
       "status": "blocked",
-      "note": "MVP14 drive behavioral influence gap is now closed at component level; MVP16 remains blocked by MVP15 formal proof gap"
+      "note": "MVP14 drive behavioral influence gap is now closed at component level; MVP16 remains blocked by the MVP15 reflection mainline writeback gap"
     }
   ],
   "allowed_workstreams": [
@@ -148,9 +148,9 @@
     }
   },
   "next_action": {
-      "step": "SELF_AWARE_STEP_06",
-      "title": "MVP15 Formal Proof",
-      "next_minimal_closure_action": "advance to the next remaining formal blocker by proving a governed reflection/counterfactual writeback chain for MVP15",
+      "step": "SELF_AWARE_STEP_06A",
+      "title": "MVP15 Reflection Mainline Resolution",
+      "next_minimal_closure_action": "resolve the shadow-only reflection path by introducing a governed mainline writeback / downstream consumer before resuming MVP15 formal proof",
       "workflow_requirements": {
         "full_spec_required": true,
         "independent_reviewer_required": true,
