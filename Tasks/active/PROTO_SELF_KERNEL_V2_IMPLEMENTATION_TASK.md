@@ -1,7 +1,7 @@
 # PROTO_SELF_KERNEL_V2_IMPLEMENTATION_TASK
 
 > 任务类型：L3 dual_repo implementation entry
-> 状态：verify_passed
+> 状态：published
 > 作用：固定 Proto-Self V2 下一轮双仓实现的 authority source、contract 边界、最小 E4 证据与回退规则
 
 ---
@@ -110,9 +110,8 @@
 
 ## 下一步最小闭环动作
 
-1. 补发布收口并同步远端
-2. 保持 `proto_self.v1` 为默认主线
-3. 下一轮如需提升口径，补显式 E4 runtime evidence
+1. 保持 `proto_self.v1` 为默认主线
+2. 下一轮如需提升口径，补显式 E4 runtime evidence
 
 ---
 
@@ -135,3 +134,8 @@
 
 - 已证明：`proto_self.v2` bounded vertical slice 已实现并可在双仓内显式进入
 - 未证明：真实 runtime 主链 E4 证据、Telegram 主链、长期 replay/stability
+
+## 发布状态
+
+- [x] 代码与文档已提交
+- [x] 已推送到 `origin/main`

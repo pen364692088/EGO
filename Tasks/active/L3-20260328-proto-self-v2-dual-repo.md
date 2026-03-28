@@ -7,7 +7,7 @@ owner: "Codex"
 layer: 3
 type: dual_repo
 repos: [EgoCore, OpenEmotion]
-status: verify_passed
+status: published
 ```
 
 ---
@@ -92,7 +92,7 @@ trigger_evidence: targeted repo tests
 - [x] contract 文件已落
 - [x] 最小 repo tests 已通过
 - [ ] 真实 runtime E4 evidence 未补
-- [ ] 远端发布未完成
+- [x] 远端发布已完成
 
 ---
 
