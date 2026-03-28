@@ -12,17 +12,33 @@
 当前主线是：
 **把 EgoCore 作为唯一正式宿主，把 OpenEmotion 作为唯一主体内核，通过结构化接口接成可验证的双核工程系统。**
 
-在 EgoCore 仓库内，Telegram Runtime v2 已经成为 Telegram 主链的正式方向；旧 runtime 与旧 Telegram 路径已被标记为 compatibility-only。
+在 EgoCore 仓库内，**Telegram native mainline + 最小 Contract Runtime** 已成为 Telegram 正式主链：
+- `telegram_bot -> telegram_runtime_bridge -> native_loop -> contract_runtime -> openemotion hooks -> delivery`
+- 旧 `runtime_v2` 仍保留为兼容/桥接层，但不再是 Telegram 当前正式执行口径
+- 权威状态以 `docs/PROGRAM_STATE_UNIFIED.yaml` 与总仓 `PROJECT_MEMORY.md` 为准
+
+## 最新已证实状态（2026-03-27）
+
+- **Proto-Self Kernel v1** 已完成真实 Telegram 主链接入
+- **P4 真实主链收口已完成**
+  - `tool:file` 的 blocked / success 现在同 `closure_family_id`
+  - 首次 retry-success 已点亮 `repair_closure=true`
+- 最新报告：
+  - `../../artifacts/closure_real_evidence/CLOSURE_REAL_EVIDENCE_REPORT.md`
+  - `../../artifacts/closure_repair_fix/CLOSURE_REPAIR_FIX_REPORT.md`
 
 **Proto-Self Kernel v1** (已验证 Telegram E2E)：
-- 设计稿：`../Emotion/OpenEmotion/docs/PROTO_SELF_KERNEL_V1_DESIGN.md`
-- 接口草案：`../Emotion/OpenEmotion/docs/PROTO_SELF_KERNEL_V1_SPEC.md`
-- **实现**：`../Emotion/OpenEmotion/openemotion/proto_self/` (已验收通过)
+- 设计稿：`../../OpenEmotion/docs/PROTO_SELF_KERNEL_V1_DESIGN.md`
+- 接口草案：`../../OpenEmotion/docs/PROTO_SELF_KERNEL_V1_SPEC.md`
+- **实现**：`../../OpenEmotion/openemotion/proto_self/` (已验收通过)
 - **Adapter**：`app/openemotion_adapter/proto_self_*.py` (EgoCore 侧薄接线)
-- **验收报告**：`artifacts/proto_self_v1/ACCEPTANCE_REPORT_CYCLE_STRENGTHEN_20260324.md`
+- **基础验收报告**：`../artifacts/proto_self_v1/ACCEPTANCE_REPORT_CYCLE_STRENGTHEN_20260324.md`
   - Cycle strengthen: ✅ hits 3→9, strength 0.25→0.85
   - External failure reflection: ✅ reflection_trigger=external_failure
   - Revision counter: ✅ 16→30 (+14)
+- **最新真实主链报告**：`../../artifacts/closure_repair_fix/CLOSURE_REPAIR_FIX_REPORT.md`
+  - same-family drift: ✅ fixed
+  - repair_closure activation: ✅ fixed on real retry-success
 
 ## 先读顺序
 
@@ -39,7 +55,7 @@
 - `docs/01_PROJECT_OVERVIEW.md`
 - `docs/02_SYSTEM_FLOW.md`
 - `docs/03_BOUNDARY_AND_OWNERSHIP.md`
-- **OpenEmotion Proto-Self Kernel v1 设计稿**：`../Emotion/OpenEmotion/docs/PROTO_SELF_KERNEL_V1_DESIGN.md`
+- **OpenEmotion Proto-Self Kernel v1 设计稿**：`../../OpenEmotion/docs/PROTO_SELF_KERNEL_V1_DESIGN.md`
 
 ### 想改功能
 - `docs/04_CHANGE_ROUTING.md`
@@ -63,7 +79,7 @@
 | 理解双核架构 | `01_PROJECT_OVERVIEW.md` + `03_BOUNDARY_AND_OWNERSHIP.md` |
 | 理解端到端流程 | `02_SYSTEM_FLOW.md` |
 | 想改 Telegram / CLI / API / Runtime | `04_CHANGE_ROUTING.md` |
-| 想改 identity / self-model / memory / reflection | `04_CHANGE_ROUTING.md` + [OpenEmotion Proto-Self 设计稿](../Emotion/OpenEmotion/docs/PROTO_SELF_KERNEL_V1_DESIGN.md) |
+| 想改 identity / self-model / memory / reflection | `04_CHANGE_ROUTING.md` + [OpenEmotion Proto-Self 设计稿](../../OpenEmotion/docs/PROTO_SELF_KERNEL_V1_DESIGN.md) |
 | 想找 shim / mirror / cache / deprecated-candidate | `05_DEPRECATED_AND_SHIMS.md` |
 | 新 agent 上手 | `06_AGENT_ONBOARDING.md` |
 | 想看仓库真实盘点 | `docs/generated/` 下各文件 |

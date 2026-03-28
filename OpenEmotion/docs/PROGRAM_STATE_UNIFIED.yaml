@@ -2,9 +2,9 @@
 # 继承自 EgoCore/docs/PROGRAM_STATE_UNIFIED.yaml
 # 双仓共享唯一真相源
 
-ledger_version: 17
-updated_at: "2026-03-25T02:40:00Z"
-updated_by: "N1 Governance Gate Freeze Task"
+ledger_version: 18
+updated_at: "2026-03-27T05:30:00Z"
+updated_by: "Codex"
 owner: "dual-repo-program-state"
 
 truth_source_priority:
@@ -29,9 +29,9 @@ axes:
     local_refs:
       - ref: "PROTO_SELF_KERNEL_V1"
         state: "verified_telegram_e2e"
-        evidence: "EgoCore/artifacts/proto_self_v1/ACCEPTANCE_REPORT_CYCLE_STRENGTHEN_20260324.md"
-        verified_at: "2026-03-24T21:55:00Z"
-        note: "Cycle strengthen + external_failure reflection 已证实，hits 3→9, revision 16→30"
+        evidence: "artifacts/closure_repair_fix/CLOSURE_REPAIR_FIX_REPORT.md"
+        verified_at: "2026-03-27T05:30:00Z"
+        note: "真实 Telegram 主链已完成 P4 收口：tool:file blocked/success 已同 family，首次 retry-success 已点亮 repair_closure=true"
       - ref: "SELF_WS:A"
         state: "verified_contract"
         evidence: "OpenEmotion/openemotion/identity/identity_invariants.py, schemas/identity_invariants.schema.json"
@@ -99,7 +99,7 @@ decision:
   reason:
     - "subject_axis in_progress (CYCLE_CORE_V1 verified_e2e, WS_C1 verified_e2e)"
     - "verification_axis shadow_running (Memory Loop v3 PASS, Retrieval v6 partial)"
-  note: "CYCLE_CORE_V1 Telegram E2E 已验证，WS_C1 6/6 通过"
+  note: "Proto-Self Telegram 主链已完成 P4 family/repair 真链收口；WS_C1 / CYCLE_CORE_V1 继续保留为历史验证基线"
   closed_loop_verified: true
   forbidden_next:
     - "SELF_WS:C2"
@@ -120,8 +120,18 @@ sync_status:
   EgoCore_PROGRAM_STATE: "aligned"
   DUAL_REPO_STATUS_UNIFIED: "aligned"
 
-
 changelog:
+  - version: 18
+    updated_at: "2026-03-27T05:30:00Z"
+    updated_by: "Codex"
+    trigger: "同步 P4 真实主链 family/repair 修复结果"
+    changes:
+      - "PROTO_SELF_KERNEL_V1 evidence 切到最新 P4 报告"
+      - "decision.note 刷新为 P4 真链收口后的当前口径"
+      - "README / MASTER_INDEX / PROGRAM_STATE 对齐最新状态"
+    impact:
+      - "OpenEmotion 入口文档不再停留在仅有基础 Telegram E2E 的旧口径"
+
   - version: 17
     updated_at: "2026-03-25T02:40:00Z"
     updated_by: "N1 Governance Gate Freeze Task"
@@ -170,7 +180,6 @@ changelog:
       - "README/PROGRAM_STATE/SHIM_REGISTER 三方一致"
 
   - version: 13
-  - version: 13
     updated_at: "2026-03-19T20:07:09Z"
     updated_by: "CEO agent"
     trigger: "W0-W3 统一收口任务完成"
@@ -185,7 +194,6 @@ changelog:
       - "允许宣称: 统一主链已生效"
       - "允许宣称: OpenEmotion 已真实影响主决策链"
       - "允许宣称: 最小循环 Agent 闭环已完成"
-  - version: 12
   - version: 12
     updated_at: "2026-03-19T19:06:17Z"
     updated_by: "CEO agent"

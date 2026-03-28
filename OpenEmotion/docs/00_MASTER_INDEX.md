@@ -11,7 +11,16 @@
 ## 当前阶段
 
 当前主线是：
-**Proto-Self Kernel v1 已完成主链接入，具备真实 Telegram E2E 验证证据。**
+**Proto-Self Kernel v1 已完成主链接入，并在真实 Telegram 主链上收口到 P4 family/repair 修复。**
+
+## 最新已证实状态（2026-03-27）
+
+- `closure-sensitive cycle identity` 已正式进入主链
+- `tool:file` blocked / success 在真实样本中已同 family、不同 identity
+- 首次 retry-success 已在真实样本中点亮 `repair_closure=true`
+- 最新报告：
+  - `../../artifacts/closure_real_evidence/CLOSURE_REAL_EVIDENCE_REPORT.md`
+  - `../../artifacts/closure_repair_fix/CLOSURE_REPAIR_FIX_REPORT.md`
 
 ## 先读顺序
 
@@ -71,7 +80,8 @@
 | [设计稿](PROTO_SELF_KERNEL_V1_DESIGN.md) | 最小主体内核设计稿（MVS 内核候选） |
 | [接口草案](PROTO_SELF_KERNEL_V1_SPEC.md) | 接口与伪代码 |
 | [实现](../openemotion/proto_self/) | 已验证通过 |
-| [验收报告](../artifacts/proto_self_v1/ACCEPTANCE_REPORT_20260321.md) | WS-PSK-6 验收通过 |
+| [基础验收报告](../artifacts/proto_self_v1/ACCEPTANCE_REPORT_CYCLE_STRENGTHEN_20260324.md) | Cycle strengthen / reflection 基础验收通过 |
+| [最新真实主链报告](../../artifacts/closure_repair_fix/CLOSURE_REPAIR_FIX_REPORT.md) | P4 family/repair 真链修复完成 |
 
 ### 核心主张
 
