@@ -379,6 +379,7 @@ class TelegramBot:
         state.last_tool_result = None
         state.last_verification_result = None
         state.ingress_context = None
+        state.proto_self_version_override = None
         state.proto_self_context = None
         runtime_loop = self.runtime_v2_loop
         if runtime_loop is not None:
@@ -513,6 +514,10 @@ class TelegramBot:
             result = self._handle_prompt_command(args)
             await self._send_result(update, result)
             return
+        if command == "proto":
+            result = self._handle_proto_command(update, args, chat_id, user_id)
+            await self._send_result(update, result)
+            return
         if command in {"new", "reset"}:
             result = self._handle_session_reset_command(update, command, chat_id, user_id)
             await self._send_result(update, result)
@@ -602,6 +607,57 @@ class TelegramBot:
             return CommandResult(success=True, message=f"*{name}*\n```\n{preview[:3500]}\n```", data={"name": name, "content": content})
 
         return CommandResult(success=False, message="用法: /prompt list | /prompt reload | /prompt show AGENT.md")
+
+    def _handle_proto_command(self, update: Update, args: str, chat_id: int, user_id: int) -> CommandResult:
+        session_key = self._resolve_session_key(update, chat_id, user_id)
+        state = self._get_runtime_state(session_key)
+        tokens = [t.lower() for t in (args or "").strip().split() if t]
+
+        if not tokens or tokens[0] == "status":
+            override = state.proto_self_version_override or "default(v1)"
+            return CommandResult(
+                success=True,
+                message=(
+                    "*Proto-Self Ingress Mode*\n\n"
+                    f"- session: `{session_key}`\n"
+                    f"- override: `{override}`\n"
+                    "- scope: `session-scoped`\n"
+                    "- effect: `future runtime_v2 natural-language turns only`\n"
+                    "- boundary: `does not change the default mainline owner`"
+                ),
+                data={"session_key": session_key, "proto_self_version_override": state.proto_self_version_override},
+            )
+
+        if tokens[:2] == ["v2", "on"]:
+            state.proto_self_version_override = "v2"
+            return CommandResult(
+                success=True,
+                message=(
+                    "*Proto-Self Ingress Mode Updated*\n\n"
+                    f"- session: `{session_key}`\n"
+                    "- override: `v2`\n"
+                    "- next_step: `send one natural-language Telegram message in this session`"
+                ),
+                data={"session_key": session_key, "proto_self_version_override": "v2"},
+            )
+
+        if tokens[0] in {"off", "clear", "default"} or tokens[:2] == ["v2", "off"]:
+            state.proto_self_version_override = None
+            return CommandResult(
+                success=True,
+                message=(
+                    "*Proto-Self Ingress Mode Updated*\n\n"
+                    f"- session: `{session_key}`\n"
+                    "- override: `default(v1)`"
+                ),
+                data={"session_key": session_key, "proto_self_version_override": None},
+            )
+
+        return CommandResult(
+            success=False,
+            message="用法: /proto status | /proto v2 on | /proto off",
+            data={"session_key": session_key},
+        )
 
     def _handle_session_reset_command(self, update: Update, command: str, chat_id: int, user_id: int) -> CommandResult:
         session_key = self._resolve_session_key(update, chat_id, user_id)
@@ -1157,9 +1213,13 @@ class TelegramBot:
 
         ingress = await self.telegram_runtime_bridge.inspect_ingress_semantic(text, state, llm_client=None)
         state.ingress_context = self.telegram_runtime_bridge.build_ingress_context(ingress, state)
+        if state.proto_self_version_override:
+            state.ingress_context = dict(state.ingress_context or {})
+            state.ingress_context["proto_self_version"] = state.proto_self_version_override
+            state.ingress_context["proto_self_version_source"] = "telegram_session_override"
         pre_runtime = self.telegram_runtime_bridge.plan_pre_runtime(ingress, state)
-        logger.info("runtime_v2.turn.start session=%s text=%r ingress=%s parser_source=%s", 
-                    session_key, text[:200], ingress, 
+        logger.info("runtime_v2.turn.start session=%s text=%r ingress=%s parser_source=%s",
+                    session_key, text[:200], ingress,
                     ingress._parsed_intent_graph.parser_source if ingress._parsed_intent_graph else "none")
 
         if pre_runtime.remember_challenge_turn:
@@ -1929,7 +1989,7 @@ class TelegramBot:
         # Register command handlers
         commands = [
             "start", "help", "new", "reset", "run", "status", "tasks", "resume",
-            "pause", "retry", "abort", "report", "memory", "context", "prompt"
+            "pause", "retry", "abort", "report", "memory", "context", "prompt", "proto"
         ]
         self._known_commands = set(commands)
 
@@ -1997,6 +2057,7 @@ class TelegramBot:
                     BotCommand("memory", "查看记忆摘要"),
                     BotCommand("context", "查看当前加载上下文"),
                     BotCommand("prompt", "查看或重载当前 prompt 文件"),
+                    BotCommand("proto", "控制 Proto-Self ingress 版本"),
                     BotCommand("new", "开始新会话"),
                     BotCommand("reset", "重置当前会话"),
                     BotCommand("resume", "恢复任务"),

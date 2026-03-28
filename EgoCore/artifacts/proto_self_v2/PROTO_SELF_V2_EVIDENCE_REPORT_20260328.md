@@ -27,7 +27,8 @@
 ### Capture B: Telegram external entry, repo-local
 
 - entry: `TelegramBot.handle_message()`
-- ingress selector: `telegram_runtime_bridge.build_ingress_context(...) -> {"proto_self_version": "v2", ...}`
+- ingress selector: session-scoped Telegram command `/proto v2 on`
+- ingress merge point: `TelegramBot._handle_with_runtime_v2() -> state.ingress_context["proto_self_version"] = "v2"`
 - expected schema_version chain:
   - normalized_event: `proto_self.v2`
   - openemotion_result: `proto_self.output.v2`
@@ -36,6 +37,15 @@
   - `sample_*/ledger.json -> openemotion.trace_payload.schema_version`
 - verification command:
   - `PYTHONPATH=OpenEmotion:EgoCore ./EgoCore/.venv/bin/python -m pytest -s -q EgoCore/tests/test_telegram_proto_self_v2_evidence.py`
+
+## Real Telegram capture procedure
+
+1. Send `/proto v2 on` in the target Telegram DM session.
+2. Send one natural-language message in the same session.
+3. Check the newest real sample under:
+   - `artifacts/telegram_real_mainline_v1/real_telegram/sample_*/ledger.json`
+4. Confirm:
+   - `openemotion.trace_payload.schema_version == "proto_self.trace.v2"`
 
 ## Contract gate
 

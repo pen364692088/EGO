@@ -1,4 +1,18 @@
+import sys
+from datetime import datetime, timezone
+from types import SimpleNamespace
+
 import pytest
+
+if "requests" not in sys.modules:
+    sys.modules["requests"] = SimpleNamespace(
+        get=lambda *args, **kwargs: None,
+        post=lambda *args, **kwargs: None,
+        exceptions=SimpleNamespace(
+            Timeout=Exception,
+            ConnectionError=Exception,
+        ),
+    )
 
 import app.telegram_bot as telegram_bot_module
 from app.telegram_bot import TelegramBot
@@ -164,3 +178,72 @@ async def test_new_command_captures_real_command_ingress(monkeypatch):
     assert captured["ingress"]["session_id"] == "telegram:dm:456"
     assert captured["plan"]["status"] == "command_result"
     assert captured["finalized"] is True
+
+
+@pytest.mark.asyncio
+async def test_proto_command_enables_v2_override():
+    bot = TelegramBot(token="test-token", use_runtime_v2=True)
+
+    class DummyMessage:
+        text = "/proto v2 on"
+        message_id = 23
+        reply_to_message = None
+        date = datetime.now(timezone.utc)
+        last_text = None
+
+        async def reply_text(self, text, parse_mode=None):
+            self.last_text = text
+
+    class DummyChat:
+        id = 123
+        type = "private"
+
+    class DummyUser:
+        id = 456
+        username = "moonlight"
+
+    class DummyUpdate:
+        message = DummyMessage()
+        effective_chat = DummyChat()
+        effective_user = DummyUser()
+
+    await bot.handle_command(DummyUpdate(), None)
+
+    state = bot._get_runtime_state("telegram:dm:456")
+    assert state.proto_self_version_override == "v2"
+    assert "override: \\`v2\\`" in DummyUpdate.message.last_text
+
+
+@pytest.mark.asyncio
+async def test_proto_command_clears_override():
+    bot = TelegramBot(token="test-token", use_runtime_v2=True)
+    state = bot._get_runtime_state("telegram:dm:456")
+    state.proto_self_version_override = "v2"
+
+    class DummyMessage:
+        text = "/proto off"
+        message_id = 24
+        reply_to_message = None
+        date = datetime.now(timezone.utc)
+        last_text = None
+
+        async def reply_text(self, text, parse_mode=None):
+            self.last_text = text
+
+    class DummyChat:
+        id = 123
+        type = "private"
+
+    class DummyUser:
+        id = 456
+        username = "moonlight"
+
+    class DummyUpdate:
+        message = DummyMessage()
+        effective_chat = DummyChat()
+        effective_user = DummyUser()
+
+    await bot.handle_command(DummyUpdate(), None)
+
+    assert state.proto_self_version_override is None
+    assert "override: \\`default(v1)\\`" in DummyUpdate.message.last_text
