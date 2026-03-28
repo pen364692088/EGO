@@ -10,7 +10,8 @@
     "STAGE2-01",
     "STAGE2-02",
     "STAGE2-03",
-    "STAGE2-04"
+    "STAGE2-04",
+    "STAGE2-06"
   ],
   "failed_steps": [],
   "blocked_steps": [],
@@ -22,7 +23,7 @@
   ],
   "evidence_level": "E3",
   "verification_level": "V3",
-  "current_blocker": "layer2_baseline_only + stage1_strengthening_blockers + readiness_evidence_blockers",
-  "next_action": "Finish the STAGE2-05 closure split, then execute the first bounded strengthening repair (numeric_leak) without over-claiming away the remaining sample_size / Layer3 / gate blockers",
+  "current_blocker": "certainty_upgrade + commitment_upgrade + residual_numeric_leak + readiness_evidence_blockers",
+  "next_action": "Record report_consistency repair loop #1 as complete, then enter the next bounded strengthening repair candidate: certainty_upgrade hardening, while keeping sample_size / Layer3 / gate blockers explicit",
   "stop_reason": null
 }

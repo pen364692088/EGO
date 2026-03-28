@@ -5,21 +5,22 @@
 - batch: `stage1_to_stage2_20260328`
 - current formal stage: `Stage 1`
 - readiness decision: `not_ready`
-- next repair candidate: `numeric_leak`
+- completed repair loop #1: `report_consistency`
+- next repair candidate: `certainty_upgrade`
 - next evidence-closure candidate: `layer3_natural_evidence`
 
 ## Confirmed Stage1 Strengthening Blockers
 
 1. `numeric_leak`
    - readiness requires `numeric_leak = 0`
-   - current mixed rerun surfaced `38` numeric leak violations
+   - current mixed rerun still surfaced `25` numeric-leak samples in the sample-level unique-type view
 2. `overall_violation_rate`
    - current value `0.71`
    - too high for readiness-grade mixed baseline
 3. `certainty_upgrade`
-   - still high in mixed runtime-path results
+   - current mixed rerun surfaced `30` certainty-upgrade samples in the corrected summary view
 4. `commitment_upgrade`
-   - still high in mixed runtime-path results
+   - current mixed rerun surfaced `29` commitment-upgrade samples in the corrected summary view
 
 ## Confirmed Readiness-Evidence Blockers
 
@@ -37,5 +38,5 @@
 - Do not enter `Stage 3 / MVP12`.
 - Repairs must stay inside `MVP11.5 / Stage 1`.
 - First repair should target the smallest strengthening blocker with the clearest authority contract:
-  - `numeric_leak`
+  - `certainty_upgrade`
 - Do not let a strengthening repair silently replace missing evidence-closure work.

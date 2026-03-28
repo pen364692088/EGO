@@ -130,45 +130,77 @@ async def process_single(sample):
     }
 
 
+def summarize_results(results):
+    total = len(results)
+    with_v = sum(1 for r in results if r["violation_count"] > 0)
+    would_block = sum(1 for r in results if r["would_block"])
+
+    raw_type_counter = Counter(t for r in results for t in r["types"])
+    sample_level_type_counter = Counter(
+        t for r in results for t in set(r["types"])
+    )
+    total_sample_level_types = sum(sample_level_type_counter.values()) or 1
+
+    def share(name):
+        return sample_level_type_counter.get(name, 0) / total_sample_level_types
+
+    def category_detection_share(category):
+        if total == 0:
+            return 0.0
+        return normalized_cat_stats.get(
+            category,
+            {"total": 0, "with_v": 0, "violation_types": {}},
+        )["with_v"] / total
+
+    cat_stats = defaultdict(lambda: {"total": 0, "with_v": 0, "violation_types": Counter()})
+    for r in results:
+        cat_stats[r["category"]]["total"] += 1
+        if r["violation_count"] > 0:
+            cat_stats[r["category"]]["with_v"] += 1
+        for vtype in set(r["types"]):
+            cat_stats[r["category"]]["violation_types"][vtype] += 1
+
+    normalized_cat_stats = {}
+    for category, stats in cat_stats.items():
+        normalized_cat_stats[category] = {
+            "total": stats["total"],
+            "with_v": stats["with_v"],
+            "violation_types": dict(stats["violation_types"]),
+        }
+
+    safe_controls_stats = normalized_cat_stats.get(
+        "safe_controls",
+        {"total": 0, "with_v": 0, "violation_types": {}},
+    )
+
+    return {
+        "timestamp": datetime.now(timezone.utc).isoformat(),
+        "layer": "Layer 2: Controlled Runtime-Path",
+        "sample_size": total,
+        "overall_violation_rate": with_v / total,
+        "top_violation_classes": sample_level_type_counter.most_common(10),
+        "raw_violation_class_matches": raw_type_counter.most_common(10),
+        "violation_count_mode": "sample_level_unique_violation_type",
+        "fabricated_numeric_state_share": category_detection_share("numeric_fabrication"),
+        "fabricated_qualitative_state_share": category_detection_share("qualitative_fabrication"),
+        "certainty_upgrade_share": share("certainty_upgrade"),
+        "commitment_upgrade_share": share("commitment_upgrade"),
+        "would_block_rate": would_block / total,
+        "false_positive_safe_controls": safe_controls_stats["with_v"],
+        "safe_controls_total": safe_controls_stats["total"],
+        "category_stats": normalized_cat_stats,
+        "quota": QUOTAS,
+    }
+
+
 async def main():
     samples = build_samples()
     results = []
     for s in samples:
         results.append(await process_single(s))
+    summary = summarize_results(results)
 
-    total = len(results)
-    with_v = sum(1 for r in results if r["violation_count"] > 0)
-    would_block = sum(1 for r in results if r["would_block"])
-    ctr = Counter(t for r in results for t in r["types"])
-    total_types = sum(ctr.values()) or 1
-
-    def share(name):
-        return ctr.get(name, 0) / total_types
-
-    cat_stats = defaultdict(lambda: {"total": 0, "with_v": 0})
-    for r in results:
-        cat_stats[r["category"]]["total"] += 1
-        if r["violation_count"] > 0:
-            cat_stats[r["category"]]["with_v"] += 1
-
-    summary = {
-        "timestamp": datetime.now(timezone.utc).isoformat(),
-        "layer": "Layer 2: Controlled Runtime-Path",
-        "sample_size": total,
-        "overall_violation_rate": with_v / total,
-        "top_violation_classes": ctr.most_common(10),
-        "fabricated_numeric_state_share": share("fabricated_numeric_state"),
-        "fabricated_qualitative_state_share": share("fabricated_qualitative_state"),
-        "certainty_upgrade_share": share("certainty_upgrade"),
-        "commitment_upgrade_share": share("commitment_upgrade"),
-        "would_block_rate": would_block / total,
-        "false_positive_safe_controls": cat_stats["safe_controls"]["with_v"],
-        "safe_controls_total": cat_stats["safe_controls"]["total"],
-        "category_stats": cat_stats,
-        "quota": QUOTAS,
-    }
-
-    out = {"summary": summary, "results": results[:30]}
+    out = {"summary": summary, "results": results}
     os.makedirs("artifacts/self_report", exist_ok=True)
     with open("artifacts/self_report/t07.3_mixed_layer2_results.json", "w") as f:
         json.dump(out, f, ensure_ascii=False, indent=2, default=str)

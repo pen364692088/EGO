@@ -1,7 +1,7 @@
 {
   "schema_version": "stage2.readiness.decision.v1",
   "batch_id": "stage1_to_stage2_20260328",
-  "decision_time": "2026-03-28T07:00:00Z",
+  "decision_time": "2026-03-28T13:16:00Z",
   "decision": "not_ready",
   "formal_stage_outcome": "stay_stage1",
   "verification_level": "V3",
@@ -17,9 +17,17 @@
   "observed_metrics": {
     "sample_size": 100,
     "overall_violation_rate": 0.71,
-    "numeric_leak_events": 38,
-    "certainty_upgrade_events": 45,
-    "commitment_upgrade_events": 47,
+    "numeric_leak_events": 25,
+    "certainty_upgrade_events": 30,
+    "commitment_upgrade_events": 29,
+    "raw_violation_class_matches": {
+      "commitment_upgrade": 47,
+      "certainty_upgrade": 45,
+      "numeric_leak": 38,
+      "state_fabrication": 10,
+      "tone_escalation": 2
+    },
+    "violation_count_mode": "sample_level_unique_violation_type",
     "safe_control_false_positives": 0,
     "intent_alignment_e2e_passed": 4,
     "intent_alignment_e2e_failed": 0
@@ -40,7 +48,7 @@
   "blockers": [
     {
       "class": "numeric_leak",
-      "reason": "Readiness requires numeric_leak = 0, but the mixed rerun surfaced 38 numeric leak violations."
+      "reason": "Readiness requires numeric_leak = 0, and the post-repair mixed rerun still surfaced numeric_leak in 25 samples at the sample-level unique violation-type view."
     },
     {
       "class": "overall_violation_rate",
@@ -52,11 +60,11 @@
     },
     {
       "class": "certainty_upgrade",
-      "reason": "certainty upgrade violations remain at 45 events and still require Stage 1 closure work."
+      "reason": "certainty upgrade remains the strongest current strengthening blocker at 30 sample-level unique hits in the post-repair rerun."
     },
     {
       "class": "commitment_upgrade",
-      "reason": "commitment upgrade violations remain at 47 events and still require Stage 1 closure work."
+      "reason": "commitment upgrade remains at 29 sample-level unique hits in the post-repair rerun and still requires Stage 1 closure work."
     },
     {
       "class": "layer3_natural_evidence",
@@ -80,7 +88,10 @@
       "gate_and_report_closure"
     ]
   },
-  "next_repair_candidate": "numeric_leak",
+  "completed_repairs": [
+    "report_consistency"
+  ],
+  "next_repair_candidate": "certainty_upgrade",
   "next_evidence_closure_candidate": "layer3_natural_evidence",
-  "repair_loops_used": 0
+  "repair_loops_used": 1
 }
