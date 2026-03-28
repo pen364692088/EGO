@@ -92,6 +92,12 @@ Step 03 开始前，先执行一个固定前置守门：
 
 把 self-model 从“adapter 或基础设施验证”推进到“对后续行为有可复验证因果影响”的正式阶段通过。
 
+如果 `Step 04` 只能证明 `shadow/main-chain wiring + persistence/replay/invariants`，但仍无法证明 `behavioral_influence_e4_proven`，则必须插入固定子步骤：
+
+- `SELF_AWARE_STEP_04A_behavioral_influence_proof.md`
+
+目的不是扩阶段，而是把 `component-level verified but stage unproven` 与真正的行为影响证明拆开，避免把 shadow wiring 冒充成 Stage 4 已通过。
+
 ### Step 05 — MVP14 Formal Proof
 
 把 endogenous drives / self-maintenance 从“可运行结构”推进到“真实影响候选加权、优先级和维护行为”。
@@ -122,7 +128,8 @@ Step 03 开始前，先执行一个固定前置守门：
 
 - `Step 03A` 已完成并发布
 - `Step 03` 已完成并发布，正式结论为：`OE_MVP:12 = component-level verified but stage unproven`
-- 后续正式施工从 `Step 04` 开始
+- `Step 04` 已完成并发布，正式结论为：`OE_MVP:13 = component-level verified but stage unproven`
+- 后续正式施工从 `Step 04A` 开始
 `Step 04` 仍必须继续服从 `Step 03A` 与 `Step 03` 已落定的 scope guard。
 
 补充说明：
@@ -150,6 +157,8 @@ Step 03 开始前，先执行一个固定前置守门：
 - `OpenEmotion/roadmap/SELF_AWARE_STEP_03A_REVIEW_20260328.md`
 - `OpenEmotion/roadmap/SELF_AWARE_STEP_03_EXECUTION_REPORT_20260328.md`
 - `OpenEmotion/roadmap/SELF_AWARE_STEP_03_REVIEW_20260328.md`
+- `OpenEmotion/roadmap/SELF_AWARE_STEP_04_EXECUTION_REPORT_20260328.md`
+- `OpenEmotion/roadmap/SELF_AWARE_STEP_04_REVIEW_20260328.md`
 
 ### 6.2 版本 spec
 
@@ -167,6 +176,7 @@ Step 03 开始前，先执行一个固定前置守门：
 - `Tasks/active/SELF_AWARE_STEP_03A_cycle_theory_alignment.md`
 - `Tasks/active/SELF_AWARE_STEP_03_mvp12_formal_proof.md`
 - `Tasks/active/SELF_AWARE_STEP_04_mvp13_formal_proof.md`
+- `Tasks/active/SELF_AWARE_STEP_04A_behavioral_influence_proof.md`
 - `Tasks/active/SELF_AWARE_STEP_05_mvp14_formal_proof.md`
 - `Tasks/active/SELF_AWARE_STEP_06_mvp15_formal_proof.md`
 - `Tasks/active/SELF_AWARE_STEP_07_mvp16_unblock.md`

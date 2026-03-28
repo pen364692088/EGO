@@ -41,6 +41,7 @@
   - `Tasks/active/SELF_AWARE_STEP_03A_cycle_theory_alignment.md`
   - `Tasks/active/SELF_AWARE_STEP_03_mvp12_formal_proof.md`
   - `Tasks/active/SELF_AWARE_STEP_04_mvp13_formal_proof.md`
+  - `Tasks/active/SELF_AWARE_STEP_04A_behavioral_influence_proof.md`
   - `Tasks/active/SELF_AWARE_STEP_05_mvp14_formal_proof.md`
   - `Tasks/active/SELF_AWARE_STEP_06_mvp15_formal_proof.md`
   - `Tasks/active/SELF_AWARE_STEP_07_mvp16_unblock.md`
@@ -79,7 +80,7 @@
 - 主入口：`OpenEmotion/docs/mvp13/MVP13_STAGE_OVERVIEW.md`
 - 目标：建立跨时间持续、结构化、可审计的 self-model
 - 进入条件：`MVP12` component-level formal proof 已发布，且不得把该结论包装成 `Stage 3 passed`
-- 离开条件：self-model persistence / replayability / drift governance 达标
+- 离开条件：self-model persistence / replayability / drift governance 达标，且 `behavioral influence` 正式证明完成
 - 建议读取顺序：
   1. `OpenEmotion/docs/mvp13/MVP13_STAGE_OVERVIEW.md`
   2. `OpenEmotion/docs/mvp13/PERSISTENT_SELF_MODEL_ARCHITECTURE.md`
@@ -88,11 +89,12 @@
   5. `OpenEmotion/docs/mvp13/IDENTITY_INVARIANTS_AND_DRIFT_POLICY.md`
   6. `OpenEmotion/docs/mvp13/MVP13_EXIT_CRITERIA.md`
   7. `OpenEmotion/roadmap/versions/MVP13.spec.yaml`
+  8. `OpenEmotion/roadmap/SELF_AWARE_STEP_04_EXECUTION_REPORT_20260328.md`
 
 ### MVP14 — Endogenous Drives + Self-Maintenance
 - 主入口：`OpenEmotion/docs/mvp14/MVP14_STAGE_OVERVIEW.md`
 - 目标：让内部状态以结构性压力的方式影响优先级与自我维持
-- 进入条件：MVP13 completed
+- 进入条件：MVP13 behavioral influence formal proof completed
 - 离开条件：drive system / maintenance runtime / governance integrity 达标
 - 建议读取顺序：
   1. `OpenEmotion/docs/mvp14/MVP14_STAGE_OVERVIEW.md`

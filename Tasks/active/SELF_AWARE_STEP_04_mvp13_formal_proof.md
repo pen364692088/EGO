@@ -7,19 +7,20 @@ owner: "Codex"
 layer: 3
 type: dual_repo
 repos: [EgoCore, OpenEmotion]
-status: pending
+status: published
 ```
 
 ## real_goal
 
-把 `MVP13` 从“adapter / persistence / infrastructure 已存在”推进到“persistent self-model 对后续行为有可复验因果影响”的 formal proof。
+把 `MVP13` 从“adapter / persistence / infrastructure 已存在”推进到“shadow/main-chain wiring + persistence/replay/invariants 已形成组件级 formal proof”，并明确真正缺失的 `behavioral influence` 证明线。
 
 ## success_criteria
 
 - self-model persistence 可证
 - replayable transitions 可证
 - identity invariants preserved
-- self-model 改变会导致后续行为变化
+- 当前主链接线状态被 fresh verifier 正式裁定
+- 若 `behavioral influence` 未证，必须显式拆成下一步 proof line，而不是过度宣称
 
 ## authority_source
 
@@ -31,7 +32,7 @@ status: pending
 
 ```yaml
 current_layer: strategy
-main_chain_status: 待执行 formal proof
+main_chain_status: shadow/main-chain wiring verified; behavioral influence formal proof pending
 ```
 
 ## required_artifacts
@@ -54,4 +55,4 @@ main_chain_status: 待执行 formal proof
 
 ## next_minimal_closure_action
 
-设计并执行一条“干预 self-model -> 后续行为变化”的 formal proof 样本链。
+已完成 `MVP13` 组件级 formal proof 收口；下一步切到 `SELF_AWARE_STEP_04A_behavioral_influence_proof.md`。
