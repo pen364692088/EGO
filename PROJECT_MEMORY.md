@@ -48,6 +48,7 @@
 ### Git 工作流
 - **pen364692088 仓库**: commit 后自动推送
 - **其他仓库**: 等待用户确认后推送
+- 当前环境提交/推送口径: 优先使用 Windows `cmd` 执行 `git commit` / `git push`；不要默认切到 PowerShell 口径
 
 ### Codex Assistant Memory
 - 稳定记忆索引: `CODEX_MEMORY.md`
@@ -76,6 +77,8 @@
 | 传输层边界 | simulated / integration / real_channel 应复用同一条 runtime 主链，只替换 ingress/egress 证据来源 |
 | E4 最小证据包 | E4 样本除 raw/update/event/result/plan/outbox 外，还需 timeline + tape + replay artifact |
 | 环境执行口径 | 当前工作区内 E2/E3 runner 以 Windows `py -3` 实跑通过；Linux `python3` 仅适合静态检查，依赖不完整 |
+| Git shell 口径 | 当前环境下正式 `git commit` / `git push` 以 Windows `cmd` 最稳；不要把 PowerShell 当默认发布口径 |
+| Git index.lock 陷阱 | 若提交时报 `.git/index.lock`，先确认没有活跃 git 进程；残留锁常来自挂住的 git 查询或异常中断。清理旧锁后再继续提交，不要在锁存在时反复重试 |
 | E5 准入门槛 | 进入观察期前，至少要有 1 个完整普通 real 样本 + 1 个完整且命中高风险路径的 real 样本 |
 | Cycle 身份升级 | `cycle_id` 已从纯 `psi_bucket` 聚合升级为 closure-sensitive signature，可区分 success / failure / repair 等 closure；仍未达到 full multi-step closure graph identity |
 | P4 修复口径 | `closure_family_id` 现由 coarse `family_bucket + action_signature` 决定，不再被 `risk_high` 这类 psi 后缀拆开；真实 `tool:file` blocked -> retry success 已可点亮一次 `repair_closure=true` |

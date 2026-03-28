@@ -24,6 +24,8 @@
 | project-evidence-gate-v1 | 结论强度不得高于证据强度 | PROJECT_MEMORY.md#核心协议;Tasks/templates/gate_acceptance_v1.md#Gate A/B/C 统一验收模板 | revalidate_when_acceptance_rules_change |
 | project-execution-env-v1 | 执行环境口径 | PROJECT_MEMORY.md#已验证的关键发现 | revalidate_when_runner_process_changes |
 | project-git-publish-v1 | 本仓提交流程 | PROJECT_MEMORY.md#Git 工作流;AGENTS.md#CLAUDE.md - 代码代理专用版 | revalidate_when_git_workflow_changes |
+| project-git-shell-default-v1 | Git shell 默认口径 | PROJECT_MEMORY.md#Git 工作流;PROJECT_MEMORY.md#已验证的关键发现 | revalidate_when_git_workflow_changes |
+| project-git-index-lock-v1 | Git index.lock 处理口径 | PROJECT_MEMORY.md#已验证的关键发现 | revalidate_when_git_workflow_changes |
 | project-codex-memory-acceptance-v1 | Codex 结构化记忆层新会话验收 | PROJECT_MEMORY.md#已验证的关键发现 | revalidate_when_memory_injection_contract_changes |
 
 ## 长期用户偏好
