@@ -1,6 +1,6 @@
 # ROADMAP_INDEX.md
 
-> OpenEmotion / emotiond 路线图导航页  
+> OpenEmotion / emotiond 路线图导航页
 > 这是人和 agent 的统一导航入口；执行细节以 `ROADMAP_STATE.json` 与当前阶段文档为准。
 
 ---
@@ -28,10 +28,13 @@
 - 总路线图：`OpenEmotion/roadmap/SELF_AWARE_EXECUTION_MASTER_PLAN_20260328.md`
 - 当前阶段重算：`OpenEmotion/roadmap/SELF_AWARE_CURRENT_STATE_RECOMPUTE_20260328.md`
 - 机器可读状态：`OpenEmotion/roadmap/self_aware_normalized_state.json`
+- cycle 理论对齐：`OpenEmotion/roadmap/CYCLE_IS_ALL_YOU_NEED_ALIGNMENT_20260328.md`
+- cycle 理论机器状态：`OpenEmotion/roadmap/cycle_theory_alignment_state.json`
 - 逐步任务：
   - `Tasks/active/SELF_AWARE_STEP_00_normalization_layer.md`
   - `Tasks/active/SELF_AWARE_STEP_01_current_state_recompute.md`
   - `Tasks/active/SELF_AWARE_STEP_02_version_specs.md`
+  - `Tasks/active/SELF_AWARE_STEP_03A_cycle_theory_alignment.md`
   - `Tasks/active/SELF_AWARE_STEP_03_mvp12_formal_proof.md`
   - `Tasks/active/SELF_AWARE_STEP_04_mvp13_formal_proof.md`
   - `Tasks/active/SELF_AWARE_STEP_05_mvp14_formal_proof.md`
@@ -58,7 +61,9 @@
 - 目标：建立发育核沙盒，只生成内部候选，不拿最终行为权
 - 进入条件：MVP11.5 completed + Gate A/B/C pass + state updated
 - 离开条件：developmental core cycle 可追踪、可 replay、sandbox integrity 成立
+- 前置方向守门：`OpenEmotion/roadmap/CYCLE_IS_ALL_YOU_NEED_ALIGNMENT_20260328.md`
 - 建议读取顺序：
+  1. `OpenEmotion/roadmap/CYCLE_IS_ALL_YOU_NEED_ALIGNMENT_20260328.md`
   1. `OpenEmotion/docs/archive/mvp12/MVP12_STAGE_OVERVIEW.md`
   2. `OpenEmotion/docs/archive/mvp12/DEVELOPMENTAL_CORE_ARCHITECTURE.md`
   3. `OpenEmotion/docs/archive/mvp12/INTERNAL_CYCLE_RUNTIME.md`

@@ -82,6 +82,12 @@
 
 把 Developmental Core 从“有代码/有 artifacts”推进到“长期 trace、replay consistency、sandbox governance 都成立”。
 
+Step 03 开始前，先执行一个固定前置守门：
+
+- `SELF_AWARE_STEP_03A_cycle_theory_alignment.md`
+
+目的不是新增阶段，而是防止把 `Stage1 / MVP11.5` 的 SRAP/self-report readiness 线，误当成 `cycle_is_all_you_need` 理论下的正式记忆环路证明线。
+
 ### Step 04 — MVP13 Formal Proof
 
 把 self-model 从“adapter 或基础设施验证”推进到“对后续行为有可复验证因果影响”的正式阶段通过。
@@ -114,6 +120,8 @@
 
 后续正式施工从 `Step 03` 开始。
 
+其中 `Step 03` 的第一动作是先过 `Step 03A cycle theory alignment guard`。
+
 原因：
 
 - 不统一语义，就会继续把 `blocked / shadow_running / verified_e2e` 混成同一个意思
@@ -128,6 +136,8 @@
 - `OpenEmotion/roadmap/SELF_AWARE_NORMALIZATION_RULES_20260328.md`
 - `OpenEmotion/roadmap/SELF_AWARE_CURRENT_STATE_RECOMPUTE_20260328.md`
 - `OpenEmotion/roadmap/self_aware_normalized_state.json`
+- `OpenEmotion/roadmap/CYCLE_IS_ALL_YOU_NEED_ALIGNMENT_20260328.md`
+- `OpenEmotion/roadmap/cycle_theory_alignment_state.json`
 
 ### 6.2 版本 spec
 
@@ -142,6 +152,7 @@
 - `Tasks/active/SELF_AWARE_STEP_00_normalization_layer.md`
 - `Tasks/active/SELF_AWARE_STEP_01_current_state_recompute.md`
 - `Tasks/active/SELF_AWARE_STEP_02_version_specs.md`
+- `Tasks/active/SELF_AWARE_STEP_03A_cycle_theory_alignment.md`
 - `Tasks/active/SELF_AWARE_STEP_03_mvp12_formal_proof.md`
 - `Tasks/active/SELF_AWARE_STEP_04_mvp13_formal_proof.md`
 - `Tasks/active/SELF_AWARE_STEP_05_mvp14_formal_proof.md`

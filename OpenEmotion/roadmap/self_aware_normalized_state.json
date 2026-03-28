@@ -119,10 +119,23 @@
       "reason_not_primary_blocker": "retrieval provider quality is not the current MVP16 admission blocker"
     }
   ],
+  "theory_alignment": {
+    "cycle_is_all_you_need": {
+      "status": "directionally_aligned_but_not_formally_proven",
+      "primary_proof_line": "OpenEmotion/openemotion/proto_self/* + MVP12_plus_formal_proof",
+      "non_primary_lines": [
+        "OpenEmotion/tools/e2e_memory_loop_check_v1.py",
+        "OpenEmotion/tools/e2e_memory_loop_check_v2.py",
+        "OpenEmotion/tools/e2e_memory_loop_check_v3.py",
+        "OpenEmotion/docs/archive/mvp11/T07_3_MIXED_LAYER2_RERUN.md"
+      ],
+      "scope_guard": "do_not_use_stage1_or_storage_only_signals_as_cycle_theory_formal_proof"
+    }
+  },
   "next_action": {
-    "step": "SELF_AWARE_STEP_03",
-    "title": "MVP12 Formal Proof",
-    "next_minimal_closure_action": "execute step 03 and start the spec-backed formal proof chain from MVP12",
+    "step": "SELF_AWARE_STEP_03A",
+    "title": "Cycle Theory Alignment Guard",
+    "next_minimal_closure_action": "execute step 03A to lock the cycle-theory proof line, then enter MVP12 formal proof",
     "workflow_requirements": {
       "full_spec_required": true,
       "independent_reviewer_required": true,
