@@ -30,7 +30,7 @@
 - `execution_target = OE_MVP:16`
 - `execution_phase = Open Developmental Self`
 - `execution_state = blocked`
-- `block_reason = mvp15_reflection_mainline_writeback_not_proven`
+- `block_reason = mvp15_behavioral_relevance_not_proven`
 
 ### 2.3 宿主承载层
 
@@ -61,7 +61,7 @@
 - `OE_MVP:12 = component-level verified but stage unproven`
 - `OE_MVP:13 = component-level verified on shadow/main-chain self-model path; formal owner contract is converged, owner-backed behavioral influence is now proven on the emotiond decision mainline, but long-stage admission is still not claimed`
 - `OE_MVP:14 = component-level verified but stage unproven`
-- `OE_MVP:15 = shadow_running`
+- `OE_MVP:15 = component-level verified but stage unproven`
 - `OE_MVP:16 = blocked`
 
 ---
@@ -157,7 +157,7 @@
 - `MVP12-15` 不能因局部验证或 shadow 状态而视为整阶段通过
 - `MVP13 behavioral influence` 已在 emotiond decision mainline 上拿到正式 paired proof
 - `MVP14` 的 owner-backed behavioral influence 已在 boundedly converged 的 emotiond decision mainline 上拿到正式 paired proof；后续剩余主 blocker 已收敛到 `MVP15`
-- `MVP15` 当前不是 “只差最后一条 causal chain”，而是先暴露出 `shadow artifact present / mainline writeback consumer missing` 的结构性阻塞
+- `MVP15` 已从 `shadow-only` 结构推进到 bounded mainline consumer present，但 behavioral relevance 仍未拿到正式 paired proof
 
 ### 不可宣称
 
@@ -172,4 +172,4 @@
 
 唯一最高优先级动作：
 
-**执行 `SELF_AWARE_STEP_06A_reflection_mainline_resolution.md`，并继续强制走 `Independent Reviewer -> Verifier`；该动作表示 `MVP15` 的 formal proof 需要先解决 shadow-only mainline gap，而不是直接硬做 causal proof。**
+**执行 `SELF_AWARE_STEP_06B_reflection_behavioral_relevance_formal_proof.md`，并继续强制走 `Independent Reviewer -> Verifier`；该动作表示 `MVP15` 已完成 bounded mainline convergence，后续正式 blocker 已收敛到 behavioral relevance proof。**

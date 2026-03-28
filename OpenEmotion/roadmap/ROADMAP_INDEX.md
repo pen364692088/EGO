@@ -71,6 +71,7 @@
   - `Tasks/active/SELF_AWARE_STEP_05C_drive_behavioral_influence_formal_proof.md`
   - `Tasks/active/SELF_AWARE_STEP_06_mvp15_formal_proof.md`
   - `Tasks/active/SELF_AWARE_STEP_06A_reflection_mainline_resolution.md`
+  - `Tasks/active/SELF_AWARE_STEP_06B_reflection_behavioral_relevance_formal_proof.md`
   - `Tasks/active/SELF_AWARE_STEP_07_mvp16_unblock.md`
   - `Tasks/active/SELF_AWARE_STEP_08_admission_review.md`
 
@@ -155,7 +156,7 @@
 - 主入口：`OpenEmotion/docs/mvp15/MVP15_STAGE_OVERVIEW.md`
 - 目标：建立受治理的自我反思与反事实自我评估
 - 进入条件：MVP14 completed
-- 注：当前路线里，`MVP15` 已完成基础 infra 与 shadow artifact 诊断，但 Step06 已确认正式主链仍是 `reflection_shadow`，缺少 writeback / downstream consumer；因此下一步不是直接 causal proof，而是 `Step06A`
+- 注：当前路线里，`MVP15` 已完成基础 infra、shadow artifact 诊断与 bounded mainline consumer convergence；当前剩余唯一主线是 `Step06B` behavioral relevance formal proof
 - 离开条件：reflection proposals、counterfactual evaluation、replayability 达标
 - 建议读取顺序：
   1. `OpenEmotion/docs/mvp15/MVP15_STAGE_OVERVIEW.md`
@@ -166,7 +167,9 @@
   6. `OpenEmotion/docs/mvp15/MVP15_EXIT_CRITERIA.md`
   7. `OpenEmotion/roadmap/versions/MVP15.spec.yaml`
   8. `OpenEmotion/roadmap/SELF_AWARE_STEP_06_EXECUTION_REPORT_20260329.md`
-  9. `Tasks/active/SELF_AWARE_STEP_06A_reflection_mainline_resolution.md`
+  9. `OpenEmotion/roadmap/SELF_AWARE_STEP_06A_EXECUTION_REPORT_20260329.md`
+  10. `OpenEmotion/roadmap/SELF_AWARE_STEP_06A_REVIEW_20260329.md`
+  11. `Tasks/active/SELF_AWARE_STEP_06B_reflection_behavioral_relevance_formal_proof.md`
 
 ### MVP16 — Open Developmental Self
 - 主入口：`OpenEmotion/docs/mvp16/MVP16_STAGE_OVERVIEW.md`

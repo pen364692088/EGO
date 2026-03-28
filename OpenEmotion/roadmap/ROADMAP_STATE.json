@@ -11,7 +11,7 @@
     "note": "Daily check now correctly returns insufficient_evidence when no real data exists. Persistence-backed verification is working."
   },
   "promotion_blocked": true,
-  "block_reason": "mvp15_reflection_mainline_writeback_not_proven",
+  "block_reason": "mvp15_behavioral_relevance_not_proven",
   "next_version": null,
   "allowed_workstreams": [
     "verification_fix",
@@ -26,7 +26,7 @@
     "observation_based_promotion"
   ],
   "active_blockers": [
-    "MVP15 reflection / counterfactual formal owner lacks a mainline writeback consumer"
+    "MVP15 reflection / counterfactual bounded mainline consumer exists, but behavioral relevance remains unproven"
   ],
   "resolved_blockers": [
     {
@@ -50,20 +50,20 @@
   ],
   "mvp16_completion": {
     "status": "blocked",
-    "reason": "mvp15_reflection_mainline_writeback_not_proven",
+    "reason": "mvp15_behavioral_relevance_not_proven",
     "tests": 30,
     "gates": [
       "A",
       "B",
       "C"
     ],
-    "exit_criteria_met": "blocked_by_mvp15_mainline_writeback_gap"
+    "exit_criteria_met": "blocked_by_mvp15_behavioral_relevance_gap"
   },
   "observation_metrics": {
     "status": "valid",
     "note": "Persistence-backed daily check is now working. Returns insufficient_evidence when no real data exists."
   },
-  "last_update": "2026-03-29T22:10:00Z",
+  "last_update": "2026-03-29T23:59:00Z",
   "history": [
     {
       "phase": "MVP11.5",
@@ -83,12 +83,12 @@
     },
     {
       "phase": "MVP15",
-      "audit_status": "Shadow Running"
+      "audit_status": "Bounded Mainline Consumer Present"
     },
     {
       "phase": "MVP16",
       "audit_status": "Blocked",
-      "reason": "mvp15_reflection_mainline_writeback_not_proven"
+      "reason": "mvp15_behavioral_relevance_not_proven"
     }
   ],
   "repair_verification": {

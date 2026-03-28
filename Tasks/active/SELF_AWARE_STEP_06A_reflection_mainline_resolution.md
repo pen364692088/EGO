@@ -7,7 +7,7 @@ owner: "Codex"
 layer: 3
 type: dual_repo
 repos: [EgoCore, OpenEmotion]
-status: pending
+status: published
 ```
 
 ## real_goal
@@ -37,7 +37,7 @@ status: pending
 
 ```yaml
 current_layer: implementation
-main_chain_status: reflection artifacts exist but mainline writeback consumer is missing
+main_chain_status: bounded reflection_guidance consumer is now present on /plan and /decision explanation; behavioral relevance remains unproven
 ```
 
 ## required_artifacts
@@ -64,10 +64,10 @@ publisher_required: true
 
 ## promotion_blockers
 
-- reflection_shadow 仍是当前 core mainline 唯一 consumer
-- reflection_engine / self_counterfactual 还没有正式 writeback / downstream behavior consumer
-- proposal discipline 不能被 writeback resolution 破坏
+- behavioral relevance paired proof still missing
+- workspace 仍不在当前 bounded convergence 范围
+- proposal discipline 不能在后续 relevance proof 中被破坏
 
 ## next_minimal_closure_action
 
-先唯一化 reflection / counterfactual 的正式 mainline consumer，再恢复 `MVP15 formal proof`。
+当前 bounded mainline consumer 已唯一化；下一步进入 `SELF_AWARE_STEP_06B_reflection_behavioral_relevance_formal_proof.md`。
