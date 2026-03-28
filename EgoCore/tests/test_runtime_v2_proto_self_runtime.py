@@ -1,3 +1,6 @@
+from pathlib import Path
+
+from app.config import load_config
 from app.runtime_v2.proto_self_runtime import (
     RuntimeV2ProtoSelfRuntime,
     assess_risk_level,
@@ -8,6 +11,7 @@ from app.runtime_v2.proto_self_runtime import (
 )
 from app.runtime_v2.runtime_reply import RuntimeV2Reply, RuntimeV2TurnResult
 from app.runtime_v2.state import RuntimeV2State
+from app.telegram_evidence_collector import TelegramEvidenceCollector
 
 
 def test_assess_risk_level_keeps_existing_keywords():
@@ -252,3 +256,79 @@ def test_process_ingress_falls_back_to_trace_bridge_without_collector():
             "policy_hint": {"risk_bias": "normal"},
         }
     ]
+
+
+async def _run_chat_turn(loop, session_id: str, text: str, *, source: str, collector):
+    from app.runtime_v2.action_protocol import RuntimeV2Action
+
+    async def fake_decide(_state):
+        return RuntimeV2Action.from_model_output('{"type":"chat","message":"已收到"}')
+
+    loop._decide = fake_decide
+    return await loop.run_turn_typed(session_id, text, source=source, evidence_collector=collector)
+
+
+def test_runtime_loop_captures_proto_self_v2_evidence_in_ledger(monkeypatch, tmp_path):
+    import asyncio
+
+    from app.openemotion_adapter.proto_self_adapter import ProtoSelfAdapter
+    from app.runtime_v2.loop import RuntimeV2Loop
+
+    monkeypatch.chdir(Path(__file__).resolve().parents[1])
+    load_config(validate=False)
+
+    collector = TelegramEvidenceCollector(
+        artifacts_dir=tmp_path,
+        source_type="simulated",
+        channel="telegram",
+        evidence_level="E4",
+    )
+    collector.start_sample(
+        {
+            "update_id": 5001,
+            "message": {
+                "message_id": 5001,
+                "date": 1774483895,
+                "chat": {"id": 42, "type": "private"},
+                "from": {"id": 7, "is_bot": False, "username": "tester"},
+                "text": "帮我看下 app.py",
+            },
+        }
+    )
+
+    loop = RuntimeV2Loop()
+    loop.proto_self_runtime = RuntimeV2ProtoSelfRuntime(
+        adapter=ProtoSelfAdapter(mirror_dir=tmp_path / "mirror")
+    )
+    state = loop.get_state("session:test-v2")
+    state.ingress_context = {
+        "proto_self_version": "v2",
+        "prediction_snapshot_prev": {"expected_success": True},
+        "executed_action_prev": {"kind": "reply", "status": "delivered"},
+    }
+
+    result = asyncio.run(
+        _run_chat_turn(
+            loop,
+            "session:test-v2",
+            "帮我看下 app.py",
+            source="telegram",
+            collector=collector,
+        )
+    )
+    collector.capture_outbox_record(
+        {
+            "chat_id": 42,
+            "message_id": 5002,
+            "date": "2026-03-28T00:00:01",
+            "text_length": len(result.reply_text),
+            "success": True,
+        }
+    )
+    sample = collector.finalize_sample()
+
+    assert sample is not None
+    assert sample.normalized_event["schema_version"] == "proto_self.v2"
+    assert sample.openemotion_result["schema_version"] == "proto_self.output.v2"
+    assert sample.openemotion_trace["schema_version"] == "proto_self.trace.v2"
+    assert sample.ledger["openemotion"]["trace_payload"]["schema_version"] == "proto_self.trace.v2"

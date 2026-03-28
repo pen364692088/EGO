@@ -36,6 +36,7 @@ from openemotion.proto_self_v2 import (
     update_packet_from_payload,
 )
 from app.openemotion_adapter.proto_self_state_store import ProtoSelfStateStore
+from app.openemotion_adapter.proto_self_contract_validator import validate_proto_self_v2_payload
 
 
 class ProtoSelfAdapter:
@@ -161,6 +162,7 @@ def normalize_to_proto_self_input(egocore_event: Dict[str, Any]) -> KernelEvent 
     payload = dict(egocore_event)
     payload.setdefault("timestamp", datetime.now().isoformat())
     if is_proto_self_v2_payload(payload):
+        validate_proto_self_v2_payload(payload)
         return update_packet_from_payload(payload)
     payload.setdefault("schema_version", V1_SCHEMA_VERSION)
     payload.setdefault("actor", "unknown")
