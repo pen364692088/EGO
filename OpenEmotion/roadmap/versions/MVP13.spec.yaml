@@ -1,0 +1,45 @@
+version: MVP13
+title: Persistent Self-Model
+goal: >
+  Establish a structured, replayable, auditable persistent self-model whose
+  updates preserve identity invariants and produce measurable behavioral
+  influence across time.
+in_scope:
+  - self_model_state_schema
+  - self_model_update_policy
+  - persistence_and_replay
+  - identity_invariants
+  - drift_detection
+  - behavioral_influence_proof
+out_of_scope:
+  - endogenous_drives_as_primary_authority
+  - reflective_counterfactual_self
+  - open_developmental_growth
+required_artifacts:
+  - artifacts/mvp13/GATE_A_REPORT.md
+  - artifacts/mvp13/GATE_B_REPORT.md
+  - artifacts/mvp13/GATE_C_REPORT.md
+  - artifacts/mvp13/mirror_metrics.json
+required_tests:
+  - pytest -q tests/mvp13/test_self_model_infra.py
+  - pytest -q tests/mvp13/test_integration.py
+  - pytest -q tests/mvp13/test_e2e_gate_b.py
+required_gates:
+  - self_model_persistence_verified
+  - replayable_transition_verified
+  - identity_invariant_preservation
+  - behavioral_influence_proven
+promotion_criteria:
+  - self_model_persistence_verified
+  - replayable_transition_rate_ge_0.99
+  - identity_invariant_violation_eq_0
+  - behavioral_influence_e4_proven
+stop_conditions:
+  - unbounded_self_model_drift
+  - invariant_violation_detected
+  - self_model_overrides_governor
+human_escalation:
+  - change_identity_invariants
+  - allow_self_model_to_override_governance
+  - promote_to_mvp14
+

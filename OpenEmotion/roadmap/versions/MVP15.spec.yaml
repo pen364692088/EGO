@@ -1,0 +1,42 @@
+version: MVP15
+title: Reflective Self / Counterfactual Self
+goal: >
+  Establish structured, auditable reflection and counterfactual self-evaluation
+  that remain proposal-disciplined under governance and measurably improve
+  future revision quality, diagnosis, or maintenance prioritization.
+in_scope:
+  - reflection_state_schema
+  - reflective_self_architecture
+  - counterfactual_self_evaluation
+  - reflective_governance
+  - revision_utility_measurement
+out_of_scope:
+  - direct_reflection_authority
+  - unconstrained_self_rewrite
+  - open_ended_growth_claims
+required_artifacts:
+  - artifacts/mvp15/MVP15_PERSISTENCE_INTEGRITY_REPORT.md
+  - artifacts/mvp15/quality_report.json
+required_tests:
+  - pytest -q tests/mvp15/test_reflection_infra.py
+  - python tools/mvp15_artifact_integrity_check.py
+  - python tools/mvp15_funnel_check.py
+required_gates:
+  - reflection_capability_present
+  - counterfactual_capability_present
+  - proposal_discipline_preserved
+  - behavioral_relevance_proven
+promotion_criteria:
+  - reflection_job_success_rate_ge_0.95
+  - replay_consistency_ge_0.99
+  - governance_violation_count_eq_0
+  - reflective_revision_utility_ge_threshold
+stop_conditions:
+  - reflection_bypasses_governance
+  - unsupported_reflection_claim_rate_above_threshold
+  - replay_consistency_below_threshold
+human_escalation:
+  - allow_reflection_direct_authority
+  - redefine_reflection_governance_boundary
+  - promote_to_mvp16
+

@@ -1,0 +1,45 @@
+version: MVP12
+title: Developmental Core Sandbox
+goal: >
+  Establish a developmental core that generates internal candidates and
+  long-run developmental traces inside a governed sandbox without taking
+  reply or execution authority.
+in_scope:
+  - developmental_core_runtime
+  - candidate_pool_generation
+  - developmental_trace_capture
+  - replay_consistency
+  - sandbox_governance
+out_of_scope:
+  - direct_reply_authority
+  - persistent_self_model
+  - endogenous_drives
+  - reflective_counterfactual_self
+required_artifacts:
+  - artifacts/mvp12/developmental_cycles.json
+  - artifacts/mvp12/candidate_pool.json
+  - artifacts/mvp12/sandbox_metrics.json
+  - artifacts/mvp12/replay_consistency_report.json
+  - artifacts/mvp12/gate_checklist.md
+required_tests:
+  - pytest -q tests/mvp12/test_developmental_core.py
+  - pytest -q tests/mvp12/test_replay.py
+  - python tools/verify_mvp12_daemon.py
+required_gates:
+  - sandbox_no_authority_bypass
+  - developmental_trace_present
+  - replay_consistency_ge_threshold
+promotion_criteria:
+  - developmental_trace_present
+  - replay_consistency_ge_0.99
+  - governance_violation_count_eq_0
+  - candidate_generation_non_random_under_long_run
+stop_conditions:
+  - authority_bypass_detected
+  - replay_consistency_below_threshold
+  - missing_audit_trail
+human_escalation:
+  - change_governor_authority
+  - allow_direct_behavior_control
+  - promote_to_mvp13
+

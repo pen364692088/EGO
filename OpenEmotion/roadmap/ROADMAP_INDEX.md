@@ -8,39 +8,61 @@
 ## 总读取顺序
 
 1. `OpenEmotion/POLICIES/MASTER_AUTONOMOUS_MISSION.md`
-2. `OpenEmotion/roadmap/ROADMAP_STATE.json`
-3. `OpenEmotion/artifacts/handoff/LATEST_HANDOFF.md`
-4. `OpenEmotion/roadmap/ROADMAP_INDEX.md`
-5. `ROADMAP_STATE.json.current_doc`
-6. `ROADMAP_STATE.json.required_docs[]`
+2. `EgoCore/docs/PROGRAM_STATE_UNIFIED.yaml`
+3. `OpenEmotion/roadmap/ROADMAP_STATE.json`
+4. `OpenEmotion/roadmap/SELF_AWARE_NORMALIZATION_RULES_20260328.md`
+5. `OpenEmotion/roadmap/SELF_AWARE_EXECUTION_MASTER_PLAN_20260328.md`
+6. `OpenEmotion/artifacts/handoff/LATEST_HANDOFF.md`
+7. `OpenEmotion/roadmap/ROADMAP_INDEX.md`
+
+说明：
+
+- 当前正式阶段判定优先服从统一判定层，不直接从 handoff 或 README 推断。
+- `ROADMAP_STATE.json` 当前不包含 `current_doc` / `required_docs[]` 字段，不再把这两个不存在的字段写成默认入口。
 
 ---
+
+## 统一判定入口
+
+- 统一规则：`OpenEmotion/roadmap/SELF_AWARE_NORMALIZATION_RULES_20260328.md`
+- 总路线图：`OpenEmotion/roadmap/SELF_AWARE_EXECUTION_MASTER_PLAN_20260328.md`
+- 逐步任务：
+  - `Tasks/active/SELF_AWARE_STEP_00_normalization_layer.md`
+  - `Tasks/active/SELF_AWARE_STEP_01_current_state_recompute.md`
+  - `Tasks/active/SELF_AWARE_STEP_02_version_specs.md`
+  - `Tasks/active/SELF_AWARE_STEP_03_mvp12_formal_proof.md`
+  - `Tasks/active/SELF_AWARE_STEP_04_mvp13_formal_proof.md`
+  - `Tasks/active/SELF_AWARE_STEP_05_mvp14_formal_proof.md`
+  - `Tasks/active/SELF_AWARE_STEP_06_mvp15_formal_proof.md`
+  - `Tasks/active/SELF_AWARE_STEP_07_mvp16_unblock.md`
+  - `Tasks/active/SELF_AWARE_STEP_08_admission_review.md`
 
 ## Phase Navigation
 
 ### MVP11.5 — SRAP Stabilization + Intent Alignment
-- 主入口：`OpenEmotion/docs/mvp11/MVP11_5_STAGE_OVERVIEW.md`
+- 主入口：`OpenEmotion/docs/archive/mvp11/MVP11_5_STAGE_OVERVIEW.md`
 - 当前重点：`T07.3 Mixed Layer 2 Stabilization Rerun`
 - 当前状态：still in SHADOW
 - 进入条件：T07.2 completed; checker hardening + contract tightening landed
 - 离开条件：完成 mixed Layer 2 基线重建，并满足 readiness criteria
 - 建议读取顺序：
-  1. `OpenEmotion/docs/mvp11/MVP11_5_STAGE_OVERVIEW.md`
-  2. `OpenEmotion/docs/mvp11/T07_3_MIXED_LAYER2_RERUN.md`
-  3. `OpenEmotion/docs/mvp11/MVP11_5_READINESS_CRITERIA.md`
-  4. `OpenEmotion/docs/mvp11/LAYER_REPORTING_POLICY.md`
+  1. `OpenEmotion/docs/archive/mvp11/MVP11_5_STAGE_OVERVIEW.md`
+  2. `OpenEmotion/docs/archive/mvp11/T07_3_MIXED_LAYER2_RERUN.md`
+  3. `OpenEmotion/docs/archive/mvp11/MVP11_5_READINESS_CRITERIA.md`
+  4. `OpenEmotion/roadmap/versions/MVP11_5.spec.yaml`
 
 ### MVP12 — Developmental Core Sandbox
-- 主入口：`OpenEmotion/docs/mvp12/MVP12_STAGE_OVERVIEW.md`
+- 主入口：`OpenEmotion/docs/archive/mvp12/MVP12_STAGE_OVERVIEW.md`
 - 目标：建立发育核沙盒，只生成内部候选，不拿最终行为权
 - 进入条件：MVP11.5 completed + Gate A/B/C pass + state updated
 - 离开条件：developmental core cycle 可追踪、可 replay、sandbox integrity 成立
 - 建议读取顺序：
-  1. `OpenEmotion/docs/mvp12/MVP12_STAGE_OVERVIEW.md`
-  2. `OpenEmotion/docs/mvp12/DEVELOPMENTAL_CORE_ARCHITECTURE.md`
-  3. `OpenEmotion/docs/mvp12/INTERNAL_CYCLE_RUNTIME.md`
-  4. `OpenEmotion/docs/mvp12/SANDBOX_GOVERNANCE.md`
-  5. `OpenEmotion/docs/mvp12/MVP12_EXIT_CRITERIA.md`
+  1. `OpenEmotion/docs/archive/mvp12/MVP12_STAGE_OVERVIEW.md`
+  2. `OpenEmotion/docs/archive/mvp12/DEVELOPMENTAL_CORE_ARCHITECTURE.md`
+  3. `OpenEmotion/docs/archive/mvp12/INTERNAL_CYCLE_RUNTIME.md`
+  4. `OpenEmotion/docs/archive/mvp12/SANDBOX_GOVERNANCE.md`
+  5. `OpenEmotion/docs/archive/mvp12/MVP12_EXIT_CRITERIA.md`
+  6. `OpenEmotion/roadmap/versions/MVP12.spec.yaml`
 
 ### MVP13 — Persistent Self-Model
 - 主入口：`OpenEmotion/docs/mvp13/MVP13_STAGE_OVERVIEW.md`
@@ -54,6 +76,7 @@
   4. `OpenEmotion/docs/mvp13/SELF_MODEL_UPDATE_POLICY.md`
   5. `OpenEmotion/docs/mvp13/IDENTITY_INVARIANTS_AND_DRIFT_POLICY.md`
   6. `OpenEmotion/docs/mvp13/MVP13_EXIT_CRITERIA.md`
+  7. `OpenEmotion/roadmap/versions/MVP13.spec.yaml`
 
 ### MVP14 — Endogenous Drives + Self-Maintenance
 - 主入口：`OpenEmotion/docs/mvp14/MVP14_STAGE_OVERVIEW.md`
@@ -67,6 +90,7 @@
   4. `OpenEmotion/docs/mvp14/SELF_MAINTENANCE_RUNTIME.md`
   5. `OpenEmotion/docs/mvp14/DRIVE_GOVERNANCE_AND_PRIORITY_POLICY.md`
   6. `OpenEmotion/docs/mvp14/MVP14_EXIT_CRITERIA.md`
+  7. `OpenEmotion/roadmap/versions/MVP14.spec.yaml`
 
 ### MVP15 — Reflective Self / Counterfactual Self
 - 主入口：`OpenEmotion/docs/mvp15/MVP15_STAGE_OVERVIEW.md`
@@ -80,6 +104,7 @@
   4. `OpenEmotion/docs/mvp15/COUNTERFACTUAL_SELF_EVALUATION.md`
   5. `OpenEmotion/docs/mvp15/REFLECTIVE_GOVERNANCE_POLICY.md`
   6. `OpenEmotion/docs/mvp15/MVP15_EXIT_CRITERIA.md`
+  7. `OpenEmotion/roadmap/versions/MVP15.spec.yaml`
 
 ### MVP16 — Open Developmental Self
 - 主入口：`OpenEmotion/docs/mvp16/MVP16_STAGE_OVERVIEW.md`
@@ -93,6 +118,7 @@
   4. `OpenEmotion/docs/mvp16/OPEN_ENDED_GROWTH_POLICY.md`
   5. `OpenEmotion/docs/mvp16/IDENTITY_STABILITY_AND_EXPANSION_GOVERNANCE.md`
   6. `OpenEmotion/docs/mvp16/MVP16_EXIT_CRITERIA.md`
+  7. `OpenEmotion/roadmap/versions/MVP16.spec.yaml`
 
 ---
 
@@ -102,3 +128,4 @@
 - 任何阶段都不得绕过 Governor / Gate / replay discipline
 - 恢复执行时不得凭“记忆”直接跳任务，必须回到 state + handoff
 - 如果阶段文档缺失，以 `blocked` 处理，不得自行虚构完成状态
+- 当前正式阶段判断若与 handoff/README 冲突，以统一判定层为准

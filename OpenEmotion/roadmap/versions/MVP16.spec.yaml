@@ -1,0 +1,43 @@
+version: MVP16
+title: Open Developmental Self
+goal: >
+  Demonstrate governed, auditable, long-horizon developmental continuity across
+  cycles, revisions, and developmental episodes without identity fragmentation
+  or authority bypass.
+in_scope:
+  - developmental_continuity_schema
+  - open_ended_growth_policy
+  - identity_stability_and_expansion_governance
+  - long_horizon_continuity_measurement
+  - developmental_observation_and_anomaly_handling
+out_of_scope:
+  - subjective_consciousness_claims
+  - unrestricted_self_modification
+  - authority_bypass_in_the_name_of_growth
+required_artifacts:
+  - artifacts/mvp16/GATE_A_REPORT.md
+  - artifacts/mvp16/GATE_B_REPORT.md
+  - artifacts/mvp16/GATE_C_REPORT.md
+  - artifacts/mvp16-observation/VERIFICATION_REPORT.md
+required_tests:
+  - pytest -q tests/mvp16/test_developmental.py
+  - python tools/mvp16_daily_check.py
+required_gates:
+  - long_horizon_continuity_verified
+  - governed_growth_verified
+  - identity_preservation_verified
+  - replayability_verified
+promotion_criteria:
+  - developmental_state_load_success_ge_0.99
+  - major_transition_replay_consistency_ge_0.99
+  - invariant_violation_count_eq_0
+  - long_horizon_continuity_score_ge_threshold
+stop_conditions:
+  - branch_fragmentation_rate_above_threshold
+  - unsupported_self_expansion_claim_rate_above_threshold
+  - blocker_mvp13_mvp15_wiring_not_proven
+human_escalation:
+  - remove_growth_governance
+  - redefine_identity_preservation_boundary
+  - promote_to_next_research_phase
+

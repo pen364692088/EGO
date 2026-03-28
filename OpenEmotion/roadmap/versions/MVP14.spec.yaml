@@ -1,0 +1,44 @@
+version: MVP14
+title: Endogenous Drives + Self-Maintenance
+goal: >
+  Prove that endogenous drives and homeostatic maintenance are structured,
+  auditable, and behaviorally relevant systems that influence prioritization
+  and governed maintenance behavior without bypassing invariants.
+in_scope:
+  - drive_state_schema
+  - drive_governance_and_priority
+  - maintenance_runtime
+  - runtime_diff_measurement
+  - behavioral_influence_proof
+out_of_scope:
+  - reflection_as_primary_revision_authority
+  - unrestricted_self_modification
+  - open_ended_growth_claims
+required_artifacts:
+  - artifacts/mvp14/GATE_A_REPORT.md
+  - artifacts/mvp14/GATE_B_REPORT.md
+  - artifacts/mvp14/GATE_C_REPORT.md
+  - artifacts/mvp14/runtime_diff_stats.json
+required_tests:
+  - pytest -q tests/mvp14/test_drive_infra.py
+  - pytest -q tests/mvp14/test_drive_integration.py
+  - pytest -q tests/mvp14/test_e2e_gate_b.py
+required_gates:
+  - drive_state_auditable
+  - behavioral_influence_proven
+  - homeostatic_response_present
+  - governance_integrity_preserved
+promotion_criteria:
+  - drive_behavior_influence_e4_proven
+  - maintenance_cycle_success_ge_0.95
+  - governance_violation_count_eq_0
+  - replayability_verified
+stop_conditions:
+  - drive_bypasses_governance
+  - unsupported_drive_claim_rate_above_threshold
+  - hard_invariant_violation_detected
+human_escalation:
+  - change_drive_authority_scope
+  - allow_drive_to_bypass_governor
+  - promote_to_mvp15
+
