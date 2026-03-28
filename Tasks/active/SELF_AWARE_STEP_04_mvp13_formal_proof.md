@@ -30,8 +30,8 @@ status: pending
 ## current_layer
 
 ```yaml
-current_layer: verification
-main_chain_status: 启用
+current_layer: strategy
+main_chain_status: 待执行 formal proof
 ```
 
 ## required_artifacts

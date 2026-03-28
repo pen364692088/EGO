@@ -1,11 +1,11 @@
 {
   "schema_version": "self_aware.normalized_state.v1",
-  "generated_at": "2026-03-28T00:00:00Z",
+  "generated_at": "2026-03-28T18:30:00Z",
   "owner": "Codex",
   "authority_priority": [
     "EgoCore/docs/PROGRAM_STATE_UNIFIED.yaml",
     "OpenEmotion/roadmap/ROADMAP_STATE.json",
-    "OpenEmotion/roadmap/versions/*.spec.yaml",
+    "OpenEmotion/roadmap/versions/<VERSION>.spec.yaml",
     "OpenEmotion/artifacts/handoff/LATEST_HANDOFF.md",
     "README.md"
   ],
@@ -60,8 +60,8 @@
   "provisional_ceiling": [
     {
       "ref": "OE_MVP:12",
-      "status": "code_exists",
-      "note": "partial artifacts exist, formal stage pass absent"
+      "status": "component_level_verified_but_stage_unproven",
+      "note": "developmental core sandbox / replay / governance proof line verified locally; long-stage admission still absent"
     },
     {
       "ref": "OE_MVP:13",
@@ -110,6 +110,13 @@
       "lower_priority_source": "OpenEmotion/roadmap/ROADMAP_STATE.json",
       "resolution": "component_level_verified_but_stage_unproven",
       "reason": "local verified_e2e is narrower than full stage pass"
+    },
+    {
+      "topic": "mvp12_status",
+      "higher_priority_source": "EgoCore/docs/PROGRAM_STATE_UNIFIED.yaml",
+      "lower_priority_source": "OpenEmotion/roadmap/ROADMAP_STATE.json",
+      "resolution": "component_level_verified_but_stage_unproven",
+      "reason": "formal proof now exists on the developmental core sandbox path, but stage-order admission remains unresolved"
     }
   ],
   "non_blocking_shadow_items": [
@@ -134,9 +141,9 @@
     }
   },
   "next_action": {
-    "step": "SELF_AWARE_STEP_03",
-    "title": "MVP12 Formal Proof",
-    "next_minimal_closure_action": "execute Step03 MVP12 formal proof with independent reviewer and verifier after the published cycle-theory guard",
+    "step": "SELF_AWARE_STEP_04",
+    "title": "MVP13 Formal Proof",
+    "next_minimal_closure_action": "execute Step04 persistent self-model formal proof while preserving the component-level-vs-stage-admission boundary established by Step03",
     "workflow_requirements": {
       "full_spec_required": true,
       "independent_reviewer_required": true,

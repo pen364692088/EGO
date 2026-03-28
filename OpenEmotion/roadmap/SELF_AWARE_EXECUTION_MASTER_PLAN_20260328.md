@@ -121,8 +121,14 @@ Step 03 开始前，先执行一个固定前置守门：
 当前状态更新：
 
 - `Step 03A` 已完成并发布
-- 后续正式施工从 `Step 03` 开始
-`Step 03` 的 formal proof 仍必须继续服从 `Step 03A` 已落定的 scope guard。
+- `Step 03` 已完成并发布，正式结论为：`OE_MVP:12 = component-level verified but stage unproven`
+- 后续正式施工从 `Step 04` 开始
+`Step 04` 仍必须继续服从 `Step 03A` 与 `Step 03` 已落定的 scope guard。
+
+补充说明：
+
+- `Step 03 -> Step 04` 的推进表示 **component-proof sequence** 前进
+- 不表示长期正式阶段已从 `Stage 1/2` 升到 `Stage 3/4`
 
 原因：
 
@@ -142,6 +148,8 @@ Step 03 开始前，先执行一个固定前置守门：
 - `OpenEmotion/roadmap/cycle_theory_alignment_state.json`
 - `OpenEmotion/roadmap/SELF_AWARE_STEP_03A_EXECUTION_REPORT_20260328.md`
 - `OpenEmotion/roadmap/SELF_AWARE_STEP_03A_REVIEW_20260328.md`
+- `OpenEmotion/roadmap/SELF_AWARE_STEP_03_EXECUTION_REPORT_20260328.md`
+- `OpenEmotion/roadmap/SELF_AWARE_STEP_03_REVIEW_20260328.md`
 
 ### 6.2 版本 spec
 

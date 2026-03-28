@@ -8,9 +8,9 @@ owner: "dual-repo-program-state"
 
 truth_source_priority:
   - program_state_unified
-  - boundary_constitution
-  - latest_handoff
   - roadmap_state
+  - version_spec
+  - latest_handoff
   - repo_readme
   - task_docs
 
@@ -125,8 +125,9 @@ axes:
         state: "verified_e2e"
         evidence: "OpenEmotion/artifacts/handoff/LATEST_HANDOFF.md (Conditionally Verified)"
       - ref: "OE_MVP:12"
-        state: "code_exists"
-        evidence: "OpenEmotion/artifacts/handoff/LATEST_HANDOFF.md (Claimed but Unproven)"
+        state: "verified_e2e"
+        evidence: "OpenEmotion/roadmap/SELF_AWARE_STEP_03_EXECUTION_REPORT_20260328.md, OpenEmotion/artifacts/mvp12/*, OpenEmotion/tests/mvp12/*"
+        note: "Developmental Core Sandbox proof line verified on sandbox/replay/governance path; stage admission remains unproven"
       - ref: "OE_MVP:13"
         state: "verified_e2e"
         evidence: "OpenEmotion/emotiond/self_model_adapter.py, docs/E2E_SELF_MODEL_ADAPTER_REPORT.md"

@@ -7,7 +7,7 @@ owner: "Codex"
 layer: 3
 type: dual_repo
 repos: [EgoCore, OpenEmotion]
-status: pending
+status: published
 ```
 
 ## real_goal
@@ -77,4 +77,4 @@ publisher_required: true
 
 ## next_minimal_closure_action
 
-先完成 `SELF_AWARE_STEP_03A_cycle_theory_alignment.md`，再跑最小 formal proof 链并产出一份 `MVP12 formal proof` 汇总报告。
+已完成 `SELF_AWARE_STEP_03A_cycle_theory_alignment.md` 与 `MVP12 formal proof` 汇总报告；下一步切到 `SELF_AWARE_STEP_04_mvp13_formal_proof.md`。

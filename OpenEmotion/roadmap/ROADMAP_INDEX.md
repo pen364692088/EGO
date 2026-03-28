@@ -32,6 +32,8 @@
 - cycle 理论机器状态：`OpenEmotion/roadmap/cycle_theory_alignment_state.json`
 - Step03A 执行报告：`OpenEmotion/roadmap/SELF_AWARE_STEP_03A_EXECUTION_REPORT_20260328.md`
 - Step03A review：`OpenEmotion/roadmap/SELF_AWARE_STEP_03A_REVIEW_20260328.md`
+- Step03 执行报告：`OpenEmotion/roadmap/SELF_AWARE_STEP_03_EXECUTION_REPORT_20260328.md`
+- Step03 review：`OpenEmotion/roadmap/SELF_AWARE_STEP_03_REVIEW_20260328.md`
 - 逐步任务：
   - `Tasks/active/SELF_AWARE_STEP_00_normalization_layer.md`
   - `Tasks/active/SELF_AWARE_STEP_01_current_state_recompute.md`
@@ -76,7 +78,7 @@
 ### MVP13 — Persistent Self-Model
 - 主入口：`OpenEmotion/docs/mvp13/MVP13_STAGE_OVERVIEW.md`
 - 目标：建立跨时间持续、结构化、可审计的 self-model
-- 进入条件：MVP12 completed
+- 进入条件：`MVP12` component-level formal proof 已发布，且不得把该结论包装成 `Stage 3 passed`
 - 离开条件：self-model persistence / replayability / drift governance 达标
 - 建议读取顺序：
   1. `OpenEmotion/docs/mvp13/MVP13_STAGE_OVERVIEW.md`

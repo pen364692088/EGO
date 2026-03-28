@@ -58,7 +58,7 @@
 
 以下能力只能视为当前临时上界，不得当作整阶段通过：
 
-- `OE_MVP:12 = code_exists + partial artifacts`
+- `OE_MVP:12 = component-level verified but stage unproven`
 - `OE_MVP:13 = component-level verified on self-model path, but stage pass unproven`
 - `OE_MVP:14 = shadow_running`
 - `OE_MVP:15 = shadow_running`
@@ -166,4 +166,4 @@
 
 唯一最高优先级动作：
 
-**执行 `SELF_AWARE_STEP_03_mvp12_formal_proof.md`，并且在下一轮真实任务试运行中强制走 `Independent Reviewer -> Verifier`。**
+**执行 `SELF_AWARE_STEP_04_mvp13_formal_proof.md`，并且继续强制走 `Independent Reviewer -> Verifier`；该动作属于 component-proof 序列推进，不等于长期正式阶段已升级。**
