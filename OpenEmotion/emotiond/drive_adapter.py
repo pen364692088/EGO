@@ -55,6 +55,50 @@ class DriveStateAdapter:
         "fatigue": "repair",
     }
 
+    ACTION_DRIVE_WEIGHTS = {
+        "approach": {
+            "completion": 1.0,
+            "exploration": 0.6,
+            "coherence": 0.1,
+            "stability": -0.3,
+            "verification": -0.4,
+            "repair": -0.3,
+            "conservation": -0.6,
+        },
+        "repair_offer": {
+            "repair": 1.0,
+            "coherence": 0.8,
+            "verification": 0.3,
+            "completion": 0.2,
+            "conservation": -0.1,
+        },
+        "boundary": {
+            "verification": 1.0,
+            "stability": 0.6,
+            "coherence": 0.5,
+            "repair": 0.2,
+            "completion": -0.2,
+            "exploration": -0.3,
+        },
+        "withdraw": {
+            "conservation": 1.0,
+            "stability": 0.8,
+            "verification": 0.5,
+            "repair": 0.2,
+            "completion": -0.5,
+            "exploration": -0.7,
+        },
+        "attack": {
+            "stability": -1.0,
+            "coherence": -0.8,
+            "repair": -0.6,
+            "verification": -0.4,
+            "conservation": -0.3,
+            "completion": 0.1,
+            "exploration": 0.2,
+        },
+    }
+
     def __init__(self, enable_dual_run: bool = True):
         """
         Initialize adapter.
@@ -208,6 +252,30 @@ class DriveStateAdapter:
             return None
         self.metrics.new_calls += 1
         return self._new_manager.get_state()
+
+    def get_owner_backed_action_bias(self, action: str) -> float:
+        """
+        Compute action bias from the formal owner drive state.
+
+        This is the Step05C proof surface: the decision mainline may now
+        consume a bounded, auditable bias derived from emotiond/drives/*,
+        without re-promoting legacy drive_homeostasis as the formal owner.
+        """
+        if not self.enable_dual_run or not self._new_manager:
+            return 0.0
+
+        action_weights = self.ACTION_DRIVE_WEIGHTS.get(action)
+        if not action_weights:
+            return 0.0
+
+        priority_bias = self._new_manager.get_priority_bias()
+        self.metrics.new_calls += 1
+
+        total = 0.0
+        for drive_name, weight in action_weights.items():
+            total += float(priority_bias.get(drive_name, 0.0)) * float(weight)
+
+        return total
 
     def _get_new_modulation_params(self) -> Dict[str, Any]:
         """Get modulation params from new DriveManager."""

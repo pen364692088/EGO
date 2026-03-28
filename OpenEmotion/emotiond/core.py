@@ -1458,7 +1458,7 @@ def score_action(
     uncertainty = prediction_error_sum / prediction_count if prediction_count > 0 else 0.0
     uncertainty_penalty = -w["uncertainty"] * abs(uncertainty)
     
-    return rel_score + pred_score + uncertainty_penalty
+    return rel_score + pred_score + uncertainty_penalty + _get_drive_owner_backed_action_bias(action)
 
 
 def _get_owner_backed_action_bias(action: str, target: Optional[str]) -> float:
@@ -1484,6 +1484,26 @@ def _get_owner_backed_action_bias(action: str, target: Optional[str]) -> float:
     try:
         self_model_v0 = get_self_model_v0(target)
         return self_bias_weight * float(self_model_v0.get_action_bias(action))
+    except Exception:
+        return 0.0
+
+
+def _get_drive_owner_backed_action_bias(action: str) -> float:
+    """
+    Step05C: use the formal drive owner on the boundedly converged mainline.
+
+    The causal source remains emotiond/drives/*; emotiond/drive_adapter.py is
+    only the bounded compatibility and replay-friendly access surface.
+    """
+    if not _mvp14_adapter or not ENABLE_MVP14_DUAL_RUN:
+        return 0.0
+
+    drive_bias_weight = float(get_auto_tune_param("drive_bias_weight", 0.15))
+    if abs(drive_bias_weight) <= 1e-9:
+        return 0.0
+
+    try:
+        return drive_bias_weight * float(_mvp14_adapter.get_owner_backed_action_bias(action))
     except Exception:
         return 0.0
 
@@ -2047,7 +2067,9 @@ def score_action_with_target(
     uncertainty_penalty = -w["uncertainty"] * ema_abs_error if n > 0 else 0.0
     
     total_score = rel_score + pred_score + uncertainty_penalty
-    
+
+    total_score += _get_drive_owner_backed_action_bias(action)
+
     total_score += _get_owner_backed_action_bias(action, target)
     
     return total_score, combined
