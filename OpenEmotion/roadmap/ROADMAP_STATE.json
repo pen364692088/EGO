@@ -11,7 +11,7 @@
     "note": "Daily check now correctly returns insufficient_evidence when no real data exists. Persistence-backed verification is working."
   },
   "promotion_blocked": true,
-  "block_reason": "mvp14_formal_owner_behavioral_influence_not_proven_plus_mvp15_formal_proof_not_proven",
+  "block_reason": "mvp15_formal_proof_not_proven",
   "next_version": null,
   "allowed_workstreams": [
     "verification_fix",
@@ -26,7 +26,6 @@
     "observation_based_promotion"
   ],
   "active_blockers": [
-    "MVP14 formal owner behavioral influence remains unproven after bounded mainline convergence",
     "MVP15 formal proof remains incomplete"
   ],
   "resolved_blockers": [
@@ -41,24 +40,30 @@
       "resolved_at": "2026-03-12T23:26:00",
       "resolution": "Persistence-backed checks are now in place. Daily check correctly persists and loads developmental state.",
       "repair_task": "repair_20260312_200318_ee3a82"
+    },
+    {
+      "blocker": "MVP14 formal owner behavioral influence remains unproven after bounded mainline convergence",
+      "resolved_at": "2026-03-29T22:10:00Z",
+      "resolution": "Step05C established paired owner-backed drive behavioral influence on the boundedly converged emotiond /decision/target mainline while keeping emotiond/drives/* as the formal owner.",
+      "repair_task": "SELF_AWARE_STEP_05C"
     }
   ],
   "mvp16_completion": {
     "status": "blocked",
-    "reason": "mvp14_formal_owner_behavioral_influence_not_proven_plus_mvp15_formal_proof_not_proven",
+    "reason": "mvp15_formal_proof_not_proven",
     "tests": 30,
     "gates": [
       "A",
       "B",
       "C"
     ],
-    "exit_criteria_met": "blocked_by_wiring"
+    "exit_criteria_met": "blocked_by_mvp15_formal_proof"
   },
   "observation_metrics": {
     "status": "valid",
     "note": "Persistence-backed daily check is now working. Returns insufficient_evidence when no real data exists."
   },
-  "last_update": "2026-03-23T00:00:42.485232",
+  "last_update": "2026-03-29T22:10:00Z",
   "history": [
     {
       "phase": "MVP11.5",
@@ -74,7 +79,7 @@
     },
     {
       "phase": "MVP14",
-      "audit_status": "Claimed but Unproven"
+      "audit_status": "Component-level Verified but Stage Unproven"
     },
     {
       "phase": "MVP15",
@@ -83,7 +88,7 @@
     {
       "phase": "MVP16",
       "audit_status": "Blocked",
-      "reason": "mvp14_formal_owner_behavioral_influence_not_proven_plus_mvp15_formal_proof_not_proven"
+      "reason": "mvp15_formal_proof_not_proven"
     }
   ],
   "repair_verification": {

@@ -1,6 +1,6 @@
 {
   "schema_version": "self_aware.normalized_state.v1",
-  "generated_at": "2026-03-29T20:10:00Z",
+  "generated_at": "2026-03-29T22:10:00Z",
   "owner": "Codex",
   "authority_priority": [
     "EgoCore/docs/PROGRAM_STATE_UNIFIED.yaml",
@@ -21,7 +21,7 @@
       "version": "MVP16",
       "phase": "Open Developmental Self",
       "status": "blocked",
-      "block_reason": "mvp14_formal_owner_behavioral_influence_not_proven_plus_mvp15_formal_proof_not_proven"
+      "block_reason": "mvp15_formal_proof_not_proven"
     },
     "host_support": {
       "eg_phase_state": "shadow_running",
@@ -70,8 +70,8 @@
     },
     {
       "ref": "OE_MVP:14",
-      "status": "blocked",
-      "note": "Step05B now proves bounded mainline convergence on emotiond/core.py via emotiond/drive_adapter.py, and the current API decision mainline consumes that adapter path. However, the adapter still provides legacy-bounded modulation, so formal-owner behavioral influence for emotiond/drives/* is not yet proven"
+      "status": "component_level_verified_but_stage_unproven",
+      "note": "Step05B established bounded mainline convergence on emotiond/core.py via emotiond/drive_adapter.py, and Step05C now proves paired owner-backed behavioral influence for emotiond/drives/* on the same emotiond decision API mainline; long-stage Stage 5 admission is still not claimed"
     },
     {
       "ref": "OE_MVP:15",
@@ -81,7 +81,7 @@
     {
       "ref": "OE_MVP:16",
       "status": "blocked",
-      "note": "blocked by MVP14 drive authority/mainline gap and MVP15 formal proof gap"
+      "note": "MVP14 drive behavioral influence gap is now closed at component level; MVP16 remains blocked by MVP15 formal proof gap"
     }
   ],
   "allowed_workstreams": [
@@ -102,14 +102,14 @@
       "higher_priority_source": "OpenEmotion/roadmap/ROADMAP_STATE.json",
       "lower_priority_source": "OpenEmotion/artifacts/handoff/LATEST_HANDOFF.md",
       "resolution": "formal_state=blocked",
-      "reason": "handoff cannot override blocked roadmap state"
+      "reason": "handoff cannot override blocked roadmap state, and the remaining formal blocker is now MVP15"
     },
     {
       "topic": "mvp14_status",
       "higher_priority_source": "OpenEmotion/roadmap/versions/MVP14.spec.yaml",
       "lower_priority_source": "OpenEmotion/artifacts/verification/MVP_VERIFICATION_SUMMARY.md",
-      "resolution": "blocked",
-      "reason": "the current API decision mainline is now boundedly converged through emotiond/drive_adapter.py, but formal-owner behavioral influence for emotiond/drives/* is still unproven because the adapter continues to provide legacy-bounded modulation"
+      "resolution": "component_level_verified_but_stage_unproven",
+      "reason": "the current API decision mainline is boundedly converged through emotiond/drive_adapter.py, and Step05C proves paired formal-owner behavioral influence for emotiond/drives/* on that same decision mainline; long-stage admission is still unresolved"
     },
     {
       "topic": "mvp13_status",
@@ -148,12 +148,12 @@
     }
   },
   "next_action": {
-    "step": "SELF_AWARE_STEP_05C",
-    "title": "MVP14 Drive Behavioral Influence Formal Proof",
-    "next_minimal_closure_action": "use the now-boundedly-converged API decision mainline to prove a paired intervention/control drive behavioral influence path for emotiond/drives/*",
-    "workflow_requirements": {
-      "full_spec_required": true,
-      "independent_reviewer_required": true,
+      "step": "SELF_AWARE_STEP_06",
+      "title": "MVP15 Formal Proof",
+      "next_minimal_closure_action": "advance to the next remaining formal blocker by proving a governed reflection/counterfactual writeback chain for MVP15",
+      "workflow_requirements": {
+        "full_spec_required": true,
+        "independent_reviewer_required": true,
       "verifier_required": true
     }
   }

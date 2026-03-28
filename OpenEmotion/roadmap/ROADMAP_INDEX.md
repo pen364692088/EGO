@@ -41,6 +41,8 @@
 - Step05A review：`OpenEmotion/roadmap/SELF_AWARE_STEP_05A_REVIEW_20260329.md`
 - Step05B 执行报告：`OpenEmotion/roadmap/SELF_AWARE_STEP_05B_EXECUTION_REPORT_20260329.md`
 - Step05B review：`OpenEmotion/roadmap/SELF_AWARE_STEP_05B_REVIEW_20260329.md`
+- Step05C 执行报告：`OpenEmotion/roadmap/SELF_AWARE_STEP_05C_EXECUTION_REPORT_20260329.md`
+- Step05C review：`OpenEmotion/roadmap/SELF_AWARE_STEP_05C_REVIEW_20260329.md`
 - Step04A 执行报告：`OpenEmotion/roadmap/SELF_AWARE_STEP_04A_EXECUTION_REPORT_20260328.md`
 - Step04A review：`OpenEmotion/roadmap/SELF_AWARE_STEP_04A_REVIEW_20260328.md`
 - Step04B 执行报告：`OpenEmotion/roadmap/SELF_AWARE_STEP_04B_EXECUTION_REPORT_20260328.md`
@@ -133,7 +135,7 @@
 - 主入口：`OpenEmotion/docs/mvp14/MVP14_STAGE_OVERVIEW.md`
 - 目标：让内部状态以结构性压力的方式影响优先级与自我维持
 - 进入条件：MVP13 behavioral influence formal proof completed，且 self-model authority 已统一
-- 注：在当前路线中，`MVP13` 相关 authority 与 behavioral proof 已完成；`MVP14` 也已完成 `drive authority resolution -> bounded mainline wiring`，因此下一步是 `drive behavioral influence formal proof`，而不是重复做 wiring
+- 注：在当前路线中，`MVP13` 相关 authority 与 behavioral proof 已完成；`MVP14` 也已完成 `drive authority resolution -> bounded mainline wiring -> drive behavioral influence formal proof`，因此后续唯一主线已切到 `MVP15 formal proof`
 - 离开条件：drive system / maintenance runtime / governance integrity 达标
 - 建议读取顺序：
   1. `OpenEmotion/docs/mvp14/MVP14_STAGE_OVERVIEW.md`
@@ -143,6 +145,8 @@
   5. `OpenEmotion/docs/mvp14/DRIVE_GOVERNANCE_AND_PRIORITY_POLICY.md`
   6. `OpenEmotion/docs/mvp14/MVP14_EXIT_CRITERIA.md`
   7. `OpenEmotion/roadmap/versions/MVP14.spec.yaml`
+  8. `OpenEmotion/roadmap/SELF_AWARE_STEP_05C_EXECUTION_REPORT_20260329.md`
+  9. `OpenEmotion/roadmap/SELF_AWARE_STEP_05C_REVIEW_20260329.md`
 
 ### MVP15 — Reflective Self / Counterfactual Self
 - 主入口：`OpenEmotion/docs/mvp15/MVP15_STAGE_OVERVIEW.md`

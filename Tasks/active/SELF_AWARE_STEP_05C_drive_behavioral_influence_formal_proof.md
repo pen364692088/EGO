@@ -7,7 +7,7 @@ owner: "Codex"
 layer: 3
 type: dual_repo
 repos: [EgoCore, OpenEmotion]
-status: pending
+status: published
 ```
 
 ## real_goal
@@ -34,7 +34,7 @@ status: pending
 
 ```yaml
 current_layer: verification
-main_chain_status: bounded_mainline_wiring_established_formal_owner_behavioral_influence_pending
+main_chain_status: owner-backed behavioral influence established on the boundedly converged emotiond decision mainline; stage pass still not claimed
 ```
 
 ## required_artifacts
@@ -63,10 +63,10 @@ publisher_required: true
 
 ## promotion_blockers
 
-- adapter 仍提供 legacy-bounded compatibility
-- formal-owner drive behavioral influence 尚未证明
+- adapter 仍提供 bounded compatibility surface
+- 长期 Stage 5 admission 仍未建立
 - MVP15 formal proof 仍未完成，`OE_MVP:16` 继续 blocked
 
 ## next_minimal_closure_action
 
-设计并验证一条最小 paired intervention/control harness，证明在当前 boundedly converged decision mainline 上，`emotiond/drives/*` 的受控变化会改变同一 decision point。
+本步已完成并发布；下一步切到 `SELF_AWARE_STEP_06_mvp15_formal_proof.md`。

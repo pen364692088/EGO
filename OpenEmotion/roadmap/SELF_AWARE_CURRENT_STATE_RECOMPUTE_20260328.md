@@ -30,7 +30,7 @@
 - `execution_target = OE_MVP:16`
 - `execution_phase = Open Developmental Self`
 - `execution_state = blocked`
-- `block_reason = mvp14_formal_owner_behavioral_influence_not_proven_plus_mvp15_formal_proof_not_proven`
+- `block_reason = mvp15_formal_proof_not_proven`
 
 ### 2.3 宿主承载层
 
@@ -60,7 +60,7 @@
 
 - `OE_MVP:12 = component-level verified but stage unproven`
 - `OE_MVP:13 = component-level verified on shadow/main-chain self-model path; formal owner contract is converged, owner-backed behavioral influence is now proven on the emotiond decision mainline, but long-stage admission is still not claimed`
-- `OE_MVP:14 = shadow_running`
+- `OE_MVP:14 = component-level verified but stage unproven`
 - `OE_MVP:15 = shadow_running`
 - `OE_MVP:16 = blocked`
 
@@ -156,7 +156,7 @@
 - 当前执行状态仍是 `blocked`
 - `MVP12-15` 不能因局部验证或 shadow 状态而视为整阶段通过
 - `MVP13 behavioral influence` 已在 emotiond decision mainline 上拿到正式 paired proof
-- `MVP14` 当前不能直接继续 formal proof；必须先解决 `emotiond/drives/*` 与 legacy drive/homeostasis mainline split
+- `MVP14` 的 owner-backed behavioral influence 已在 boundedly converged 的 emotiond decision mainline 上拿到正式 paired proof；后续剩余主 blocker 已收敛到 `MVP15`
 
 ### 不可宣称
 
@@ -171,4 +171,4 @@
 
 唯一最高优先级动作：
 
-**执行 `SELF_AWARE_STEP_05C_drive_behavioral_influence_formal_proof.md`，并继续强制走 `Independent Reviewer -> Verifier`；该动作表示 `MVP14` 已完成 bounded wiring convergence，接下来进入 formal-owner behavioral influence proof，不等于长期正式阶段已升级。**
+**执行 `SELF_AWARE_STEP_06_mvp15_formal_proof.md`，并继续强制走 `Independent Reviewer -> Verifier`；该动作表示 `MVP14` 的 bounded wiring convergence 与 owner-backed behavioral influence formal proof 已完成，但这仍不自动等于长期正式阶段已升级。**
