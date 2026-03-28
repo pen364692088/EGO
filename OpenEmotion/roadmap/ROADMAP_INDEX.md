@@ -99,12 +99,15 @@
   7. `OpenEmotion/roadmap/versions/MVP13.spec.yaml`
   8. `OpenEmotion/roadmap/SELF_AWARE_STEP_04_EXECUTION_REPORT_20260328.md`
   9. `OpenEmotion/roadmap/SELF_AWARE_STEP_04A_EXECUTION_REPORT_20260328.md`
+  10. `OpenEmotion/roadmap/SELF_AWARE_STEP_04B_EXECUTION_REPORT_20260328.md`
+  11. `OpenEmotion/roadmap/SELF_AWARE_STEP_04C_EXECUTION_REPORT_20260328.md`
+  12. `OpenEmotion/roadmap/SELF_AWARE_STEP_04C_REVIEW_20260328.md`
 
 ### MVP14 — Endogenous Drives + Self-Maintenance
 - 主入口：`OpenEmotion/docs/mvp14/MVP14_STAGE_OVERVIEW.md`
 - 目标：让内部状态以结构性压力的方式影响优先级与自我维持
 - 进入条件：MVP13 behavioral influence formal proof completed，且 self-model authority 已统一
-- 注：在当前路线中，`authority 已统一` 之后仍需先完成 `contract convergence`
+- 注：在当前路线中，`authority 已统一` 与 `contract convergence` 已完成；当前仍缺 `behavioral influence formal proof`
 - 离开条件：drive system / maintenance runtime / governance integrity 达标
 - 建议读取顺序：
   1. `OpenEmotion/docs/mvp14/MVP14_STAGE_OVERVIEW.md`

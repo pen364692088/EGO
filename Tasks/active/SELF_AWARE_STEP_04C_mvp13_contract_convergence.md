@@ -7,7 +7,7 @@ owner: "Codex"
 layer: 3
 type: dual_repo
 repos: [EgoCore, OpenEmotion]
-status: pending
+status: published
 ```
 
 ## real_goal
@@ -34,7 +34,7 @@ status: pending
 
 ```yaml
 current_layer: strategy
-main_chain_status: authority resolved; contract convergence pending
+main_chain_status: formal owner contract converged; behavioral influence proof pending
 ```
 
 ## required_artifacts
@@ -64,10 +64,10 @@ publisher_required: true
 
 ## promotion_blockers
 
-- `openemotion/self_model/*` 当前还没有承接全部 MVP13 behavioral contract
-- `emotiond/self_model/*` 仍在旧 docs/spec/tests 中占据较大比重
-- contract convergence 前，behavioral proof 仍然没有唯一正式入口
+- `behavioral influence` 仍未在 converged owner contract 上被正式证明
+- `emotiond/self_model/*` 虽已降级，但仍保留为历史/迁移材料，后续需继续防止它被重新升格为正式 owner
+- `MVP13` 仍未达到整阶段 formal pass
 
 ## next_minimal_closure_action
 
-先列出 `MVP13` 现有 contract 中必须保留的字段/语义，再判断哪些应迁入 `openemotion/self_model/*`，哪些应降级为历史材料。
+已完成 contract convergence；下一步切到 `SELF_AWARE_STEP_04D_behavioral_influence_proof.md`。

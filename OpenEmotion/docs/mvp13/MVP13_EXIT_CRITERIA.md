@@ -3,30 +3,50 @@
 MVP13 is complete only when the system demonstrates
 a persistent, structured, and auditable self-model.
 
-## 1. Persistence
+## 1. Formal Owner Contract
+
+The formal owner contract must be converged and unique:
+
+- authoritative owner: `openemotion/self_model/*`
+- authoritative schema: `schemas/self_model.schema.json`
+- no proof or promotion claim may depend on `emotiond/self_model/*` as the
+  semantic owner
+
+## 2. Persistence
 
 The self-model survives across sessions and cycle boundaries.
 
-## 2. Structural Integrity
+## 3. Structural Integrity
 
 The self-model is represented in structured schema form,
 not only in free-form text.
 
-## 3. Replayability
+## 4. Replayability
 
 Self-model revisions can be replayed and audited.
 
-## 4. Identity Continuity
+## 5. Identity Continuity
 
 The system maintains continuity across time without
 unexplained identity resets or drift spikes.
 
-## 5. Drift Governance
+## 6. Drift Governance
 
 Drift detection and rollback policy are implemented
 and verified.
 
-## 6. Metrics
+## 7. Behavioral Influence
+
+Behavioral influence must be proven through interventions on the formal owner
+contract, not legacy-only fields. At minimum, the proof path must operate on
+one or more of:
+
+- `active_goals`
+- `standing_commitments`
+- `confidence_by_domain`
+- capability / limitation state that is exposed by the formal owner
+
+## 8. Metrics
 
 Suggested thresholds:
 - self_model_load_success >= 99%

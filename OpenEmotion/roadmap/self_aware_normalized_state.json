@@ -1,6 +1,6 @@
 {
   "schema_version": "self_aware.normalized_state.v1",
-  "generated_at": "2026-03-28T23:58:00Z",
+  "generated_at": "2026-03-29T01:10:00Z",
   "owner": "Codex",
   "authority_priority": [
     "EgoCore/docs/PROGRAM_STATE_UNIFIED.yaml",
@@ -21,7 +21,7 @@
       "version": "MVP16",
       "phase": "Open Developmental Self",
       "status": "blocked",
-      "block_reason": "mvp13_contract_convergence_plus_behavioral_influence_and_mvp15_formal_proof_not_proven"
+      "block_reason": "mvp13_behavioral_influence_and_mvp15_formal_proof_not_proven"
     },
     "host_support": {
       "eg_phase_state": "shadow_running",
@@ -66,7 +66,7 @@
     {
       "ref": "OE_MVP:13",
       "status": "component_level_verified_but_stage_unproven",
-      "note": "shadow/main-chain wiring plus persistence/replay/invariants verified; behavioral influence on later behavior still unproven"
+      "note": "shadow/main-chain wiring plus persistence/replay/invariants verified; formal owner contract converged on openemotion/self_model; behavioral influence on later behavior still unproven"
     },
     {
       "ref": "OE_MVP:14",
@@ -81,7 +81,7 @@
     {
       "ref": "OE_MVP:16",
       "status": "blocked",
-      "note": "blocked by MVP13 contract convergence, behavioral influence proof, and MVP15 formal proof gap"
+      "note": "blocked by MVP13 behavioral influence proof gap and MVP15 formal proof gap"
     }
   ],
   "allowed_workstreams": [
@@ -109,7 +109,7 @@
       "higher_priority_source": "EgoCore/docs/PROGRAM_STATE_UNIFIED.yaml",
       "lower_priority_source": "OpenEmotion/roadmap/ROADMAP_STATE.json",
       "resolution": "component_level_verified_but_stage_unproven",
-      "reason": "formal owner has been resolved to openemotion/self_model, but Step04B shows contract convergence is still required before behavioral proof can proceed"
+      "reason": "formal owner and formal contract are now converged on openemotion/self_model, but behavioral influence proof is still missing"
     },
     {
       "topic": "mvp12_status",
@@ -141,9 +141,9 @@
     }
   },
   "next_action": {
-    "step": "SELF_AWARE_STEP_04C",
-    "title": "MVP13 Contract Convergence",
-    "next_minimal_closure_action": "converge MVP13 spec/docs/future proof harness onto openemotion/self_model before resuming behavioral influence proof",
+    "step": "SELF_AWARE_STEP_04D",
+    "title": "MVP13 Behavioral Influence Proof",
+    "next_minimal_closure_action": "design an owner-backed, replayable behavioral influence proof using standing_commitments, active_goals, or confidence_by_domain",
     "workflow_requirements": {
       "full_spec_required": true,
       "independent_reviewer_required": true,

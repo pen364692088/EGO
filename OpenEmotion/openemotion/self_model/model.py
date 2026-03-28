@@ -112,6 +112,9 @@ class SelfModel:
     # 关联的身份
     identity_handle: str
 
+    # Schema 元数据
+    schema_version: str = "1.0.0"
+
     # 能力列表
     capabilities: List[Capability] = field(default_factory=list)
 
@@ -142,9 +145,11 @@ class SelfModel:
     # 元数据
     created_at: str = field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
     last_modified_at: str = field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
+    modification_audit_trail: List[Dict[str, Any]] = field(default_factory=list)
 
     def to_dict(self) -> Dict[str, Any]:
         return {
+            "schema_version": self.schema_version,
             "identity_handle": self.identity_handle,
             "capabilities": [c.to_dict() for c in self.capabilities],
             "limitations": [l.to_dict() for l in self.limitations],
@@ -163,6 +168,7 @@ class SelfModel:
             "known_unknowns": self.known_unknowns,
             "created_at": self.created_at,
             "last_modified_at": self.last_modified_at,
+            "modification_audit_trail": self.modification_audit_trail,
         }
 
     @classmethod
@@ -172,7 +178,8 @@ class SelfModel:
         dep_map = data.get("dependency_map", {})
 
         return cls(
-            identity_handle=data["identity_handle"],
+            schema_version=data.get("schema_version", "1.0.0"),
+            identity_handle=data.get("identity_handle") or data["model_handle"],
             capabilities=[Capability(**c) if isinstance(c, dict) else c for c in data.get("capabilities", [])],
             limitations=[Limitation(**l) if isinstance(l, dict) else l for l in data.get("limitations", [])],
             active_goals=[Goal(**g) if isinstance(g, dict) else g for g in data.get("active_goals", [])],
@@ -186,6 +193,7 @@ class SelfModel:
             known_unknowns=data.get("known_unknowns", []),
             created_at=data.get("created_at", datetime.now(timezone.utc).isoformat()),
             last_modified_at=data.get("last_modified_at", datetime.now(timezone.utc).isoformat()),
+            modification_audit_trail=data.get("modification_audit_trail", []),
         )
 
     def get_capability_by_id(self, capability_id: str) -> Optional[Capability]:

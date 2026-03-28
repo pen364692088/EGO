@@ -7,7 +7,7 @@
   "type": "object",
   "required": [
     "schema_version",
-    "model_handle",
+    "identity_handle",
     "capabilities",
     "limitations",
     "active_goals",
@@ -27,7 +27,7 @@
       "description": "Schema 版本号",
       "default": "1.0.0"
     },
-    "model_handle": {
+    "identity_handle": {
       "type": "string",
       "description": "关联的 identity_handle，表示此 self-model 属于哪个身份",
       "pattern": "^[a-z][a-z0-9_]*$"
@@ -283,31 +283,12 @@
       }
     },
     "confidence_by_domain": {
-      "type": "array",
-      "description": "各领域的置信度",
-      "items": {
-        "type": "object",
-        "required": ["domain", "confidence"],
-        "properties": {
-          "domain": {
-            "type": "string",
-            "description": "领域名称"
-          },
-          "confidence": {
-            "type": "number",
-            "minimum": 0,
-            "maximum": 1,
-            "description": "置信度 (0-1)"
-          },
-          "basis": {
-            "type": "string",
-            "description": "置信度依据"
-          },
-          "last_updated": {
-            "type": "string",
-            "format": "date-time"
-          }
-        }
+      "type": "object",
+      "description": "各领域的置信度映射（domain -> confidence）",
+      "additionalProperties": {
+        "type": "number",
+        "minimum": 0,
+        "maximum": 1
       }
     },
     "known_unknowns": {
@@ -333,29 +314,6 @@
             "type": "string",
             "description": "发现上下文"
           }
-        }
-      }
-    },
-    "current_mode": {
-      "type": "object",
-      "description": "当前运行模式（注意：这是临时状态，不属于长期身份）",
-      "properties": {
-        "mode_name": {
-          "type": "string",
-          "description": "模式名称"
-        },
-        "started_at": {
-          "type": "string",
-          "format": "date-time"
-        },
-        "expected_duration_sec": {
-          "type": "integer",
-          "description": "预期持续时间"
-        },
-        "mode_constraints": {
-          "type": "array",
-          "items": { "type": "string" },
-          "description": "模式约束"
         }
       }
     },

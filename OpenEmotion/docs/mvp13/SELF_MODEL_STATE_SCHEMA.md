@@ -1,77 +1,77 @@
 # Self-Model State Schema
 
-## 1. Top-Level Schema
+## 1. Canonical Owner
 
-The self-model should contain at least:
+As of Step04C, the formal MVP13 self-model contract is defined by:
 
-- identity_core
-- stable_constraints
-- behavioral_tendencies
-- active_tensions
-- long_horizon_orientations
-- capability_model
-- governance_model
-- continuity_trace
-- revision_history
+- `OpenEmotion/openemotion/self_model/*`
+- `OpenEmotion/schemas/self_model.schema.json`
 
-## 2. identity_core
+The older `emotiond/self_model/*` line is no longer the semantic owner for
+MVP13 stage claims. It remains:
 
-Represents the most stable description of system identity.
+- historical evidence
+- migration reference
+- comparative/shadow material
 
-Example fields:
-- system_name
-- role_definition
-- core_operating_orientation
-- protected_identity_statements
+but it must not be used as the primary contract source for roadmap state or
+behavioral influence proof.
 
-## 3. stable_constraints
+## 2. Current Top-Level Formal Contract
 
-Represents known stable limits.
+The current formal owner contract contains these top-level fields:
 
-Example fields:
-- architectural boundaries
-- policy boundaries
-- no-authority zones
-- invariants that cannot be mutated casually
+- `schema_version`
+- `identity_handle`
+- `capabilities`
+- `limitations`
+- `active_goals`
+- `standing_commitments`
+- `tool_authority_boundary`
+- `dependency_map`
+- `confidence_by_domain`
+- `known_unknowns`
+- `created_at`
+- `last_modified_at`
+- `modification_audit_trail`
 
-## 4. behavioral_tendencies
+## 3. Behaviorally Relevant Owner Fields
 
-Represents durable but revisable behavioral patterns.
+For future MVP13 behavioral influence proof, the allowed authoritative levers
+are the fields that already exist on the formal owner contract:
 
-Example fields:
-- caution_bias
-- exploration_bias
-- self-correction tendency
-- verification preference
+- `active_goals`
+- `standing_commitments`
+- `confidence_by_domain`
+- `capabilities`
+- `limitations`
 
-## 5. active_tensions
+These are the fields whose controlled intervention may later be used to prove
+that the persistent self-model changes downstream behavior.
 
-Represents unresolved or currently active internal pressures.
+## 4. Legacy / Migration Candidates
 
-Example fields:
-- speed_vs_reliability
-- autonomy_vs_governance
-- persistence_vs_flexibility
+The following structures appear in the older `emotiond/self_model/*` line and
+may still be useful as migration references, but they are not Step04C formal
+owner fields:
 
-## 6. long_horizon_orientations
+- `identity_core`
+- `stable_constraints`
+- `behavioral_tendencies`
+- `active_tensions`
+- `long_horizon_orientations`
+- `continuity_trace`
+- `revision_history`
+- `SelfModelManager`
 
-Represents longer-term directional tendencies.
+If any of these are needed for future formal proof, they must first be
+explicitly migrated into `openemotion/self_model/*` or otherwise redefined in
+the formal owner contract.
 
-Example fields:
-- roadmap alignment
-- unfinished developmental goals
-- stabilization priorities
+## 5. Convergence Rule
 
-## 7. continuity_trace
+From Step04C onward:
 
-Represents the recent transition chain that explains how
-the current self-model emerged.
-
-## 8. revision_history
-
-Each revision must record:
-- previous version
-- changed fields
-- reason
-- supporting evidence
-- confidence
+- proof harnesses must consume the formal owner contract
+- roadmap state must cite the formal owner contract
+- legacy fields may inform migration planning, but not formal promotion claims

@@ -30,7 +30,7 @@
 - `execution_target = OE_MVP:16`
 - `execution_phase = Open Developmental Self`
 - `execution_state = blocked`
-- `block_reason = mvp13_contract_convergence_plus_behavioral_influence_and_mvp15_formal_proof_not_proven`
+- `block_reason = mvp13_behavioral_influence_and_mvp15_formal_proof_not_proven`
 
 ### 2.3 宿主承载层
 
@@ -59,7 +59,7 @@
 以下能力只能视为当前临时上界，不得当作整阶段通过：
 
 - `OE_MVP:12 = component-level verified but stage unproven`
-- `OE_MVP:13 = component-level verified on shadow/main-chain self-model path, but behavioral influence and stage pass remain unproven; current proof is additionally blocked by contract convergence gap`
+- `OE_MVP:13 = component-level verified on shadow/main-chain self-model path; formal owner contract is converged, but behavioral influence and stage pass remain unproven`
 - `OE_MVP:14 = shadow_running`
 - `OE_MVP:15 = shadow_running`
 - `OE_MVP:16 = blocked`
@@ -97,7 +97,7 @@
 
 - 细粒度 `verified_e2e` 只解释为 **component-level / subchain-level verified**
 - 整阶段是否 `passed` 仍以版本 spec 与 blocker 口径裁定
-- 所以 `OE_MVP:13` 当前只能记为“shadow/main-chain wiring 与 component proof 已证，但 behavioral proof 仍被 contract convergence 阻塞，未完成整阶段 formal pass”
+- 所以 `OE_MVP:13` 当前只能记为“shadow/main-chain wiring、component proof、formal owner contract convergence 已证，但 behavioral proof 仍未完成，未达到整阶段 formal pass”
 
 ---
 
@@ -135,7 +135,7 @@
 当前应按以下顺序继续：
 
 1. `Step 03`：MVP12 formal proof
-2. `Step 04C`：MVP13 contract convergence
+2. `Step 04D`：MVP13 behavioral influence formal proof
 3. `Step 05`：MVP14 formal proof
 4. `Step 06`：MVP15 formal proof
 5. `Step 07`：MVP16 unblock
@@ -166,4 +166,4 @@
 
 唯一最高优先级动作：
 
-**执行 `SELF_AWARE_STEP_04C_mvp13_contract_convergence.md`，并且继续强制走 `Independent Reviewer -> Verifier`；该动作属于 component-proof 序列推进，不等于长期正式阶段已升级。**
+**执行 `SELF_AWARE_STEP_04D_behavioral_influence_proof.md`，并且继续强制走 `Independent Reviewer -> Verifier`；该动作属于 component-proof 序列推进，不等于长期正式阶段已升级。**
