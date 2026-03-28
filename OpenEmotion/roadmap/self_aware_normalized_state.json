@@ -1,6 +1,6 @@
 {
   "schema_version": "self_aware.normalized_state.v1",
-  "generated_at": "2026-03-28T22:45:00Z",
+  "generated_at": "2026-03-28T23:40:00Z",
   "owner": "Codex",
   "authority_priority": [
     "EgoCore/docs/PROGRAM_STATE_UNIFIED.yaml",
@@ -21,7 +21,7 @@
       "version": "MVP16",
       "phase": "Open Developmental Self",
       "status": "blocked",
-      "block_reason": "mvp13_behavioral_influence_and_mvp15_formal_proof_not_proven"
+      "block_reason": "mvp13_self_model_authority_split_plus_behavioral_influence_and_mvp15_formal_proof_not_proven"
     },
     "host_support": {
       "eg_phase_state": "shadow_running",
@@ -109,7 +109,7 @@
       "higher_priority_source": "EgoCore/docs/PROGRAM_STATE_UNIFIED.yaml",
       "lower_priority_source": "OpenEmotion/roadmap/ROADMAP_STATE.json",
       "resolution": "component_level_verified_but_stage_unproven",
-      "reason": "fresh verifier proves shadow/main-chain wiring and component proof, but not behavioral_influence_e4_proven"
+      "reason": "fresh verifier proves shadow/main-chain wiring and component proof, but Step04A shows behavioral proof is blocked by self-model authority split"
     },
     {
       "topic": "mvp12_status",
@@ -141,9 +141,9 @@
     }
   },
   "next_action": {
-    "step": "SELF_AWARE_STEP_04A",
-    "title": "MVP13 Behavioral Influence Proof",
-    "next_minimal_closure_action": "design and execute a governed self-model intervention proof that can distinguish shadow wiring from real downstream behavioral influence",
+    "step": "SELF_AWARE_STEP_04B",
+    "title": "MVP13 Self-Model Authority Resolution",
+    "next_minimal_closure_action": "resolve the current authority split between openemotion/self_model and emotiond/self_model before attempting formal behavioral influence proof",
     "workflow_requirements": {
       "full_spec_required": true,
       "independent_reviewer_required": true,

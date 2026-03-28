@@ -34,6 +34,10 @@
 - Step03A review：`OpenEmotion/roadmap/SELF_AWARE_STEP_03A_REVIEW_20260328.md`
 - Step03 执行报告：`OpenEmotion/roadmap/SELF_AWARE_STEP_03_EXECUTION_REPORT_20260328.md`
 - Step03 review：`OpenEmotion/roadmap/SELF_AWARE_STEP_03_REVIEW_20260328.md`
+- Step04 执行报告：`OpenEmotion/roadmap/SELF_AWARE_STEP_04_EXECUTION_REPORT_20260328.md`
+- Step04 review：`OpenEmotion/roadmap/SELF_AWARE_STEP_04_REVIEW_20260328.md`
+- Step04A 执行报告：`OpenEmotion/roadmap/SELF_AWARE_STEP_04A_EXECUTION_REPORT_20260328.md`
+- Step04A review：`OpenEmotion/roadmap/SELF_AWARE_STEP_04A_REVIEW_20260328.md`
 - 逐步任务：
   - `Tasks/active/SELF_AWARE_STEP_00_normalization_layer.md`
   - `Tasks/active/SELF_AWARE_STEP_01_current_state_recompute.md`
@@ -42,6 +46,7 @@
   - `Tasks/active/SELF_AWARE_STEP_03_mvp12_formal_proof.md`
   - `Tasks/active/SELF_AWARE_STEP_04_mvp13_formal_proof.md`
   - `Tasks/active/SELF_AWARE_STEP_04A_behavioral_influence_proof.md`
+  - `Tasks/active/SELF_AWARE_STEP_04B_self_model_authority_resolution.md`
   - `Tasks/active/SELF_AWARE_STEP_05_mvp14_formal_proof.md`
   - `Tasks/active/SELF_AWARE_STEP_06_mvp15_formal_proof.md`
   - `Tasks/active/SELF_AWARE_STEP_07_mvp16_unblock.md`
@@ -90,11 +95,12 @@
   6. `OpenEmotion/docs/mvp13/MVP13_EXIT_CRITERIA.md`
   7. `OpenEmotion/roadmap/versions/MVP13.spec.yaml`
   8. `OpenEmotion/roadmap/SELF_AWARE_STEP_04_EXECUTION_REPORT_20260328.md`
+  9. `OpenEmotion/roadmap/SELF_AWARE_STEP_04A_EXECUTION_REPORT_20260328.md`
 
 ### MVP14 — Endogenous Drives + Self-Maintenance
 - 主入口：`OpenEmotion/docs/mvp14/MVP14_STAGE_OVERVIEW.md`
 - 目标：让内部状态以结构性压力的方式影响优先级与自我维持
-- 进入条件：MVP13 behavioral influence formal proof completed
+- 进入条件：MVP13 behavioral influence formal proof completed，且 self-model authority 已统一
 - 离开条件：drive system / maintenance runtime / governance integrity 达标
 - 建议读取顺序：
   1. `OpenEmotion/docs/mvp14/MVP14_STAGE_OVERVIEW.md`

@@ -7,19 +7,19 @@ owner: "Codex"
 layer: 3
 type: dual_repo
 repos: [EgoCore, OpenEmotion]
-status: pending
+status: published
 ```
 
 ## real_goal
 
-在不破坏 governor / boundary constitution 的前提下，补一条正式的 `self-model intervention -> downstream behavior change` 证明链，判断 `MVP13` 是否能从“component-level verified but stage unproven”继续升到更强状态。
+在正式进入 `behavioral influence` 证明前，先判定当前仓库是否已经具备唯一、无歧义的 self-model authority；若没有，则把该问题收口为 authority-split diagnosis，并把下一步唯一化到 authority resolution。
 
 ## success_criteria
 
-- 设计一条受治理、可 replay、可审计的 intervention 链
-- 明确干预点来自 `MVP13` 新 self-model，而不是 legacy `SelfModelV0`
-- 在受控前提下观测到后续 action bias / decision tendency / routed behavior 的可复验变化
-- 不允许新 self-model 绕过 governor 或越权成为最终 authority
+- 明确当前 behavioral proof 所依赖的 self-model authority 是否唯一
+- 若 authority split 存在，给出正式诊断并阻止继续构造伪因果证明
+- 明确下一步唯一正式入口
+- 不允许 adapter 或 bridge 被偷偷升级成正式语义 owner
 
 ## authority_source
 
@@ -35,7 +35,7 @@ status: pending
 
 ```yaml
 current_layer: strategy
-main_chain_status: component proof published; behavioral influence proof pending
+main_chain_status: component proof published; behavioral influence proof blocked by authority split
 ```
 
 ## required_artifacts
@@ -69,7 +69,8 @@ publisher_required: true
 - 当前主链行为偏置仍由 legacy `SelfModelV0` 提供
 - shadow dual-run 不等于 behavior influence
 - 旧 causal report 的 wiring 结论已过时，但行为影响未证这条仍未被 fresh verifier 推翻
+- `openemotion/self_model/*` 与 `emotiond/self_model/*` 不是同一 authority
 
 ## next_minimal_closure_action
 
-先设计一条最小、受治理、可 replay 的 intervention harness，明确区分 `legacy self-model bias` 与 `MVP13 new self-model influence`，再决定是补 bounded wiring change 还是收口为“当前阶段仍不可通过”。
+已完成 authority-split diagnosis；下一步切到 `SELF_AWARE_STEP_04B_self_model_authority_resolution.md`。

@@ -36,7 +36,7 @@
 
 - `OE_MVP:16` 是当前执行目标版本
 - `ROADMAP_STATE.json` 仍为 `blocked`
-- blocker 是 `mvp13_mvp15_wiring_not_proven`
+- blocker 已收敛为 `mvp13 self-model authority / behavioral influence gap + mvp15 formal proof gap`
 - 仓库已有大量阶段 overview、exit criteria、tests、artifacts，但缺少统一编译层与正式 spec 收口
 
 ---
@@ -98,6 +98,12 @@ Step 03 开始前，先执行一个固定前置守门：
 
 目的不是扩阶段，而是把 `component-level verified but stage unproven` 与真正的行为影响证明拆开，避免把 shadow wiring 冒充成 Stage 4 已通过。
 
+如果 `Step 04A` 发现当前 behavioral proof 指向的 self-model contract 与真正被接入主链的 self-model authority 不是同一条线，则必须继续插入：
+
+- `SELF_AWARE_STEP_04B_self_model_authority_resolution.md`
+
+目的不是拖延，而是先统一 authority source，避免在错误 owner 上继续构造伪因果证明。
+
 ### Step 05 — MVP14 Formal Proof
 
 把 endogenous drives / self-maintenance 从“可运行结构”推进到“真实影响候选加权、优先级和维护行为”。
@@ -129,7 +135,8 @@ Step 03 开始前，先执行一个固定前置守门：
 - `Step 03A` 已完成并发布
 - `Step 03` 已完成并发布，正式结论为：`OE_MVP:12 = component-level verified but stage unproven`
 - `Step 04` 已完成并发布，正式结论为：`OE_MVP:13 = component-level verified but stage unproven`
-- 后续正式施工从 `Step 04A` 开始
+- `Step 04A` 已完成并发布，正式结论为：`behavioral influence proof currently blocked by self-model authority split`
+- 后续正式施工从 `Step 04B` 开始
 `Step 04` 仍必须继续服从 `Step 03A` 与 `Step 03` 已落定的 scope guard。
 
 补充说明：
@@ -159,6 +166,8 @@ Step 03 开始前，先执行一个固定前置守门：
 - `OpenEmotion/roadmap/SELF_AWARE_STEP_03_REVIEW_20260328.md`
 - `OpenEmotion/roadmap/SELF_AWARE_STEP_04_EXECUTION_REPORT_20260328.md`
 - `OpenEmotion/roadmap/SELF_AWARE_STEP_04_REVIEW_20260328.md`
+- `OpenEmotion/roadmap/SELF_AWARE_STEP_04A_EXECUTION_REPORT_20260328.md`
+- `OpenEmotion/roadmap/SELF_AWARE_STEP_04A_REVIEW_20260328.md`
 
 ### 6.2 版本 spec
 
@@ -177,6 +186,7 @@ Step 03 开始前，先执行一个固定前置守门：
 - `Tasks/active/SELF_AWARE_STEP_03_mvp12_formal_proof.md`
 - `Tasks/active/SELF_AWARE_STEP_04_mvp13_formal_proof.md`
 - `Tasks/active/SELF_AWARE_STEP_04A_behavioral_influence_proof.md`
+- `Tasks/active/SELF_AWARE_STEP_04B_self_model_authority_resolution.md`
 - `Tasks/active/SELF_AWARE_STEP_05_mvp14_formal_proof.md`
 - `Tasks/active/SELF_AWARE_STEP_06_mvp15_formal_proof.md`
 - `Tasks/active/SELF_AWARE_STEP_07_mvp16_unblock.md`
