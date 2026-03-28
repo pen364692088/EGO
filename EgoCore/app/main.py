@@ -8,6 +8,8 @@ Usage:
     python -m app.main              # Show status and exit
     python -m app.main --telegram   # Start Telegram bot
     python -m app.main --status     # Show status only
+    python -m app.main --dashboard  # Start read-only dashboard
+    python -m app.main --restore --telegram  # Run explicit restore before Telegram startup
 """
 
 import os
@@ -42,7 +44,42 @@ def parse_args():
         action="store_true",
         help="Run Runtime v2 interactive CLI loop"
     )
+    parser.add_argument(
+        "--dashboard",
+        action="store_true",
+        help="Run read-only Growth Dashboard v1"
+    )
+    parser.add_argument(
+        "--restore",
+        action="store_true",
+        help="Run explicit restore before Telegram startup"
+    )
+    parser.add_argument(
+        "--host",
+        default="127.0.0.1",
+        help="Dashboard bind host (default: 127.0.0.1)"
+    )
+    parser.add_argument(
+        "--port",
+        type=int,
+        default=8787,
+        help="Dashboard bind port (default: 8787)"
+    )
     return parser.parse_args()
+
+
+def _validate_args(args: argparse.Namespace) -> str | None:
+    if not args.restore:
+        return None
+    if not args.telegram:
+        return "--restore 只能与 --telegram 一起使用。"
+    if args.dashboard:
+        return "--restore 不能与 --dashboard 一起使用。"
+    if args.status:
+        return "--restore 不能与 --status 一起使用。"
+    if args.runtime_v2_cli:
+        return "--restore 不能与 --runtime-v2-cli 一起使用。"
+    return None
 
 
 def show_status(config, logger) -> None:
@@ -124,6 +161,10 @@ def main() -> int:
     # =========================================================================
     
     args = parse_args()
+    args_error = _validate_args(args)
+    if args_error:
+        print(f"\n❌ Argument Error: {args_error}", file=sys.stderr)
+        return 2
 
     print("OpenEmotion Agent Runtime v0.1.0")
     print("=" * 40)
@@ -205,6 +246,26 @@ def main() -> int:
         # Show status
         show_status(config, logger)
 
+        pending_restore_observation = None
+        if args.restore:
+            print("\n" + "=" * 40)
+            print("Running Explicit Restore...")
+            print("=" * 40)
+            from app.restore_runtime import format_restore_summary, perform_startup_restore
+
+            restore_result, pending_restore_observation = perform_startup_restore(
+                artifacts_dir=Path("artifacts"),
+                audit_dir=Path("artifacts") / "restore" / "audit",
+                session_id="telegram_startup_restore",
+            )
+            summary = format_restore_summary(pending_restore_observation)
+            print(f"  {summary}")
+            logger.info("restore.startup %s", summary)
+            if restore_result.status == "failed":
+                print("  ✗ Explicit restore failed; refusing Telegram startup")
+                return 1
+            print("  ✓ Explicit restore completed; pending observation attached to first post-restore turn")
+
         # Start Runtime v2 CLI if requested
         if args.runtime_v2_cli:
             print("\n" + "=" * 40)
@@ -212,6 +273,15 @@ def main() -> int:
             print("=" * 40)
             from app.runtime_v2 import run_cli
             return run_cli()
+
+        if args.dashboard:
+            print("\n" + "=" * 40)
+            print("Starting Growth Dashboard v1...")
+            print("=" * 40)
+            from app.dashboard import run_dashboard_server
+
+            run_dashboard_server(host=args.host, port=args.port)
+            return 0
 
         # Start Telegram bot if requested
         if args.telegram:
@@ -260,7 +330,7 @@ def main() -> int:
             from app.telegram_bot import create_bot_from_config
 
             try:
-                bot = create_bot_from_config()
+                bot = create_bot_from_config(pending_restore_observation=pending_restore_observation)
                 print("  ✓ Telegram bot created, starting...")
                 bot.run()  # Blocking
             except ConfigError as e:
@@ -278,6 +348,7 @@ def main() -> int:
             print("  3. Configure models and prompts in config/*.yaml")
             print("  4. Run 'python -m app.main --telegram' to start the Telegram bot")
             print("  5. Run 'python -m app.main --status' to check status")
+            print("  6. Run 'python -m app.main --dashboard' to inspect read-only observation indexes")
 
         logger.info("OpenEmotion Agent Runtime initialized")
         return 0

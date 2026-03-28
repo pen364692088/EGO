@@ -101,6 +101,26 @@ class RuntimeV2DecisionEngine:
             return ""
         return "\n" + "\n".join(lines) + "\n"
 
+    def build_restore_context(self, ingress_context: dict) -> str:
+        if not ingress_context:
+            return ""
+
+        restore_observation = ingress_context.get("restore_observation") or {}
+        if not restore_observation:
+            return ""
+
+        lines: List[str] = [
+            "## Restore 观察提示",
+            "- 这轮是显式 restore 后的首条真实用户消息。",
+            f"- restore_status: {restore_observation.get('restore_status', 'unknown')}",
+        ]
+        if restore_observation.get("recovery_hints_present"):
+            lines.append("- restore 注入摘要显示存在 recovery hints，优先保持连续性。")
+        for item in (restore_observation.get("standing_commitments_preview") or [])[:3]:
+            if item:
+                lines.append(f"- 恢复后的 standing commitment: {item}")
+        return "\n" + "\n".join(lines) + "\n"
+
     async def decide(self, state: RuntimeV2State) -> RuntimeV2Action:
         system_prompt = self.build_system_prompt()
         
@@ -112,6 +132,10 @@ class RuntimeV2DecisionEngine:
         profile_rule_context = self.build_profile_rule_context(state.ingress_context or {})
         if profile_rule_context:
             system_prompt = system_prompt + profile_rule_context
+
+        restore_context = self.build_restore_context(state.ingress_context or {})
+        if restore_context:
+            system_prompt = system_prompt + restore_context
         
         messages: List[Dict[str, str]] = [
             {"role": "system", "content": system_prompt},

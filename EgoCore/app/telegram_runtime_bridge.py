@@ -619,6 +619,7 @@ class TelegramRuntimeBridge:
             "matched_profile_rules": decision.matched_profile_rules,
             "rule_enforcement": decision.rule_enforcement,
             "profile_rule_authority": "profile_memory",
+            "restore_observation": None,
         }
 
     async def inspect_ingress_semantic(

@@ -1,12 +1,13 @@
 #!/bin/bash
 # EgoCore Production Startup Script
-# Usage: ./scripts/start_egocore.sh [--telegram] [--status]
+# Usage: ./scripts/start_egocore.sh [--restore] [--telegram|--status]
 
 set -e
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_ROOT="$(dirname "$SCRIPT_DIR")"
 EGOCORE_DIR="$PROJECT_ROOT"
+source "$SCRIPT_DIR/lib_egocore_process.sh"
 
 cd "$EGOCORE_DIR"
 
@@ -24,35 +25,41 @@ echo "Lock File: $LOCK_FILE"
 echo ""
 
 # Step 1: Check if already running
-if [ -f "$PID_FILE" ]; then
-    OLD_PID=$(cat "$PID_FILE" 2>/dev/null || echo "")
-    if [ -n "$OLD_PID" ] && ps -p "$OLD_PID" > /dev/null 2>&1; then
-        echo "ERROR: EgoCore is already running (PID: $OLD_PID)"
-        echo "Use ./scripts/stop_egocore.sh first, or use restart:"
-        echo "  ./scripts/stop_egocore.sh && ./scripts/start_egocore.sh"
-        exit 1
-    else
-        echo "WARNING: Stale PID file found, removing..."
-        rm -f "$PID_FILE"
-    fi
+OLD_PID="$(egocore_read_pid_file "$PID_FILE")"
+if [ -n "$OLD_PID" ] && ! egocore_pid_is_running "$OLD_PID"; then
+    echo "WARNING: Stale PID file found, removing..."
+    rm -f "$PID_FILE"
+    OLD_PID=""
+fi
+
+LIVE_PIDS="$(egocore_list_telegram_pids | tr '\n' ' ')"
+if [ -n "$LIVE_PIDS" ]; then
+    echo "ERROR: EgoCore telegram poller is already running: $LIVE_PIDS"
+    echo "Use ./scripts/stop_egocore.sh first, or use restart:"
+    echo "  ./scripts/stop_egocore.sh --force && ./scripts/start_egocore.sh"
+    exit 1
 fi
 
 # Step 2: Clean stale locks
 echo "[1/4] Cleaning stale locks..."
 if [ -f "$LOCK_FILE" ]; then
-    LOCK_PID=$(cat "$LOCK_FILE" 2>/dev/null | grep -oP 'pid=\K[0-9]+' || echo "")
-    if [ -n "$LOCK_PID" ] && ! ps -p "$LOCK_PID" > /dev/null 2>&1; then
+    LOCK_PID="$(egocore_read_lock_pid "$LOCK_FILE")"
+    if [ -n "$LOCK_PID" ] && ! egocore_pid_is_running "$LOCK_PID"; then
         echo "  Removing stale lock (PID $LOCK_PID not running)"
         rm -f "$LOCK_FILE"
     elif [ -n "$LOCK_PID" ]; then
         echo "  WARNING: Lock held by running process (PID $LOCK_PID)"
         echo "  Attempting graceful stop..."
-        kill "$LOCK_PID" 2>/dev/null || true
+        egocore_kill_pid "$LOCK_PID" graceful
         sleep 2
-        if ps -p "$LOCK_PID" > /dev/null 2>&1; then
+        if egocore_pid_is_running "$LOCK_PID"; then
             echo "  Force killing PID $LOCK_PID..."
-            kill -9 "$LOCK_PID" 2>/dev/null || true
+            egocore_kill_pid "$LOCK_PID" force
             sleep 1
+        fi
+        if egocore_pid_is_running "$LOCK_PID"; then
+            echo "ERROR: Lock owner PID $LOCK_PID is still running"
+            exit 1
         fi
         rm -f "$LOCK_FILE"
     else
@@ -90,33 +97,57 @@ echo "[4/4] Starting EgoCore..."
 echo ""
 
 # Parse arguments
-MODE="${1:---telegram}"
+ARGS=("$@")
+if [ ${#ARGS[@]} -eq 0 ]; then
+    ARGS=(--telegram)
+fi
 
 # Start with timestamped log
 LOG_FILE="$LOG_DIR/egocore_$(date +%Y%m%d_%H%M%S).log"
 
 echo "  Log file: $LOG_FILE"
-echo "  Mode: $MODE"
+echo "  Args: ${ARGS[*]}"
 echo ""
 
 # Start process
-if [ "$MODE" = "--telegram" ]; then
-    nohup python -u -m app.main --telegram >> "$LOG_FILE" 2>&1 &
-else
-    nohup python -u -m app.main "$MODE" >> "$LOG_FILE" 2>&1 &
+BASELINE_PIDS="$(egocore_list_telegram_pids | tr '\n' ' ')"
+nohup python -u -m app.main "${ARGS[@]}" >> "$LOG_FILE" 2>&1 &
+
+SHELL_PID=$!
+PID=""
+
+for _ in $(seq 1 20); do
+    CURRENT_PIDS="$(egocore_list_telegram_pids | tr '\n' ' ')"
+    PID="$(egocore_find_new_pid "$BASELINE_PIDS" "$CURRENT_PIDS" || true)"
+    if [ -n "$PID" ]; then
+        break
+    fi
+    sleep 1
+done
+
+if [ -z "$PID" ] && egocore_pid_is_running "$SHELL_PID"; then
+    PID="$SHELL_PID"
 fi
 
-PID=$!
-echo $PID > "$PID_FILE"
+if [ -z "$PID" ]; then
+    echo "ERROR: Failed to resolve running Telegram poller PID"
+    echo "Check log: $LOG_FILE"
+    exit 1
+fi
+
+echo "$PID" > "$PID_FILE"
 
 echo "  Started with PID: $PID"
+if [ "$PID" != "$SHELL_PID" ]; then
+    echo "  Shell launcher PID: $SHELL_PID"
+fi
 echo ""
 
 # Wait for startup
 sleep 3
 
 # Check if still running
-if ps -p "$PID" > /dev/null 2>&1; then
+if egocore_pid_is_running "$PID"; then
     echo "========================================"
     echo "✓ EgoCore started successfully"
     echo "========================================"

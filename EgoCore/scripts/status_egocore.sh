@@ -7,6 +7,7 @@ PROJECT_ROOT="$(dirname "$SCRIPT_DIR")"
 EGOCORE_DIR="$PROJECT_ROOT"
 PID_FILE="$EGOCORE_DIR/logs/egocore.pid"
 LOCK_FILE="${TEMP:-/tmp}/egocore-telegram-poller.lock"
+source "$SCRIPT_DIR/lib_egocore_process.sh"
 
 echo "========================================"
 echo "EgoCore Status"
@@ -14,18 +15,15 @@ echo "========================================"
 echo "Time: $(date)"
 echo ""
 
-# Check PID file
-PID=""
-if [ -f "$PID_FILE" ]; then
-    PID=$(cat "$PID_FILE" 2>/dev/null || echo "")
-fi
-
-# Check if process is running
+# Check PID file and live process list
+PID="$(egocore_read_pid_file "$PID_FILE")"
+LOCK_PID="$(egocore_read_lock_pid "$LOCK_FILE")"
+LIVE_PIDS="$(egocore_list_telegram_pids | tr '\n' ' ')"
 RUNNING=false
-if [ -n "$PID" ]; then
-    if ps -p "$PID" > /dev/null 2>&1; then
-        RUNNING=true
-    fi
+if [ -n "$PID" ] && egocore_pid_is_running "$PID"; then
+    RUNNING=true
+elif [ -n "$LIVE_PIDS" ]; then
+    RUNNING=true
 fi
 
 # Check lock file
@@ -37,10 +35,20 @@ fi
 echo "[Process Status]"
 if [ "$RUNNING" = true ]; then
     echo "  Status: RUNNING"
-    echo "  PID: $PID"
-    echo "  Uptime: $(ps -p $PID -o etime= 2>/dev/null || echo 'N/A')"
-    echo "  CPU: $(ps -p $PID -o %cpu= 2>/dev/null || echo 'N/A')%"
-    echo "  Memory: $(ps -p $PID -o %mem= 2>/dev/null || echo 'N/A')%"
+    if [ -n "$PID" ] && egocore_pid_is_running "$PID"; then
+        echo "  Tracked PID: $PID"
+        echo "  Uptime: $(ps -p "$PID" -o etime= 2>/dev/null || echo 'N/A')"
+        echo "  CPU: $(ps -p "$PID" -o %cpu= 2>/dev/null || echo 'N/A')%"
+        echo "  Memory: $(ps -p "$PID" -o %mem= 2>/dev/null || echo 'N/A')%"
+    else
+        echo "  Tracked PID: ${PID:-none}"
+        echo "  Uptime: N/A"
+        echo "  CPU: N/A%"
+        echo "  Memory: N/A%"
+    fi
+    if [ -n "$LIVE_PIDS" ]; then
+        echo "  Live Telegram PIDs: $LIVE_PIDS"
+    fi
 else
     echo "  Status: STOPPED"
     if [ -n "$PID" ]; then
@@ -56,6 +64,9 @@ if [ "$LOCK_EXISTS" = true ]; then
     if [ -f "$LOCK_FILE" ]; then
         LOCK_CONTENT=$(cat "$LOCK_FILE" 2>/dev/null || echo "")
         echo "  Content: $LOCK_CONTENT"
+    fi
+    if [ -n "$LOCK_PID" ]; then
+        echo "  Lock PID: $LOCK_PID"
     fi
 else
     echo "  Lock File: NOT FOUND"

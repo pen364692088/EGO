@@ -10,6 +10,7 @@ EGOCORE_DIR="$PROJECT_ROOT"
 PID_FILE="$EGOCORE_DIR/logs/egocore.pid"
 LOCK_FILE="${TEMP:-/tmp}/egocore-telegram-poller.lock"
 FORCE=false
+source "$SCRIPT_DIR/lib_egocore_process.sh"
 
 if [ "$1" = "--force" ]; then
     FORCE=true
@@ -21,20 +22,17 @@ echo "========================================"
 echo "Time: $(date)"
 echo ""
 
-# Find PID
-PID=""
-if [ -f "$PID_FILE" ]; then
-    PID=$(cat "$PID_FILE" 2>/dev/null || echo "")
-fi
-
-# Also check for python processes
-PYTHON_PIDS=$(ps aux | grep "python.*app.main" | grep -v grep | awk '{print $1}' || echo "")
+# Find tracked and live PIDs
+PID="$(egocore_read_pid_file "$PID_FILE")"
+LOCK_PID="$(egocore_read_lock_pid "$LOCK_FILE")"
+PYTHON_PIDS="$(egocore_list_telegram_pids | tr '\n' ' ')"
+TARGET_PIDS="$(egocore_collect_target_pids "$PID" "$LOCK_PID" "$PYTHON_PIDS" | tr '\n' ' ')"
 
 echo "[1/3] Checking for running processes..."
 
 if [ -n "$PID" ]; then
     echo "  Found PID file: $PID"
-    if ps -p "$PID" > /dev/null 2>&1; then
+    if egocore_pid_is_running "$PID"; then
         echo "  Process $PID is running"
     else
         echo "  Process $PID not running (stale PID file)"
@@ -43,25 +41,28 @@ if [ -n "$PID" ]; then
     fi
 fi
 
+if [ -n "$LOCK_PID" ]; then
+    echo "  Lock owner PID: $LOCK_PID"
+fi
+
 if [ -n "$PYTHON_PIDS" ]; then
     echo "  Found Python processes: $PYTHON_PIDS"
 fi
 
 # Stop processes
-if [ -n "$PID" ] || [ -n "$PYTHON_PIDS" ]; then
+if [ -n "$TARGET_PIDS" ]; then
     echo ""
     echo "[2/3] Stopping EgoCore..."
 
-    # Try graceful stop first
-    if [ -n "$PID" ]; then
-        echo "  Sending SIGTERM to $PID..."
-        kill "$PID" 2>/dev/null || true
-    fi
-
-    for py_pid in $PYTHON_PIDS; do
-        if [ "$py_pid" != "$PID" ]; then
-            echo "  Sending SIGTERM to $py_pid..."
-            kill "$py_pid" 2>/dev/null || true
+    for target_pid in $TARGET_PIDS; do
+        if egocore_pid_is_running "$target_pid"; then
+            if [ "$FORCE" = true ]; then
+                echo "  Force killing $target_pid..."
+                egocore_kill_pid "$target_pid" force
+            else
+                echo "  Sending stop signal to $target_pid..."
+                egocore_kill_pid "$target_pid" graceful
+            fi
         fi
     done
 
@@ -70,13 +71,9 @@ if [ -n "$PID" ] || [ -n "$PYTHON_PIDS" ]; then
 
     # Check if still running
     STILL_RUNNING=""
-    if [ -n "$PID" ] && ps -p "$PID" > /dev/null 2>&1; then
-        STILL_RUNNING="$PID"
-    fi
-
-    for py_pid in $PYTHON_PIDS; do
-        if ps -p "$py_pid" > /dev/null 2>&1; then
-            STILL_RUNNING="$STILL_RUNNING $py_pid"
+    for target_pid in $TARGET_PIDS; do
+        if egocore_pid_is_running "$target_pid"; then
+            STILL_RUNNING="$STILL_RUNNING $target_pid"
         fi
     done
 
@@ -85,14 +82,27 @@ if [ -n "$PID" ] || [ -n "$PYTHON_PIDS" ]; then
         if [ "$FORCE" = true ]; then
             echo "  Force killing: $STILL_RUNNING"
             for p in $STILL_RUNNING; do
-                kill -9 "$p" 2>/dev/null || true
+                egocore_kill_pid "$p" force
             done
             sleep 1
         else
             echo "  WARNING: Processes still running: $STILL_RUNNING"
             echo "  Use --force to force kill:"
             echo "    ./scripts/stop_egocore.sh --force"
+            exit 1
         fi
+    fi
+
+    STILL_RUNNING=""
+    for target_pid in $TARGET_PIDS; do
+        if egocore_pid_is_running "$target_pid"; then
+            STILL_RUNNING="$STILL_RUNNING $target_pid"
+        fi
+    done
+
+    if [ -n "$STILL_RUNNING" ]; then
+        echo "ERROR: Failed to stop EgoCore processes: $STILL_RUNNING"
+        exit 1
     fi
 
     echo "  ✓ Stop signal sent"

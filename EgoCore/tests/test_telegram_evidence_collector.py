@@ -49,6 +49,14 @@ def test_collector_writes_authoritative_ledger_and_compatibility_mirrors(tmp_pat
             },
         }
     )
+    collector.capture_restore_observation(
+        {
+            "restore_id": "restore_001",
+            "restore_status": "success",
+            "post_restore_first_turn": True,
+            "authority_source": "restore_audit",
+        }
+    )
     collector.capture_response_plan(
         {
             "status": "chat",
@@ -86,6 +94,9 @@ def test_collector_writes_authoritative_ledger_and_compatibility_mirrors(tmp_pat
     assert ledger["replay_input"]["authority"] == "OpenEmotion trace_payload within ledger.json"
     assert "sample.json" in ledger["compatibility_mirrors"]
     assert ledger["report_sources"]["sample_summary"] == "ledger.json"
+    assert ledger["host"]["restore_observation"]["restore_id"] == "restore_001"
+    assert sample.response_plan["restore_observation"]["post_restore_first_turn"] is True
+    assert sample.normalized_event["runtime_summary"]["restore_observation"]["authority_source"] == "restore_audit"
 
     assert sample.replay["primary_ledger_ref"] == "ledger.json"
     assert sample.replay["replay_input_source"]["path"] == "openemotion.trace_payload"

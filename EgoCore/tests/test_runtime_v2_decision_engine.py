@@ -34,3 +34,19 @@ def test_decision_engine_uses_small_budget_for_non_write_requests():
         "request_mode": "execute",
     }
     assert engine._decide_max_tokens(state) == 1200
+
+
+def test_decision_engine_builds_restore_context_from_ingress_observation():
+    engine = RuntimeV2DecisionEngine()
+    context = engine.build_restore_context(
+        {
+            "restore_observation": {
+                "restore_status": "partial",
+                "recovery_hints_present": True,
+                "standing_commitments_preview": ["protect continuity"],
+            }
+        }
+    )
+    assert "显式 restore 后的首条真实用户消息" in context
+    assert "restore_status: partial" in context
+    assert "protect continuity" in context

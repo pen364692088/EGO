@@ -28,6 +28,7 @@ def build_proto_self_ingress_event(
     state: RuntimeV2State,
 ) -> Dict[str, Any]:
     risk_level = assess_risk_level(user_input)
+    restore_observation = (state.ingress_context or {}).get("restore_observation")
     return {
         "event_id": f"{session_id}_{turn_id}",
         "timestamp": datetime.now().isoformat(),
@@ -48,6 +49,7 @@ def build_proto_self_ingress_event(
         "runtime_summary": {
             "runtime": "runtime_v2",
             "state_scope": "agent_global",
+            "restore_observation": restore_observation,
         },
         "safety_context": {
             "risk_level": risk_level,
@@ -99,11 +101,17 @@ def build_external_result_event(
 
 
 def build_response_plan_payload(*, result: Any) -> Dict[str, Any]:
-    return {
+    payload = {
         "status": result.status,
         "delivery_kind": result.delivery_kind if result.reply else None,
         "reply_length": len(result.reply_text) if result.reply_text else 0,
     }
+    state = getattr(result, "state", None)
+    ingress_context = getattr(state, "ingress_context", None) or {}
+    restore_observation = ingress_context.get("restore_observation")
+    if restore_observation:
+        payload["restore_observation"] = dict(restore_observation)
+    return payload
 
 
 @dataclass

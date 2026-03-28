@@ -50,6 +50,7 @@ class E4EvidenceSample:
     openemotion_trace: Optional[Dict[str, Any]] = None
     response_plan: Optional[Dict[str, Any]] = None
     outbox_record: Optional[Dict[str, Any]] = None
+    restore_observation: Optional[Dict[str, Any]] = None
 
     # 审计链
     timeline: List[Dict[str, Any]] = field(default_factory=list)
@@ -168,11 +169,16 @@ class TelegramEvidenceCollector:
         if not sample:
             return
 
-        sample.normalized_event = event
+        normalized_event = deepcopy(event)
+        if sample.restore_observation:
+            runtime_summary = dict(normalized_event.get("runtime_summary") or {})
+            runtime_summary.setdefault("restore_observation", deepcopy(sample.restore_observation))
+            normalized_event["runtime_summary"] = runtime_summary
+        sample.normalized_event = normalized_event
         sample.timeline.append({
             "stage": "event_normalized",
             "timestamp": datetime.now().isoformat(),
-            "event_id": event.get("event_id"),
+            "event_id": normalized_event.get("event_id"),
         })
 
     def capture_openemotion_result(self, result: Dict[str, Any]) -> None:
@@ -222,11 +228,26 @@ class TelegramEvidenceCollector:
         if not sample:
             return
 
-        sample.response_plan = plan
+        response_plan = deepcopy(plan)
+        if sample.restore_observation and not response_plan.get("restore_observation"):
+            response_plan["restore_observation"] = deepcopy(sample.restore_observation)
+        sample.response_plan = response_plan
         sample.timeline.append({
             "stage": "response_planned",
             "timestamp": datetime.now().isoformat(),
         })
+
+    def capture_restore_observation(self, observation: Dict[str, Any]) -> None:
+        sample = self._get_active_sample()
+        if not sample:
+            return
+        sample.restore_observation = deepcopy(observation)
+        if sample.normalized_event is not None:
+            runtime_summary = dict(sample.normalized_event.get("runtime_summary") or {})
+            runtime_summary.setdefault("restore_observation", deepcopy(sample.restore_observation))
+            sample.normalized_event["runtime_summary"] = runtime_summary
+        if sample.response_plan is not None and not sample.response_plan.get("restore_observation"):
+            sample.response_plan["restore_observation"] = deepcopy(sample.restore_observation)
 
     def capture_host_response_plan(
         self,
@@ -442,6 +463,7 @@ class TelegramEvidenceCollector:
                 "response_plan": sample.response_plan,
                 "outbox_record": sample.outbox_record,
                 "timeline": sample.timeline,
+                "restore_observation": sample.restore_observation,
             },
             "replay_input": {
                 "authority": "OpenEmotion trace_payload within ledger.json",

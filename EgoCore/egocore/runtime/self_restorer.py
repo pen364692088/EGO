@@ -359,7 +359,8 @@ class SelfRestorer:
         warnings: List[str],
     ) -> RestoreResult:
         """创建失败结果"""
-        return RestoreResult(
+        end_time = datetime.now(timezone.utc)
+        result = RestoreResult(
             restore_id=restore_id,
             timestamp=start_time.isoformat(),
             session_id=session_id,
@@ -368,8 +369,10 @@ class SelfRestorer:
             conflicts=conflicts,
             warnings=warnings,
             errors=errors,
-            duration_ms=0.0,
+            duration_ms=(end_time - start_time).total_seconds() * 1000,
         )
+        self._save_audit(result)
+        return result
 
     def _save_audit(self, result: RestoreResult) -> None:
         """保存审计记录"""

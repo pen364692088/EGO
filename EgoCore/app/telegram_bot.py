@@ -63,6 +63,7 @@ from app.telegram_runtime_result import TelegramTurnReply, TelegramTurnResult
 from app.tools import execute_tool
 from app.ingestion.artifact_store import get_artifact_store
 from app.compaction import ReadRequest, get_compaction_manager
+from app.restore_runtime import PendingRestoreObservation
 
 # Ingestion Layer
 from app.ingestion import (
@@ -100,7 +101,14 @@ class TelegramBot:
     - ReplyDispatcher 分发
     """
 
-    def __init__(self, token: str, allowed_chat_ids: Optional[list[int]] = None, use_new_runtime: bool = True, use_runtime_v2: bool = False):
+    def __init__(
+        self,
+        token: str,
+        allowed_chat_ids: Optional[list[int]] = None,
+        use_new_runtime: bool = True,
+        use_runtime_v2: bool = False,
+        pending_restore_observation: Optional[PendingRestoreObservation] = None,
+    ):
         """
         Initialize Telegram bot.
 
@@ -136,6 +144,7 @@ class TelegramBot:
         self._runtime_states: dict[str, RuntimeV2State] = {}
         # Ingestion Manager
         self._ingestion_manager: Optional[IngestionManager] = None
+        self._pending_restore_observation = pending_restore_observation
 
     def _hydrate_artifact_ingress_context(self, state: RuntimeV2State) -> dict:
         ingress_context = deepcopy(state.ingress_context or {})
@@ -205,6 +214,29 @@ class TelegramBot:
             )
         except Exception as e:
             logger.warning(f"[E4-EVIDENCE] Failed to capture pre-runtime response_plan: {e}")
+
+    def _activate_pending_restore_observation(self, state: RuntimeV2State) -> Optional[dict]:
+        if self._pending_restore_observation is None:
+            return None
+
+        payload = self._pending_restore_observation.to_dict()
+        state.ingress_context = state.ingress_context or {}
+        state.ingress_context["restore_observation"] = payload
+
+        if _EVIDENCE_COLLECTOR_AVAILABLE:
+            try:
+                collector = get_evidence_collector()
+                collector.capture_restore_observation(payload)
+            except Exception as e:
+                logger.warning(f"[E4-EVIDENCE] Failed to capture restore observation: {e}")
+
+        self._pending_restore_observation = None
+        logger.info(
+            "restore.pending_observation_activated restore_id=%s status=%s",
+            payload.get("restore_id"),
+            payload.get("restore_status"),
+        )
+        return payload
 
     async def _build_profile_rule_preflight_reply(self, state: RuntimeV2State, rule_enforcement: dict) -> str:
         target = (state.ingress_context or {}).get("resolved_target") or {}
@@ -1152,6 +1184,8 @@ class TelegramBot:
             logger.info("runtime_v2.turn.early_return session=%s reason=pre_runtime busy_notice=%r", session_key, pre_runtime.busy_notice_text)
             return
 
+        self._activate_pending_restore_observation(state)
+
         result = await self._run_primary_turn(
             update=update,
             session_key=session_key,
@@ -2027,7 +2061,10 @@ class TelegramBot:
             await self.app.shutdown()
 
 
-def create_bot_from_config() -> TelegramBot:
+def create_bot_from_config(
+    *,
+    pending_restore_observation: Optional[PendingRestoreObservation] = None,
+) -> TelegramBot:
     """
     Create TelegramBot from configuration.
 
@@ -2051,7 +2088,12 @@ def create_bot_from_config() -> TelegramBot:
     telegram_config = config.telegram
     allowed_ids = telegram_config.get("allowed_chat_ids", [])
 
-    return TelegramBot(token=token, allowed_chat_ids=allowed_ids, use_runtime_v2=True)
+    return TelegramBot(
+        token=token,
+        allowed_chat_ids=allowed_ids,
+        use_runtime_v2=True,
+        pending_restore_observation=pending_restore_observation,
+    )
 
 
 # Global bot instance

@@ -17,6 +17,13 @@ def test_assess_risk_level_keeps_existing_keywords():
 
 def test_build_proto_self_ingress_event_uses_runtime_shape():
     state = RuntimeV2State(session_id="session:test")
+    state.ingress_context = {
+        "restore_observation": {
+            "restore_id": "restore_001",
+            "restore_status": "success",
+            "post_restore_first_turn": True,
+        }
+    }
     event = build_proto_self_ingress_event(
         session_id="session:test",
         turn_id="turn_001",
@@ -29,6 +36,7 @@ def test_build_proto_self_ingress_event_uses_runtime_shape():
     assert event["safety_context"]["risk_level"] == "critical"
     assert "risk" not in event["safety_context"]
     assert event["external_result"] is None
+    assert event["runtime_summary"]["restore_observation"]["restore_id"] == "restore_001"
 
 
 def test_build_external_result_event_preserves_feedback_contract():
@@ -79,9 +87,17 @@ def test_capture_response_plan_uses_same_payload_shape():
             captured.update(plan)
 
     runtime = RuntimeV2ProtoSelfRuntime(adapter=object())
+    state = RuntimeV2State(session_id="session:test")
+    state.ingress_context = {
+        "restore_observation": {
+            "restore_id": "restore_001",
+            "restore_status": "success",
+            "post_restore_first_turn": True,
+        }
+    }
     result = RuntimeV2TurnResult(
         status="completed_verified",
-        state=None,
+        state=state,
         reply=RuntimeV2Reply(
             reply_text="已完成",
             delivery_kind="final",
@@ -90,6 +106,7 @@ def test_capture_response_plan_uses_same_payload_shape():
     )
     runtime.capture_response_plan(result=result, evidence_collector=Collector())
     assert captured == build_response_plan_payload(result=result)
+    assert captured["restore_observation"]["restore_id"] == "restore_001"
 
 
 def test_process_ingress_prefers_collector_for_trace_capture():
