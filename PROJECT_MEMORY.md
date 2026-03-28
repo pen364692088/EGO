@@ -56,6 +56,7 @@
 - 默认发布门槛: 只有 `review_passed + verify_passed` 才允许自动推远端
 - 正式说明文档: `docs/CODEX_CLOSED_LOOP_SELF_REVIEW_WORKFLOW.md`
 - 分档规则: `L1` 低风险可只做自审；`L2` 中风险默认建议独立 Reviewer subagent；`L2` 高风险与 `L3/双仓/Telegram 主链/状态恢复/evidence` 强制独立 Reviewer subagent
+- 收口规则: 完成当前主问题后，默认做一次主动增益检查；若存在直接服务真实目标、验证成本低、失败代价小、可回退的优化点，补充 1-3 条；否则明确写“本轮无必要额外建议”
 
 ### Codex Assistant Memory
 - 稳定记忆索引: `CODEX_MEMORY.md`

@@ -27,6 +27,7 @@
 | project-git-shell-default-v1 | Git shell 默认口径 | PROJECT_MEMORY.md#Git 工作流;PROJECT_MEMORY.md#已验证的关键发现 | revalidate_when_git_workflow_changes |
 | project-git-index-lock-v1 | Git index.lock 处理口径 | PROJECT_MEMORY.md#已验证的关键发现 | revalidate_when_git_workflow_changes |
 | project-closed-loop-workflow-v1 | 默认闭环自审开发流 | PROJECT_MEMORY.md#默认开发闭环;docs/CODEX_CLOSED_LOOP_SELF_REVIEW_WORKFLOW.md | revalidate_when_workflow_contract_changes |
+| project-proactive-gain-check-v1 | 默认主动增益检查口径 | PROJECT_MEMORY.md#默认开发闭环;docs/CODEX_CLOSED_LOOP_SELF_REVIEW_WORKFLOW.md | revalidate_when_workflow_contract_changes |
 | project-codex-memory-acceptance-v1 | Codex 结构化记忆层新会话验收 | PROJECT_MEMORY.md#已验证的关键发现 | revalidate_when_memory_injection_contract_changes |
 
 ## 长期用户偏好
@@ -38,6 +39,7 @@
 | pref-workflow-layered | 默认分层混合开发流 | user_confirmation:2026-03-27:layered_mixed_workflow;user_confirmation:2026-03-28:closed_loop_self_review;user_confirmation:2026-03-28:independent_reviewer_subagent | until_user_overrides |
 | pref-session-discipline | 保留任务边界新开会话纪律 | user_confirmation:2026-03-27:task_boundary_new_session | until_user_overrides |
 | pref-report-four-blocks | 默认四段交付格式 | user_confirmation:2026-03-28:closed_loop_self_review | until_user_overrides |
+| pref-proactive-gain-check | 默认主动增益检查 | user_confirmation:2026-03-28:proactive_gain_check | until_user_overrides |
 
 ## 本地目录
 
