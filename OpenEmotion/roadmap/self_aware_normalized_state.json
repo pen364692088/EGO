@@ -1,6 +1,6 @@
 {
   "schema_version": "self_aware.normalized_state.v1",
-  "generated_at": "2026-03-29T12:33:50Z",
+  "generated_at": "2026-03-29T13:05:00Z",
   "owner": "Codex",
   "authority_priority": [
     "EgoCore/docs/PROGRAM_STATE_UNIFIED.yaml",
@@ -11,17 +11,17 @@
   ],
   "current_formal_position": {
     "long_stage": {
-      "current": "Stage 1",
-      "label": "State Sovereignty Stabilization",
+      "current": "Stage 7",
+      "label": "Open Developmental Self",
       "stage_0_status": "established",
-      "stage_2_status": "prepared_but_not_passed",
-      "stage_3_to_7_status": "not_admitted"
+      "stage_2_status": "historical_progress_retained",
+      "stage_3_to_7_status": "stage_7_admitted_not_stable"
     },
     "execution_target": {
       "version": "MVP16",
       "phase": "Open Developmental Self",
-      "status": "blocked",
-      "block_reason": "mvp16_admission_publication_pending"
+      "status": "passed",
+      "block_reason": null
     },
     "host_support": {
       "eg_phase_state": "shadow_running",
@@ -80,16 +80,15 @@
     },
     {
       "ref": "OE_MVP:16",
-      "status": "blocked",
-      "note": "Step07 completed the unblock audit, Step08 produced a historical no-go, Step08A then established real developmental admission inputs on a persisted real trajectory, and Step08B has now completed both author-side retry review and independent review; the formal state remains blocked only because publication/state update has not yet been executed"
+      "status": "passed_not_stable",
+      "note": "Step07 completed the unblock audit, Step08 produced a historical no-go, Step08A established real developmental admission inputs on a persisted real trajectory, and Step08B has now completed author review, independent review, and formal publication. Admission is granted, but stability is not yet claimed"
     }
   ],
   "allowed_workstreams": [
+    "stability_observation",
     "verification_fix",
-    "minimal_wiring_fix",
     "documentation_alignment",
-    "bug_fixes",
-    "publication_state_update"
+    "bug_fixes"
   ],
   "forbidden_workstreams": [
     "new_features",
@@ -102,8 +101,8 @@
       "topic": "mvp16_state",
       "higher_priority_source": "OpenEmotion/roadmap/ROADMAP_STATE.json",
       "lower_priority_source": "OpenEmotion/artifacts/handoff/LATEST_HANDOFF.md",
-      "resolution": "formal_state=blocked_pending_publication",
-      "reason": "the evidence blocker and independent reviewer gate are now closed, but the retry result has not yet been published into the formal admitted state"
+      "resolution": "formal_state=passed_not_stable_stage_7_admitted",
+      "reason": "the evidence blocker, independent reviewer gate, and formal publication step are all complete; the remaining work is stability observation rather than admission publication"
     },
     {
       "topic": "mvp14_status",
@@ -149,12 +148,12 @@
     }
   },
   "next_action": {
-      "step": "SELF_AWARE_STEP_08B",
-      "title": "MVP16 Admission Retry Review",
-      "next_minimal_closure_action": "publish the Step08B retry result into the formal admitted state and clear the blocked state",
+      "step": "MVP16_OBSERVATION",
+      "title": "Post-Admission Stability Observation",
+      "next_minimal_closure_action": "continue real-channel observation and regression monitoring without upgrading the state to stable until V5/E5 is demonstrated",
       "workflow_requirements": {
-        "full_spec_required": true,
-        "independent_reviewer_required": true,
+        "full_spec_required": false,
+        "independent_reviewer_required": false,
         "verifier_required": true
       }
   }

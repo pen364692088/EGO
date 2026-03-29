@@ -1,7 +1,7 @@
 {
   "current_version": "MVP16",
   "current_phase": "Open Developmental Self",
-  "status": "blocked",
+  "status": "passed",
   "observation_window": {
     "start": "2026-03-12",
     "duration_days": 14,
@@ -10,15 +10,14 @@
     "overall_status": "PASS",
     "note": "Daily check now correctly returns insufficient_evidence when no real data exists. Persistence-backed verification is working."
   },
-  "promotion_blocked": true,
-  "block_reason": "mvp16_admission_publication_pending",
+  "promotion_blocked": false,
+  "block_reason": null,
   "next_version": null,
   "allowed_workstreams": [
+    "stability_observation",
     "verification_fix",
-    "minimal_wiring_fix",
     "documentation_alignment",
-    "bug_fixes",
-    "publication_state_update"
+    "bug_fixes"
   ],
   "forbidden_workstreams": [
     "new_features",
@@ -26,9 +25,7 @@
     "mvp17",
     "observation_based_promotion"
   ],
-  "active_blockers": [
-    "Step08B author-side retry review and independent reviewer are complete; formal publication / state update is still pending"
-  ],
+  "active_blockers": [],
   "resolved_blockers": [
     {
       "blocker": "MVP16 daily check resets developmental manager and reads default values",
@@ -77,24 +74,30 @@
       "resolved_at": "2026-03-29T12:40:00Z",
       "resolution": "Step08B independent reviewer returned approve-with-risks and found no blocking findings against the retry package.",
       "repair_task": "SELF_AWARE_STEP_08B"
+    },
+    {
+      "blocker": "mvp16_admission_publication_pending",
+      "resolved_at": "2026-03-29T13:05:00Z",
+      "resolution": "Step08B final publication compiled the author review, independent review, and admission-grade trajectory evidence into the formal passed state.",
+      "repair_task": "SELF_AWARE_STEP_08B"
     }
   ],
   "mvp16_completion": {
-    "status": "blocked",
-    "reason": "mvp16_admission_publication_pending",
-    "tests": 30,
+    "status": "passed",
+    "reason": "mvp16_admission_granted_approve_with_risks",
+    "tests": 24,
     "gates": [
       "A",
       "B",
       "C"
     ],
-    "exit_criteria_met": "author_and_independent_review_complete_publication_pending"
+    "exit_criteria_met": "required_artifacts_tests_gates_met_v4_e4_not_stable"
   },
   "observation_metrics": {
     "status": "valid",
     "note": "Persistence-backed daily check is now working. Returns insufficient_evidence when no real data exists."
   },
-  "last_update": "2026-03-29T12:33:50.139676",
+  "last_update": "2026-03-29T13:05:00Z",
   "history": [
     {
       "phase": "MVP11.5",
@@ -130,6 +133,11 @@
       "phase": "MVP16",
       "audit_status": "Admission Retry Independent Review - Approve With Risks",
       "reason": "mvp16_admission_publication_pending"
+    },
+    {
+      "phase": "MVP16",
+      "audit_status": "Admission Retry Published - Stage 7 Admitted",
+      "reason": "mvp16_admission_granted_approve_with_risks"
     }
   ],
   "repair_verification": {

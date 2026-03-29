@@ -55,6 +55,7 @@
 - Step08B 执行报告：`OpenEmotion/roadmap/SELF_AWARE_STEP_08B_EXECUTION_REPORT_20260329.md`
 - Step08B review：`OpenEmotion/roadmap/SELF_AWARE_STEP_08B_REVIEW_20260329.md`
 - Step08B independent review：`OpenEmotion/roadmap/SELF_AWARE_STEP_08B_INDEPENDENT_REVIEW_20260329.md`
+- Step08B publication report：`OpenEmotion/roadmap/SELF_AWARE_STEP_08B_PUBLICATION_REPORT_20260329.md`
 - 逐步任务：
   - `Tasks/active/SELF_AWARE_STEP_00_normalization_layer.md`
   - `Tasks/active/SELF_AWARE_STEP_01_current_state_recompute.md`
@@ -161,7 +162,7 @@
 - 主入口：`OpenEmotion/docs/mvp15/MVP15_STAGE_OVERVIEW.md`
 - 目标：建立受治理的自我反思与反事实自我评估
 - 进入条件：MVP14 completed
-- 注：当前路线里，`MVP15` 已完成基础 infra、shadow artifact 诊断、bounded mainline consumer convergence，以及 bounded downstream behavioral relevance proof；`Step07`、`Step08`、`Step08A` 已完成，`Step08B` author-side retry review 已给出 recommends admit，独立 reviewer 也已 approve-with-risks；当前唯一剩余门是 formal publication / state update
+- 注：当前路线里，`MVP15` 已完成基础 infra、shadow artifact 诊断、bounded mainline consumer convergence，以及 bounded downstream behavioral relevance proof；`Step07`、`Step08`、`Step08A` 已完成，`Step08B` 也已完成 formal publication。当前正式口径是：`MVP16 passed / Stage 7 admitted / not stable`
 - 离开条件：reflection proposals、counterfactual evaluation、replayability 达标
 - 建议读取顺序：
   1. `OpenEmotion/docs/mvp15/MVP15_STAGE_OVERVIEW.md`
@@ -191,6 +192,7 @@
 ### MVP16 — Open Developmental Self
 - 主入口：`OpenEmotion/docs/mvp16/MVP16_STAGE_OVERVIEW.md`
 - 目标：形成长期、开放、受治理的发展连续性
+- 当前正式状态：`passed / Stage 7 admitted / not stable`
 - 进入条件：MVP15 completed
 - 离开条件：long-horizon continuity、governed growth、identity preservation 达标
 - 建议读取顺序：
@@ -201,6 +203,7 @@
   5. `OpenEmotion/docs/mvp16/IDENTITY_STABILITY_AND_EXPANSION_GOVERNANCE.md`
   6. `OpenEmotion/docs/mvp16/MVP16_EXIT_CRITERIA.md`
   7. `OpenEmotion/roadmap/versions/MVP16.spec.yaml`
+  8. `OpenEmotion/roadmap/SELF_AWARE_STEP_08B_PUBLICATION_REPORT_20260329.md`
 
 ---
 

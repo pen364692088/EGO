@@ -2,7 +2,7 @@
 # 双仓共享唯一真相源
 
 ledger_version: 20
-updated_at: "2026-03-29T12:33:50Z"
+updated_at: "2026-03-29T13:05:00Z"
 updated_by: "Codex"
 owner: "dual-repo-program-state"
 
@@ -118,8 +118,8 @@ axes:
   verification_axis:
     namespace: "OE_MVP"
     current_label: "OpenEmotion Verification Readiness"
-    current_state: "shadow_running"
-    note: "SelfModelAdapter E2E 验证通过，真实传输层闭环已证"
+    current_state: "passed_not_stable"
+    note: "MVP16 admission has now been formally published on a real persisted developmental trajectory; stability/E5 is still pending"
     local_refs:
       - ref: "OE_MVP:11.5"
         state: "verified_e2e"
@@ -140,6 +140,10 @@ axes:
         state: "verified_e2e"
         evidence: "OpenEmotion/artifacts/mvp15/MVP15_PERSISTENCE_INTEGRITY_REPORT.md, OpenEmotion/roadmap/SELF_AWARE_STEP_06_EXECUTION_REPORT_20260329.md, OpenEmotion/roadmap/SELF_AWARE_STEP_06A_EXECUTION_REPORT_20260329.md, OpenEmotion/roadmap/SELF_AWARE_STEP_06B_EXECUTION_REPORT_20260329.md"
         note: "Step06A established a bounded reflection_guidance consumer on /plan and /decision explanation, and Step06B now proves bounded downstream behavioral relevance on those same surfaces while preserving proposal_only discipline and behavioral_authority=none. This still does not automatically equal Stage 6 passed"
+      - ref: "OE_MVP:16"
+        state: "passed_not_stable"
+        evidence: "OpenEmotion/roadmap/SELF_AWARE_STEP_08B_PUBLICATION_REPORT_20260329.md, OpenEmotion/artifacts/mvp16-observation/day_18.md, OpenEmotion/artifacts/mvp16-observation/real_trajectory_index.json, OpenEmotion/artifacts/mvp16-observation/real_trajectory_replay_audit.json"
+        note: "Admission has been granted on a real persisted developmental trajectory after author review, independent review, and formal publication. Stability/E5 is still not claimed"
       - ref: "VERIFICATION_SYSTEM"
         state: "verified_e2e"
         evidence: "OpenEmotion/roadmap/ROADMAP_STATE.json resolved_blockers"
@@ -157,15 +161,14 @@ axes:
         state: "retrieval_quality_v6_partial"
         evidence: "OpenEmotion/docs/MEMORY_RETRIEVAL_ENHANCEMENT_V6_REPORT.md"
       - ref: "OE_MVP:16_ADMISSION_RETRY"
-        state: "independent_review_approved_publication_pending"
-        evidence: "OpenEmotion/roadmap/SELF_AWARE_STEP_08B_EXECUTION_REPORT_20260329.md, OpenEmotion/artifacts/mvp16-observation/day_18.md"
-        note: "Step08A established real developmental admission inputs on the persisted proto_self.v2 real trajectory, Step08B author-side retry review recommends admit, and the independent reviewer has now approved-with-risks; formal publication is the only remaining gate"
-    blockers:
-      - "mvp16_admission_publication_pending"
+        state: "published_admission_granted_with_risks"
+        evidence: "OpenEmotion/roadmap/SELF_AWARE_STEP_08B_PUBLICATION_REPORT_20260329.md, OpenEmotion/roadmap/SELF_AWARE_STEP_08B_INDEPENDENT_REVIEW_20260329.md"
+        note: "The retry packet is formally published. Remaining work is post-admission stability observation, not publication"
+    blockers: []
     allowed_next:
       - "monitor_shadow_mode"
       - "update_handoff_and_readme"
-      - "SELF_AWARE_STEP_08B_publish"
+      - "stability_observation"
 
   boundary_axis:
     namespace: "BOUNDARY"
@@ -189,8 +192,8 @@ decision:
   overall_program_state: "in_progress"
   reason:
     - "subject_axis in_progress (CYCLE_CORE_V1 verified_e2e, WS_C1 verified_e2e, PROTO_SELF_KERNEL_V1 verified_telegram_e2e, MVS_E5_OBSERVATION observation_running)"
-    - "verification_axis shadow_running (SelfModelAdapter E2E verified, Closed Loop E2E v3 PASS)"
-  note: "PROTO_SELF_KERNEL_V1 Telegram real mainline 已验证，且 E5 观察期已拿到 `/new continuity` 与 `restart continuity` 强真实正证据；当前 blocker 已切到 `restore` 与 evidence gap"
+    - "verification_axis passed_not_stable (MVP16 admission published on a real developmental trajectory, Closed Loop E2E v3 PASS)"
+  note: "PROTO_SELF_KERNEL_V1 Telegram real mainline 已验证，且当前正式口径已提升到 `MVP16 passed / Stage 7 admitted / not stable`；后续主线是稳定性观察，而不是 admission publication"
   closed_loop_verified: true
   proto_self_kernel_v1: "verified_telegram_e2e"
   mvs_e5_observation: "running_with_restart_continuity_positive_restore_missing"

@@ -183,8 +183,8 @@ Step 03 开始前，先执行一个固定前置守门：
 - `Step 07` 已完成并发布，正式结论为：`MVP16 unblock audit is complete; the remaining formal gate is admission review rather than upstream component-proof gaps`
 - `Step 08` 已完成并发布，正式结论为：`admission review = not admitted because real developmental data and long-horizon evidence are still insufficient`
 - `Step 08A` 已完成并通过 verifier，正式结论为：`real developmental admission inputs are established on a persisted real trajectory`
-- `Step 08B` 已完成 author-side retry review，并已拿到 `independent reviewer = approve-with-risks`
-- 后续正式施工从 `Step 08B` 的 formal publication / state update 开始
+- `Step 08B` 已完成并发布最终 admission result，正式结论为：`MVP16 = passed; Stage 7 admitted; not stable`
+- 后续正式施工从 `post-admission stability observation` 开始
 `Step 04` 仍必须继续服从 `Step 03A` 与 `Step 03` 已落定的 scope guard。
 
 补充说明：
@@ -307,9 +307,10 @@ Full Spec -> Author -> Self-Reviewer -> Independent Reviewer -> Verifier -> Publ
 - 已建立统一编译层与双层执行路线
 - 已把 `MVP12-16` 的 spec 与 step task 结构补齐
 - 已把“长期阶段图”与“现实 blocked 状态”统一到一套口径
+- `MVP16` 已在真实 developmental trajectory / replay / daily-check bundle 上完成 formal admission publication
+- `Stage 7` 已 admitted，但当前仍不是 `stable`
 
 当前不可宣称：
 
-- `MVP12-16` 已 formal pass
-- `Developmental Self` 已准入
-- `Open Developmental Self` 已成立
+- `MVP16 stable`
+- `Open Developmental Self established at E5`

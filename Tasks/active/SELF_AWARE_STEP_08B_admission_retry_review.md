@@ -3,7 +3,7 @@
 ```yaml
 task_id: SELF_AWARE_STEP_08B
 created_at: "2026-03-29T12:33:50Z"
-updated_at: "2026-03-29T12:40:00Z"
+updated_at: "2026-03-29T13:05:00Z"
 owner: "Codex"
 layer: 3
 type: dual_repo
@@ -50,13 +50,14 @@ evidence_level_target: E4
 
 ```yaml
 current_layer: closure
-main_chain_status: author-side admission retry review and independent review completed; formal publication not yet executed
+main_chain_status: final admission result published; MVP16 passed, Stage 7 admitted, not stable
 ```
 
 ## required_artifacts
 
 - Step08B admission retry execution report
 - Step08B review report
+- Step08B publication report
 - updated roadmap/program-state routing
 
 ## required_tests
@@ -66,7 +67,7 @@ main_chain_status: author-side admission retry review and independent review com
 
 ## promotion_blockers
 
-- independent_reviewer_pending_for_formal_admission_publication
+- none
 
 ## non_goals
 
@@ -78,13 +79,13 @@ Step08B 明确不等于：
 
 Step08B 只负责：
 
-- author-side retry review
-- self-review
+- admission retry review chain
 - verifier evidence pack
+- final publication / state update
 
-formal publish 仍需独立 reviewer。
+不负责 `stable / E5` 结论。
 
 ## next_minimal_closure_action
 
-执行 formal publication / state update，
-把 reviewer verdict 与当前 author-side retry package 一起编译进统一真相源。
+进入 post-admission stability observation，
+不要把当前 published state 继续上抬成 `stable`。
