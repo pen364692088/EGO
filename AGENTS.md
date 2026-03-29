@@ -68,8 +68,9 @@
 规则：
 
 - 不要编造 `ruff` / `black` / `mypy` / repo-root CI gate
-- `scripts/codex/verify_repo.py` 会优先解析 `OPENEMOTION_PYTHON`，否则按 `OpenEmotion/.venv` -> `OpenEmotion/venv` -> 当前解释器 选择 OpenEmotion Python
+- `scripts/codex/verify_repo.py` 会优先解析 `OPENEMOTION_PYTHON`，否则按 `OpenEmotion/.venv` -> `OpenEmotion/venv` -> 当前解释器 选择 OpenEmotion Python；若没有满足验证所需模块的 runtime，会先自举 repo-local OpenEmotion runtime
 - `scripts/codex/verify_repo.py` 对 `EgoCore pytest suite` 会注入 repo-local `PYTHONPATH=EgoCore:EgoCore/modules:OpenEmotion`，避免依赖外部 shell 状态
+- 在 WSL + mounted drive 环境下，OpenEmotion verifier runtime 允许优先使用 Windows Python 驱动的 `OpenEmotion/.venv`，以避开 Linux-side `venv/pip` 的 I/O 卡顿
 - 如任务需要静态预检，仍可直接使用 `python3 -m py_compile path/to/file.py`
 
 ### Review / preflight

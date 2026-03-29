@@ -7,8 +7,11 @@ from __future__ import annotations
 
 import argparse
 import os
+import shutil
+import socket
 import subprocess
 import sys
+import time
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Iterable, List, Sequence
@@ -29,6 +32,7 @@ class Check:
     env_overrides: dict[str, str] | None = None
     report_only: bool = False
     precondition_reason: str | None = None
+    requires_health_endpoint: bool = False
 
 
 @dataclass
@@ -40,6 +44,13 @@ class Result:
     status: str
     note: str
     returncode: int | None = None
+
+
+@dataclass
+class OpenEmotionRuntime:
+    command: list[str]
+    label: str
+    bootstrap_note: str | None = None
 
 
 def parse_args() -> argparse.Namespace:
@@ -65,6 +76,12 @@ def health_endpoint_available() -> bool:
             return response.status == 200
     except (urllib.error.URLError, TimeoutError, OSError):
         return False
+
+
+def port_in_use(host: str, port: int) -> bool:
+    with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as sock:
+        sock.settimeout(1.0)
+        return sock.connect_ex((host, port)) == 0
 
 
 def python_command(path: str | Path) -> list[str]:
@@ -113,8 +130,105 @@ def python_missing_modules(command: Sequence[str], modules: Sequence[str]) -> li
     return missing
 
 
-def resolved_openemotion_python() -> tuple[list[str], str]:
-    return candidate_openemotion_python()[0]
+def venv_python_command() -> list[str]:
+    venv_dir = ROOT / "OpenEmotion" / "venv"
+    if os.name == "nt":
+        return [str(venv_dir / "Scripts" / "python.exe")]
+    return [str(venv_dir / "bin" / "python")]
+
+
+def windows_bootstrap_python_command() -> list[str]:
+    return [str(ROOT / "OpenEmotion" / ".venv" / "Scripts" / "python.exe")]
+
+
+def can_use_windows_bootstrap() -> bool:
+    return os.name != "nt" and str(ROOT).startswith("/mnt/") and shutil.which("cmd.exe") is not None
+
+
+def to_windows_path(path: Path) -> str:
+    resolved = path.resolve()
+    parts = resolved.parts
+    if len(parts) >= 3 and parts[1] == "mnt":
+        drive = parts[2].upper()
+        tail = "\\".join(parts[3:])
+        return f"{drive}:\\{tail}" if tail else f"{drive}:\\"
+    return str(resolved)
+
+
+def run_bootstrap_command(command: Sequence[str], cwd: Path) -> None:
+    env = os.environ.copy()
+    if os.name != "nt":
+        env.setdefault("TMPDIR", "/tmp")
+        env.setdefault("TMP", "/tmp")
+        env.setdefault("TEMP", "/tmp")
+    env.setdefault("PIP_DISABLE_PIP_VERSION_CHECK", "1")
+    proc = subprocess.run(list(command), cwd=cwd, env=env, text=True)
+    if proc.returncode != 0:
+        raise RuntimeError(f"bootstrap command failed: {' '.join(command)} (exit={proc.returncode})")
+
+
+def bootstrap_openemotion_venv() -> OpenEmotionRuntime:
+    openemotion_dir = ROOT / "OpenEmotion"
+    venv_dir = openemotion_dir / "venv"
+    python_cmd = venv_python_command()
+    bootstrap_steps: list[Sequence[str]] = []
+
+    if not Path(python_cmd[0]).exists():
+        shutil.rmtree(venv_dir, ignore_errors=True)
+        bootstrap_steps.append([sys.executable, "-m", "venv", "--copies", str(venv_dir)])
+    bootstrap_steps.append([*python_cmd, "-m", "pip", "install", "--upgrade", "setuptools", "wheel"])
+    bootstrap_steps.append([*python_cmd, "-m", "pip", "install", "--no-build-isolation", "-e", ".[dev]"])
+
+    for command in bootstrap_steps:
+        run_bootstrap_command(command, openemotion_dir)
+
+    return OpenEmotionRuntime(
+        command=python_cmd,
+        label="OpenEmotion/venv (bootstrapped)",
+        bootstrap_note="bootstrapped repo-local OpenEmotion runtime in OpenEmotion/venv",
+    )
+
+
+def run_windows_bootstrap_command(command: str, cwd: Path) -> None:
+    windows_cwd = to_windows_path(cwd)
+    proc = subprocess.run(["cmd.exe", "/c", f"cd /d {windows_cwd} && {command}"], text=True)
+    if proc.returncode != 0:
+        raise RuntimeError(f"bootstrap command failed: {command} (exit={proc.returncode})")
+
+
+def bootstrap_openemotion_windows_venv() -> OpenEmotionRuntime:
+    openemotion_dir = ROOT / "OpenEmotion"
+    venv_dir = openemotion_dir / ".venv"
+    python_cmd = windows_bootstrap_python_command()
+
+    if not Path(python_cmd[0]).exists():
+        shutil.rmtree(venv_dir, ignore_errors=True)
+        run_windows_bootstrap_command("py -3 -m venv .venv", openemotion_dir)
+    run_windows_bootstrap_command(".venv\\Scripts\\python.exe -m pip install --upgrade setuptools wheel", openemotion_dir)
+    run_windows_bootstrap_command(".venv\\Scripts\\python.exe -m pip install --no-build-isolation -e .[dev]", openemotion_dir)
+
+    return OpenEmotionRuntime(
+        command=python_cmd,
+        label="OpenEmotion/.venv/Scripts/python.exe (bootstrapped via cmd.exe)",
+        bootstrap_note="bootstrapped repo-local OpenEmotion runtime in OpenEmotion/.venv via Windows Python",
+    )
+
+
+def resolve_openemotion_runtime(*, dry_run: bool) -> OpenEmotionRuntime:
+    required_modules = ["fastapi", "pydantic", "pytest", "pytest_asyncio", "requests"]
+    for command, label in candidate_openemotion_python():
+        if not python_missing_modules(command, required_modules):
+            return OpenEmotionRuntime(command=list(command), label=label)
+    if dry_run:
+        command, label = candidate_openemotion_python()[0]
+        return OpenEmotionRuntime(
+            command=list(command),
+            label=label,
+            bootstrap_note="dry-run: no runtime bootstrap attempted",
+        )
+    if can_use_windows_bootstrap():
+        return bootstrap_openemotion_windows_venv()
+    return bootstrap_openemotion_venv()
 
 
 def repo_local_pythonpath(entries: Sequence[Path]) -> str:
@@ -125,7 +239,7 @@ def repo_local_pythonpath(entries: Sequence[Path]) -> str:
     return os.pathsep.join(parts)
 
 
-def detect_checks() -> List[Check]:
+def detect_checks(open_runtime: OpenEmotionRuntime) -> List[Check]:
     checks: List[Check] = []
 
     ego_pyproject = ROOT / "EgoCore" / "pyproject.toml"
@@ -138,8 +252,11 @@ def detect_checks() -> List[Check]:
     open_typecheck = ROOT / "OpenEmotion" / "verify_typecheck.py"
     open_testbot = ROOT / "OpenEmotion" / "scripts" / "run_testbot_scenarios.py"
     repo_lint = ROOT / "scripts" / "codex" / "lint_repo.py"
-    open_python_cmd, open_python_label = resolved_openemotion_python()
-    open_runtime_missing = python_missing_modules(open_python_cmd, ["fastapi", "pydantic", "pytest", "requests"])
+    open_python_cmd, open_python_label = open_runtime.command, open_runtime.label
+    open_runtime_missing = python_missing_modules(
+        open_python_cmd,
+        ["fastapi", "pydantic", "pytest", "pytest_asyncio", "requests"],
+    )
     open_smoke_missing = python_missing_modules(open_python_cmd, ["fastapi", "requests"])
     ego_pytest_env = {
         "PYTHONPATH": repo_local_pythonpath(
@@ -294,8 +411,6 @@ def detect_checks() -> List[Check]:
     testbot_reason = None
     if not open_testbot.exists():
         testbot_reason = "missing OpenEmotion/scripts/run_testbot_scenarios.py"
-    elif not health_endpoint_available():
-        testbot_reason = "emotiond health endpoint unavailable at 127.0.0.1:18080"
     checks.append(
         Check(
             category="e2e/smoke",
@@ -311,7 +426,7 @@ def detect_checks() -> List[Check]:
             cwd=ROOT / "OpenEmotion",
             source=f"OpenEmotion/scripts/run_testbot_scenarios.py via {open_python_label}",
             run_in_fast=False,
-            run_in_full=testbot_reason is None,
+            run_in_full=not open_runtime_missing,
             precondition_reason=testbot_reason,
         )
     )
@@ -358,12 +473,34 @@ def run_check(check: Check, *, dry_run: bool) -> Result:
     env = os.environ.copy()
     if check.env_overrides:
         env.update(check.env_overrides)
-    proc = subprocess.run(
-        list(check.command),
-        cwd=check.cwd,
-        env=env,
-        text=True,
-    )
+    managed_process = None
+    health_note = ""
+    if check.requires_health_endpoint and not dry_run:
+        try:
+            managed_process, health_note = ensure_health_endpoint(
+                python_command=[check.command[0]],
+                cwd=check.cwd,
+            )
+        except RuntimeError as exc:
+            return Result(
+                category=check.category,
+                name=check.name,
+                command=command_str,
+                source=check.source,
+                status="failed",
+                note=str(exc),
+                returncode=1,
+            )
+    try:
+        proc = subprocess.run(
+            list(check.command),
+            cwd=check.cwd,
+            env=env,
+            text=True,
+        )
+    finally:
+        if managed_process is not None:
+            stop_managed_process(managed_process)
     if proc.returncode == 0:
         return Result(
             category=check.category,
@@ -371,7 +508,7 @@ def run_check(check: Check, *, dry_run: bool) -> Result:
             command=command_str,
             source=check.source,
             status="success",
-            note="ok",
+            note=health_note or "ok",
             returncode=0,
         )
     return Result(
@@ -380,7 +517,7 @@ def run_check(check: Check, *, dry_run: bool) -> Result:
         command=command_str,
         source=check.source,
         status="failed",
-        note=f"exit={proc.returncode}",
+        note=(health_note + "; " if health_note else "") + f"exit={proc.returncode}",
         returncode=proc.returncode,
     )
 
@@ -401,11 +538,63 @@ def print_summary(results: Iterable[Result]) -> None:
 MODE = "fast"
 
 
+def wait_for_health(timeout_seconds: float = 20.0) -> bool:
+    deadline = time.time() + timeout_seconds
+    while time.time() < deadline:
+        if health_endpoint_available():
+            return True
+        time.sleep(0.5)
+    return False
+
+
+def ensure_health_endpoint(*, python_command: Sequence[str], cwd: Path) -> tuple[subprocess.Popen[str] | None, str]:
+    if health_endpoint_available():
+        return None, "reused existing emotiond health endpoint"
+
+    if port_in_use("127.0.0.1", 18080):
+        raise RuntimeError("port 18080 is already in use but /health is unavailable")
+
+    process = subprocess.Popen(
+        [*python_command, "-m", "emotiond.main"],
+        cwd=cwd,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+        text=True,
+    )
+    if wait_for_health():
+        return process, "started temporary emotiond daemon for health-dependent check"
+
+    process.terminate()
+    try:
+        stdout, stderr = process.communicate(timeout=2)
+    except subprocess.TimeoutExpired:
+        process.kill()
+        stdout, stderr = process.communicate(timeout=2)
+    raise RuntimeError(
+        "failed to start emotiond health endpoint: "
+        + (stderr.strip() or stdout.strip() or "daemon did not become healthy")
+    )
+
+
+def stop_managed_process(process: subprocess.Popen[str]) -> None:
+    if process.poll() is not None:
+        return
+    process.terminate()
+    try:
+        process.wait(timeout=5)
+    except subprocess.TimeoutExpired:
+        process.kill()
+        process.wait(timeout=5)
+
+
 def main() -> int:
     global MODE
     args = parse_args()
     MODE = args.mode
-    checks = detect_checks()
+    open_runtime = resolve_openemotion_runtime(dry_run=args.dry_run)
+    if open_runtime.bootstrap_note:
+        print(f"[verify_repo] {open_runtime.bootstrap_note}")
+    checks = detect_checks(open_runtime)
     results = [run_check(check, dry_run=args.dry_run) for check in checks]
     print_summary(results)
     return 1 if any(result.status == "failed" for result in results) else 0
