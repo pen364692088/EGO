@@ -1,8 +1,10 @@
 from __future__ import annotations
 
 import uuid
+from pathlib import PurePosixPath, PureWindowsPath
 from typing import Any, Dict, Optional
 from datetime import datetime
+import re
 
 from .action_protocol import RuntimeV2Action
 from .decision_engine import RuntimeV2DecisionEngine
@@ -58,6 +60,14 @@ def _check_proto_self_enabled() -> bool:
 
 # 用户输入截断阈值
 MAX_USER_INPUT_IN_STATE = 300  # 字符（更严格）
+WINDOWS_PATH_RE = re.compile(r"^[A-Za-z]:[\\/]")
+SHELL_FILE_READ_PREFIXES = (
+    "type ",
+    "cat ",
+    "more ",
+    "get-content",
+    "gc ",
+)
 
 
 def _assess_risk_level(user_input: str) -> str:
@@ -104,6 +114,87 @@ class RuntimeV2Loop:
         if session_id not in self._states:
             self._states[session_id] = RuntimeV2State(session_id=session_id)
         return self._states[session_id]
+
+    def _resolve_explicit_analyze_path(self, state: RuntimeV2State) -> Optional[str]:
+        ingress = state.ingress_context or {}
+        if ingress.get("request_mode") != "analyze":
+            return None
+
+        resolved_target = ingress.get("resolved_target") or state.resolve_target("analyze") or {}
+        target_path = resolved_target.get("path")
+        if isinstance(target_path, str) and target_path.strip():
+            return target_path.strip()
+
+        explicit_target = (state.last_explicit_target or "").strip()
+        if not explicit_target:
+            return None
+        if WINDOWS_PATH_RE.match(explicit_target) or explicit_target.startswith(
+            ("/", "/mnt/", "/home/", "/tmp/", "/Users/")
+        ):
+            return explicit_target
+        return None
+
+    def _looks_like_shell_file_display(self, command: str, target_path: str) -> bool:
+        lowered = (command or "").strip().lower()
+        if not lowered:
+            return False
+
+        normalized_target = target_path.lower().replace("\\", "/")
+        basename = (
+            PureWindowsPath(target_path).name
+            if WINDOWS_PATH_RE.match(target_path)
+            else PurePosixPath(target_path).name
+        ).lower()
+
+        contains_display_verb = lowered.startswith(SHELL_FILE_READ_PREFIXES) or any(
+            marker in lowered for marker in (' get-content ', ' cat ', ' type ', ' more ', '| cat', '| type')
+        )
+        if not contains_display_verb:
+            return False
+
+        normalized_command = lowered.replace("\\", "/")
+        return normalized_target in normalized_command or (basename and basename in lowered)
+
+    def _normalize_action_for_host_contract(
+        self,
+        state: RuntimeV2State,
+        action: RuntimeV2Action,
+    ) -> RuntimeV2Action:
+        if action.type != "act" or action.tool != "shell":
+            return action
+
+        explicit_path = self._resolve_explicit_analyze_path(state)
+        if not explicit_path:
+            return action
+
+        command = str((action.input or {}).get("command") or "").strip()
+        if not self._looks_like_shell_file_display(command, explicit_path):
+            return action
+
+        normalized_raw = dict(action.raw or {})
+        normalized_raw["host_normalization"] = {
+            "kind": "explicit_path_analyze_promoted_to_file_read",
+            "reason": "explicit file analyze requests must use file read, not shell display commands",
+            "original_action": action.raw or {
+                "type": action.type,
+                "tool": action.tool,
+                "input": dict(action.input or {}),
+            },
+            "resolved_path": explicit_path,
+        }
+
+        return RuntimeV2Action(
+            type=action.type,
+            goal=action.goal,
+            steps=list(action.steps or []),
+            tool="file",
+            input={"operation": "read", "path": explicit_path},
+            question=action.question,
+            summary=action.summary,
+            verification=dict(action.verification or {}),
+            message=action.message,
+            raw=normalized_raw,
+        )
 
     def reset_session(self, session_id: str, *, command: str = "reset_session") -> RuntimeV2State:
         """
@@ -194,6 +285,7 @@ class RuntimeV2Loop:
         invalid_json_retries = 0
         for step in range(max_steps):
             action = await self._decide(state)
+            action = self._normalize_action_for_host_contract(state, action)
             state.last_model_action = action.raw
             state.record("assistant", action.raw)
 

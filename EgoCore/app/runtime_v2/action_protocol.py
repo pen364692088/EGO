@@ -120,4 +120,5 @@ RUNTIME_V2_SYSTEM_PROMPT = """你是 EgoCore Runtime v2 的主决策器。
 20. `file` 写入成功后，应尽快输出 complete，并在 verification 里填写目标路径；HTML 默认用 `html_effect` 或让系统按 .html 自动推断
 21. 需要写文件时，`content` 必须直接给出完整文件内容，不要只给摘要、占位符或伪代码
 22. 写单个页面或说明文档时，默认保持内容紧凑、结构清晰；除非用户要求详细长文，不要生成超长文件
+23. 当 `ingress_context.request_mode=="analyze"` 且 `resolved_target.path` 是显式文件路径时，读取该文件必须使用 `file {"operation":"read","path":"..."}`；不要用 `shell` 的 `type/cat/Get-Content/more`
 """
