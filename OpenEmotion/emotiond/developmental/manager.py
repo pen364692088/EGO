@@ -25,7 +25,8 @@ from .schema import (
 
 EGO_ROOT = Path(__file__).resolve().parents[3]
 DEFAULT_STATE_PATH = EGO_ROOT / "OpenEmotion" / "data" / "developmental_state.json"
-DEFAULT_REAL_SAMPLE_ARTIFACTS_DIR = EGO_ROOT / "EgoCore" / "artifacts" / "telegram_real_mainline_v1" / "real_telegram"
+DEFAULT_REAL_SAMPLE_ARTIFACTS_DIR = EGO_ROOT / "artifacts" / "telegram_real_mainline_v1" / "real_telegram"
+LEGACY_REAL_SAMPLE_ARTIFACTS_DIR = EGO_ROOT / "EgoCore" / "artifacts" / "telegram_real_mainline_v1" / "real_telegram"
 DEFAULT_OBSERVATION_DIR = EGO_ROOT / "OpenEmotion" / "artifacts" / "mvp16-observation"
 
 REAL_CHANNEL = "real_channel"
@@ -161,6 +162,14 @@ class DevelopmentalManager:
             return json.loads(path.read_text(encoding="utf-8"))
         except (OSError, json.JSONDecodeError):
             return None
+
+    def _resolve_sample_artifacts_dir(self, sample_artifacts_dir: Optional[Path]) -> Path:
+        if sample_artifacts_dir is not None:
+            return Path(sample_artifacts_dir)
+        for candidate in (DEFAULT_REAL_SAMPLE_ARTIFACTS_DIR, LEGACY_REAL_SAMPLE_ARTIFACTS_DIR):
+            if candidate.exists():
+                return candidate
+        return DEFAULT_REAL_SAMPLE_ARTIFACTS_DIR
 
     def _iter_sample_records(self, sample_artifacts_dir: Path) -> List[Tuple[Path, Dict[str, Any], Dict[str, Any]]]:
         records: List[Tuple[str, str, Path, Dict[str, Any], Dict[str, Any]]] = []
@@ -403,7 +412,6 @@ class DevelopmentalManager:
     def _compute_projection_summary(self) -> Dict[str, Any]:
         real_episodes = self.get_real_mainline_episodes()
         real_episode_count = len(real_episodes)
-        real_session_count = len({ep.session_id for ep in real_episodes if ep.session_id})
         real_day_count = len({ep.calendar_day for ep in real_episodes if ep.calendar_day})
         session_reset_count = sum(
             1 for transition in self.state.trajectory.transitions if transition.transition_kind == TRANSITION_SESSION_RESET
@@ -414,6 +422,26 @@ class DevelopmentalManager:
         governance_checkpoint_count = sum(
             1 for transition in self.state.trajectory.transitions if transition.transition_kind == TRANSITION_GOVERNANCE_CHECKPOINT
         )
+        transition_pairs = {
+            (transition.transition_kind, transition.from_episode_ref, transition.to_episode_ref)
+            for transition in self.state.trajectory.transitions
+        }
+        real_session_count = 0
+        previous_episode: Optional[DevelopmentalEpisode] = None
+        for episode in real_episodes:
+            if previous_episode is None:
+                real_session_count = 1
+            else:
+                if (
+                    episode.session_id != previous_episode.session_id
+                    or (
+                        TRANSITION_SESSION_RESET,
+                        previous_episode.sample_ref,
+                        episode.sample_ref,
+                    ) in transition_pairs
+                ):
+                    real_session_count += 1
+            previous_episode = episode
         trajectory_refs_present = bool(real_episodes) and all(
             ep.sample_ref
             and ep.ledger_ref
@@ -578,7 +606,7 @@ class DevelopmentalManager:
         sample_artifacts_dir: Optional[Path] = None,
         observation_dir: Optional[Path] = None,
     ) -> Dict[str, Any]:
-        sample_root = Path(sample_artifacts_dir or DEFAULT_REAL_SAMPLE_ARTIFACTS_DIR)
+        sample_root = self._resolve_sample_artifacts_dir(sample_artifacts_dir)
         if not sample_root.exists():
             summary = self.get_summary()
             summary.update(
@@ -681,11 +709,12 @@ class DevelopmentalManager:
         real_episodes = self.get_real_mainline_episodes()
         first_episode = real_episodes[0] if real_episodes else None
         latest_episode = real_episodes[-1] if real_episodes else None
+        sample_root = self._resolve_sample_artifacts_dir(sample_artifacts_dir)
         return {
             "schema_version": "mvp16.real_trajectory_index.v1",
             "generated_at": datetime.now().isoformat(),
             "state_path": self._repo_relative_ref(self._state_path),
-            "sample_artifacts_dir": self._repo_relative_ref(Path(sample_artifacts_dir or DEFAULT_REAL_SAMPLE_ARTIFACTS_DIR)),
+            "sample_artifacts_dir": self._repo_relative_ref(sample_root),
             "summary": summary,
             "first_real_episode_ref": first_episode.sample_ref if first_episode else None,
             "latest_real_episode_ref": latest_episode.sample_ref if latest_episode else None,
