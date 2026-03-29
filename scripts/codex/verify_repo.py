@@ -26,6 +26,7 @@ class Check:
     source: str
     run_in_fast: bool
     run_in_full: bool
+    env_overrides: dict[str, str] | None = None
     report_only: bool = False
     precondition_reason: str | None = None
 
@@ -66,6 +67,64 @@ def health_endpoint_available() -> bool:
         return False
 
 
+def python_command(path: str | Path) -> list[str]:
+    return [str(path)]
+
+
+def candidate_openemotion_python() -> list[tuple[list[str], str]]:
+    candidates: list[tuple[list[str], str]] = []
+    env_python = os.environ.get("OPENEMOTION_PYTHON")
+    if env_python:
+        candidates.append((python_command(env_python), f"OPENEMOTION_PYTHON={env_python}"))
+
+    path_candidates = [
+        (ROOT / "OpenEmotion" / ".venv" / "bin" / "python", "OpenEmotion/.venv/bin/python"),
+        (ROOT / "OpenEmotion" / "venv" / "bin" / "python", "OpenEmotion/venv/bin/python"),
+        (ROOT / "OpenEmotion" / ".venv" / "Scripts" / "python.exe", "OpenEmotion/.venv/Scripts/python.exe"),
+        (ROOT / "OpenEmotion" / "venv" / "Scripts" / "python.exe", "OpenEmotion/venv/Scripts/python.exe"),
+    ]
+    for path, label in path_candidates:
+        if path.exists():
+            candidates.append((python_command(path), label))
+
+    candidates.append((python_command(sys.executable), f"current interpreter ({sys.executable})"))
+
+    deduped: list[tuple[list[str], str]] = []
+    seen: set[str] = set()
+    for command, label in candidates:
+        key = command[0]
+        if key not in seen:
+            seen.add(key)
+            deduped.append((command, label))
+    return deduped
+
+
+def python_missing_modules(command: Sequence[str], modules: Sequence[str]) -> list[str]:
+    probe = [*command, "-c", "import " + ", ".join(modules)]
+    proc = subprocess.run(probe, cwd=ROOT / "OpenEmotion", stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+    if proc.returncode == 0:
+        return []
+    missing: list[str] = []
+    for module in modules:
+        single = [*command, "-c", f"import {module}"]
+        proc = subprocess.run(single, cwd=ROOT / "OpenEmotion", stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+        if proc.returncode != 0:
+            missing.append(module)
+    return missing
+
+
+def resolved_openemotion_python() -> tuple[list[str], str]:
+    return candidate_openemotion_python()[0]
+
+
+def repo_local_pythonpath(entries: Sequence[Path]) -> str:
+    parts = [str(path) for path in entries]
+    existing = os.environ.get("PYTHONPATH")
+    if existing:
+        parts.append(existing)
+    return os.pathsep.join(parts)
+
+
 def detect_checks() -> List[Check]:
     checks: List[Check] = []
 
@@ -74,12 +133,23 @@ def detect_checks() -> List[Check]:
     ego_regression = ROOT / "EgoCore" / "tools" / "run_telegram_mainline_regression.sh"
     open_pyproject = ROOT / "OpenEmotion" / "pyproject.toml"
     open_makefile = ROOT / "OpenEmotion" / "Makefile"
-    open_venv_python = ROOT / "OpenEmotion" / "venv" / "bin" / "python"
-    open_dotvenv_python = ROOT / "OpenEmotion" / ".venv" / "bin" / "python"
     open_smoke = ROOT / "OpenEmotion" / "test_smoke.py"
     open_typecheck_simple = ROOT / "OpenEmotion" / "verify_typecheck_simple.py"
     open_typecheck = ROOT / "OpenEmotion" / "verify_typecheck.py"
     open_testbot = ROOT / "OpenEmotion" / "scripts" / "run_testbot_scenarios.py"
+    repo_lint = ROOT / "scripts" / "codex" / "lint_repo.py"
+    open_python_cmd, open_python_label = resolved_openemotion_python()
+    open_runtime_missing = python_missing_modules(open_python_cmd, ["fastapi", "pydantic", "pytest", "requests"])
+    open_smoke_missing = python_missing_modules(open_python_cmd, ["fastapi", "requests"])
+    ego_pytest_env = {
+        "PYTHONPATH": repo_local_pythonpath(
+            [
+                ROOT / "EgoCore",
+                ROOT / "EgoCore" / "modules",
+                ROOT / "OpenEmotion",
+            ]
+        )
+    }
 
     if ego_pyproject.exists():
         checks.append(
@@ -116,23 +186,24 @@ def detect_checks() -> List[Check]:
             Check(
                 category="test",
                 name="EgoCore pytest suite",
-                command=["python3", "-m", "pytest", "tests/", "-v"],
+                command=["python3", "-m", "pytest", "tests/", "-v", "-s"],
                 cwd=ROOT / "EgoCore",
-                source="EgoCore/pyproject.toml + EgoCore/tests/",
+                source="EgoCore/pyproject.toml + EgoCore/tests/ via repo-local PYTHONPATH",
                 run_in_fast=False,
                 run_in_full=True,
+                env_overrides=ego_pytest_env,
                 precondition_reason="full-only heavy test suite",
             )
         )
 
     if has_make_target(open_makefile, "test"):
-        test_command: Sequence[str]
-        source = "OpenEmotion/Makefile"
-        if open_venv_python.exists():
-            test_command = ["make", "test"]
-        else:
-            test_command = ["python3", "-m", "pytest", "tests/", "-q"]
-            source = "OpenEmotion/pyproject.toml + OpenEmotion/tests/"
+        test_command: Sequence[str] = [*open_python_cmd, "-m", "pytest", "tests/", "-q"]
+        source = f"OpenEmotion/pyproject.toml + OpenEmotion/tests/ via {open_python_label}"
+        open_test_reason = "full-only heavy test suite"
+        if open_runtime_missing:
+            open_test_reason = (
+                f"{open_python_label} missing modules: {', '.join(open_runtime_missing)}"
+            )
         checks.append(
             Check(
                 category="test",
@@ -141,35 +212,38 @@ def detect_checks() -> List[Check]:
                 cwd=ROOT / "OpenEmotion",
                 source=source,
                 run_in_fast=False,
-                run_in_full=True,
-                precondition_reason="full-only heavy test suite",
+                run_in_full=not open_runtime_missing,
+                precondition_reason=open_test_reason,
             )
         )
 
-    checks.append(
-        Check(
-            category="lint",
-            name="Repo lint",
-            command=[],
-            cwd=ROOT,
-            source="repo scan",
-            run_in_fast=False,
-            run_in_full=False,
-            report_only=True,
-            precondition_reason="no stable repo-tracked lint command detected",
+    if repo_lint.exists():
+        checks.append(
+            Check(
+                category="lint",
+                name="Codex repo lint",
+                command=["python3", "scripts/codex/lint_repo.py"],
+                cwd=ROOT,
+                source="scripts/codex/lint_repo.py",
+                run_in_fast=True,
+                run_in_full=True,
+            )
         )
-    )
 
     if open_typecheck_simple.exists():
+        simple_reason = None
+        if open_runtime_missing:
+            simple_reason = f"{open_python_label} missing modules: {', '.join(open_runtime_missing)}"
         checks.append(
             Check(
                 category="typecheck",
                 name="OpenEmotion simple typecheck",
-                command=["python3", "verify_typecheck_simple.py"],
+                command=[*open_python_cmd, "verify_typecheck_simple.py"],
                 cwd=ROOT / "OpenEmotion",
-                source="OpenEmotion/verify_typecheck_simple.py",
-                run_in_fast=True,
+                source=f"OpenEmotion/verify_typecheck_simple.py via {open_python_label}",
+                run_in_fast=simple_reason is None,
                 run_in_full=False,
+                precondition_reason=simple_reason,
             )
         )
 
@@ -178,9 +252,9 @@ def detect_checks() -> List[Check]:
             Check(
                 category="typecheck",
                 name="OpenEmotion full typecheck",
-                command=["python3", "verify_typecheck.py"],
+                command=[*open_python_cmd, "verify_typecheck.py"],
                 cwd=ROOT / "OpenEmotion",
-                source="OpenEmotion/verify_typecheck.py",
+                source=f"OpenEmotion/verify_typecheck.py via {open_python_label}",
                 run_in_fast=False,
                 run_in_full=True,
             )
@@ -189,15 +263,15 @@ def detect_checks() -> List[Check]:
     smoke_reason = None
     if not open_smoke.exists():
         smoke_reason = "missing OpenEmotion/test_smoke.py"
-    elif not open_dotvenv_python.exists():
-        smoke_reason = "OpenEmotion/.venv/bin/python not available for test_smoke.py"
+    elif open_smoke_missing:
+        smoke_reason = f"{open_python_label} missing modules: {', '.join(open_smoke_missing)}"
     checks.append(
         Check(
             category="e2e/smoke",
             name="OpenEmotion smoke",
-            command=["python3", "test_smoke.py"],
+            command=[*open_python_cmd, "test_smoke.py"],
             cwd=ROOT / "OpenEmotion",
-            source="OpenEmotion/test_smoke.py",
+            source=f"OpenEmotion/test_smoke.py via {open_python_label}",
             run_in_fast=smoke_reason is None,
             run_in_full=False,
             precondition_reason=smoke_reason,
@@ -227,7 +301,7 @@ def detect_checks() -> List[Check]:
             category="e2e/smoke",
             name="OpenEmotion testbot PR subset",
             command=[
-                "python3",
+                *open_python_cmd,
                 "scripts/run_testbot_scenarios.py",
                 "--subset",
                 "pr",
@@ -235,7 +309,7 @@ def detect_checks() -> List[Check]:
                 "artifacts/testbot/pr_summary.json",
             ],
             cwd=ROOT / "OpenEmotion",
-            source="OpenEmotion/scripts/run_testbot_scenarios.py",
+            source=f"OpenEmotion/scripts/run_testbot_scenarios.py via {open_python_label}",
             run_in_fast=False,
             run_in_full=testbot_reason is None,
             precondition_reason=testbot_reason,
@@ -282,6 +356,8 @@ def run_check(check: Check, *, dry_run: bool) -> Result:
         )
 
     env = os.environ.copy()
+    if check.env_overrides:
+        env.update(check.env_overrides)
     proc = subprocess.run(
         list(check.command),
         cwd=check.cwd,

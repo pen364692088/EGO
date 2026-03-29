@@ -59,16 +59,24 @@
 
 ### Lint / typecheck
 
-当前仓库没有确认可用的 repo 级统一 lint / typecheck 命令。
+当前仓库的稳定 lint 入口与 OpenEmotion 专用 typecheck 如下：
+
+- `python3 scripts/codex/lint_repo.py`
+- `cd OpenEmotion && python3 verify_typecheck_simple.py`
+- `cd OpenEmotion && python3 verify_typecheck.py`
+
+规则：
 
 - 不要编造 `ruff` / `black` / `mypy` / repo-root CI gate
-- 如任务需要静态预检，优先使用 `python3 -m py_compile path/to/file.py`
-- 如某一子模块有专用校验脚本，只有在任务 authority source 明确要求时才调用
+- `scripts/codex/verify_repo.py` 会优先解析 `OPENEMOTION_PYTHON`，否则按 `OpenEmotion/.venv` -> `OpenEmotion/venv` -> 当前解释器 选择 OpenEmotion Python
+- `scripts/codex/verify_repo.py` 对 `EgoCore pytest suite` 会注入 repo-local `PYTHONPATH=EgoCore:EgoCore/modules:OpenEmotion`，避免依赖外部 shell 状态
+- 如任务需要静态预检，仍可直接使用 `python3 -m py_compile path/to/file.py`
 
 ### Review / preflight
 
 - `python3 -m py_compile path/to/file.py`
 - `git diff --check`
+- `python3 scripts/codex/lint_repo.py`
 - `python3 scripts/codex/verify_repo.py --mode fast`
 - `python3 scripts/codex/verify_repo.py --mode full`
 - OpenEmotion CI 参考：`OpenEmotion/.github/workflows/emotiond-test.yml`

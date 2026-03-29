@@ -104,14 +104,19 @@ python3 scripts/codex/verify_repo.py --mode fast --dry-run
 |------|----------|------|
 | build/setup | `cd EgoCore && python3 -m pip install -e .[dev]` | setup/bootstrap，默认只报告不执行 |
 | build/setup | `cd OpenEmotion && make venv` | setup/bootstrap，默认只报告不执行 |
-| test | `cd EgoCore && python3 -m pytest tests/ -v` | full 模式 |
-| test | `cd OpenEmotion && make test` | full 模式；若 venv 不可用，可回退到 `python3 -m pytest tests/ -q` |
-| lint | 未检测到稳定 repo-tracked 命令 | 脚本会给出 skipped reason |
+| test | `cd EgoCore && python3 -m pytest tests/ -v -s` | full 模式；`verify_repo.py` 会注入 repo-local `PYTHONPATH=EgoCore:EgoCore/modules:OpenEmotion` |
+| test | `cd OpenEmotion && <resolved-python> -m pytest tests/ -q` | full 模式；解释器按 `OPENEMOTION_PYTHON -> .venv -> venv -> 当前解释器` 解析 |
+| lint | `python3 scripts/codex/lint_repo.py` | fast/full 都会运行；覆盖 repo 控制面与核心 Python 源文件的稳定 lint |
 | typecheck | `cd OpenEmotion && python3 verify_typecheck_simple.py` | fast 模式 |
 | typecheck | `cd OpenEmotion && python3 verify_typecheck.py` | full 模式 |
 | smoke/e2e | `cd OpenEmotion && python3 test_smoke.py` | fast 模式 |
 | smoke/e2e | `cd EgoCore && ./tools/run_telegram_mainline_regression.sh` | full 模式 |
 | smoke/e2e | `cd OpenEmotion && python3 scripts/run_testbot_scenarios.py --subset pr --output artifacts/testbot/pr_summary.json` | full 模式 |
+
+说明：
+
+- `verify_repo.py` 对 OpenEmotion 统一使用同一套解释器解析规则：`OPENEMOTION_PYTHON -> OpenEmotion/.venv -> OpenEmotion/venv -> 当前解释器`
+- 若选中的解释器缺少 `fastapi` / `pytest` / `requests` 等运行依赖，脚本会给出明确 `skipped reason`，而不是继续硬编码 `.venv` 路径
 
 输出会给出：
 

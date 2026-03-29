@@ -2,19 +2,29 @@
 """
 Smoke test for the complete emotiond system
 """
+import os
 import subprocess
-import time
-import requests
 import sys
+import time
 from pathlib import Path
+
+import requests
+
+
+def resolve_python_executable() -> str:
+    override = os.environ.get("OPENEMOTION_PYTHON")
+    if override:
+        return override
+    return sys.executable
 
 def test_daemon_startup():
     """Test that the daemon starts and health endpoint works"""
     print("Testing daemon startup...")
     
     # Start daemon
+    python_executable = resolve_python_executable()
     process = subprocess.Popen(
-        [".venv/bin/python", "scripts/run_daemon.py"],
+        [python_executable, "scripts/run_daemon.py"],
         stdout=subprocess.PIPE,
         stderr=subprocess.PIPE,
         cwd=Path(__file__).parent
@@ -76,10 +86,11 @@ def test_daemon_startup():
 def test_scripts():
     """Test that scripts can run without errors"""
     print("\nTesting scripts...")
+    python_executable = resolve_python_executable()
     
     # Test demo script
     result = subprocess.run(
-        [".venv/bin/python", "scripts/demo_cli.py", "--test"],
+        [python_executable, "scripts/demo_cli.py", "--test"],
         capture_output=True,
         text=True,
         cwd=Path(__file__).parent
@@ -90,7 +101,7 @@ def test_scripts():
     
     # Test eval script
     result = subprocess.run(
-        [".venv/bin/python", "scripts/eval_suite.py", "--test"],
+        [python_executable, "scripts/eval_suite.py", "--test"],
         capture_output=True,
         text=True,
         cwd=Path(__file__).parent
@@ -101,7 +112,7 @@ def test_scripts():
     
     # Test deployment script syntax
     result = subprocess.run(
-        [".venv/bin/python", "-m", "py_compile", "scripts/deploy_systemd.py"],
+        [python_executable, "-m", "py_compile", "scripts/deploy_systemd.py"],
         capture_output=True,
         cwd=Path(__file__).parent
     )
