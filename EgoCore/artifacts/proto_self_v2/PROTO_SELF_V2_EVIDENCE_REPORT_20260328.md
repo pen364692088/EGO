@@ -56,6 +56,10 @@
 
 ## Real Telegram attempt tracking
 
+- artifact index:
+  - [README.md](/mnt/d/Project/AIProject/MyProject/Ego/EgoCore/artifacts/proto_self_v2/README.md)
+- update log:
+  - [PROTO_SELF_V2_UPDATE_LOG_20260328.md](/mnt/d/Project/AIProject/MyProject/Ego/EgoCore/artifacts/proto_self_v2/PROTO_SELF_V2_UPDATE_LOG_20260328.md)
 - first negative real-channel attempt:
   - [PROTO_SELF_V2_REAL_CHANNEL_ATTEMPT_20260328.md](/mnt/d/Project/AIProject/MyProject/Ego/EgoCore/artifacts/proto_self_v2/PROTO_SELF_V2_REAL_CHANNEL_ATTEMPT_20260328.md)
 - first positive real-channel capture:

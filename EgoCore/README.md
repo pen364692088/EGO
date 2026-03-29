@@ -2,21 +2,24 @@
 
 一个轻量级、独立的 Agent Runtime，专注 Telegram 单 Agent 任务执行。
 
-## 当前权威状态（2026-03-27）
+## 当前权威状态（2026-03-28）
 
 - **Telegram 正式主线**：`telegram_bot -> telegram_runtime_bridge -> native_loop -> contract_runtime -> openemotion hooks -> delivery`
-- **Proto-Self 当前主线状态**：真实 Telegram 已完成 P4 family/repair 收口
-  - `tool:file` blocked / success 已在真实样本中同 family、不同 identity
-  - 首次 retry-success 已点亮 `repair_closure=true`
-- **MVS E5 观察状态**：`/new continuity` 与 `restart continuity` 已有强真实正证据
-  - 显式默认规则已在真实链路中进入 `profile_memory`，并在多次 `/new` 后继续命中
-  - `restart continuity` 已有真实重启日志 + post-restart 命中样本的跨证据链正证据
-  - 当前仍不能宣称 `E5 稳定成立`；`restore` 仍是最高优先级缺口
+- **Proto-Self 当前主线状态**：`proto_self.v2` 已是主体层 state writeback 默认主线
+  - `v1` 仅保留为 session-scoped compatibility fallback
+  - Telegram 真实自然语言主线已命中 `proto_self.output.v2 + proto_self.trace.v2`
+- **Proto-Self 真实观察状态**
+  - same-session E5：已达成
+  - same-day cross-session continuity：`2 / 2` 已达成
+  - cross-day continuity：`1 / 2`，仍待 later-day 样本
+- **Live Telegram 进程版本绑定**
+  - 当前 live process 已落 repo-tracked 版本报告
+  - 当前绑定 commit：`468d9a4`
 - **权威入口**
   - `docs/PROGRAM_STATE_UNIFIED.yaml`
   - `docs/00_MASTER_INDEX.md`
-  - `../artifacts/closure_repair_fix/CLOSURE_REPAIR_FIX_REPORT.md`
-  - `../artifacts/mvs_e5_observation/MVS_E5_OBSERVATION_REPORT.md`
+  - `artifacts/proto_self_v2/PROTO_SELF_V2_EVIDENCE_REPORT_20260328.md`
+  - `artifacts/proto_self_v2/README.md`
 
 > 下方 Phase / P3 / shadow observation 表格保留为历史治理基线，不再单独代表当前最新主链验收前沿。
 
@@ -24,27 +27,28 @@
 
 | 组件 | 类型 | 状态 |
 |------|------|------|
-| **OpenEmotion /cycle** | 正式主体链 (Cycle Core v1) | ✅ 生效 |
-| **subject_adapter.cycle()** | EgoCore 主体适配入口 | ✅ 生效 |
-| **openemotion_adapter** | 边界适配层 (event_builder → cycle → result_consumer) | ✅ 生效 |
-| **subject_adapter.interpret()** | Legacy / Fallback | ⚠️ 仅降级用 |
+| **OpenEmotion /proto_self_v2** | 正式主体链 (Proto-Self V2) | ✅ 默认生效 |
+| **RuntimeV2ProtoSelfRuntime** | EgoCore 主体事件主入口 | ✅ 默认生效 |
+| **openemotion_adapter / proto_self_adapter** | 边界适配层 (UpdatePacketV2 → kernel → result/trace) | ✅ 生效 |
+| **v1 compatibility fallback** | Legacy / Fallback | ⚠️ 仅显式降级用 |
 
 ### 技术栈
 
-- **主体内核**: OpenEmotion (Cycle Core v1)
+- **主体内核**: OpenEmotion (Proto-Self V2)
 - **宿主**: EgoCore
-- **正式入口**: `app/openemotion/subject_adapter.cycle()`
-- **边界适配**: `app/openemotion_adapter/`
+- **正式入口**: `app/runtime_v2/proto_self_runtime.py`
+- **边界适配**: `app/openemotion_adapter/proto_self_adapter.py`
 
 ### 验证状态
 
 | 验收点 | 状态 |
 |--------|------|
-| /cycle 命中 | ✅ |
-| 跨轮状态连续 (old_value != null) | ✅ |
-| 显式偏好/目标写入 (event_stored=true) | ✅ |
-| 窄版路由修复 (CHAT != NEW_TASK) | ✅ |
-| unified runner 跨层一致性 (E2/E3/E4 参考) | ✅ 已验证共用 `RuntimeV2Loop` 主链 |
+| repo-local runtime → `proto_self.trace.v2` | ✅ |
+| Telegram external entry → `proto_self.trace.v2` | ✅ |
+| real Telegram same-session E5 | ✅ |
+| real Telegram same-day cross-session continuity | ✅ `2 / 2` |
+| live Telegram process version binding | ✅ |
+| cross-day continuity | ⏳ `1 / 2` |
 
 ---
 
