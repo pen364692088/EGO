@@ -150,8 +150,6 @@ async def test_telegram_handle_message_captures_proto_self_v2_trace_in_ledger(mo
     monkeypatch.setattr(bot.telegram_runtime_fallback_runner, "run_turn", fake_run_turn)
 
     update = DummyUpdate("帮我看下 app.py", 5001)
-    state = bot._get_runtime_state("telegram:dm:456")
-    state.proto_self_version_override = "v2"
     await bot.handle_message(update, None)
 
     samples = collector.get_samples()

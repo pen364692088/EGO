@@ -89,9 +89,9 @@
 |------|------|
 | [设计稿](PROTO_SELF_KERNEL_V1_DESIGN.md) | V1 历史设计入口，不再是 canonical source |
 | [接口草案](PROTO_SELF_KERNEL_V1_SPEC.md) | V1 接口草案 / 历史实现桥接，不是 V2 canonical source |
-| [V2 正式规格](PROTO_SELF_KERNEL_V2_SPEC.md) | 下一代 Proto-Self 内核 canonical source，不是当前 runtime contract |
+| [V2 正式规格](PROTO_SELF_KERNEL_V2_SPEC.md) | Proto-Self 主体层 canonical source |
 | [V2 迁移映射](PROTO_SELF_KERNEL_V2_MIGRATION_MAP.md) | V1 -> V2 命名 / 字段 / replay 映射 |
-| [V2 bounded implementation](../openemotion/proto_self_v2/) | 显式 `proto_self.v2` 入口，当前仍是 bounded slice |
+| [V2 bounded implementation](../openemotion/proto_self_v2/) | 主体层 writeback mainline implementation；V1 仅保留兼容 fallback |
 | [实现](../openemotion/proto_self/) | 已验证通过 |
 | [基础验收报告](../artifacts/proto_self_v1/ACCEPTANCE_REPORT_CYCLE_STRENGTHEN_20260324.md) | Cycle strengthen / reflection 基础验收通过 |
 | [最新真实主链报告](../../artifacts/closure_repair_fix/CLOSURE_REPAIR_FIX_REPORT.md) | P4 family/repair 真链修复完成 |

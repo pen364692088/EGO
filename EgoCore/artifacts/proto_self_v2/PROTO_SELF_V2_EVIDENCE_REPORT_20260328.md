@@ -27,8 +27,11 @@
 ### Capture B: Telegram external entry, repo-local
 
 - entry: `TelegramBot.handle_message()`
-- ingress selector: session-scoped Telegram command `/proto v2 on`
-- ingress merge point: `TelegramBot._handle_with_runtime_v2() -> state.ingress_context["proto_self_version"] = "v2"`
+- ingress selector: default Telegram natural-language mainline
+- ingress merge point:
+  - `TelegramBot._handle_with_runtime_v2()`
+  - default path resolves to `proto_self.v2`
+  - `/proto off` is only a session-scoped compatibility fallback
 - expected schema_version chain:
   - normalized_event: `proto_self.v2`
   - openemotion_result: `proto_self.output.v2`
@@ -40,12 +43,15 @@
 
 ## Real Telegram capture procedure
 
-1. Ensure the live Telegram process has been restarted after the `/proto v2 on` feature landed on `main`.
-2. Send `/proto v2 on` in the target Telegram DM session.
+1. Ensure the live Telegram process has been restarted after the default-v2 mainline landed on `main`.
+2. Send `/new` in the target Telegram DM session.
 3. Send one natural-language message in the same session.
-4. Check the newest real sample under:
+4. Optional diagnostic:
+   - send `/proto status`
+   - or `/proto v2 on`
+5. Check the newest real sample under:
    - `artifacts/telegram_real_mainline_v1/real_telegram/sample_*/ledger.json`
-5. Confirm:
+6. Confirm:
    - `openemotion.trace_payload.schema_version == "proto_self.trace.v2"`
 
 ## Real Telegram attempt tracking
@@ -80,10 +86,9 @@
   - `proto_self.v2` ingress payload is contract-checked before adapter routing
   - the repo-local runtime mainline can emit `proto_self.trace.v2`
   - the repo-local Telegram external entry can persist `proto_self.trace.v2` into `ledger.json`
-  - the real Telegram channel can persist `proto_self.output.v2` and `proto_self.trace.v2` in a natural-language turn after explicit `/proto v2 on`
+  - the real Telegram channel can persist `proto_self.output.v2` and `proto_self.trace.v2` on the Telegram natural-language mainline
   - the same real Telegram DM session has now produced `5/5` counted natural-language samples with `proto_self.output.v2 + proto_self.trace.v2`
 - this report does not prove:
-  - V2 is now the default runtime mainline
   - cross-session or cross-day stability
   - broader real-channel admission evidence
   - normalized-event parity across every evidence path

@@ -2,20 +2,20 @@
 
 > 任务类型：L3 dual_repo implementation entry
 > 状态：published
-> 作用：固定 Proto-Self V2 下一轮双仓实现的 authority source、contract 边界、最小 E4 证据与回退规则
+> 作用：固定 Proto-Self V2 作为主体层 state writeback 主入口时的 authority source、contract 边界、最小 E4/E5 证据与兼容回退规则
 
 ---
 
 ## 真实目标
 
-把 `Proto-Self V2` 从纯规格层推进到 **可在双仓中跑通的 bounded vertical slice**：
+把 `Proto-Self V2` 从纯规格层推进到 **主体层 state writeback 的唯一主入口**，并保留受控兼容回退：
 
 - `UpdatePacketV2 / KernelOutputV2 / TracePayloadV2` 有正式 contract
 - OpenEmotion 有可调用的 `proto_self_v2` kernel 路径
-- EgoCore adapter / runtime 能显式消费 `proto_self.v2`
+- EgoCore adapter / runtime 默认消费 `proto_self.v2`
 - replay / evidence 能接住 `proto_self.trace.v2`
 
-本轮目标不是取代当前 V1 默认主线，而是提供 **可验证、可回退、显式启用** 的 V2 实现入口。
+本轮目标是把 `proto_self.v2` 提升为主体层默认主线；若保留 `v1`，只能作为显式兼容 fallback，不再作为默认 owner。
 
 ---
 
@@ -23,10 +23,10 @@
 
 - [ ] `proto_self.v2` 输入 contract 明确且有 repo-tracked 文件承载
 - [ ] OpenEmotion 存在 `proto_self_v2` 可执行 kernel 路径
-- [ ] EgoCore adapter 能按 `schema_version=proto_self.v2` 正确分流
-- [ ] runtime 可通过显式入口构造并发送 `UpdatePacketV2`
+- [ ] EgoCore adapter 能按默认 `schema_version=proto_self.v2` 正确分流
+- [ ] runtime 默认构造并发送 `UpdatePacketV2`
 - [ ] output / trace / replay evidence 至少有一条 V2 子链路验证
-- [ ] 保持当前 V1 默认主线不被隐式替换
+- [ ] 若存在 `v1`，它只能通过显式兼容 fallback 进入
 
 ---
 
@@ -65,13 +65,13 @@
 - 结构化 ingress / external outcome 组包
 - `schema_version` 路由
 - adapter normalize / invoke / serialize / evidence capture
-- 主链 runtime 显式启用与回退
+- 主链 runtime 默认启用与兼容回退
 
 ### 明确禁止
 
 - 在 EgoCore adapter 中发明主体语义
 - 让 OpenEmotion 直接现实执行
-- 无显式入口就替换当前 V1 默认主线
+- 在 EgoCore adapter 中维持 `v1` 默认 owner
 - 用 prompt 或自由文本绕过结构字段
 
 ---
@@ -80,7 +80,7 @@
 
 本轮最低 E4 不要求真实 Telegram，而要求 **真实双仓主链可触发**：
 
-1. 同一条 EgoCore runtime 入口显式选择 `proto_self.v2`
+1. 同一条 EgoCore runtime 入口默认选择 `proto_self.v2`
 2. adapter 以 `schema_version=proto_self.v2` 分流到 OpenEmotion V2 kernel
 3. OpenEmotion 返回 `proto_self.output.v2`
 4. evidence ledger / trace bridge 捕获到 `proto_self.trace.v2`
@@ -99,19 +99,19 @@
 
 ## 回退规则
 
-- 默认主线保持 `proto_self.v1`
-- `proto_self.v2` 必须显式启用
+- 默认主线保持 `proto_self.v2`
+- `proto_self.v1` 如存在，只能通过显式兼容 fallback 启用
 - 任一 contract / adapter / evidence gate 未过：
   - 停止提升口径
   - 保留代码
-  - 回退到 V1 默认入口
+  - 回退到显式 `v1` 兼容入口
 
 ---
 
 ## 下一步最小闭环动作
 
-1. 保持 `proto_self.v1` 为默认主线
-2. 下一轮如需提升口径，补显式 E4 runtime evidence
+1. 把 `proto_self.v2` 保持为主体层默认写回主线
+2. 下一轮继续补跨 session / 跨日真实通道稳定性证据
 
 ---
 
@@ -132,8 +132,8 @@
 
 ## 当前完成口径
 
-- 已证明：`proto_self.v2` bounded vertical slice 已实现并可在双仓内显式进入
-- 未证明：真实 runtime 主链 E4 证据、Telegram 主链、长期 replay/stability
+- 已证明：`proto_self.v2` 已实现 bounded vertical slice，并已拿到 runtime / Telegram 真实主链 E4 与同 session E5 证据
+- 未证明：跨 session / 跨日稳定性，以及更高层长期 continuity
 
 ## 发布状态
 

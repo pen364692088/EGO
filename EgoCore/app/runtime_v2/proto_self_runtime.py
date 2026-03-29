@@ -21,9 +21,9 @@ def assess_risk_level(user_input: str) -> str:
 
 def resolve_proto_self_schema_version(state: RuntimeV2State) -> str:
     ingress_context = state.ingress_context or {}
-    if ingress_context.get("proto_self_version") == "v2":
-        return "proto_self.v2"
-    return "proto_self.v1"
+    if ingress_context.get("proto_self_version") == "v1":
+        return "proto_self.v1"
+    return "proto_self.v2"
 
 
 def build_proto_self_ingress_event(

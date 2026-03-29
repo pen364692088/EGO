@@ -183,6 +183,8 @@ async def test_new_command_captures_real_command_ingress(monkeypatch):
 @pytest.mark.asyncio
 async def test_proto_command_enables_v2_override():
     bot = TelegramBot(token="test-token", use_runtime_v2=True)
+    state = bot._get_runtime_state("telegram:dm:456")
+    state.proto_self_version_override = "v1"
 
     class DummyMessage:
         text = "/proto v2 on"
@@ -209,16 +211,14 @@ async def test_proto_command_enables_v2_override():
 
     await bot.handle_command(DummyUpdate(), None)
 
-    state = bot._get_runtime_state("telegram:dm:456")
-    assert state.proto_self_version_override == "v2"
-    assert "override: \\`v2\\`" in DummyUpdate.message.last_text
+    assert state.proto_self_version_override is None
+    assert "override: \\`default(v2)\\`" in DummyUpdate.message.last_text
 
 
 @pytest.mark.asyncio
 async def test_proto_command_clears_override():
     bot = TelegramBot(token="test-token", use_runtime_v2=True)
     state = bot._get_runtime_state("telegram:dm:456")
-    state.proto_self_version_override = "v2"
 
     class DummyMessage:
         text = "/proto off"
@@ -245,5 +245,5 @@ async def test_proto_command_clears_override():
 
     await bot.handle_command(DummyUpdate(), None)
 
-    assert state.proto_self_version_override is None
-    assert "override: \\`default(v1)\\`" in DummyUpdate.message.last_text
+    assert state.proto_self_version_override == "v1"
+    assert "override: \\`v1\\`" in DummyUpdate.message.last_text

@@ -20,9 +20,10 @@ def test_assess_risk_level_keeps_existing_keywords():
     assert assess_risk_level("状态查询") == "low"
 
 
-def test_build_proto_self_ingress_event_uses_runtime_shape():
+def test_build_proto_self_ingress_event_preserves_v1_fallback_shape():
     state = RuntimeV2State(session_id="session:test")
     state.ingress_context = {
+        "proto_self_version": "v1",
         "restore_observation": {
             "restore_id": "restore_001",
             "restore_status": "success",
@@ -44,8 +45,14 @@ def test_build_proto_self_ingress_event_uses_runtime_shape():
     assert event["runtime_summary"]["restore_observation"]["restore_id"] == "restore_001"
 
 
-def test_resolve_proto_self_schema_version_defaults_to_v1():
+def test_resolve_proto_self_schema_version_defaults_to_v2():
     state = RuntimeV2State(session_id="session:test")
+    assert resolve_proto_self_schema_version(state) == "proto_self.v2"
+
+
+def test_resolve_proto_self_schema_version_supports_explicit_v1_fallback():
+    state = RuntimeV2State(session_id="session:test")
+    state.ingress_context = {"proto_self_version": "v1"}
     assert resolve_proto_self_schema_version(state) == "proto_self.v1"
 
 
@@ -71,9 +78,10 @@ def test_build_proto_self_ingress_event_supports_v2_shape():
     assert event["external_outcome"] is None
 
 
-def test_build_external_result_event_preserves_feedback_contract():
+def test_build_external_result_event_preserves_v1_feedback_contract():
     state = RuntimeV2State(session_id="session:test")
     state.current_goal = "执行任务"
+    state.ingress_context = {"proto_self_version": "v1"}
     event = build_external_result_event(
         session_id="session:test",
         turn_id="turn_001",
@@ -108,9 +116,10 @@ def test_build_external_result_event_supports_v2_shape():
     assert event["executed_action_prev"]["kind"] == "tool"
 
 
-def test_build_external_result_event_does_not_steal_family_or_repair_semantics():
+def test_build_external_result_event_v1_fallback_does_not_steal_family_or_repair_semantics():
     state = RuntimeV2State(session_id="session:test")
     state.current_goal = "执行任务"
+    state.ingress_context = {"proto_self_version": "v1"}
 
     event = build_external_result_event(
         session_id="session:test",

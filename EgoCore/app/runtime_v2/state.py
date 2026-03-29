@@ -160,7 +160,7 @@ class RuntimeV2State:
     # Proto-Self Kernel Context
     proto_self_context: Optional[Dict[str, Any]] = None  # policy_hint / response_tendency / reflection_note
     ingress_context: Optional[Dict[str, Any]] = None  # canonical ingress structure for single-pass decision
-    proto_self_version_override: Optional[str] = None  # explicit session-scoped ingress override
+    proto_self_version_override: Optional[str] = None  # session-scoped compatibility override; default mainline is v2
     task_contract: Optional[Dict[str, Any]] = None
     next_step_decision: Optional[Dict[str, Any]] = None
     verification_history: List[Dict[str, Any]] = field(default_factory=list)

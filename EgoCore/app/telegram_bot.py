@@ -614,7 +614,7 @@ class TelegramBot:
         tokens = [t.lower() for t in (args or "").strip().split() if t]
 
         if not tokens or tokens[0] == "status":
-            override = state.proto_self_version_override or "default(v1)"
+            override = state.proto_self_version_override or "default(v2)"
             return CommandResult(
                 success=True,
                 message=(
@@ -623,34 +623,35 @@ class TelegramBot:
                     f"- override: `{override}`\n"
                     "- scope: `session-scoped`\n"
                     "- effect: `future runtime_v2 natural-language turns only`\n"
-                    "- boundary: `does not change the default mainline owner`"
+                    "- boundary: `proto_self.v2 is the default subject writeback mainline; override only changes compatibility fallback`"
                 ),
                 data={"session_key": session_key, "proto_self_version_override": state.proto_self_version_override},
             )
 
         if tokens[:2] == ["v2", "on"]:
-            state.proto_self_version_override = "v2"
-            return CommandResult(
-                success=True,
-                message=(
-                    "*Proto-Self Ingress Mode Updated*\n\n"
-                    f"- session: `{session_key}`\n"
-                    "- override: `v2`\n"
-                    "- next_step: `send one natural-language Telegram message in this session`"
-                ),
-                data={"session_key": session_key, "proto_self_version_override": "v2"},
-            )
-
-        if tokens[0] in {"off", "clear", "default"} or tokens[:2] == ["v2", "off"]:
             state.proto_self_version_override = None
             return CommandResult(
                 success=True,
                 message=(
                     "*Proto-Self Ingress Mode Updated*\n\n"
                     f"- session: `{session_key}`\n"
-                    "- override: `default(v1)`"
+                    "- override: `default(v2)`\n"
+                    "- next_step: `future runtime_v2 natural-language turns stay on the default v2 mainline`"
                 ),
                 data={"session_key": session_key, "proto_self_version_override": None},
+            )
+
+        if tokens[0] in {"off", "clear", "default"} or tokens[:2] == ["v2", "off"]:
+            state.proto_self_version_override = "v1"
+            return CommandResult(
+                success=True,
+                message=(
+                    "*Proto-Self Ingress Mode Updated*\n\n"
+                    f"- session: `{session_key}`\n"
+                    "- override: `v1`\n"
+                    "- boundary: `temporary compatibility fallback; default mainline remains v2`"
+                ),
+                data={"session_key": session_key, "proto_self_version_override": "v1"},
             )
 
         return CommandResult(
