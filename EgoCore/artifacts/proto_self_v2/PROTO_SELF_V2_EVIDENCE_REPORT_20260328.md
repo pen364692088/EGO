@@ -56,6 +56,8 @@
   - [PROTO_SELF_V2_REAL_CHANNEL_SUCCESS_20260328.md](/mnt/d/Project/AIProject/MyProject/Ego/EgoCore/artifacts/proto_self_v2/PROTO_SELF_V2_REAL_CHANNEL_SUCCESS_20260328.md)
 - E5 observation plan:
   - [PROTO_SELF_V2_E5_OBSERVATION_PLAN.md](/mnt/d/Project/AIProject/MyProject/Ego/EgoCore/artifacts/proto_self_v2/PROTO_SELF_V2_E5_OBSERVATION_PLAN.md)
+- E5 observation result:
+  - [PROTO_SELF_V2_E5_OBSERVATION_REPORT_20260328.md](/mnt/d/Project/AIProject/MyProject/Ego/EgoCore/artifacts/proto_self_v2/PROTO_SELF_V2_E5_OBSERVATION_REPORT_20260328.md)
 
 ## Contract gate
 
@@ -75,8 +77,9 @@
   - the repo-local runtime mainline can emit `proto_self.trace.v2`
   - the repo-local Telegram external entry can persist `proto_self.trace.v2` into `ledger.json`
   - the real Telegram channel can persist `proto_self.output.v2` and `proto_self.trace.v2` in a natural-language turn after explicit `/proto v2 on`
+  - the same real Telegram DM session has now produced `5/5` counted natural-language samples with `proto_self.output.v2 + proto_self.trace.v2`
 - this report does not prove:
-  - long-run stability
   - V2 is now the default runtime mainline
-  - E5 stability or real-channel admission evidence
+  - cross-session or cross-day stability
+  - broader real-channel admission evidence
   - normalized-event parity across every evidence path

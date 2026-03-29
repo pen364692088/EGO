@@ -100,8 +100,12 @@ Mark `real-channel E5 observation reached` only if:
 ## Current Observation Status
 
 - counted positive samples:
-  - `1 / 3`
-- current counted sample:
+  - `5 / 5`
+- counted sample set:
   - `sample_20260328_191554_f778b476`
+  - `sample_20260328_192536_a18d7479`
+  - `sample_20260328_192603_a2464e9d`
+  - `sample_20260328_192644_59eaca3f`
+  - `sample_20260328_192907_0f99c382`
 - next required action:
-  - collect at least `2` more counted natural-language samples in the same real Telegram DM session
+  - observation threshold reached; file and maintain the E5 observation report
