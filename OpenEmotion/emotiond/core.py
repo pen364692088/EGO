@@ -1422,9 +1422,9 @@ async def generate_plan(request: PlanRequest) -> PlanResponse:
     )
 
 
-async def homeostasis_loop():
+async def homeostasis_loop(stop_event: Optional[asyncio.Event] = None):
     last_time = time.time()
-    while True:
+    while stop_event is None or not stop_event.is_set():
         current_time = time.time()
         real_dt = current_time - last_time
         last_time = current_time
@@ -1438,16 +1438,28 @@ async def homeostasis_loop():
             emotion_state.social_safety,
             emotion_state.energy
         )
-        await asyncio.sleep(1)
+        if stop_event is None:
+            await asyncio.sleep(1)
+        else:
+            try:
+                await asyncio.wait_for(stop_event.wait(), timeout=1)
+            except asyncio.TimeoutError:
+                pass
 
 
-async def consolidation_loop():
-    while True:
+async def consolidation_loop(stop_event: Optional[asyncio.Event] = None):
+    while stop_event is None or not stop_event.is_set():
         relationship_manager.apply_consolidation_drift()
         await memory_system.summarize_memories()
         for target, rel_data in relationship_manager.relationships.items():
             await update_relationship(target, rel_data["bond"], rel_data["grudge"], rel_data.get("trust", 0.0), rel_data.get("repair_bank", 0.0))
-        await asyncio.sleep(30)
+        if stop_event is None:
+            await asyncio.sleep(30)
+        else:
+            try:
+                await asyncio.wait_for(stop_event.wait(), timeout=30)
+            except asyncio.TimeoutError:
+                pass
 
 
 # MVP-3 B6: Action Selection Functions

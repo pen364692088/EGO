@@ -10,7 +10,11 @@ from typing import Dict, Any, List, Optional
 
 def get_db_path():
     """Get database path from environment (dynamic)"""
-    return os.getenv("EMOTIOND_DB_PATH", "./data/emotiond.db")
+    return (
+        os.getenv("EMOTIOND_DB_PATH")
+        or os.getenv("OPENEMOTION_DB_PATH")
+        or "./data/emotiond.db"
+    )
 
 
 async def init_db():

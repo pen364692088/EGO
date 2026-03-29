@@ -6,26 +6,49 @@ import asyncio
 import signal
 import tempfile
 import os
+import time
 from emotiond.daemon import DaemonManager
-from emotiond.config import DB_PATH
 
 
 class TestDaemonLifecycle:
     """Test daemon lifecycle management"""
+
+    @staticmethod
+    def _unlink_with_retry(path: str, timeout_s: float = 1.0, step_s: float = 0.05) -> None:
+        """Windows sqlite handles can release slightly after awaited shutdown."""
+        deadline = time.monotonic() + timeout_s
+        last_error = None
+        while os.path.exists(path):
+            try:
+                os.unlink(path)
+                return
+            except PermissionError as exc:
+                last_error = exc
+                if time.monotonic() >= deadline:
+                    raise
+                time.sleep(step_s)
+        if last_error is not None and os.path.exists(path):
+            raise last_error
     
     def setup_method(self):
         """Setup before each test"""
         # Use temporary database
         self.tmp_file = tempfile.NamedTemporaryFile(suffix=".db", delete=False)
-        self.original_db_path = DB_PATH
-        os.environ["OPENEMOTION_DB_PATH"] = self.tmp_file.name
+        self.tmp_file.close()
+        self.original_db_path = os.environ.get("EMOTIOND_DB_PATH")
+        os.environ["EMOTIOND_DB_PATH"] = self.tmp_file.name
         self.manager = DaemonManager()
     
     def teardown_method(self):
         """Cleanup after each test"""
         # Restore original DB path
-        os.environ["OPENEMOTION_DB_PATH"] = self.original_db_path
-        os.unlink(self.tmp_file.name)
+        if self.original_db_path is not None:
+            os.environ["EMOTIOND_DB_PATH"] = self.original_db_path
+        else:
+            os.environ.pop("EMOTIOND_DB_PATH", None)
+
+        if os.path.exists(self.tmp_file.name):
+            self._unlink_with_retry(self.tmp_file.name)
     
     @pytest.mark.asyncio
     async def test_daemon_start_stop(self):

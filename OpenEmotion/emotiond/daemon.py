@@ -33,6 +33,7 @@ class DaemonManager:
         self.loops: Dict[str, asyncio.Task] = {}
         self.running = False
         self.logger = logging.getLogger("emotiond.daemon")
+        self._stop_event: Optional[asyncio.Event] = None
         
         # MVP12: Initialize developmental cycle daemon (conditional)
         self._dev_daemon = None
@@ -60,10 +61,11 @@ class DaemonManager:
         
         # Initialize database
         await init_db()
+        self._stop_event = asyncio.Event()
         
         # Start background loops
-        self.loops["homeostasis"] = asyncio.create_task(homeostasis_loop())
-        self.loops["consolidation"] = asyncio.create_task(consolidation_loop())
+        self.loops["homeostasis"] = asyncio.create_task(homeostasis_loop(self._stop_event))
+        self.loops["consolidation"] = asyncio.create_task(consolidation_loop(self._stop_event))
         
         # MVP12: Start developmental cycle loop (conditional)
         if self._dev_daemon_enabled:
@@ -135,18 +137,28 @@ class DaemonManager:
         
         self.logger.info("Stopping emotiond daemon")
         self.running = False
+        if self._stop_event is not None:
+            self._stop_event.set()
         
-        # Cancel all background loops
-        for name, task in self.loops.items():
-            if not task.done():
+        # Let loops finish their current DB work before falling back to cancellation.
+        for name, task in list(self.loops.items()):
+            if task.done():
+                continue
+            try:
+                await asyncio.wait_for(asyncio.shield(task), timeout=2.0)
+            except asyncio.TimeoutError:
                 task.cancel()
                 try:
                     await task
                 except asyncio.CancelledError:
-                    self.logger.debug(f"Loop {name} cancelled")
-        
+                    self.logger.debug(f"Loop {name} cancelled after timeout")
+            except asyncio.CancelledError:
+                self.logger.debug(f"Loop {name} cancelled")
+
         # Close database connections
         await close_db()
+        self.loops.clear()
+        self._stop_event = None
         
         self.logger.info("Daemon stopped gracefully")
     

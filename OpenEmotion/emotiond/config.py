@@ -4,12 +4,17 @@ Configuration for emotiond
 import os
 import logging
 import threading
+import tempfile
 from typing import Any, Mapping
 
 
 def get_db_path():
     """Get database path from environment (dynamic, not cached)"""
-    return os.getenv("EMOTIOND_DB_PATH", "./data/emotiond.db")
+    return (
+        os.getenv("EMOTIOND_DB_PATH")
+        or os.getenv("OPENEMOTION_DB_PATH")
+        or "./data/emotiond.db"
+    )
 
 
 def is_core_disabled():
@@ -114,12 +119,14 @@ SOFTMAX_TEMPERATURE = 0.5
 
 def setup_logging():
     """Setup logging configuration for the daemon"""
+    log_path = os.path.join(tempfile.gettempdir(), "emotiond.log")
+    os.makedirs(os.path.dirname(log_path), exist_ok=True)
     logging.basicConfig(
         level=logging.INFO,
         format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
         handlers=[
             logging.StreamHandler(),
-            logging.FileHandler('/tmp/emotiond.log')
+            logging.FileHandler(log_path)
         ]
     )
 
