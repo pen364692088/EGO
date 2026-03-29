@@ -187,7 +187,7 @@ class CommandRouter:
             "/abort - Abort current task\n"
             "/report - Generate task report\n"
             "/memory - View memory summary\n"
-            "/proto - Control Proto-Self ingress version\n"
+            "/proto - Control Proto-Self ingress version/profile\n"
             "/help - Show this help\n\n"
             "Just send me a message to start creating a task!"
         )

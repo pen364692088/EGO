@@ -1,0 +1,77 @@
+{
+  "schema_version": "proto_self.v2",
+  "event_id": "telegram:dm:456_turn_9fbac2aa",
+  "timestamp": "2026-03-29T13:54:00.614607",
+  "event": {
+    "actor": "user",
+    "source": "telegram",
+    "event_type": "user_message",
+    "user_intent": "帮我看下 app.py",
+    "raw_text": "帮我看下 app.py"
+  },
+  "subject_profile": "seed_v0_2",
+  "conversation_summary": {
+    "session_id": "telegram:dm:456",
+    "thread_id": "telegram:dm:456",
+    "turn_id": "turn_9fbac2aa"
+  },
+  "task_summary": {
+    "pending_tasks": 0,
+    "blocked_tasks": 0
+  },
+  "runtime_summary": {
+    "runtime": "runtime_v2",
+    "state_scope": "agent_global",
+    "restore_observation": null,
+    "runtime_action": "chat",
+    "request_mode": "write",
+    "active_task": false,
+    "confirm_pending": false,
+    "clarification_needed": false,
+    "resolved_target_path": "app.py",
+    "resolved_target_name": "app.py",
+    "browser_tabs": []
+  },
+  "safety_context": {
+    "risk_level": "low"
+  },
+  "executed_action_prev": {
+    "kind": "reply",
+    "status": "delivered"
+  },
+  "external_outcome": null,
+  "intervention_context": {},
+  "prediction_snapshot_prev": {
+    "expected_success": true
+  },
+  "seed_event": {
+    "schema_version": "proto_self_seed.v0.2",
+    "event_type": "user_event",
+    "source": "telegram",
+    "payload": {
+      "raw_text": "帮我看下 app.py",
+      "user_intent": "帮我看下 app.py",
+      "resolved_target_path": "app.py",
+      "resolved_target_name": "app.py"
+    },
+    "runtime_summary": {
+      "runtime": "runtime_v2",
+      "state_scope": "agent_global",
+      "runtime_action": "chat",
+      "request_mode": "write",
+      "active_task": false,
+      "confirm_pending": false,
+      "clarification_needed": false,
+      "pending_commitment": null,
+      "resolved_target_path": "app.py",
+      "resolved_target_name": "app.py",
+      "recent_failure_target": null,
+      "browser_tabs": []
+    },
+    "safety_context": {
+      "risk_level": "low",
+      "blocked": false
+    },
+    "timestamp": "2026-03-29T13:54:00.614622"
+  }
+}

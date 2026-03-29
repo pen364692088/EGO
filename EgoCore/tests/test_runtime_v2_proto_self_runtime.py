@@ -5,13 +5,17 @@ from app.runtime_v2.proto_self_runtime import (
     RuntimeV2ProtoSelfRuntime,
     assess_risk_level,
     build_external_result_event,
+    build_finalized_result_event,
+    build_idle_check_event,
     build_proto_self_ingress_event,
     build_response_plan_payload,
     resolve_proto_self_schema_version,
+    resolve_proto_self_subject_profile,
 )
 from app.runtime_v2.runtime_reply import RuntimeV2Reply, RuntimeV2TurnResult
 from app.runtime_v2.state import RuntimeV2State
 from app.telegram_evidence_collector import TelegramEvidenceCollector
+from openemotion.proto_self_v2.seed_schemas import SEED_SUBJECT_PROFILE
 
 
 def test_assess_risk_level_keeps_existing_keywords():
@@ -78,6 +82,31 @@ def test_build_proto_self_ingress_event_supports_v2_shape():
     assert event["external_outcome"] is None
 
 
+def test_build_proto_self_ingress_event_supports_seed_profile_shape():
+    state = RuntimeV2State(session_id="session:test")
+    state.current_goal = "finish_seed_contract"
+    state.ingress_context = {
+        "proto_self_subject_profile": SEED_SUBJECT_PROFILE,
+        "request_mode": "write",
+        "runtime_action": "execute_task",
+        "resolved_target": {"path": "app.py", "filename": "app.py"},
+    }
+
+    event = build_proto_self_ingress_event(
+        session_id="session:test",
+        turn_id="turn_seed_001",
+        source="telegram",
+        user_input="修改 app.py",
+        state=state,
+    )
+
+    assert resolve_proto_self_subject_profile(state) == SEED_SUBJECT_PROFILE
+    assert event["subject_profile"] == SEED_SUBJECT_PROFILE
+    assert event["seed_event"]["event_type"] == "user_event"
+    assert event["seed_event"]["runtime_summary"]["request_mode"] == "write"
+    assert event["seed_event"]["payload"]["resolved_target_path"] == "app.py"
+
+
 def test_build_external_result_event_preserves_v1_feedback_contract():
     state = RuntimeV2State(session_id="session:test")
     state.current_goal = "执行任务"
@@ -114,6 +143,51 @@ def test_build_external_result_event_supports_v2_shape():
     assert event["event"]["event_type"] == "tool_result"
     assert event["external_outcome"]["success"] is False
     assert event["executed_action_prev"]["kind"] == "tool"
+
+
+def test_build_finalized_result_event_supports_seed_feedback_writeback():
+    state = RuntimeV2State(session_id="session:test")
+    state.current_goal = "finish_seed_contract"
+    state.last_model_action = {"type": "act"}
+    state.ingress_context = {
+        "proto_self_subject_profile": SEED_SUBJECT_PROFILE,
+        "request_mode": "write",
+        "runtime_action": "execute_task",
+        "resolved_target": {"path": "app.py", "filename": "app.py"},
+    }
+    result = RuntimeV2TurnResult(
+        status="completed_verified",
+        state=state,
+        reply=RuntimeV2Reply(
+            reply_text="已完成",
+            delivery_kind="final",
+            status="completed_verified",
+        ),
+    )
+
+    event = build_finalized_result_event(
+        session_id="session:test",
+        turn_id="turn_004",
+        result=result,
+        state=state,
+    )
+
+    assert event is not None
+    assert event["subject_profile"] == SEED_SUBJECT_PROFILE
+    assert event["seed_event"]["event_type"] == "exec_result"
+    assert event["seed_event"]["payload"]["status"] == "success"
+    assert event["seed_event"]["payload"]["details"]["host_terminal_status"] == "completed_verified"
+
+
+def test_build_idle_check_event_requires_seed_profile():
+    state = RuntimeV2State(session_id="session:test")
+    assert build_idle_check_event(session_id="session:test", turn_id="turn_005", state=state) is None
+
+    state.proto_self_subject_profile_override = SEED_SUBJECT_PROFILE
+    idle_event = build_idle_check_event(session_id="session:test", turn_id="turn_005", state=state)
+    assert idle_event is not None
+    assert idle_event["subject_profile"] == SEED_SUBJECT_PROFILE
+    assert idle_event["seed_event"]["event_type"] == "idle_check"
 
 
 def test_build_external_result_event_v1_fallback_does_not_steal_family_or_repair_semantics():
@@ -157,6 +231,11 @@ def test_capture_response_plan_uses_same_payload_shape():
             "post_restore_first_turn": True,
         }
     }
+    state.proto_self_context = {
+        "subject_profile": SEED_SUBJECT_PROFILE,
+        "candidate_actions": [{"action_type": "inspect_file"}],
+        "governor_hint": {"status": "approved"},
+    }
     result = RuntimeV2TurnResult(
         status="completed_verified",
         state=state,
@@ -169,6 +248,9 @@ def test_capture_response_plan_uses_same_payload_shape():
     runtime.capture_response_plan(result=result, evidence_collector=Collector())
     assert captured == build_response_plan_payload(result=result)
     assert captured["restore_observation"]["restore_id"] == "restore_001"
+    assert captured["proto_self_subject_profile"] == SEED_SUBJECT_PROFILE
+    assert captured["candidate_action_types"] == ["inspect_file"]
+    assert captured["proto_self_governor_hint"]["status"] == "approved"
 
 
 def test_process_ingress_prefers_collector_for_trace_capture():
@@ -341,3 +423,69 @@ def test_runtime_loop_captures_proto_self_v2_evidence_in_ledger(monkeypatch, tmp
     assert sample.openemotion_result["schema_version"] == "proto_self.output.v2"
     assert sample.openemotion_trace["schema_version"] == "proto_self.trace.v2"
     assert sample.ledger["openemotion"]["trace_payload"]["schema_version"] == "proto_self.trace.v2"
+
+
+def test_process_finalized_result_and_idle_check_capture_seed_trace():
+    captured = {"stages": []}
+
+    class Adapter:
+        def handle_event(self, event):
+            suffix = event["event_id"].split("_")[-1]
+            return {
+                "schema_version": "proto_self.output.v2",
+                "event_id": event["event_id"],
+                "subject_profile": event.get("subject_profile"),
+                "candidate_actions": [{"action_type": "inspect_file"}] if suffix == "idle" else [],
+                "policy_hint": {"governor_hint": {"status": "approved"}},
+                "response_tendency": {"preferred_mode": "respond"},
+                "reflection_note": None,
+                "trace_payload": {
+                    "schema_version": "proto_self.trace.v2",
+                    "event_id": event["event_id"],
+                    "subject_profile": event.get("subject_profile"),
+                    "exec_result": (event.get("seed_event") or {}).get("payload"),
+                    "candidate_actions": [{"action_type": "inspect_file"}] if suffix == "idle" else [],
+                },
+            }
+
+    class Collector:
+        def capture_openemotion_result(self, result):
+            captured.setdefault("results", []).append(result["event_id"])
+
+        def capture_openemotion_trace(self, trace_payload, *, stage):
+            captured["stages"].append(stage)
+
+    runtime = RuntimeV2ProtoSelfRuntime(adapter=Adapter())
+    state = RuntimeV2State(session_id="session:test")
+    state.proto_self_subject_profile_override = SEED_SUBJECT_PROFILE
+    state.ingress_context = {
+        "proto_self_subject_profile": SEED_SUBJECT_PROFILE,
+        "resolved_target": {"path": "app.py", "filename": "app.py"},
+    }
+    result = RuntimeV2TurnResult(
+        status="completed_verified",
+        state=state,
+        reply=RuntimeV2Reply(
+            reply_text="done",
+            delivery_kind="final",
+            status="completed_verified",
+        ),
+    )
+
+    runtime.process_finalized_result(
+        session_id="session:test",
+        turn_id="turn_final",
+        result=result,
+        state=state,
+        evidence_collector=Collector(),
+    )
+    runtime.process_idle_check(
+        session_id="session:test",
+        turn_id="turn_final",
+        state=state,
+        evidence_collector=Collector(),
+    )
+
+    assert "finalized_result_kernel_trace" in captured["stages"]
+    assert "idle_check_kernel_trace" in captured["stages"]
+    assert state.proto_self_context["last_exec_result"]["status"] == "success"

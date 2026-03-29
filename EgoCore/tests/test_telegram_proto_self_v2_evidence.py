@@ -19,10 +19,11 @@ if "requests" not in sys.modules:
 import app.telegram_bot as telegram_bot_module
 from app.config import load_config
 from app.openemotion_adapter.proto_self_adapter import ProtoSelfAdapter
-from app.runtime_v2.action_protocol import RuntimeV2Action
 from app.runtime_v2.proto_self_runtime import RuntimeV2ProtoSelfRuntime
 from app.telegram_bot import TelegramBot
 from app.telegram_evidence_collector import TelegramEvidenceCollector
+from app.telegram_runtime_result import TelegramTurnReply, TelegramTurnResult
+from openemotion.proto_self_v2.seed_schemas import SEED_SUBJECT_PROFILE
 
 
 class DummyBot:
@@ -97,11 +98,22 @@ async def test_telegram_handle_message_captures_proto_self_v2_trace_in_ledger(mo
 
     bot = TelegramBot(token="dummy", use_runtime_v2=True)
     bot.app = SimpleNamespace(bot=DummyBot())
-    loop = bot._get_runtime_v2_loop()
-    loop.proto_self_runtime = RuntimeV2ProtoSelfRuntime(
+    state = bot._get_runtime_state("telegram:dm:456")
+    state.proto_self_subject_profile_override = SEED_SUBJECT_PROFILE
+
+    runtime = RuntimeV2ProtoSelfRuntime(
         adapter=ProtoSelfAdapter(mirror_dir=tmp_path / "mirror"),
         evidence_collector_factory=lambda: collector,
     )
+    fake_hooks = SimpleNamespace(
+        enabled=True,
+        process_ingress=runtime.process_ingress,
+        process_external_result=runtime.process_external_result,
+        process_finalized_result=runtime.process_finalized_result,
+        process_idle_check=runtime.process_idle_check,
+        capture_response_plan=runtime.capture_response_plan,
+    )
+    monkeypatch.setattr(bot, "_get_native_openemotion_hooks", lambda: fake_hooks)
 
     async def fake_inspect_ingress(_text, _state, llm_client=None):
         return SimpleNamespace(
@@ -118,6 +130,8 @@ async def test_telegram_handle_message_captures_proto_self_v2_trace_in_ledger(mo
         "build_ingress_context",
         lambda ingress, state: {
             "runtime_action": "chat",
+            "request_mode": "write",
+            "resolved_target": {"path": "app.py", "filename": "app.py", "source": "explicit_path"},
             "prediction_snapshot_prev": {"expected_success": True},
             "executed_action_prev": {"kind": "reply", "status": "delivered"},
         },
@@ -137,17 +151,19 @@ async def test_telegram_handle_message_captures_proto_self_v2_trace_in_ledger(mo
         ),
     )
 
-    async def fake_decide(_state):
-        return RuntimeV2Action.from_model_output('{"type":"chat","message":"已收到"}')
+    async def fake_native_run_turn(*, session_key, user_input, ingress_context, proto_self_context):
+        runtime_state = bot._get_runtime_state(session_key)
+        return SimpleNamespace(
+            reply_text="已收到",
+            status="completed_verified",
+            tool_results=[],
+            task_contract=None,
+            next_step_decision=None,
+            verification_result=None,
+            finish_reason="reply",
+        )
 
-    monkeypatch.setattr(loop.decision_engine, "decide", fake_decide)
-
-    async def fake_run_turn(*, session_key, user_input, state):
-        loop._states[session_key] = state
-        result = await loop.run_turn_typed(session_id=session_key, user_input=user_input, source="telegram")
-        return bot.telegram_runtime_fallback_runner.adapt_result(result)
-
-    monkeypatch.setattr(bot.telegram_runtime_fallback_runner, "run_turn", fake_run_turn)
+    bot.native_loop = SimpleNamespace(run_turn=fake_native_run_turn)
 
     update = DummyUpdate("帮我看下 app.py", 5001)
     await bot.handle_message(update, None)
@@ -156,9 +172,19 @@ async def test_telegram_handle_message_captures_proto_self_v2_trace_in_ledger(mo
     assert len(samples) == 1
     sample = samples[0]
     assert sample.normalized_event["schema_version"] == "proto_self.v2"
+    assert sample.normalized_event["subject_profile"] == SEED_SUBJECT_PROFILE
     assert sample.openemotion_result["schema_version"] == "proto_self.output.v2"
+    assert sample.openemotion_result["subject_profile"] == SEED_SUBJECT_PROFILE
+    assert sample.openemotion_result["candidate_actions"]
     assert sample.openemotion_trace["schema_version"] == "proto_self.trace.v2"
+    assert sample.openemotion_trace["subject_profile"] == SEED_SUBJECT_PROFILE
+    assert sample.openemotion_trace["candidate_actions"]
     assert sample.ledger["openemotion"]["trace_payload"]["schema_version"] == "proto_self.trace.v2"
+    assert sample.response_plan["proto_self_subject_profile"] == SEED_SUBJECT_PROFILE
+    assert sample.response_plan["candidate_action_types"]
+    stages = [item["stage"] for item in sample.openemotion_events]
+    assert "finalized_result_kernel_trace" in stages
+    assert "idle_check_kernel_trace" in stages
 
     ledger_paths = list(tmp_path.glob("sample_*/ledger.json"))
     assert len(ledger_paths) == 1
@@ -166,4 +192,6 @@ async def test_telegram_handle_message_captures_proto_self_v2_trace_in_ledger(mo
     assert ledger["channel"] == "telegram"
     assert ledger["source_type"] == "simulated_external_entry"
     assert ledger["openemotion"]["trace_payload"]["schema_version"] == "proto_self.trace.v2"
+    assert ledger["openemotion"]["result"]["subject_profile"] == SEED_SUBJECT_PROFILE
+    assert ledger["host"]["response_plan"]["proto_self_subject_profile"] == SEED_SUBJECT_PROFILE
     assert len(update.message.sent) == 1

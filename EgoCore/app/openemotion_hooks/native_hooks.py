@@ -93,3 +93,39 @@ class NativeOpenEmotionHooks:
         if self.runtime is None:
             return
         self.runtime.capture_response_plan(result=result, evidence_collector=evidence_collector)
+
+    def process_finalized_result(
+        self,
+        *,
+        session_id: str,
+        turn_id: str,
+        result: Any,
+        state: Any,
+        evidence_collector: Optional[Any] = None,
+    ) -> None:
+        if self.runtime is None:
+            return
+        self.runtime.process_finalized_result(
+            session_id=session_id,
+            turn_id=turn_id,
+            result=result,
+            state=state,
+            evidence_collector=evidence_collector,
+        )
+
+    def process_idle_check(
+        self,
+        *,
+        session_id: str,
+        turn_id: str,
+        state: Any,
+        evidence_collector: Optional[Any] = None,
+    ) -> None:
+        if self.runtime is None:
+            return
+        self.runtime.process_idle_check(
+            session_id=session_id,
+            turn_id=turn_id,
+            state=state,
+            evidence_collector=evidence_collector,
+        )

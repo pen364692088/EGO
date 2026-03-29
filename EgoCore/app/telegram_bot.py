@@ -395,6 +395,7 @@ class TelegramBot:
         state.last_verification_result = None
         state.ingress_context = None
         state.proto_self_version_override = None
+        state.proto_self_subject_profile_override = None
         state.proto_self_context = None
         runtime_loop = self.runtime_v2_loop
         if runtime_loop is not None:
@@ -424,6 +425,38 @@ class TelegramBot:
         if self.native_openemotion_hooks is None:
             self.native_openemotion_hooks = NativeOpenEmotionHooks()
         return self.native_openemotion_hooks
+
+    def _finalize_native_openemotion_turn(
+        self,
+        *,
+        session_key: str,
+        turn_id: str,
+        state: RuntimeV2State,
+        turn_result: TelegramTurnResult,
+        native_hooks: Optional[NativeOpenEmotionHooks],
+    ) -> None:
+        if native_hooks is None or not native_hooks.enabled:
+            return
+        collector = get_evidence_collector() if _EVIDENCE_COLLECTOR_AVAILABLE else None
+        try:
+            native_hooks.process_finalized_result(
+                session_id=session_key,
+                turn_id=turn_id,
+                result=turn_result,
+                state=state,
+                evidence_collector=collector,
+            )
+        except Exception as e:
+            logger.exception("native_openemotion.finalized_result.failed session=%s err=%s", session_key, e)
+        try:
+            native_hooks.process_idle_check(
+                session_id=session_key,
+                turn_id=turn_id,
+                state=state,
+                evidence_collector=collector,
+            )
+        except Exception as e:
+            logger.exception("native_openemotion.idle_check.failed session=%s err=%s", session_key, e)
 
     def is_allowed(self, chat_id: int) -> bool:
         """Check if chat ID is allowed to interact with bot."""
@@ -630,17 +663,23 @@ class TelegramBot:
 
         if not tokens or tokens[0] == "status":
             override = state.proto_self_version_override or "default(v2)"
+            subject_profile = state.proto_self_subject_profile_override or "default(core_v2)"
             return CommandResult(
                 success=True,
                 message=(
                     "*Proto-Self Ingress Mode*\n\n"
                     f"- session: `{session_key}`\n"
-                    f"- override: `{override}`\n"
+                    f"- version_override: `{override}`\n"
+                    f"- subject_profile: `{subject_profile}`\n"
                     "- scope: `session-scoped`\n"
                     "- effect: `future runtime_v2 natural-language turns only`\n"
-                    "- boundary: `proto_self.v2 is the default subject writeback mainline; override only changes compatibility fallback`"
+                    "- boundary: `proto_self.v2 is the default subject writeback mainline; seed_v0_2 is explicit profile overlay only`"
                 ),
-                data={"session_key": session_key, "proto_self_version_override": state.proto_self_version_override},
+                data={
+                    "session_key": session_key,
+                    "proto_self_version_override": state.proto_self_version_override,
+                    "proto_self_subject_profile_override": state.proto_self_subject_profile_override,
+                },
             )
 
         if tokens[:2] == ["v2", "on"]:
@@ -650,28 +689,75 @@ class TelegramBot:
                 message=(
                     "*Proto-Self Ingress Mode Updated*\n\n"
                     f"- session: `{session_key}`\n"
-                    "- override: `default(v2)`\n"
+                    "- version_override: `default(v2)`\n"
                     "- next_step: `future runtime_v2 natural-language turns stay on the default v2 mainline`"
                 ),
-                data={"session_key": session_key, "proto_self_version_override": None},
+                data={
+                    "session_key": session_key,
+                    "proto_self_version_override": None,
+                    "proto_self_subject_profile_override": state.proto_self_subject_profile_override,
+                },
             )
 
         if tokens[0] in {"off", "clear", "default"} or tokens[:2] == ["v2", "off"]:
             state.proto_self_version_override = "v1"
+            state.proto_self_subject_profile_override = None
             return CommandResult(
                 success=True,
                 message=(
                     "*Proto-Self Ingress Mode Updated*\n\n"
                     f"- session: `{session_key}`\n"
-                    "- override: `v1`\n"
+                    "- version_override: `v1`\n"
+                    "- subject_profile: `default(core_v2)`\n"
                     "- boundary: `temporary compatibility fallback; default mainline remains v2`"
                 ),
-                data={"session_key": session_key, "proto_self_version_override": "v1"},
+                data={
+                    "session_key": session_key,
+                    "proto_self_version_override": "v1",
+                    "proto_self_subject_profile_override": None,
+                },
+            )
+
+        if tokens[:2] == ["seed", "on"]:
+            state.proto_self_version_override = None
+            state.proto_self_subject_profile_override = "seed_v0_2"
+            return CommandResult(
+                success=True,
+                message=(
+                    "*Proto-Self Ingress Mode Updated*\n\n"
+                    f"- session: `{session_key}`\n"
+                    "- version_override: `default(v2)`\n"
+                    "- subject_profile: `seed_v0_2`\n"
+                    "- next_step: `future runtime_v2 natural-language turns will route through the Seed profile inside proto_self.v2`"
+                ),
+                data={
+                    "session_key": session_key,
+                    "proto_self_version_override": None,
+                    "proto_self_subject_profile_override": "seed_v0_2",
+                },
+            )
+
+        if tokens[:2] == ["seed", "off"]:
+            state.proto_self_subject_profile_override = None
+            return CommandResult(
+                success=True,
+                message=(
+                    "*Proto-Self Ingress Mode Updated*\n\n"
+                    f"- session: `{session_key}`\n"
+                    f"- version_override: `{state.proto_self_version_override or 'default(v2)'}`\n"
+                    "- subject_profile: `default(core_v2)`\n"
+                    "- boundary: `Seed profile disabled; base proto_self.v2 path remains active unless version fallback is set`"
+                ),
+                data={
+                    "session_key": session_key,
+                    "proto_self_version_override": state.proto_self_version_override,
+                    "proto_self_subject_profile_override": None,
+                },
             )
 
         return CommandResult(
             success=False,
-            message="用法: /proto status | /proto v2 on | /proto off",
+            message="用法: /proto status | /proto v2 on | /proto off | /proto seed on | /proto seed off",
             data={"session_key": session_key},
         )
 
@@ -1233,6 +1319,10 @@ class TelegramBot:
             state.ingress_context = dict(state.ingress_context or {})
             state.ingress_context["proto_self_version"] = state.proto_self_version_override
             state.ingress_context["proto_self_version_source"] = "telegram_session_override"
+        if state.proto_self_subject_profile_override:
+            state.ingress_context = dict(state.ingress_context or {})
+            state.ingress_context["proto_self_subject_profile"] = state.proto_self_subject_profile_override
+            state.ingress_context["proto_self_subject_profile_source"] = "telegram_session_override"
         pre_runtime = self.telegram_runtime_bridge.plan_pre_runtime(ingress, state)
         logger.info("runtime_v2.turn.start session=%s text=%r ingress=%s parser_source=%s",
                     session_key, text[:200], ingress,
@@ -1645,6 +1735,13 @@ class TelegramBot:
                     status="waiting_input" if state.waiting_for_user_input else "completed_verified",
                 ),
             )
+            self._finalize_native_openemotion_turn(
+                session_key=session_key,
+                turn_id=turn_id,
+                state=state,
+                turn_result=turn_result,
+                native_hooks=native_hooks,
+            )
             if native_hooks and native_hooks.enabled:
                 try:
                     native_hooks.capture_response_plan(
@@ -1668,6 +1765,13 @@ class TelegramBot:
                     status="blocked",
                 ),
             )
+            self._finalize_native_openemotion_turn(
+                session_key=session_key,
+                turn_id=turn_id,
+                state=state,
+                turn_result=turn_result,
+                native_hooks=native_hooks,
+            )
             if native_hooks and native_hooks.enabled:
                 try:
                     native_hooks.capture_response_plan(
@@ -1689,6 +1793,13 @@ class TelegramBot:
                 status="waiting_input",
                 suppressible=True,
             ),
+        )
+        self._finalize_native_openemotion_turn(
+            session_key=session_key,
+            turn_id=turn_id,
+            state=state,
+            turn_result=turn_result,
+            native_hooks=native_hooks,
         )
         if native_hooks and native_hooks.enabled:
             try:

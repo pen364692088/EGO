@@ -33,6 +33,8 @@ class RuntimeV2DecisionEngine:
         policy_hint = proto_self_context.get("policy_hint", {})
         response_tendency = proto_self_context.get("response_tendency", {})
         reflection_note = proto_self_context.get("reflection_note")
+        candidate_actions = list(proto_self_context.get("candidate_actions") or [])
+        governor_hint = proto_self_context.get("governor_hint") or {}
         
         parts = []
         
@@ -40,13 +42,29 @@ class RuntimeV2DecisionEngine:
             risk_bias = policy_hint.get("risk_bias", "normal")
             closure_bias = policy_hint.get("closure_bias", False)
             ask_preferred = policy_hint.get("ask_preferred", False)
-            
+            subject_profile = policy_hint.get("subject_profile")
+
             if risk_bias == "high":
                 parts.append("- 当前风险评估偏高，谨慎行事")
             if closure_bias:
                 parts.append("- 有未完成任务，优先收尾")
             if ask_preferred:
                 parts.append("- 建议在执行前向用户确认")
+            if subject_profile == "seed_v0_2":
+                parts.append("- 当前 Proto-Self Seed v0.2 已启用；candidate_actions 仅为主体建议，不等于已执行")
+
+        if candidate_actions:
+            action_types = [item.get("action_type") for item in candidate_actions[:3] if item.get("action_type")]
+            if action_types:
+                parts.append(f"- 当前主体候选动作: {', '.join(action_types)}")
+
+        if governor_hint:
+            status = governor_hint.get("status")
+            reason = governor_hint.get("reason")
+            if status:
+                parts.append(f"- 当前主体治理建议: {status}")
+            if reason:
+                parts.append(f"- 治理原因: {reason}")
         
         if response_tendency:
             preferred_mode = response_tendency.get("preferred_mode", "respond")

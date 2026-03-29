@@ -5,6 +5,8 @@ from pathlib import Path
 
 from app.openemotion_adapter.proto_self_state_store import ProtoSelfStateStore
 from openemotion.proto_self import ProtoSelfState
+from openemotion.proto_self_v2.state import ProtoSelfStateV2
+from openemotion.proto_self_v2.seed_state import ProtoSelfSeedState
 
 
 def _make_state(*, revision: int, focus: str) -> ProtoSelfState:
@@ -100,3 +102,29 @@ def test_experiment_state_is_isolated_from_agent_global(tmp_path: Path) -> None:
     assert reloaded_global.self_model.current_focus == "live_global"
     assert reloaded_experiment.revision_counter == 99
     assert reloaded_experiment.self_model.current_focus == "replay_only"
+
+
+def test_state_store_round_trips_v2_seed_state_and_preserves_v1_mirror(tmp_path: Path) -> None:
+    store = ProtoSelfStateStore(
+        root_dir=tmp_path / "proto_self_store",
+        legacy_mirror_dir=tmp_path / "legacy_mirror",
+    )
+    state_v2 = ProtoSelfStateV2.empty()
+    state_v2.revision_counter = 11
+    state_v2.self_model.current_focus = "seed_focus"
+    state_v2.seed_state = ProtoSelfSeedState.empty()
+    state_v2.seed_state.focus_goal.current_focus = "inspect_target"
+    state_v2.seed_state.focus_goal.pending_commitment = "finish_seed_contract"
+    state_v2.seed_state.revision_counter = 4
+
+    store.save_agent_global_state_v2(state_v2, context={"source": "seed_test"})
+    loaded = store.load_agent_global_state_v2()
+
+    assert loaded.revision_counter == 11
+    assert loaded.seed_state is not None
+    assert loaded.seed_state.focus_goal.pending_commitment == "finish_seed_contract"
+    assert store.agent_global_state_v2_path.exists()
+
+    legacy_payload = json.loads(store.legacy_state_path.read_text(encoding="utf-8"))
+    assert legacy_payload["revision_counter"] == 11
+    assert "seed_state" not in legacy_payload

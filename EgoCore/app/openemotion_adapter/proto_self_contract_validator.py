@@ -5,6 +5,8 @@ from functools import lru_cache
 from pathlib import Path
 from typing import Any, Dict
 
+from openemotion.proto_self_v2.seed_schemas import SEED_SUBJECT_PROFILE
+
 
 def _contract_path() -> Path:
     return Path(__file__).resolve().parents[2] / "contracts" / "proto_self_v2.schema.json"
@@ -56,6 +58,8 @@ def validate_proto_self_v2_payload(payload: Dict[str, Any]) -> None:
         import jsonschema  # type: ignore
     except Exception:
         _fallback_validate(payload, schema, "payload")
+        if payload.get("subject_profile") == SEED_SUBJECT_PROFILE and not isinstance(payload.get("seed_event"), dict):
+            raise ValueError("payload.seed_event: required when subject_profile=seed_v0_2")
         return
 
     try:
@@ -64,3 +68,6 @@ def validate_proto_self_v2_payload(payload: Dict[str, Any]) -> None:
         path = ".".join(str(part) for part in exc.absolute_path)
         where = f"payload.{path}" if path else "payload"
         raise ValueError(f"{where}: {exc.message}") from exc
+
+    if payload.get("subject_profile") == SEED_SUBJECT_PROFILE and not isinstance(payload.get("seed_event"), dict):
+        raise ValueError("payload.seed_event: required when subject_profile=seed_v0_2")

@@ -29,6 +29,7 @@ from openemotion.proto_self.kernel import process_event
 from openemotion.proto_self.boundary import assert_no_direct_execution
 from openemotion.proto_self_v2 import (
     SCHEMA_VERSION as V2_SCHEMA_VERSION,
+    ProtoSelfStateV2,
     UpdatePacketV2,
     is_proto_self_v2_payload,
     process_update_packet,
@@ -84,8 +85,14 @@ class ProtoSelfAdapter:
 
         # 2. 加载状态
         logger.info(f"[PSK-ADAPTER-03] Loading state via host store rooted at {self.state_store.root_dir}")
-        state = self.load_latest_state(event_context=event_context)
-        logger.info(f"[PSK-ADAPTER-04] State loaded, cycles={len(state.cycle_store.signatures) if hasattr(state, 'cycle_store') else 'N/A'}")
+        schema_version = proto_self_input.schema_version if isinstance(proto_self_input, UpdatePacketV2) else V1_SCHEMA_VERSION
+        state = self.load_latest_state(event_context=event_context, schema_version=schema_version)
+        cycle_count = 0
+        if isinstance(state, ProtoSelfStateV2):
+            cycle_count = len(state.cycles.signatures)
+        elif hasattr(state, "cycle_store"):
+            cycle_count = len(state.cycle_store.signatures)
+        logger.info(f"[PSK-ADAPTER-04] State loaded, cycles={cycle_count}")
 
         # 3. 调用 kernel
         logger.info(f"[PSK-ADAPTER-05] Calling kernel process_event...")
@@ -105,7 +112,7 @@ class ProtoSelfAdapter:
         # 5. 保存镜像
         mirror_path = self.mirror_dir / "state.json"
         logger.info(f"[PSK-ADAPTER-07] Saving mirror to {mirror_path}")
-        self.save_mirror(state, event_context=event_context)
+        self.save_mirror(state, event_context=event_context, schema_version=schema_version)
         logger.info(f"[PSK-ADAPTER-08] Mirror saved, exists={mirror_path.exists()}")
 
         session_id = event_context.get("session_id")
@@ -134,13 +141,24 @@ class ProtoSelfAdapter:
             return serialize_kernel_output_v2(result)
         return serialize_kernel_output(result)
 
-    def load_latest_state(self, *, event_context: Optional[Dict[str, Any]] = None) -> ProtoSelfState:
+    def load_latest_state(
+        self,
+        *,
+        event_context: Optional[Dict[str, Any]] = None,
+        schema_version: Optional[str] = None,
+    ) -> ProtoSelfState | ProtoSelfStateV2:
         """加载最新状态镜像。"""
-        return self.state_store.load_state(event_context)
+        return self.state_store.load_state(event_context, schema_version=schema_version)
 
-    def save_mirror(self, state: ProtoSelfState, *, event_context: Optional[Dict[str, Any]] = None) -> None:
+    def save_mirror(
+        self,
+        state: ProtoSelfState | ProtoSelfStateV2,
+        *,
+        event_context: Optional[Dict[str, Any]] = None,
+        schema_version: Optional[str] = None,
+    ) -> None:
         """保存状态镜像。"""
-        self.state_store.save_state(state, event_context)
+        self.state_store.save_state(state, event_context, schema_version=schema_version)
 
 
 def normalize_to_kernel_event(egocore_event: Dict[str, Any]) -> KernelEvent:

@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from typing import Any, Dict, Optional
+from typing import Any, Dict, List, Optional
 
 from openemotion.proto_self.schemas import (
     KernelEvent,
@@ -9,6 +9,7 @@ from openemotion.proto_self.schemas import (
     ResponseTendency,
     normalize_safety_context,
 )
+from openemotion.proto_self_v2.seed_schemas import SEED_SUBJECT_PROFILE, seed_event_from_payload
 
 
 SCHEMA_VERSION = "proto_self.v2"
@@ -43,6 +44,8 @@ class UpdatePacketV2:
     event_id: str = ""
     timestamp: str = ""
     event: UpdateEventV2 = field(default_factory=UpdateEventV2)
+    subject_profile: Optional[str] = None
+    seed_event: Optional[Dict[str, Any]] = None
     executed_action_prev: Optional[Dict[str, Any]] = None
     external_outcome: Optional[Dict[str, Any]] = None
     runtime_summary: Dict[str, Any] = field(default_factory=dict)
@@ -54,6 +57,8 @@ class UpdatePacketV2:
 
     def __post_init__(self) -> None:
         self.safety_context = normalize_safety_context(self.safety_context)
+        if self.seed_event is not None and not isinstance(self.seed_event, dict):
+            raise TypeError("seed_event must be a dict when provided")
 
     def to_dict(self) -> Dict[str, Any]:
         return {
@@ -61,6 +66,8 @@ class UpdatePacketV2:
             "event_id": self.event_id,
             "timestamp": self.timestamp,
             "event": self.event.to_dict(),
+            "subject_profile": self.subject_profile,
+            "seed_event": self.seed_event,
             "executed_action_prev": self.executed_action_prev,
             "external_outcome": self.external_outcome,
             "runtime_summary": self.runtime_summary,
@@ -79,6 +86,8 @@ class UpdatePacketV2:
             runtime_summary["intervention_context"] = self.intervention_context
         if self.prediction_snapshot_prev:
             runtime_summary["prediction_snapshot_prev"] = self.prediction_snapshot_prev
+        if self.subject_profile:
+            runtime_summary["subject_profile"] = self.subject_profile
         return KernelEvent(
             event_id=self.event_id,
             timestamp=self.timestamp,
@@ -93,6 +102,13 @@ class UpdatePacketV2:
             safety_context=self.safety_context,
             external_result=self.external_outcome,
         )
+
+    def to_seed_kernel_event(self):
+        if self.subject_profile != SEED_SUBJECT_PROFILE:
+            return None
+        if self.seed_event:
+            return seed_event_from_payload(self.seed_event)
+        return None
 
 
 def update_packet_from_payload(payload: Dict[str, Any]) -> UpdatePacketV2:
@@ -116,6 +132,8 @@ def update_packet_from_payload(payload: Dict[str, Any]) -> UpdatePacketV2:
             user_intent=event_payload.get("user_intent"),
             raw_text=event_payload.get("raw_text"),
         ),
+        subject_profile=payload.get("subject_profile"),
+        seed_event=dict(payload.get("seed_event") or {}) or None,
         executed_action_prev=payload.get("executed_action_prev"),
         external_outcome=payload.get("external_outcome", payload.get("external_result")),
         runtime_summary=payload.get("runtime_summary", {}),
@@ -131,12 +149,15 @@ def update_packet_from_payload(payload: Dict[str, Any]) -> UpdatePacketV2:
 class KernelOutputV2:
     schema_version: str = OUTPUT_SCHEMA_VERSION
     event_id: str = ""
+    subject_profile: Optional[str] = None
     identity_delta: Dict[str, Any] = field(default_factory=dict)
     self_model_delta: Dict[str, Any] = field(default_factory=dict)
     drives_delta: Dict[str, Any] = field(default_factory=dict)
     cycles_delta: Dict[str, Any] = field(default_factory=dict)
     predictive_reflective_delta: Dict[str, Any] = field(default_factory=dict)
+    seed_state_delta: Dict[str, Any] = field(default_factory=dict)
     memory_update: Dict[str, Any] = field(default_factory=dict)
+    candidate_actions: List[Dict[str, Any]] = field(default_factory=list)
     reflection_note: Optional[ReflectionNote] = None
     policy_hint: Dict[str, Any] = field(default_factory=dict)
     response_tendency: Optional[ResponseTendency] = None
@@ -147,12 +168,15 @@ class KernelOutputV2:
         return {
             "schema_version": self.schema_version,
             "event_id": self.event_id,
+            "subject_profile": self.subject_profile,
             "identity_delta": self.identity_delta,
             "self_model_delta": self.self_model_delta,
             "drives_delta": self.drives_delta,
             "cycles_delta": self.cycles_delta,
             "predictive_reflective_delta": self.predictive_reflective_delta,
+            "seed_state_delta": self.seed_state_delta,
             "memory_update": self.memory_update,
+            "candidate_actions": self.candidate_actions,
             "reflection_note": self.reflection_note.to_dict() if self.reflection_note else None,
             "policy_hint": self.policy_hint,
             "response_tendency": self.response_tendency.to_dict() if self.response_tendency else None,

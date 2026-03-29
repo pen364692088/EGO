@@ -212,7 +212,7 @@ async def test_proto_command_enables_v2_override():
     await bot.handle_command(DummyUpdate(), None)
 
     assert state.proto_self_version_override is None
-    assert "override: \\`default(v2)\\`" in DummyUpdate.message.last_text
+    assert "version\\_override: \\`default(v2)\\`" in DummyUpdate.message.last_text
 
 
 @pytest.mark.asyncio
@@ -246,4 +246,74 @@ async def test_proto_command_clears_override():
     await bot.handle_command(DummyUpdate(), None)
 
     assert state.proto_self_version_override == "v1"
-    assert "override: \\`v1\\`" in DummyUpdate.message.last_text
+    assert "version\\_override: \\`v1\\`" in DummyUpdate.message.last_text
+
+
+@pytest.mark.asyncio
+async def test_proto_command_enables_seed_profile():
+    bot = TelegramBot(token="test-token", use_runtime_v2=True)
+    state = bot._get_runtime_state("telegram:dm:456")
+
+    class DummyMessage:
+        text = "/proto seed on"
+        message_id = 25
+        reply_to_message = None
+        date = datetime.now(timezone.utc)
+        last_text = None
+
+        async def reply_text(self, text, parse_mode=None):
+            self.last_text = text
+
+    class DummyChat:
+        id = 123
+        type = "private"
+
+    class DummyUser:
+        id = 456
+        username = "moonlight"
+
+    class DummyUpdate:
+        message = DummyMessage()
+        effective_chat = DummyChat()
+        effective_user = DummyUser()
+
+    await bot.handle_command(DummyUpdate(), None)
+
+    assert state.proto_self_version_override is None
+    assert state.proto_self_subject_profile_override == "seed_v0_2"
+    assert "subject\\_profile: \\`seed\\_v0\\_2\\`" in DummyUpdate.message.last_text
+
+
+@pytest.mark.asyncio
+async def test_proto_command_disables_seed_profile():
+    bot = TelegramBot(token="test-token", use_runtime_v2=True)
+    state = bot._get_runtime_state("telegram:dm:456")
+    state.proto_self_subject_profile_override = "seed_v0_2"
+
+    class DummyMessage:
+        text = "/proto seed off"
+        message_id = 26
+        reply_to_message = None
+        date = datetime.now(timezone.utc)
+        last_text = None
+
+        async def reply_text(self, text, parse_mode=None):
+            self.last_text = text
+
+    class DummyChat:
+        id = 123
+        type = "private"
+
+    class DummyUser:
+        id = 456
+        username = "moonlight"
+
+    class DummyUpdate:
+        message = DummyMessage()
+        effective_chat = DummyChat()
+        effective_user = DummyUser()
+
+    await bot.handle_command(DummyUpdate(), None)
+
+    assert state.proto_self_subject_profile_override is None
+    assert "subject\\_profile: \\`default(core\\_v2)\\`" in DummyUpdate.message.last_text

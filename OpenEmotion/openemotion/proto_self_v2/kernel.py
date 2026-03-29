@@ -6,7 +6,13 @@ from typing import Any, Dict
 
 from openemotion.proto_self.kernel import process_event as process_event_v1
 from openemotion.proto_self.state import ProtoSelfState
-from openemotion.proto_self_v2.schemas import KernelOutputV2, UpdatePacketV2
+from openemotion.proto_self_v2.schemas import (
+    KernelOutputV2,
+    UpdatePacketV2,
+)
+from openemotion.proto_self_v2.seed_kernel import ProtoSelfSeedKernel
+from openemotion.proto_self_v2.seed_schemas import SEED_SUBJECT_PROFILE
+from openemotion.proto_self_v2.seed_state import ProtoSelfSeedState
 from openemotion.proto_self_v2.state import ProtoSelfStateV2
 from openemotion.proto_self_v2.trace_types import build_trace_payload_v2
 
@@ -16,12 +22,13 @@ def _stable_hash(payload: Dict[str, Any]) -> str:
     return hashlib.sha256(raw.encode("utf-8")).hexdigest()
 
 
-def _build_constraint_summary(state: ProtoSelfStateV2) -> Dict[str, Any]:
+def _build_constraint_summary(state: ProtoSelfStateV2, *, subject_profile: str | None) -> Dict[str, Any]:
     return {
         "identity_confidence": state.identity.identity_confidence,
         "core_boundaries_count": len(state.identity.core_boundaries),
         "current_mode": state.self_model.current_mode,
         "stable_preferences_count": len(state.identity.stable_preferences),
+        "subject_profile": subject_profile,
     }
 
 
@@ -36,6 +43,7 @@ def _build_retrieval_summary(state: ProtoSelfStateV2, packet: UpdatePacketV2) ->
         "cycle_count": len(state.cycles.signatures),
         "recent_episode_count": len(state.trace_buffer),
         "matched_cycle_ids": matched_cycle_ids[:5],
+        "seed_recent_outcomes_count": len(state.seed_state.recent_outcomes) if state.seed_state else 0,
     }
 
 
@@ -47,24 +55,98 @@ def _build_predictive_reflective_delta(packet: UpdatePacketV2, reflection_note: 
     }
 
 
-def process_update_packet(state: ProtoSelfState, packet: UpdatePacketV2) -> KernelOutputV2:
-    revision_before = state.revision_counter
-    packet_dict = packet.to_dict()
-    state_v2_before = ProtoSelfStateV2.from_v1(
+def _coerce_state_v2(state: ProtoSelfState | ProtoSelfStateV2, packet: UpdatePacketV2) -> ProtoSelfStateV2:
+    if isinstance(state, ProtoSelfStateV2):
+        return state
+    return ProtoSelfStateV2.from_v1(
         state,
         prediction_snapshot_prev=packet.prediction_snapshot_prev,
     )
-    retrieval_summary = _build_retrieval_summary(state_v2_before, packet)
-    constraint_summary = _build_constraint_summary(state_v2_before)
 
+
+def _process_seed_profile(state_v2: ProtoSelfStateV2, packet: UpdatePacketV2) -> KernelOutputV2:
+    seed_event = packet.to_seed_kernel_event()
+    if seed_event is None:
+        raise ValueError("seed_v0_2 profile requires seed_event")
+
+    seed_state_before = state_v2.seed_state or ProtoSelfSeedState.empty()
+    state_v2.seed_state = seed_state_before.copy()
+    revision_before = state_v2.seed_state.revision_counter
+    update_packet_hash = _stable_hash(packet.to_dict())
+    retrieval_summary = _build_retrieval_summary(state_v2, packet)
+    constraint_summary = _build_constraint_summary(state_v2, subject_profile=SEED_SUBJECT_PROFILE)
+
+    seed_kernel = ProtoSelfSeedKernel()
+    seed_result = seed_kernel.process_event(state_v2.seed_state, seed_event)
+    state_v2.revision_counter = max(state_v2.revision_counter, state_v2.seed_state.revision_counter)
+    revision_after = state_v2.seed_state.revision_counter
+
+    trace_payload = build_trace_payload_v2(
+        event_id=packet.event_id,
+        subject_profile=SEED_SUBJECT_PROFILE,
+        update_packet_hash=update_packet_hash,
+        state_revision_before=revision_before,
+        state_revision_after=revision_after,
+        retrieval_summary=retrieval_summary,
+        constraint_summary=constraint_summary,
+        perceived=seed_result.trace_payload.get("perceived", {}),
+        identity_delta={},
+        self_model_delta={},
+        drives_delta={},
+        cycles_delta={},
+        predictive_reflective_delta={},
+        reflection_note=seed_result.reflection_note.to_dict() if seed_result.reflection_note else None,
+        policy_hint=seed_result.policy_hint,
+        response_tendency=seed_result.response_tendency.to_dict() if seed_result.response_tendency else None,
+        candidate_actions=seed_result.candidate_actions,
+        governor_hint=seed_result.trace_payload.get("governor_hint", {}),
+        executed_action=seed_result.trace_payload.get("executed_action"),
+        exec_result=seed_result.trace_payload.get("exec_result"),
+        seed_state_delta=seed_result.state_delta,
+        seed_state_snapshot=seed_result.trace_payload.get("seed_state_snapshot", {}),
+        timestamp=packet.timestamp,
+        legacy_trace_payload=seed_result.trace_payload,
+    )
+    return KernelOutputV2(
+        event_id=packet.event_id,
+        subject_profile=SEED_SUBJECT_PROFILE,
+        seed_state_delta=seed_result.state_delta,
+        memory_update={"seed_state_updated": True},
+        candidate_actions=seed_result.candidate_actions,
+        reflection_note=seed_result.reflection_note,
+        policy_hint=seed_result.policy_hint,
+        response_tendency=seed_result.response_tendency,
+        confidence_meta={
+            "seed_identity_confidence": state_v2.seed_state.identity_light.identity_confidence,
+            "seed_revision_counter": state_v2.seed_state.revision_counter,
+            "seed_recent_outcomes_count": len(state_v2.seed_state.recent_outcomes),
+        },
+        trace_payload=trace_payload,
+    )
+
+
+def _process_default_v2(state_v2: ProtoSelfStateV2, packet: UpdatePacketV2) -> KernelOutputV2:
+    revision_before = state_v2.revision_counter
+    packet_dict = packet.to_dict()
+    retrieval_summary = _build_retrieval_summary(state_v2, packet)
+    constraint_summary = _build_constraint_summary(state_v2, subject_profile=packet.subject_profile)
+
+    v1_state = state_v2.to_v1()
     v1_event = packet.to_v1_kernel_event()
-    v1_output = process_event_v1(state, v1_event)
-    revision_after = state.revision_counter
+    v1_output = process_event_v1(v1_state, v1_event)
+    revision_after = v1_state.revision_counter
 
     reflection_dict = v1_output.reflection_note.to_dict() if v1_output.reflection_note else None
     predictive_reflective_delta = _build_predictive_reflective_delta(packet, reflection_dict)
+    state_v2.apply_v1_state(
+        v1_state,
+        prediction_snapshot_prev=packet.prediction_snapshot_prev,
+        reflection_note=reflection_dict,
+        mismatch_summary=predictive_reflective_delta,
+    )
     trace_payload = build_trace_payload_v2(
         event_id=packet.event_id,
+        subject_profile=packet.subject_profile,
         update_packet_hash=_stable_hash(packet_dict),
         state_revision_before=revision_before,
         state_revision_after=revision_after,
@@ -84,6 +166,7 @@ def process_update_packet(state: ProtoSelfState, packet: UpdatePacketV2) -> Kern
     )
     return KernelOutputV2(
         event_id=packet.event_id,
+        subject_profile=packet.subject_profile,
         identity_delta=v1_output.identity_state_delta,
         self_model_delta=v1_output.self_model_delta,
         drives_delta=v1_output.appraisal_state_delta,
@@ -96,3 +179,10 @@ def process_update_packet(state: ProtoSelfState, packet: UpdatePacketV2) -> Kern
         confidence_meta=v1_output.confidence_meta,
         trace_payload=trace_payload,
     )
+
+
+def process_update_packet(state: ProtoSelfState | ProtoSelfStateV2, packet: UpdatePacketV2) -> KernelOutputV2:
+    state_v2 = _coerce_state_v2(state, packet)
+    if packet.subject_profile == SEED_SUBJECT_PROFILE:
+        return _process_seed_profile(state_v2, packet)
+    return _process_default_v2(state_v2, packet)

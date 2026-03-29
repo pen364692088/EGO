@@ -22,6 +22,7 @@ from pathlib import Path
 from typing import Any, Dict, Optional
 
 from openemotion.proto_self import ProtoSelfState
+from openemotion.proto_self_v2.state import ProtoSelfStateV2
 
 
 def _now_iso() -> str:
@@ -60,6 +61,10 @@ class ProtoSelfStateStore:
     @property
     def agent_global_state_path(self) -> Path:
         return self.agent_global_dir / "proto_self_state.v1.json"
+
+    @property
+    def agent_global_state_v2_path(self) -> Path:
+        return self.agent_global_dir / "proto_self_state.v2.json"
 
     @property
     def legacy_state_path(self) -> Path:
@@ -103,16 +108,37 @@ class ProtoSelfStateStore:
             return "experiment", experiment_id
         return "agent_global", None
 
-    def load_state(self, context: Optional[Dict[str, Any]] = None) -> ProtoSelfState:
+    def load_state(
+        self,
+        context: Optional[Dict[str, Any]] = None,
+        *,
+        schema_version: Optional[str] = None,
+    ) -> ProtoSelfState | ProtoSelfStateV2:
         scope, experiment_id = self._resolve_scope(context)
         if scope == "experiment" and experiment_id:
+            if schema_version == "proto_self.v2":
+                return self.load_experiment_state_v2(experiment_id)
             return self.load_experiment_state(experiment_id)
+        if schema_version == "proto_self.v2":
+            return self.load_agent_global_state_v2()
         return self.load_agent_global_state()
 
-    def save_state(self, state: ProtoSelfState, context: Optional[Dict[str, Any]] = None) -> None:
+    def save_state(
+        self,
+        state: ProtoSelfState | ProtoSelfStateV2,
+        context: Optional[Dict[str, Any]] = None,
+        *,
+        schema_version: Optional[str] = None,
+    ) -> None:
         scope, experiment_id = self._resolve_scope(context)
         if scope == "experiment" and experiment_id:
-            self.save_experiment_state(experiment_id, state)
+            if schema_version == "proto_self.v2":
+                self.save_experiment_state_v2(experiment_id, state)
+            else:
+                self.save_experiment_state(experiment_id, state)
+            return
+        if schema_version == "proto_self.v2":
+            self.save_agent_global_state_v2(state, context=context)
             return
         self.save_agent_global_state(state, context=context)
 
@@ -139,6 +165,37 @@ class ProtoSelfStateStore:
             "scope": "agent_global",
             "updated_at": _now_iso(),
             "authority": "openemotion.proto_self",
+            "host_role": "mirror_cache",
+            "last_context": context or {},
+        }
+        self._write_json(self.agent_global_dir / "manifest.json", metadata)
+
+    def load_agent_global_state_v2(self) -> ProtoSelfStateV2:
+        data = self._read_json(self.agent_global_state_v2_path)
+        if data is not None:
+            return ProtoSelfStateV2.from_dict(data)
+        return ProtoSelfStateV2.from_v1(self.load_agent_global_state())
+
+    def save_agent_global_state_v2(
+        self,
+        state: ProtoSelfState | ProtoSelfStateV2,
+        *,
+        context: Optional[Dict[str, Any]] = None,
+    ) -> None:
+        if isinstance(state, ProtoSelfState):
+            state_v2 = ProtoSelfStateV2.from_v1(state)
+        else:
+            state_v2 = state
+        v2_payload = state_v2.to_dict()
+        v1_payload = state_v2.to_v1().to_dict()
+        self._write_json(self.agent_global_state_v2_path, v2_payload)
+        self._write_json(self.agent_global_state_path, v1_payload)
+        # Compatibility-only mirror for existing scripts and current mainline wiring.
+        self._write_json(self.legacy_state_path, v1_payload)
+        metadata = {
+            "scope": "agent_global",
+            "updated_at": _now_iso(),
+            "authority": "openemotion.proto_self_v2",
             "host_role": "mirror_cache",
             "last_context": context or {},
         }
@@ -249,6 +306,10 @@ class ProtoSelfStateStore:
         }
         self._write_json(experiment_dir / "manifest.json", manifest)
         self._write_json(experiment_dir / "proto_self_state.v1.json", deepcopy(state.to_dict()))
+        self._write_json(
+            experiment_dir / "proto_self_state.v2.json",
+            ProtoSelfStateV2.from_v1(state).to_dict(),
+        )
 
     def load_experiment_state(self, experiment_id: str) -> ProtoSelfState:
         path = self._experiment_dir(experiment_id) / "proto_self_state.v1.json"
@@ -270,3 +331,37 @@ class ProtoSelfStateStore:
         manifest["updated_at"] = _now_iso()
         self._write_json(experiment_dir / "manifest.json", manifest)
         self._write_json(experiment_dir / "proto_self_state.v1.json", state.to_dict())
+        self._write_json(
+            experiment_dir / "proto_self_state.v2.json",
+            ProtoSelfStateV2.from_v1(state).to_dict(),
+        )
+
+    def load_experiment_state_v2(self, experiment_id: str) -> ProtoSelfStateV2:
+        experiment_dir = self._experiment_dir(experiment_id)
+        path = experiment_dir / "proto_self_state.v2.json"
+        data = self._read_json(path)
+        if data is not None:
+            return ProtoSelfStateV2.from_dict(data)
+        return ProtoSelfStateV2.from_v1(self.load_experiment_state(experiment_id))
+
+    def save_experiment_state_v2(
+        self,
+        experiment_id: str,
+        state: ProtoSelfState | ProtoSelfStateV2,
+    ) -> None:
+        experiment_dir = self._experiment_dir(experiment_id)
+        manifest = self._read_json(experiment_dir / "manifest.json") or {
+            "experiment_id": experiment_id,
+            "scope": "experiment",
+            "created_at": _now_iso(),
+            "base_scope": "agent_global",
+            "host_role": "isolated_replay_run",
+        }
+        manifest["updated_at"] = _now_iso()
+        self._write_json(experiment_dir / "manifest.json", manifest)
+        if isinstance(state, ProtoSelfState):
+            state_v2 = ProtoSelfStateV2.from_v1(state)
+        else:
+            state_v2 = state
+        self._write_json(experiment_dir / "proto_self_state.v2.json", state_v2.to_dict())
+        self._write_json(experiment_dir / "proto_self_state.v1.json", state_v2.to_v1().to_dict())

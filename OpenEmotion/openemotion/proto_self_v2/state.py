@@ -12,6 +12,7 @@ from openemotion.proto_self.state import (
     ProtoSelfState,
     SelfModel,
 )
+from openemotion.proto_self_v2.seed_state import ProtoSelfSeedState
 
 
 @dataclass
@@ -38,6 +39,7 @@ class ProtoSelfStateV2:
     cycles: CycleStore = field(default_factory=CycleStore)
     predictive_reflective: PredictiveReflectiveState = field(default_factory=PredictiveReflectiveState)
     trace_buffer: Deque[Dict[str, Any]] = field(default_factory=lambda: deque(maxlen=100))
+    seed_state: Optional[ProtoSelfSeedState] = None
     revision_counter: int = 0
 
     @classmethod
@@ -66,6 +68,42 @@ class ProtoSelfStateV2:
             revision_counter=state.revision_counter,
         )
 
+    @classmethod
+    def from_dict(cls, raw: Dict[str, Any]) -> "ProtoSelfStateV2":
+        trace_buffer = deque(list(raw.get("trace_buffer") or []), maxlen=100)
+        seed_state_raw = raw.get("seed_state")
+        return cls(
+            identity=IdentityInvariants.from_dict(dict(raw.get("identity") or {})),
+            self_model=SelfModel.from_dict(dict(raw.get("self_model") or {})),
+            drives=DriveField.from_dict(dict(raw.get("drives") or {})),
+            cycles=CycleStore.from_dict(dict(raw.get("cycles") or {})),
+            predictive_reflective=PredictiveReflectiveState(
+                expectation_snapshot=dict((raw.get("predictive_reflective") or {}).get("expectation_snapshot") or {}),
+                mismatch_summary=dict((raw.get("predictive_reflective") or {}).get("mismatch_summary") or {}),
+                reflection_state=(raw.get("predictive_reflective") or {}).get("reflection_state"),
+                revision_counter=int((raw.get("predictive_reflective") or {}).get("revision_counter", 0)),
+            ),
+            trace_buffer=trace_buffer,
+            seed_state=ProtoSelfSeedState.from_dict(dict(seed_state_raw or {})) if seed_state_raw else None,
+            revision_counter=int(raw.get("revision_counter", 0)),
+        )
+
+    @classmethod
+    def empty(cls) -> "ProtoSelfStateV2":
+        return cls()
+
+    def to_dict(self) -> Dict[str, Any]:
+        return {
+            "identity": self.identity.to_dict(),
+            "self_model": self.self_model.to_dict(),
+            "drives": self.drives.to_dict(),
+            "cycles": self.cycles.to_dict(),
+            "predictive_reflective": self.predictive_reflective.to_dict(),
+            "trace_buffer": list(self.trace_buffer),
+            "seed_state": self.seed_state.to_dict() if self.seed_state else None,
+            "revision_counter": self.revision_counter,
+        }
+
     def to_v1(self) -> ProtoSelfState:
         return ProtoSelfState(
             identity=self.identity,
@@ -78,3 +116,25 @@ class ProtoSelfStateV2:
             ),
             revision_counter=self.revision_counter,
         )
+
+    def apply_v1_state(
+        self,
+        state: ProtoSelfState,
+        *,
+        prediction_snapshot_prev: Optional[Dict[str, Any]] = None,
+        reflection_note: Optional[Dict[str, Any]] = None,
+        mismatch_summary: Optional[Dict[str, Any]] = None,
+    ) -> None:
+        updated = self.from_v1(
+            state,
+            prediction_snapshot_prev=prediction_snapshot_prev,
+            reflection_note=reflection_note,
+            mismatch_summary=mismatch_summary,
+        )
+        self.identity = updated.identity
+        self.self_model = updated.self_model
+        self.drives = updated.drives
+        self.cycles = updated.cycles
+        self.predictive_reflective = updated.predictive_reflective
+        self.trace_buffer = updated.trace_buffer
+        self.revision_counter = updated.revision_counter

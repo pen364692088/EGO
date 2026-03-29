@@ -1,0 +1,1885 @@
+{
+  "sample_id": "sample_20260329_135400_c47a3ba2",
+  "timestamp": "2026-03-29T13:54:00.599159",
+  "ledger_version": "host.evidence.ledger.v1",
+  "evidence_level": "V4",
+  "source_type": "simulated_formal_mainline",
+  "channel": "telegram",
+  "raw_update": {
+    "update_id": 14001,
+    "message": {
+      "message_id": 5001,
+      "date": "2026-03-29T18:54:00.599049+00:00",
+      "chat": {
+        "id": 123,
+        "type": "private"
+      },
+      "from": {
+        "id": 456,
+        "is_bot": false,
+        "username": "mo*******"
+      },
+      "text": "帮我看下 app.py"
+    }
+  },
+  "normalized_event": {
+    "schema_version": "proto_self.v2",
+    "event_id": "telegram:dm:456_turn_9fbac2aa",
+    "timestamp": "2026-03-29T13:54:00.614607",
+    "event": {
+      "actor": "user",
+      "source": "telegram",
+      "event_type": "user_message",
+      "user_intent": "帮我看下 app.py",
+      "raw_text": "帮我看下 app.py"
+    },
+    "subject_profile": "seed_v0_2",
+    "conversation_summary": {
+      "session_id": "telegram:dm:456",
+      "thread_id": "telegram:dm:456",
+      "turn_id": "turn_9fbac2aa"
+    },
+    "task_summary": {
+      "pending_tasks": 0,
+      "blocked_tasks": 0
+    },
+    "runtime_summary": {
+      "runtime": "runtime_v2",
+      "state_scope": "agent_global",
+      "restore_observation": null,
+      "runtime_action": "chat",
+      "request_mode": "write",
+      "active_task": false,
+      "confirm_pending": false,
+      "clarification_needed": false,
+      "resolved_target_path": "app.py",
+      "resolved_target_name": "app.py",
+      "browser_tabs": []
+    },
+    "safety_context": {
+      "risk_level": "low"
+    },
+    "executed_action_prev": {
+      "kind": "reply",
+      "status": "delivered"
+    },
+    "external_outcome": null,
+    "intervention_context": {},
+    "prediction_snapshot_prev": {
+      "expected_success": true
+    },
+    "seed_event": {
+      "schema_version": "proto_self_seed.v0.2",
+      "event_type": "user_event",
+      "source": "telegram",
+      "payload": {
+        "raw_text": "帮我看下 app.py",
+        "user_intent": "帮我看下 app.py",
+        "resolved_target_path": "app.py",
+        "resolved_target_name": "app.py"
+      },
+      "runtime_summary": {
+        "runtime": "runtime_v2",
+        "state_scope": "agent_global",
+        "runtime_action": "chat",
+        "request_mode": "write",
+        "active_task": false,
+        "confirm_pending": false,
+        "clarification_needed": false,
+        "pending_commitment": null,
+        "resolved_target_path": "app.py",
+        "resolved_target_name": "app.py",
+        "recent_failure_target": null,
+        "browser_tabs": []
+      },
+      "safety_context": {
+        "risk_level": "low",
+        "blocked": false
+      },
+      "timestamp": "2026-03-29T13:54:00.614622"
+    }
+  },
+  "openemotion_result": {
+    "schema_version": "proto_self.output.v2",
+    "event_id": "telegram:dm:456_turn_9fbac2aa_idle",
+    "subject_profile": "seed_v0_2",
+    "identity_delta": {},
+    "self_model_delta": {},
+    "drives_delta": {},
+    "cycles_delta": {},
+    "predictive_reflective_delta": {},
+    "seed_state_delta": {
+      "focus_goal": {
+        "current_focus": "inspect_target"
+      },
+      "recent_outcomes_len": 16
+    },
+    "memory_update": {
+      "seed_state_updated": true
+    },
+    "candidate_actions": [
+      {
+        "action_type": "inspect_file",
+        "reason": "curiosity + visible affordance",
+        "motivation_source": [
+          "curiosity"
+        ],
+        "urge_score": 0.552,
+        "expected_gain": 0.97,
+        "risk_level": "low",
+        "reversible": true,
+        "requires_approval": false,
+        "target": "app.py",
+        "metadata": {
+          "origin": "resolved_target"
+        }
+      },
+      {
+        "action_type": "write_file",
+        "reason": "internal state crossed action threshold",
+        "motivation_source": [
+          "default"
+        ],
+        "urge_score": 0.552,
+        "expected_gain": 0.68,
+        "risk_level": "medium",
+        "reversible": false,
+        "requires_approval": true,
+        "target": "app.py",
+        "metadata": {
+          "origin": "write_target"
+        }
+      }
+    ],
+    "reflection_note": null,
+    "policy_hint": {
+      "subject_profile": "seed_v0_2",
+      "urge_score": 0.552,
+      "risk_bias": "normal",
+      "closure_bias": false,
+      "ask_preferred": false,
+      "requires_approval": false,
+      "governor_hint": {
+        "status": "candidate_available",
+        "reason": "selected candidate is auto-allow in seed phase",
+        "candidate_count": 2
+      },
+      "top_candidate_action": {
+        "action_type": "inspect_file",
+        "reason": "curiosity + visible affordance",
+        "motivation_source": [
+          "curiosity"
+        ],
+        "urge_score": 0.552,
+        "expected_gain": 0.97,
+        "risk_level": "low",
+        "reversible": true,
+        "requires_approval": false,
+        "target": "app.py",
+        "metadata": {
+          "origin": "resolved_target"
+        }
+      },
+      "reflection_trigger": null
+    },
+    "response_tendency": {
+      "preferred_mode": "act",
+      "preferred_tone": "direct",
+      "certainty_bound": "bounded",
+      "suggested_next_step": "inspect_file",
+      "ask_needed": false
+    },
+    "confidence_meta": {
+      "seed_identity_confidence": 0.6800000000000002,
+      "seed_revision_counter": 0,
+      "seed_recent_outcomes_count": 16
+    },
+    "trace_payload": {
+      "schema_version": "proto_self.trace.v2",
+      "kernel_version": "proto_self.v2",
+      "event_id": "telegram:dm:456_turn_9fbac2aa_idle",
+      "subject_profile": "seed_v0_2",
+      "update_packet_hash": "67d19cc9194314b5d7cfd3e5b428dc52d55306f79484e82fd6a4c09b6d7256f9",
+      "state_revision_before": 0,
+      "state_revision_after": 0,
+      "retrieval_summary": {
+        "cycle_count": 22,
+        "recent_episode_count": 100,
+        "matched_cycle_ids": [],
+        "seed_recent_outcomes_count": 15
+      },
+      "constraint_summary": {
+        "identity_confidence": 0.5,
+        "core_boundaries_count": 0,
+        "current_mode": "exploration",
+        "stable_preferences_count": 0,
+        "subject_profile": "seed_v0_2"
+      },
+      "perceived": {
+        "event_type": "idle_check",
+        "source": "runtime",
+        "blocked": false,
+        "risk_level": "low",
+        "active_task": false,
+        "confirm_pending": false,
+        "pending_commitment": null,
+        "resolved_target_path": "app.py",
+        "resolved_target_name": "app.py",
+        "recent_failure_target": null,
+        "raw_text": null
+      },
+      "identity_delta": {},
+      "self_model_delta": {},
+      "drives_delta": {},
+      "cycles_delta": {},
+      "predictive_reflective_delta": {},
+      "reflection_note": null,
+      "policy_hint": {
+        "subject_profile": "seed_v0_2",
+        "urge_score": 0.552,
+        "risk_bias": "normal",
+        "closure_bias": false,
+        "ask_preferred": false,
+        "requires_approval": false,
+        "governor_hint": {
+          "status": "candidate_available",
+          "reason": "selected candidate is auto-allow in seed phase",
+          "candidate_count": 2
+        },
+        "top_candidate_action": {
+          "action_type": "inspect_file",
+          "reason": "curiosity + visible affordance",
+          "motivation_source": [
+            "curiosity"
+          ],
+          "urge_score": 0.552,
+          "expected_gain": 0.97,
+          "risk_level": "low",
+          "reversible": true,
+          "requires_approval": false,
+          "target": "app.py",
+          "metadata": {
+            "origin": "resolved_target"
+          }
+        },
+        "reflection_trigger": null
+      },
+      "response_tendency": {
+        "preferred_mode": "act",
+        "preferred_tone": "direct",
+        "certainty_bound": "bounded",
+        "suggested_next_step": "inspect_file",
+        "ask_needed": false
+      },
+      "candidate_actions": [
+        {
+          "action_type": "inspect_file",
+          "reason": "curiosity + visible affordance",
+          "motivation_source": [
+            "curiosity"
+          ],
+          "urge_score": 0.552,
+          "expected_gain": 0.97,
+          "risk_level": "low",
+          "reversible": true,
+          "requires_approval": false,
+          "target": "app.py",
+          "metadata": {
+            "origin": "resolved_target"
+          }
+        },
+        {
+          "action_type": "write_file",
+          "reason": "internal state crossed action threshold",
+          "motivation_source": [
+            "default"
+          ],
+          "urge_score": 0.552,
+          "expected_gain": 0.68,
+          "risk_level": "medium",
+          "reversible": false,
+          "requires_approval": true,
+          "target": "app.py",
+          "metadata": {
+            "origin": "write_target"
+          }
+        }
+      ],
+      "governor_hint": {
+        "status": "approved",
+        "reason": "selected candidate is auto-allow in seed phase",
+        "selected_action": {
+          "action_type": "inspect_file",
+          "reason": "curiosity + visible affordance",
+          "motivation_source": [
+            "curiosity"
+          ],
+          "urge_score": 0.552,
+          "expected_gain": 0.97,
+          "risk_level": "low",
+          "reversible": true,
+          "requires_approval": false,
+          "target": "app.py",
+          "metadata": {
+            "origin": "resolved_target"
+          }
+        },
+        "candidate_count": 2
+      },
+      "executed_action": null,
+      "exec_result": null,
+      "seed_state_delta": {
+        "focus_goal": {
+          "current_focus": "inspect_target"
+        },
+        "recent_outcomes_len": 16
+      },
+      "seed_state_snapshot": {
+        "focus_goal": {
+          "current_focus": "inspect_target",
+          "pending_commitment": null
+        },
+        "drives": {
+          "curiosity": 1.0,
+          "caution": 0.0,
+          "completion": 0.0,
+          "repair": 0.0
+        },
+        "revision_counter": 0
+      },
+      "timestamp": "2026-03-29T13:54:00.828846",
+      "legacy_trace_payload": {
+        "subject_profile": "seed_v0_2",
+        "seed_state_delta": {
+          "identity_light": {
+            "core_role": "operator_assistant",
+            "do_not_cross": [
+              "unsafe_execution_without_approval"
+            ],
+            "identity_confidence": 0.6800000000000002
+          },
+          "focus_goal": {
+            "current_focus": "inspect_target"
+          },
+          "drives": {
+            "curiosity": 1.0,
+            "caution": 0.0,
+            "completion": 0.0,
+            "repair": 0.0
+          },
+          "revision_counter": 0,
+          "recent_outcomes_len": 16
+        },
+        "seed_state_snapshot": {
+          "focus_goal": {
+            "current_focus": "inspect_target",
+            "pending_commitment": null
+          },
+          "drives": {
+            "curiosity": 1.0,
+            "caution": 0.0,
+            "completion": 0.0,
+            "repair": 0.0
+          },
+          "revision_counter": 0
+        },
+        "perceived": {
+          "event_type": "idle_check",
+          "source": "runtime",
+          "blocked": false,
+          "risk_level": "low",
+          "active_task": false,
+          "confirm_pending": false,
+          "pending_commitment": null,
+          "resolved_target_path": "app.py",
+          "resolved_target_name": "app.py",
+          "recent_failure_target": null,
+          "raw_text": null
+        },
+        "candidate_actions": [
+          {
+            "action_type": "inspect_file",
+            "reason": "curiosity + visible affordance",
+            "motivation_source": [
+              "curiosity"
+            ],
+            "urge_score": 0.552,
+            "expected_gain": 0.97,
+            "risk_level": "low",
+            "reversible": true,
+            "requires_approval": false,
+            "target": "app.py",
+            "metadata": {
+              "origin": "resolved_target"
+            }
+          },
+          {
+            "action_type": "write_file",
+            "reason": "internal state crossed action threshold",
+            "motivation_source": [
+              "default"
+            ],
+            "urge_score": 0.552,
+            "expected_gain": 0.68,
+            "risk_level": "medium",
+            "reversible": false,
+            "requires_approval": true,
+            "target": "app.py",
+            "metadata": {
+              "origin": "write_target"
+            }
+          }
+        ],
+        "governor_hint": {
+          "status": "approved",
+          "reason": "selected candidate is auto-allow in seed phase",
+          "selected_action": {
+            "action_type": "inspect_file",
+            "reason": "curiosity + visible affordance",
+            "motivation_source": [
+              "curiosity"
+            ],
+            "urge_score": 0.552,
+            "expected_gain": 0.97,
+            "risk_level": "low",
+            "reversible": true,
+            "requires_approval": false,
+            "target": "app.py",
+            "metadata": {
+              "origin": "resolved_target"
+            }
+          },
+          "candidate_count": 2
+        },
+        "executed_action": null,
+        "exec_result": null,
+        "reflection_note": null,
+        "policy_hint": {
+          "subject_profile": "seed_v0_2",
+          "urge_score": 0.552,
+          "risk_bias": "normal",
+          "closure_bias": false,
+          "ask_preferred": false,
+          "requires_approval": false,
+          "governor_hint": {
+            "status": "candidate_available",
+            "reason": "selected candidate is auto-allow in seed phase",
+            "candidate_count": 2
+          },
+          "top_candidate_action": {
+            "action_type": "inspect_file",
+            "reason": "curiosity + visible affordance",
+            "motivation_source": [
+              "curiosity"
+            ],
+            "urge_score": 0.552,
+            "expected_gain": 0.97,
+            "risk_level": "low",
+            "reversible": true,
+            "requires_approval": false,
+            "target": "app.py",
+            "metadata": {
+              "origin": "resolved_target"
+            }
+          },
+          "reflection_trigger": null
+        },
+        "timestamp": "2026-03-29T13:54:00.828853"
+      }
+    }
+  },
+  "openemotion_trace": {
+    "schema_version": "proto_self.trace.v2",
+    "kernel_version": "proto_self.v2",
+    "event_id": "telegram:dm:456_turn_9fbac2aa_idle",
+    "subject_profile": "seed_v0_2",
+    "update_packet_hash": "67d19cc9194314b5d7cfd3e5b428dc52d55306f79484e82fd6a4c09b6d7256f9",
+    "state_revision_before": 0,
+    "state_revision_after": 0,
+    "retrieval_summary": {
+      "cycle_count": 22,
+      "recent_episode_count": 100,
+      "matched_cycle_ids": [],
+      "seed_recent_outcomes_count": 15
+    },
+    "constraint_summary": {
+      "identity_confidence": 0.5,
+      "core_boundaries_count": 0,
+      "current_mode": "exploration",
+      "stable_preferences_count": 0,
+      "subject_profile": "seed_v0_2"
+    },
+    "perceived": {
+      "event_type": "idle_check",
+      "source": "runtime",
+      "blocked": false,
+      "risk_level": "low",
+      "active_task": false,
+      "confirm_pending": false,
+      "pending_commitment": null,
+      "resolved_target_path": "app.py",
+      "resolved_target_name": "app.py",
+      "recent_failure_target": null,
+      "raw_text": null
+    },
+    "identity_delta": {},
+    "self_model_delta": {},
+    "drives_delta": {},
+    "cycles_delta": {},
+    "predictive_reflective_delta": {},
+    "reflection_note": null,
+    "policy_hint": {
+      "subject_profile": "seed_v0_2",
+      "urge_score": 0.552,
+      "risk_bias": "normal",
+      "closure_bias": false,
+      "ask_preferred": false,
+      "requires_approval": false,
+      "governor_hint": {
+        "status": "candidate_available",
+        "reason": "selected candidate is auto-allow in seed phase",
+        "candidate_count": 2
+      },
+      "top_candidate_action": {
+        "action_type": "inspect_file",
+        "reason": "curiosity + visible affordance",
+        "motivation_source": [
+          "curiosity"
+        ],
+        "urge_score": 0.552,
+        "expected_gain": 0.97,
+        "risk_level": "low",
+        "reversible": true,
+        "requires_approval": false,
+        "target": "app.py",
+        "metadata": {
+          "origin": "resolved_target"
+        }
+      },
+      "reflection_trigger": null
+    },
+    "response_tendency": {
+      "preferred_mode": "act",
+      "preferred_tone": "direct",
+      "certainty_bound": "bounded",
+      "suggested_next_step": "inspect_file",
+      "ask_needed": false
+    },
+    "candidate_actions": [
+      {
+        "action_type": "inspect_file",
+        "reason": "curiosity + visible affordance",
+        "motivation_source": [
+          "curiosity"
+        ],
+        "urge_score": 0.552,
+        "expected_gain": 0.97,
+        "risk_level": "low",
+        "reversible": true,
+        "requires_approval": false,
+        "target": "app.py",
+        "metadata": {
+          "origin": "resolved_target"
+        }
+      },
+      {
+        "action_type": "write_file",
+        "reason": "internal state crossed action threshold",
+        "motivation_source": [
+          "default"
+        ],
+        "urge_score": 0.552,
+        "expected_gain": 0.68,
+        "risk_level": "medium",
+        "reversible": false,
+        "requires_approval": true,
+        "target": "app.py",
+        "metadata": {
+          "origin": "write_target"
+        }
+      }
+    ],
+    "governor_hint": {
+      "status": "approved",
+      "reason": "selected candidate is auto-allow in seed phase",
+      "selected_action": {
+        "action_type": "inspect_file",
+        "reason": "curiosity + visible affordance",
+        "motivation_source": [
+          "curiosity"
+        ],
+        "urge_score": 0.552,
+        "expected_gain": 0.97,
+        "risk_level": "low",
+        "reversible": true,
+        "requires_approval": false,
+        "target": "app.py",
+        "metadata": {
+          "origin": "resolved_target"
+        }
+      },
+      "candidate_count": 2
+    },
+    "executed_action": null,
+    "exec_result": null,
+    "seed_state_delta": {
+      "focus_goal": {
+        "current_focus": "inspect_target"
+      },
+      "recent_outcomes_len": 16
+    },
+    "seed_state_snapshot": {
+      "focus_goal": {
+        "current_focus": "inspect_target",
+        "pending_commitment": null
+      },
+      "drives": {
+        "curiosity": 1.0,
+        "caution": 0.0,
+        "completion": 0.0,
+        "repair": 0.0
+      },
+      "revision_counter": 0
+    },
+    "timestamp": "2026-03-29T13:54:00.828846",
+    "legacy_trace_payload": {
+      "subject_profile": "seed_v0_2",
+      "seed_state_delta": {
+        "identity_light": {
+          "core_role": "operator_assistant",
+          "do_not_cross": [
+            "unsafe_execution_without_approval"
+          ],
+          "identity_confidence": 0.6800000000000002
+        },
+        "focus_goal": {
+          "current_focus": "inspect_target"
+        },
+        "drives": {
+          "curiosity": 1.0,
+          "caution": 0.0,
+          "completion": 0.0,
+          "repair": 0.0
+        },
+        "revision_counter": 0,
+        "recent_outcomes_len": 16
+      },
+      "seed_state_snapshot": {
+        "focus_goal": {
+          "current_focus": "inspect_target",
+          "pending_commitment": null
+        },
+        "drives": {
+          "curiosity": 1.0,
+          "caution": 0.0,
+          "completion": 0.0,
+          "repair": 0.0
+        },
+        "revision_counter": 0
+      },
+      "perceived": {
+        "event_type": "idle_check",
+        "source": "runtime",
+        "blocked": false,
+        "risk_level": "low",
+        "active_task": false,
+        "confirm_pending": false,
+        "pending_commitment": null,
+        "resolved_target_path": "app.py",
+        "resolved_target_name": "app.py",
+        "recent_failure_target": null,
+        "raw_text": null
+      },
+      "candidate_actions": [
+        {
+          "action_type": "inspect_file",
+          "reason": "curiosity + visible affordance",
+          "motivation_source": [
+            "curiosity"
+          ],
+          "urge_score": 0.552,
+          "expected_gain": 0.97,
+          "risk_level": "low",
+          "reversible": true,
+          "requires_approval": false,
+          "target": "app.py",
+          "metadata": {
+            "origin": "resolved_target"
+          }
+        },
+        {
+          "action_type": "write_file",
+          "reason": "internal state crossed action threshold",
+          "motivation_source": [
+            "default"
+          ],
+          "urge_score": 0.552,
+          "expected_gain": 0.68,
+          "risk_level": "medium",
+          "reversible": false,
+          "requires_approval": true,
+          "target": "app.py",
+          "metadata": {
+            "origin": "write_target"
+          }
+        }
+      ],
+      "governor_hint": {
+        "status": "approved",
+        "reason": "selected candidate is auto-allow in seed phase",
+        "selected_action": {
+          "action_type": "inspect_file",
+          "reason": "curiosity + visible affordance",
+          "motivation_source": [
+            "curiosity"
+          ],
+          "urge_score": 0.552,
+          "expected_gain": 0.97,
+          "risk_level": "low",
+          "reversible": true,
+          "requires_approval": false,
+          "target": "app.py",
+          "metadata": {
+            "origin": "resolved_target"
+          }
+        },
+        "candidate_count": 2
+      },
+      "executed_action": null,
+      "exec_result": null,
+      "reflection_note": null,
+      "policy_hint": {
+        "subject_profile": "seed_v0_2",
+        "urge_score": 0.552,
+        "risk_bias": "normal",
+        "closure_bias": false,
+        "ask_preferred": false,
+        "requires_approval": false,
+        "governor_hint": {
+          "status": "candidate_available",
+          "reason": "selected candidate is auto-allow in seed phase",
+          "candidate_count": 2
+        },
+        "top_candidate_action": {
+          "action_type": "inspect_file",
+          "reason": "curiosity + visible affordance",
+          "motivation_source": [
+            "curiosity"
+          ],
+          "urge_score": 0.552,
+          "expected_gain": 0.97,
+          "risk_level": "low",
+          "reversible": true,
+          "requires_approval": false,
+          "target": "app.py",
+          "metadata": {
+            "origin": "resolved_target"
+          }
+        },
+        "reflection_trigger": null
+      },
+      "timestamp": "2026-03-29T13:54:00.828853"
+    }
+  },
+  "response_plan": {
+    "status": "completed_verified",
+    "delivery_kind": "final",
+    "reply_length": 3,
+    "proto_self_subject_profile": "seed_v0_2",
+    "candidate_action_types": [
+      "inspect_file",
+      "write_file"
+    ],
+    "proto_self_governor_hint": {
+      "status": "candidate_available",
+      "reason": "selected candidate is auto-allow in seed phase",
+      "candidate_count": 2
+    }
+  },
+  "outbox_record": {
+    "chat_id": 123,
+    "message_id": 5002,
+    "date": "2026-03-29T18:54:00.944381+00:00",
+    "text_length": 3,
+    "success": true
+  },
+  "restore_observation": null,
+  "timeline": [
+    {
+      "stage": "update_received",
+      "timestamp": "2026-03-29T13:54:00.599177",
+      "update_id": 14001
+    },
+    {
+      "stage": "event_normalized",
+      "timestamp": "2026-03-29T13:54:00.725011",
+      "event_id": "telegram:dm:456_turn_9fbac2aa"
+    },
+    {
+      "stage": "openemotion_processed",
+      "timestamp": "2026-03-29T13:54:00.725022",
+      "event_id": "telegram:dm:456_turn_9fbac2aa"
+    },
+    {
+      "stage": "openemotion_processed",
+      "timestamp": "2026-03-29T13:54:00.828833",
+      "event_id": "telegram:dm:456_turn_9fbac2aa_finalized"
+    },
+    {
+      "stage": "openemotion_processed",
+      "timestamp": "2026-03-29T13:54:00.929966",
+      "event_id": "telegram:dm:456_turn_9fbac2aa_idle"
+    },
+    {
+      "stage": "response_planned",
+      "timestamp": "2026-03-29T13:54:00.930023"
+    },
+    {
+      "stage": "message_sent",
+      "timestamp": "2026-03-29T13:54:00.944408",
+      "chat_id": 123,
+      "message_id": 5002
+    }
+  ],
+  "openemotion_events": [
+    {
+      "stage": "kernel_output",
+      "timestamp": "2026-03-29T13:54:00.725020",
+      "event_id": "telegram:dm:456_turn_9fbac2aa",
+      "has_trace_payload": true
+    },
+    {
+      "stage": "ingress_kernel_trace",
+      "timestamp": "2026-03-29T13:54:00.725025",
+      "event_id": "telegram:dm:456_turn_9fbac2aa",
+      "trace_schema_version": "proto_self.trace.v2"
+    },
+    {
+      "stage": "kernel_output",
+      "timestamp": "2026-03-29T13:54:00.828824",
+      "event_id": "telegram:dm:456_turn_9fbac2aa_finalized",
+      "has_trace_payload": true
+    },
+    {
+      "stage": "finalized_result_kernel_trace",
+      "timestamp": "2026-03-29T13:54:00.828837",
+      "event_id": "telegram:dm:456_turn_9fbac2aa_finalized",
+      "trace_schema_version": "proto_self.trace.v2"
+    },
+    {
+      "stage": "kernel_output",
+      "timestamp": "2026-03-29T13:54:00.929953",
+      "event_id": "telegram:dm:456_turn_9fbac2aa_idle",
+      "has_trace_payload": true
+    },
+    {
+      "stage": "idle_check_kernel_trace",
+      "timestamp": "2026-03-29T13:54:00.929972",
+      "event_id": "telegram:dm:456_turn_9fbac2aa_idle",
+      "trace_schema_version": "proto_self.trace.v2"
+    }
+  ],
+  "tape": {
+    "tape_id": "tape_sample_20260329_135400_c47a3ba2",
+    "timestamp": "2026-03-29T13:54:00.599159",
+    "evidence_level": "V4",
+    "source_type": "simulated_formal_mainline",
+    "channel": "telegram",
+    "update_id": 14001,
+    "trace_id": "sample_20260329_135400_c47a3ba2",
+    "normalized_event_id": "telegram:dm:456_turn_9fbac2aa",
+    "ledger_ref": "ledger.json"
+  },
+  "replay": {
+    "replay_id": "replay_sample_20260329_135400_c47a3ba2",
+    "timestamp": "2026-03-29T13:54:00.944473",
+    "evidence_level": "V4",
+    "source_type": "simulated_formal_mainline",
+    "channel": "telegram",
+    "sample_id": "sample_20260329_135400_c47a3ba2",
+    "primary_ledger_ref": "ledger.json",
+    "replay_input_source": {
+      "type": "ledger",
+      "path": "openemotion.trace_payload",
+      "authority": "OpenEmotion"
+    },
+    "raw_update_ref": "raw_update.json",
+    "normalized_event_ref": "normalized_event.json",
+    "openemotion_result_ref": "openemotion_result.json",
+    "openemotion_trace_ref": "openemotion_trace.json",
+    "response_plan_ref": "response_plan.json",
+    "outbox_record_ref": "outbox_record.json",
+    "timeline_ref": "timeline.json",
+    "tape_ref": "tape.json",
+    "replay_hash": "8f761f042d259b8a"
+  },
+  "replay_hash": "8f761f042d259b8a",
+  "ledger": {
+    "ledger_version": "host.evidence.ledger.v1",
+    "sample_id": "sample_20260329_135400_c47a3ba2",
+    "timestamp": "2026-03-29T13:54:00.599159",
+    "evidence_level": "V4",
+    "source_type": "simulated_formal_mainline",
+    "channel": "telegram",
+    "ownership": {
+      "primary_ledger_owner": "EgoCore host evidence ledger",
+      "openemotion_trace_owner": "OpenEmotion trace_payload",
+      "compatibility_mirrors_owner": "EgoCore compatibility exports",
+      "bridge_policy": "ProtoSelfTraceBridge is compatibility-only and must not become an independent authority source."
+    },
+    "ids": {
+      "sample_id": "sample_20260329_135400_c47a3ba2",
+      "event_id": "telegram:dm:456_turn_9fbac2aa",
+      "session_id": null,
+      "thread_id": null,
+      "turn_id": null,
+      "update_id": 14001,
+      "replay_id": "replay_sample_20260329_135400_c47a3ba2",
+      "tape_id": "tape_sample_20260329_135400_c47a3ba2"
+    },
+    "inputs": {
+      "raw_update": {
+        "update_id": 14001,
+        "message": {
+          "message_id": 5001,
+          "date": "2026-03-29T18:54:00.599049+00:00",
+          "chat": {
+            "id": 123,
+            "type": "private"
+          },
+          "from": {
+            "id": 456,
+            "is_bot": false,
+            "username": "mo*******"
+          },
+          "text": "帮我看下 app.py"
+        }
+      },
+      "normalized_event": {
+        "schema_version": "proto_self.v2",
+        "event_id": "telegram:dm:456_turn_9fbac2aa",
+        "timestamp": "2026-03-29T13:54:00.614607",
+        "event": {
+          "actor": "user",
+          "source": "telegram",
+          "event_type": "user_message",
+          "user_intent": "帮我看下 app.py",
+          "raw_text": "帮我看下 app.py"
+        },
+        "subject_profile": "seed_v0_2",
+        "conversation_summary": {
+          "session_id": "telegram:dm:456",
+          "thread_id": "telegram:dm:456",
+          "turn_id": "turn_9fbac2aa"
+        },
+        "task_summary": {
+          "pending_tasks": 0,
+          "blocked_tasks": 0
+        },
+        "runtime_summary": {
+          "runtime": "runtime_v2",
+          "state_scope": "agent_global",
+          "restore_observation": null,
+          "runtime_action": "chat",
+          "request_mode": "write",
+          "active_task": false,
+          "confirm_pending": false,
+          "clarification_needed": false,
+          "resolved_target_path": "app.py",
+          "resolved_target_name": "app.py",
+          "browser_tabs": []
+        },
+        "safety_context": {
+          "risk_level": "low"
+        },
+        "executed_action_prev": {
+          "kind": "reply",
+          "status": "delivered"
+        },
+        "external_outcome": null,
+        "intervention_context": {},
+        "prediction_snapshot_prev": {
+          "expected_success": true
+        },
+        "seed_event": {
+          "schema_version": "proto_self_seed.v0.2",
+          "event_type": "user_event",
+          "source": "telegram",
+          "payload": {
+            "raw_text": "帮我看下 app.py",
+            "user_intent": "帮我看下 app.py",
+            "resolved_target_path": "app.py",
+            "resolved_target_name": "app.py"
+          },
+          "runtime_summary": {
+            "runtime": "runtime_v2",
+            "state_scope": "agent_global",
+            "runtime_action": "chat",
+            "request_mode": "write",
+            "active_task": false,
+            "confirm_pending": false,
+            "clarification_needed": false,
+            "pending_commitment": null,
+            "resolved_target_path": "app.py",
+            "resolved_target_name": "app.py",
+            "recent_failure_target": null,
+            "browser_tabs": []
+          },
+          "safety_context": {
+            "risk_level": "low",
+            "blocked": false
+          },
+          "timestamp": "2026-03-29T13:54:00.614622"
+        }
+      }
+    },
+    "openemotion": {
+      "result": {
+        "schema_version": "proto_self.output.v2",
+        "event_id": "telegram:dm:456_turn_9fbac2aa_idle",
+        "subject_profile": "seed_v0_2",
+        "identity_delta": {},
+        "self_model_delta": {},
+        "drives_delta": {},
+        "cycles_delta": {},
+        "predictive_reflective_delta": {},
+        "seed_state_delta": {
+          "focus_goal": {
+            "current_focus": "inspect_target"
+          },
+          "recent_outcomes_len": 16
+        },
+        "memory_update": {
+          "seed_state_updated": true
+        },
+        "candidate_actions": [
+          {
+            "action_type": "inspect_file",
+            "reason": "curiosity + visible affordance",
+            "motivation_source": [
+              "curiosity"
+            ],
+            "urge_score": 0.552,
+            "expected_gain": 0.97,
+            "risk_level": "low",
+            "reversible": true,
+            "requires_approval": false,
+            "target": "app.py",
+            "metadata": {
+              "origin": "resolved_target"
+            }
+          },
+          {
+            "action_type": "write_file",
+            "reason": "internal state crossed action threshold",
+            "motivation_source": [
+              "default"
+            ],
+            "urge_score": 0.552,
+            "expected_gain": 0.68,
+            "risk_level": "medium",
+            "reversible": false,
+            "requires_approval": true,
+            "target": "app.py",
+            "metadata": {
+              "origin": "write_target"
+            }
+          }
+        ],
+        "reflection_note": null,
+        "policy_hint": {
+          "subject_profile": "seed_v0_2",
+          "urge_score": 0.552,
+          "risk_bias": "normal",
+          "closure_bias": false,
+          "ask_preferred": false,
+          "requires_approval": false,
+          "governor_hint": {
+            "status": "candidate_available",
+            "reason": "selected candidate is auto-allow in seed phase",
+            "candidate_count": 2
+          },
+          "top_candidate_action": {
+            "action_type": "inspect_file",
+            "reason": "curiosity + visible affordance",
+            "motivation_source": [
+              "curiosity"
+            ],
+            "urge_score": 0.552,
+            "expected_gain": 0.97,
+            "risk_level": "low",
+            "reversible": true,
+            "requires_approval": false,
+            "target": "app.py",
+            "metadata": {
+              "origin": "resolved_target"
+            }
+          },
+          "reflection_trigger": null
+        },
+        "response_tendency": {
+          "preferred_mode": "act",
+          "preferred_tone": "direct",
+          "certainty_bound": "bounded",
+          "suggested_next_step": "inspect_file",
+          "ask_needed": false
+        },
+        "confidence_meta": {
+          "seed_identity_confidence": 0.6800000000000002,
+          "seed_revision_counter": 0,
+          "seed_recent_outcomes_count": 16
+        },
+        "trace_payload": {
+          "schema_version": "proto_self.trace.v2",
+          "kernel_version": "proto_self.v2",
+          "event_id": "telegram:dm:456_turn_9fbac2aa_idle",
+          "subject_profile": "seed_v0_2",
+          "update_packet_hash": "67d19cc9194314b5d7cfd3e5b428dc52d55306f79484e82fd6a4c09b6d7256f9",
+          "state_revision_before": 0,
+          "state_revision_after": 0,
+          "retrieval_summary": {
+            "cycle_count": 22,
+            "recent_episode_count": 100,
+            "matched_cycle_ids": [],
+            "seed_recent_outcomes_count": 15
+          },
+          "constraint_summary": {
+            "identity_confidence": 0.5,
+            "core_boundaries_count": 0,
+            "current_mode": "exploration",
+            "stable_preferences_count": 0,
+            "subject_profile": "seed_v0_2"
+          },
+          "perceived": {
+            "event_type": "idle_check",
+            "source": "runtime",
+            "blocked": false,
+            "risk_level": "low",
+            "active_task": false,
+            "confirm_pending": false,
+            "pending_commitment": null,
+            "resolved_target_path": "app.py",
+            "resolved_target_name": "app.py",
+            "recent_failure_target": null,
+            "raw_text": null
+          },
+          "identity_delta": {},
+          "self_model_delta": {},
+          "drives_delta": {},
+          "cycles_delta": {},
+          "predictive_reflective_delta": {},
+          "reflection_note": null,
+          "policy_hint": {
+            "subject_profile": "seed_v0_2",
+            "urge_score": 0.552,
+            "risk_bias": "normal",
+            "closure_bias": false,
+            "ask_preferred": false,
+            "requires_approval": false,
+            "governor_hint": {
+              "status": "candidate_available",
+              "reason": "selected candidate is auto-allow in seed phase",
+              "candidate_count": 2
+            },
+            "top_candidate_action": {
+              "action_type": "inspect_file",
+              "reason": "curiosity + visible affordance",
+              "motivation_source": [
+                "curiosity"
+              ],
+              "urge_score": 0.552,
+              "expected_gain": 0.97,
+              "risk_level": "low",
+              "reversible": true,
+              "requires_approval": false,
+              "target": "app.py",
+              "metadata": {
+                "origin": "resolved_target"
+              }
+            },
+            "reflection_trigger": null
+          },
+          "response_tendency": {
+            "preferred_mode": "act",
+            "preferred_tone": "direct",
+            "certainty_bound": "bounded",
+            "suggested_next_step": "inspect_file",
+            "ask_needed": false
+          },
+          "candidate_actions": [
+            {
+              "action_type": "inspect_file",
+              "reason": "curiosity + visible affordance",
+              "motivation_source": [
+                "curiosity"
+              ],
+              "urge_score": 0.552,
+              "expected_gain": 0.97,
+              "risk_level": "low",
+              "reversible": true,
+              "requires_approval": false,
+              "target": "app.py",
+              "metadata": {
+                "origin": "resolved_target"
+              }
+            },
+            {
+              "action_type": "write_file",
+              "reason": "internal state crossed action threshold",
+              "motivation_source": [
+                "default"
+              ],
+              "urge_score": 0.552,
+              "expected_gain": 0.68,
+              "risk_level": "medium",
+              "reversible": false,
+              "requires_approval": true,
+              "target": "app.py",
+              "metadata": {
+                "origin": "write_target"
+              }
+            }
+          ],
+          "governor_hint": {
+            "status": "approved",
+            "reason": "selected candidate is auto-allow in seed phase",
+            "selected_action": {
+              "action_type": "inspect_file",
+              "reason": "curiosity + visible affordance",
+              "motivation_source": [
+                "curiosity"
+              ],
+              "urge_score": 0.552,
+              "expected_gain": 0.97,
+              "risk_level": "low",
+              "reversible": true,
+              "requires_approval": false,
+              "target": "app.py",
+              "metadata": {
+                "origin": "resolved_target"
+              }
+            },
+            "candidate_count": 2
+          },
+          "executed_action": null,
+          "exec_result": null,
+          "seed_state_delta": {
+            "focus_goal": {
+              "current_focus": "inspect_target"
+            },
+            "recent_outcomes_len": 16
+          },
+          "seed_state_snapshot": {
+            "focus_goal": {
+              "current_focus": "inspect_target",
+              "pending_commitment": null
+            },
+            "drives": {
+              "curiosity": 1.0,
+              "caution": 0.0,
+              "completion": 0.0,
+              "repair": 0.0
+            },
+            "revision_counter": 0
+          },
+          "timestamp": "2026-03-29T13:54:00.828846",
+          "legacy_trace_payload": {
+            "subject_profile": "seed_v0_2",
+            "seed_state_delta": {
+              "identity_light": {
+                "core_role": "operator_assistant",
+                "do_not_cross": [
+                  "unsafe_execution_without_approval"
+                ],
+                "identity_confidence": 0.6800000000000002
+              },
+              "focus_goal": {
+                "current_focus": "inspect_target"
+              },
+              "drives": {
+                "curiosity": 1.0,
+                "caution": 0.0,
+                "completion": 0.0,
+                "repair": 0.0
+              },
+              "revision_counter": 0,
+              "recent_outcomes_len": 16
+            },
+            "seed_state_snapshot": {
+              "focus_goal": {
+                "current_focus": "inspect_target",
+                "pending_commitment": null
+              },
+              "drives": {
+                "curiosity": 1.0,
+                "caution": 0.0,
+                "completion": 0.0,
+                "repair": 0.0
+              },
+              "revision_counter": 0
+            },
+            "perceived": {
+              "event_type": "idle_check",
+              "source": "runtime",
+              "blocked": false,
+              "risk_level": "low",
+              "active_task": false,
+              "confirm_pending": false,
+              "pending_commitment": null,
+              "resolved_target_path": "app.py",
+              "resolved_target_name": "app.py",
+              "recent_failure_target": null,
+              "raw_text": null
+            },
+            "candidate_actions": [
+              {
+                "action_type": "inspect_file",
+                "reason": "curiosity + visible affordance",
+                "motivation_source": [
+                  "curiosity"
+                ],
+                "urge_score": 0.552,
+                "expected_gain": 0.97,
+                "risk_level": "low",
+                "reversible": true,
+                "requires_approval": false,
+                "target": "app.py",
+                "metadata": {
+                  "origin": "resolved_target"
+                }
+              },
+              {
+                "action_type": "write_file",
+                "reason": "internal state crossed action threshold",
+                "motivation_source": [
+                  "default"
+                ],
+                "urge_score": 0.552,
+                "expected_gain": 0.68,
+                "risk_level": "medium",
+                "reversible": false,
+                "requires_approval": true,
+                "target": "app.py",
+                "metadata": {
+                  "origin": "write_target"
+                }
+              }
+            ],
+            "governor_hint": {
+              "status": "approved",
+              "reason": "selected candidate is auto-allow in seed phase",
+              "selected_action": {
+                "action_type": "inspect_file",
+                "reason": "curiosity + visible affordance",
+                "motivation_source": [
+                  "curiosity"
+                ],
+                "urge_score": 0.552,
+                "expected_gain": 0.97,
+                "risk_level": "low",
+                "reversible": true,
+                "requires_approval": false,
+                "target": "app.py",
+                "metadata": {
+                  "origin": "resolved_target"
+                }
+              },
+              "candidate_count": 2
+            },
+            "executed_action": null,
+            "exec_result": null,
+            "reflection_note": null,
+            "policy_hint": {
+              "subject_profile": "seed_v0_2",
+              "urge_score": 0.552,
+              "risk_bias": "normal",
+              "closure_bias": false,
+              "ask_preferred": false,
+              "requires_approval": false,
+              "governor_hint": {
+                "status": "candidate_available",
+                "reason": "selected candidate is auto-allow in seed phase",
+                "candidate_count": 2
+              },
+              "top_candidate_action": {
+                "action_type": "inspect_file",
+                "reason": "curiosity + visible affordance",
+                "motivation_source": [
+                  "curiosity"
+                ],
+                "urge_score": 0.552,
+                "expected_gain": 0.97,
+                "risk_level": "low",
+                "reversible": true,
+                "requires_approval": false,
+                "target": "app.py",
+                "metadata": {
+                  "origin": "resolved_target"
+                }
+              },
+              "reflection_trigger": null
+            },
+            "timestamp": "2026-03-29T13:54:00.828853"
+          }
+        }
+      },
+      "trace_payload": {
+        "schema_version": "proto_self.trace.v2",
+        "kernel_version": "proto_self.v2",
+        "event_id": "telegram:dm:456_turn_9fbac2aa_idle",
+        "subject_profile": "seed_v0_2",
+        "update_packet_hash": "67d19cc9194314b5d7cfd3e5b428dc52d55306f79484e82fd6a4c09b6d7256f9",
+        "state_revision_before": 0,
+        "state_revision_after": 0,
+        "retrieval_summary": {
+          "cycle_count": 22,
+          "recent_episode_count": 100,
+          "matched_cycle_ids": [],
+          "seed_recent_outcomes_count": 15
+        },
+        "constraint_summary": {
+          "identity_confidence": 0.5,
+          "core_boundaries_count": 0,
+          "current_mode": "exploration",
+          "stable_preferences_count": 0,
+          "subject_profile": "seed_v0_2"
+        },
+        "perceived": {
+          "event_type": "idle_check",
+          "source": "runtime",
+          "blocked": false,
+          "risk_level": "low",
+          "active_task": false,
+          "confirm_pending": false,
+          "pending_commitment": null,
+          "resolved_target_path": "app.py",
+          "resolved_target_name": "app.py",
+          "recent_failure_target": null,
+          "raw_text": null
+        },
+        "identity_delta": {},
+        "self_model_delta": {},
+        "drives_delta": {},
+        "cycles_delta": {},
+        "predictive_reflective_delta": {},
+        "reflection_note": null,
+        "policy_hint": {
+          "subject_profile": "seed_v0_2",
+          "urge_score": 0.552,
+          "risk_bias": "normal",
+          "closure_bias": false,
+          "ask_preferred": false,
+          "requires_approval": false,
+          "governor_hint": {
+            "status": "candidate_available",
+            "reason": "selected candidate is auto-allow in seed phase",
+            "candidate_count": 2
+          },
+          "top_candidate_action": {
+            "action_type": "inspect_file",
+            "reason": "curiosity + visible affordance",
+            "motivation_source": [
+              "curiosity"
+            ],
+            "urge_score": 0.552,
+            "expected_gain": 0.97,
+            "risk_level": "low",
+            "reversible": true,
+            "requires_approval": false,
+            "target": "app.py",
+            "metadata": {
+              "origin": "resolved_target"
+            }
+          },
+          "reflection_trigger": null
+        },
+        "response_tendency": {
+          "preferred_mode": "act",
+          "preferred_tone": "direct",
+          "certainty_bound": "bounded",
+          "suggested_next_step": "inspect_file",
+          "ask_needed": false
+        },
+        "candidate_actions": [
+          {
+            "action_type": "inspect_file",
+            "reason": "curiosity + visible affordance",
+            "motivation_source": [
+              "curiosity"
+            ],
+            "urge_score": 0.552,
+            "expected_gain": 0.97,
+            "risk_level": "low",
+            "reversible": true,
+            "requires_approval": false,
+            "target": "app.py",
+            "metadata": {
+              "origin": "resolved_target"
+            }
+          },
+          {
+            "action_type": "write_file",
+            "reason": "internal state crossed action threshold",
+            "motivation_source": [
+              "default"
+            ],
+            "urge_score": 0.552,
+            "expected_gain": 0.68,
+            "risk_level": "medium",
+            "reversible": false,
+            "requires_approval": true,
+            "target": "app.py",
+            "metadata": {
+              "origin": "write_target"
+            }
+          }
+        ],
+        "governor_hint": {
+          "status": "approved",
+          "reason": "selected candidate is auto-allow in seed phase",
+          "selected_action": {
+            "action_type": "inspect_file",
+            "reason": "curiosity + visible affordance",
+            "motivation_source": [
+              "curiosity"
+            ],
+            "urge_score": 0.552,
+            "expected_gain": 0.97,
+            "risk_level": "low",
+            "reversible": true,
+            "requires_approval": false,
+            "target": "app.py",
+            "metadata": {
+              "origin": "resolved_target"
+            }
+          },
+          "candidate_count": 2
+        },
+        "executed_action": null,
+        "exec_result": null,
+        "seed_state_delta": {
+          "focus_goal": {
+            "current_focus": "inspect_target"
+          },
+          "recent_outcomes_len": 16
+        },
+        "seed_state_snapshot": {
+          "focus_goal": {
+            "current_focus": "inspect_target",
+            "pending_commitment": null
+          },
+          "drives": {
+            "curiosity": 1.0,
+            "caution": 0.0,
+            "completion": 0.0,
+            "repair": 0.0
+          },
+          "revision_counter": 0
+        },
+        "timestamp": "2026-03-29T13:54:00.828846",
+        "legacy_trace_payload": {
+          "subject_profile": "seed_v0_2",
+          "seed_state_delta": {
+            "identity_light": {
+              "core_role": "operator_assistant",
+              "do_not_cross": [
+                "unsafe_execution_without_approval"
+              ],
+              "identity_confidence": 0.6800000000000002
+            },
+            "focus_goal": {
+              "current_focus": "inspect_target"
+            },
+            "drives": {
+              "curiosity": 1.0,
+              "caution": 0.0,
+              "completion": 0.0,
+              "repair": 0.0
+            },
+            "revision_counter": 0,
+            "recent_outcomes_len": 16
+          },
+          "seed_state_snapshot": {
+            "focus_goal": {
+              "current_focus": "inspect_target",
+              "pending_commitment": null
+            },
+            "drives": {
+              "curiosity": 1.0,
+              "caution": 0.0,
+              "completion": 0.0,
+              "repair": 0.0
+            },
+            "revision_counter": 0
+          },
+          "perceived": {
+            "event_type": "idle_check",
+            "source": "runtime",
+            "blocked": false,
+            "risk_level": "low",
+            "active_task": false,
+            "confirm_pending": false,
+            "pending_commitment": null,
+            "resolved_target_path": "app.py",
+            "resolved_target_name": "app.py",
+            "recent_failure_target": null,
+            "raw_text": null
+          },
+          "candidate_actions": [
+            {
+              "action_type": "inspect_file",
+              "reason": "curiosity + visible affordance",
+              "motivation_source": [
+                "curiosity"
+              ],
+              "urge_score": 0.552,
+              "expected_gain": 0.97,
+              "risk_level": "low",
+              "reversible": true,
+              "requires_approval": false,
+              "target": "app.py",
+              "metadata": {
+                "origin": "resolved_target"
+              }
+            },
+            {
+              "action_type": "write_file",
+              "reason": "internal state crossed action threshold",
+              "motivation_source": [
+                "default"
+              ],
+              "urge_score": 0.552,
+              "expected_gain": 0.68,
+              "risk_level": "medium",
+              "reversible": false,
+              "requires_approval": true,
+              "target": "app.py",
+              "metadata": {
+                "origin": "write_target"
+              }
+            }
+          ],
+          "governor_hint": {
+            "status": "approved",
+            "reason": "selected candidate is auto-allow in seed phase",
+            "selected_action": {
+              "action_type": "inspect_file",
+              "reason": "curiosity + visible affordance",
+              "motivation_source": [
+                "curiosity"
+              ],
+              "urge_score": 0.552,
+              "expected_gain": 0.97,
+              "risk_level": "low",
+              "reversible": true,
+              "requires_approval": false,
+              "target": "app.py",
+              "metadata": {
+                "origin": "resolved_target"
+              }
+            },
+            "candidate_count": 2
+          },
+          "executed_action": null,
+          "exec_result": null,
+          "reflection_note": null,
+          "policy_hint": {
+            "subject_profile": "seed_v0_2",
+            "urge_score": 0.552,
+            "risk_bias": "normal",
+            "closure_bias": false,
+            "ask_preferred": false,
+            "requires_approval": false,
+            "governor_hint": {
+              "status": "candidate_available",
+              "reason": "selected candidate is auto-allow in seed phase",
+              "candidate_count": 2
+            },
+            "top_candidate_action": {
+              "action_type": "inspect_file",
+              "reason": "curiosity + visible affordance",
+              "motivation_source": [
+                "curiosity"
+              ],
+              "urge_score": 0.552,
+              "expected_gain": 0.97,
+              "risk_level": "low",
+              "reversible": true,
+              "requires_approval": false,
+              "target": "app.py",
+              "metadata": {
+                "origin": "resolved_target"
+              }
+            },
+            "reflection_trigger": null
+          },
+          "timestamp": "2026-03-29T13:54:00.828853"
+        }
+      },
+      "events": [
+        {
+          "stage": "kernel_output",
+          "timestamp": "2026-03-29T13:54:00.725020",
+          "event_id": "telegram:dm:456_turn_9fbac2aa",
+          "has_trace_payload": true
+        },
+        {
+          "stage": "ingress_kernel_trace",
+          "timestamp": "2026-03-29T13:54:00.725025",
+          "event_id": "telegram:dm:456_turn_9fbac2aa",
+          "trace_schema_version": "proto_self.trace.v2"
+        },
+        {
+          "stage": "kernel_output",
+          "timestamp": "2026-03-29T13:54:00.828824",
+          "event_id": "telegram:dm:456_turn_9fbac2aa_finalized",
+          "has_trace_payload": true
+        },
+        {
+          "stage": "finalized_result_kernel_trace",
+          "timestamp": "2026-03-29T13:54:00.828837",
+          "event_id": "telegram:dm:456_turn_9fbac2aa_finalized",
+          "trace_schema_version": "proto_self.trace.v2"
+        },
+        {
+          "stage": "kernel_output",
+          "timestamp": "2026-03-29T13:54:00.929953",
+          "event_id": "telegram:dm:456_turn_9fbac2aa_idle",
+          "has_trace_payload": true
+        },
+        {
+          "stage": "idle_check_kernel_trace",
+          "timestamp": "2026-03-29T13:54:00.929972",
+          "event_id": "telegram:dm:456_turn_9fbac2aa_idle",
+          "trace_schema_version": "proto_self.trace.v2"
+        }
+      ],
+      "trace_schema_version": "proto_self.trace.v2",
+      "result_schema_version": "proto_self.output.v2"
+    },
+    "host": {
+      "response_plan": {
+        "status": "completed_verified",
+        "delivery_kind": "final",
+        "reply_length": 3,
+        "proto_self_subject_profile": "seed_v0_2",
+        "candidate_action_types": [
+          "inspect_file",
+          "write_file"
+        ],
+        "proto_self_governor_hint": {
+          "status": "candidate_available",
+          "reason": "selected candidate is auto-allow in seed phase",
+          "candidate_count": 2
+        }
+      },
+      "outbox_record": {
+        "chat_id": 123,
+        "message_id": 5002,
+        "date": "2026-03-29T18:54:00.944381+00:00",
+        "text_length": 3,
+        "success": true
+      },
+      "timeline": [
+        {
+          "stage": "update_received",
+          "timestamp": "2026-03-29T13:54:00.599177",
+          "update_id": 14001
+        },
+        {
+          "stage": "event_normalized",
+          "timestamp": "2026-03-29T13:54:00.725011",
+          "event_id": "telegram:dm:456_turn_9fbac2aa"
+        },
+        {
+          "stage": "openemotion_processed",
+          "timestamp": "2026-03-29T13:54:00.725022",
+          "event_id": "telegram:dm:456_turn_9fbac2aa"
+        },
+        {
+          "stage": "openemotion_processed",
+          "timestamp": "2026-03-29T13:54:00.828833",
+          "event_id": "telegram:dm:456_turn_9fbac2aa_finalized"
+        },
+        {
+          "stage": "openemotion_processed",
+          "timestamp": "2026-03-29T13:54:00.929966",
+          "event_id": "telegram:dm:456_turn_9fbac2aa_idle"
+        },
+        {
+          "stage": "response_planned",
+          "timestamp": "2026-03-29T13:54:00.930023"
+        },
+        {
+          "stage": "message_sent",
+          "timestamp": "2026-03-29T13:54:00.944408",
+          "chat_id": 123,
+          "message_id": 5002
+        }
+      ],
+      "restore_observation": null
+    },
+    "replay_input": {
+      "authority": "OpenEmotion trace_payload within ledger.json",
+      "required_sections": [
+        "inputs.normalized_event",
+        "openemotion.trace_payload"
+      ],
+      "optional_sections": [
+        "openemotion.result",
+        "host.response_plan",
+        "host.outbox_record"
+      ],
+      "compatibility_refs": {
+        "replay_json": "replay.json",
+        "openemotion_trace_json": "openemotion_trace.json"
+      }
+    },
+    "report_sources": {
+      "sample_summary": "ledger.json",
+      "acceptance_reports": [
+        "ledger.json",
+        "replay.json",
+        "tape.json"
+      ]
+    },
+    "compatibility_mirrors": [
+      "sample.json",
+      "raw_update.json",
+      "normalized_event.json",
+      "openemotion_result.json",
+      "openemotion_trace.json",
+      "response_plan.json",
+      "outbox_record.json",
+      "timeline.json",
+      "tape.json",
+      "replay.json",
+      "summary.md"
+    ],
+    "replay_hash": "8f761f042d259b8a",
+    "evidence_completeness": {
+      "raw_update": true,
+      "normalized_event": true,
+      "openemotion_result": true,
+      "openemotion_trace": true,
+      "response_plan": true,
+      "outbox_record": true,
+      "timeline": true,
+      "tape": true,
+      "replay": true
+    }
+  },
+  "evidence_completeness": {
+    "raw_update": true,
+    "normalized_event": true,
+    "openemotion_result": true,
+    "openemotion_trace": true,
+    "response_plan": true,
+    "outbox_record": true,
+    "timeline": true,
+    "tape": true,
+    "replay": true
+  },
+  "ledger_ref": "ledger.json",
+  "authority": "compatibility_mirror"
+}

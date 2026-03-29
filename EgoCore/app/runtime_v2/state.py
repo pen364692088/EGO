@@ -161,6 +161,7 @@ class RuntimeV2State:
     proto_self_context: Optional[Dict[str, Any]] = None  # policy_hint / response_tendency / reflection_note
     ingress_context: Optional[Dict[str, Any]] = None  # canonical ingress structure for single-pass decision
     proto_self_version_override: Optional[str] = None  # session-scoped compatibility override; default mainline is v2
+    proto_self_subject_profile_override: Optional[str] = None  # optional session-scoped subject profile overlay
     task_contract: Optional[Dict[str, Any]] = None
     next_step_decision: Optional[Dict[str, Any]] = None
     verification_history: List[Dict[str, Any]] = field(default_factory=list)
@@ -220,6 +221,7 @@ class RuntimeV2State:
             # Canonical ingress structure
             "ingress_context": self.ingress_context,
             "proto_self_version_override": self.proto_self_version_override,
+            "proto_self_subject_profile_override": self.proto_self_subject_profile_override,
             "task_contract": self.task_contract,
             "next_step_decision": self.next_step_decision,
             "verification_history": self.verification_history[-3:],
@@ -361,7 +363,10 @@ class RuntimeV2State:
         self.current_goal = None
         self.current_step = None
         self.waiting_for_user_input = False
+        self.ingress_context = None
+        self.proto_self_context = None
         self.proto_self_version_override = None
+        self.proto_self_subject_profile_override = None
         self.task_contract = None
         self.next_step_decision = None
         self.verification_history = []
