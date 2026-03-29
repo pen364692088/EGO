@@ -68,6 +68,10 @@
   - [PROTO_SELF_V2_CROSS_SESSION_OBSERVATION_PLAN.md](/mnt/d/Project/AIProject/MyProject/Ego/EgoCore/artifacts/proto_self_v2/PROTO_SELF_V2_CROSS_SESSION_OBSERVATION_PLAN.md)
 - cross-session observation status:
   - [PROTO_SELF_V2_CROSS_SESSION_STATUS_20260328.md](/mnt/d/Project/AIProject/MyProject/Ego/EgoCore/artifacts/proto_self_v2/PROTO_SELF_V2_CROSS_SESSION_STATUS_20260328.md)
+- live process version report:
+  - [PROTO_SELF_V2_LIVE_PROCESS_VERSION_REPORT_20260328.md](/mnt/d/Project/AIProject/MyProject/Ego/EgoCore/artifacts/proto_self_v2/PROTO_SELF_V2_LIVE_PROCESS_VERSION_REPORT_20260328.md)
+- live process version json:
+  - [LIVE_TELEGRAM_PROCESS_VERSION.json](/mnt/d/Project/AIProject/MyProject/Ego/EgoCore/artifacts/proto_self_v2/LIVE_TELEGRAM_PROCESS_VERSION.json)
 
 ## Contract gate
 
@@ -88,6 +92,7 @@
   - the repo-local Telegram external entry can persist `proto_self.trace.v2` into `ledger.json`
   - the real Telegram channel can persist `proto_self.output.v2` and `proto_self.trace.v2` on the Telegram natural-language mainline
   - the same real Telegram DM session has now produced `5/5` counted natural-language samples with `proto_self.output.v2 + proto_self.trace.v2`
+  - the current live Telegram process version is repo-tracked and currently bound to commit `468d9a4`
 - this report does not prove:
   - cross-session or cross-day stability
   - broader real-channel admission evidence
