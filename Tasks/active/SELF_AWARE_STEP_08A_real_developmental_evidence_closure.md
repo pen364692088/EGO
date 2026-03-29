@@ -3,12 +3,12 @@
 ```yaml
 task_id: SELF_AWARE_STEP_08A
 created_at: "2026-03-30T04:10:00Z"
-updated_at: "2026-03-28T23:59:00Z"
+updated_at: "2026-03-29T12:24:57Z"
 owner: "Codex"
 layer: 3
 type: dual_repo
 repos: [EgoCore, OpenEmotion]
-status: in_progress
+status: verify_passed
 change_classification: structural_fix
 verification_level_target: V4
 evidence_level_target: E4
@@ -63,8 +63,8 @@ real developmental evidence closure 收成一个 admission-grade 主链：
 ## current_layer
 
 ```yaml
-current_layer: implementation
-main_chain_status: Step08A wiring/spec closure in progress; admission not yet retried
+current_layer: closure
+main_chain_status: real developmental admission inputs established; admission not yet retried
 ```
 
 ## phase_plan
@@ -169,6 +169,6 @@ Step08A 只负责建立 admission-grade inputs，不负责最终 admission verdi
 
 ## next_minimal_closure_action
 
-继续积累 later-day real Telegram natural-language sample，
-把 `real_day_count` 从当前基线推进到 admission-grade 最低门，
-然后重新运行 `mvp16_daily_check` 和 replay/audit 复核。
+执行下一次 admission retry / review，
+判断 `real developmental admission inputs established`
+是否足以解除 `Step08` 中的 `not admitted` blocker。

@@ -10,10 +10,10 @@
 ## Current Decision
 
 - result:
-  - `same-day cross-session continuity reached; cross-day continuity not yet reached`
+  - `cross-session real-channel continuity + v2 persistence reached`
 - current baseline:
   - same-day counted successful sessions: `2 / 2`
-  - counted successful days: `1 / 2`
+  - counted successful days: `2 / 2`
 
 ## Repo-Tracked Baseline Session
 
@@ -57,27 +57,36 @@
   - later natural-language V2 samples exist
   - second successful session has been captured on the same day
 
+## Later-Day Success
+
+- later-day `/new` anchor:
+  - sample: `sample_20260329_122242_8f01f48b`
+  - raw text: `/new`
+  - session id: `telegram:dm:8420019401`
+- counted later-day natural-language samples:
+  - `sample_20260329_122250_7005b885`
+  - `sample_20260329_122259_1767e7c5`
+  - `sample_20260329_122307_9c311412`
+  - `sample_20260329_122319_5b9b9131`
+
 ## Current Blocker
 
-- there is no second counted successful day yet
-- manual system-time adjustment cannot close this blocker because it does not count as real cross-day evidence
+- none for the defined cross-session / cross-day observation target
 
-## Fastest Closure Path
+## Closure Result
 
-- capture one additional successful session on a later calendar day with:
-  - `/new`
-  - one natural-language message
-  - optional `/proto v2 on` as a diagnostic confirmation only
-- if that later-day session satisfies the plan acceptance fields, it closes both:
-  - `2 / 2` counted successful sessions
-  - `2 / 2` counted successful days
-- next reminder:
-  - on the next real calendar day, prompt the operator to run the later-day Telegram sample
+- same-day cross-session continuity:
+  - reached
+- cross-day continuity:
+  - reached
+- accepted final counts:
+  - counted successful sessions: `3`
+  - counted successful days: `2`
 
 ## Evidence Boundary
 
 - this report proves:
   - same-day cross-session continuity has been recorded using repo-tracked sample directories rather than chat-only memory
+  - cross-day continuity has now been reached on the same real Telegram DM mainline
 - this report does not prove:
-  - cross-day continuity reached
   - broader stability beyond the defined observation window

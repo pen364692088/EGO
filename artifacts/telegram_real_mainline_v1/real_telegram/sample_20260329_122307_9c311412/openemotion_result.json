@@ -1,0 +1,266 @@
+{
+  "schema_version": "proto_self.output.v2",
+  "event_id": "telegram:dm:8420019401_turn_3bfb1c64_tool_0",
+  "identity_delta": {
+    "core_roles_add": [],
+    "core_commitments_add": [],
+    "core_boundaries_add": [],
+    "stable_preferences_patch": {},
+    "identity_confidence_delta": 0.0
+  },
+  "self_model_delta": {
+    "capabilities": {},
+    "limitations": {},
+    "current_focus": "error_recovery",
+    "current_mode": "repair",
+    "self_confidence_by_domain": {}
+  },
+  "drives_delta": {
+    "coherence_pressure": 1.0,
+    "curiosity": 1.0,
+    "caution": 1.0,
+    "completion_pressure": 1.0,
+    "social_tension": 0.0
+  },
+  "cycles_delta": {
+    "cycle_id": "14d0893476bf171e",
+    "closure_signature": "14d0893476bf171e",
+    "closure_family_id": "af8179a3c8b5a21e",
+    "op": "strengthen",
+    "psi_bucket": "runtime:tool_result:general:risk_high",
+    "action_signature": "tool:shell",
+    "outcome_signature": "blocked",
+    "mode_signature": "repair",
+    "phi_signature": "coherence_pressure:+1.0|caution:+1.0|curiosity:+1.0|mode:repair|focus:error_recovery",
+    "closure_consistency_score": 0.833,
+    "repair_closure": false,
+    "order_invariance_candidate": "3f96be11a0686470",
+    "strength_delta": 0.1
+  },
+  "predictive_reflective_delta": {
+    "prediction_snapshot_prev": {},
+    "external_outcome_observed": {
+      "success": false,
+      "tool": "shell",
+      "exit_code": 1,
+      "error": "Security denial: Command not in allowed list: curl"
+    },
+    "reflection_trigger": "drive_spike"
+  },
+  "memory_update": {
+    "append_episode": true,
+    "cycle_promotion_candidate": "14d0893476bf171e",
+    "promote_reflection": false
+  },
+  "reflection_note": {
+    "trigger": "drive_spike",
+    "diagnosis": "significant internal state change detected",
+    "proposed_adjustment": {
+      "review_drive_field": true
+    },
+    "promote_to_memory": false
+  },
+  "policy_hint": {
+    "risk_bias": "high",
+    "closure_bias": true,
+    "ask_preferred": true,
+    "should_avoid_commitment_upgrade": true,
+    "exploration_mode": false
+  },
+  "response_tendency": {
+    "preferred_mode": "ask",
+    "preferred_tone": "cautious",
+    "certainty_bound": "bounded",
+    "suggested_next_step": "prioritize_closure",
+    "ask_needed": true
+  },
+  "confidence_meta": {
+    "identity_confidence": 0.5,
+    "revision_count": 639,
+    "cycle_count": 22,
+    "episodic_count": 100
+  },
+  "trace_payload": {
+    "schema_version": "proto_self.trace.v2",
+    "kernel_version": "proto_self.v2",
+    "event_id": "telegram:dm:8420019401_turn_3bfb1c64_tool_0",
+    "update_packet_hash": "e506574dc5e7b372aef8195c3367d186898797877888bec2ec2198860d2640d2",
+    "state_revision_before": 638,
+    "state_revision_after": 639,
+    "retrieval_summary": {
+      "cycle_count": 22,
+      "recent_episode_count": 100,
+      "matched_cycle_ids": [
+        "c14048be2df37829",
+        "ebcc03eec1cb4519",
+        "95244bb3114a2fa0",
+        "f92efd86648b35ec",
+        "eb6be182e13f178f"
+      ]
+    },
+    "constraint_summary": {
+      "identity_confidence": 0.5,
+      "core_boundaries_count": 0,
+      "current_mode": "exploration",
+      "stable_preferences_count": 0
+    },
+    "perceived": {
+      "intent": null,
+      "event_type": "tool_result",
+      "source": "runtime",
+      "safety_context": {
+        "risk_level": "high"
+      },
+      "action_class_seed": "tool:shell",
+      "novelty": 0.8,
+      "identity_conflict": 0.25,
+      "unfinished_commitment": 0.2,
+      "risk_signal": 0.5,
+      "relational_mismatch": 0.0,
+      "outcome_class": "blocked",
+      "boundary_state": "elevated_risk",
+      "external_outcome_type": "blocked"
+    },
+    "identity_delta": {
+      "core_roles_add": [],
+      "core_commitments_add": [],
+      "core_boundaries_add": [],
+      "stable_preferences_patch": {},
+      "identity_confidence_delta": 0.0
+    },
+    "self_model_delta": {
+      "capabilities": {},
+      "limitations": {},
+      "current_focus": "error_recovery",
+      "current_mode": "repair",
+      "self_confidence_by_domain": {}
+    },
+    "drives_delta": {
+      "coherence_pressure": 1.0,
+      "curiosity": 1.0,
+      "caution": 1.0,
+      "completion_pressure": 1.0,
+      "social_tension": 0.0
+    },
+    "cycles_delta": {
+      "cycle_id": "14d0893476bf171e",
+      "closure_signature": "14d0893476bf171e",
+      "closure_family_id": "af8179a3c8b5a21e",
+      "op": "strengthen",
+      "psi_bucket": "runtime:tool_result:general:risk_high",
+      "action_signature": "tool:shell",
+      "outcome_signature": "blocked",
+      "mode_signature": "repair",
+      "phi_signature": "coherence_pressure:+1.0|caution:+1.0|curiosity:+1.0|mode:repair|focus:error_recovery",
+      "closure_consistency_score": 0.833,
+      "repair_closure": false,
+      "order_invariance_candidate": "3f96be11a0686470",
+      "strength_delta": 0.1
+    },
+    "predictive_reflective_delta": {
+      "prediction_snapshot_prev": {},
+      "external_outcome_observed": {
+        "success": false,
+        "tool": "shell",
+        "exit_code": 1,
+        "error": "Security denial: Command not in allowed list: curl"
+      },
+      "reflection_trigger": "drive_spike"
+    },
+    "reflection_note": {
+      "trigger": "drive_spike",
+      "diagnosis": "significant internal state change detected",
+      "proposed_adjustment": {
+        "review_drive_field": true
+      },
+      "promote_to_memory": false
+    },
+    "policy_hint": {
+      "risk_bias": "high",
+      "closure_bias": true,
+      "ask_preferred": true,
+      "should_avoid_commitment_upgrade": true,
+      "exploration_mode": false
+    },
+    "response_tendency": {
+      "preferred_mode": "ask",
+      "preferred_tone": "cautious",
+      "certainty_bound": "bounded",
+      "suggested_next_step": "prioritize_closure",
+      "ask_needed": true
+    },
+    "timestamp": "2026-03-29T12:23:17.999582",
+    "legacy_trace_payload": {
+      "schema_version": "proto_self.trace.v1",
+      "event_id": "telegram:dm:8420019401_turn_3bfb1c64_tool_0",
+      "perceived": {
+        "intent": null,
+        "event_type": "tool_result",
+        "source": "runtime",
+        "safety_context": {
+          "risk_level": "high"
+        },
+        "action_class_seed": "tool:shell",
+        "novelty": 0.8,
+        "identity_conflict": 0.25,
+        "unfinished_commitment": 0.2,
+        "risk_signal": 0.5,
+        "relational_mismatch": 0.0,
+        "outcome_class": "blocked",
+        "boundary_state": "elevated_risk",
+        "external_outcome_type": "blocked"
+      },
+      "appraisal_delta": {
+        "coherence_pressure": 1.0,
+        "curiosity": 1.0,
+        "caution": 1.0,
+        "completion_pressure": 1.0,
+        "social_tension": 0.0
+      },
+      "self_model_delta": {
+        "capabilities": {},
+        "limitations": {},
+        "current_focus": "error_recovery",
+        "current_mode": "repair",
+        "self_confidence_by_domain": {}
+      },
+      "cycle_delta": {
+        "cycle_id": "14d0893476bf171e",
+        "closure_signature": "14d0893476bf171e",
+        "closure_family_id": "af8179a3c8b5a21e",
+        "op": "strengthen",
+        "psi_bucket": "runtime:tool_result:general:risk_high",
+        "action_signature": "tool:shell",
+        "outcome_signature": "blocked",
+        "mode_signature": "repair",
+        "phi_signature": "coherence_pressure:+1.0|caution:+1.0|curiosity:+1.0|mode:repair|focus:error_recovery",
+        "closure_consistency_score": 0.833,
+        "repair_closure": false,
+        "order_invariance_candidate": "3f96be11a0686470",
+        "strength_delta": 0.1
+      },
+      "identity_delta": {
+        "core_roles_add": [],
+        "core_commitments_add": [],
+        "core_boundaries_add": [],
+        "stable_preferences_patch": {},
+        "identity_confidence_delta": 0.0
+      },
+      "closure_signature": "14d0893476bf171e",
+      "closure_family_id": "af8179a3c8b5a21e",
+      "action_signature": "tool:shell",
+      "outcome_signature": "blocked",
+      "closure_consistency_score": 0.833,
+      "order_invariance_candidate": "3f96be11a0686470",
+      "reflection_trigger": "drive_spike",
+      "policy_hint": {
+        "risk_bias": "high",
+        "closure_bias": true,
+        "ask_preferred": true,
+        "should_avoid_commitment_upgrade": true,
+        "exploration_mode": false
+      },
+      "timestamp": "2026-03-29T12:23:17.999582"
+    }
+  }
+}

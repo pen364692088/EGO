@@ -52,3 +52,45 @@
   - [PROTO_SELF_V2_CROSS_SESSION_STATUS_20260328.md](/mnt/d/Project/AIProject/MyProject/Ego/EgoCore/artifacts/proto_self_v2/PROTO_SELF_V2_CROSS_SESSION_STATUS_20260328.md)
 - live process version:
   - [PROTO_SELF_V2_LIVE_PROCESS_VERSION_REPORT_20260328.md](/mnt/d/Project/AIProject/MyProject/Ego/EgoCore/artifacts/proto_self_v2/PROTO_SELF_V2_LIVE_PROCESS_VERSION_REPORT_20260328.md)
+
+## 2026-03-29
+
+### Scope
+
+- close cross-day real-channel continuity for the default `proto_self.v2` mainline
+- confirm later-day real Telegram persistence on the same DM session family
+
+### Completed
+
+1. A later-day real Telegram `/new` anchor was captured.
+2. Later-day natural-language samples persisted:
+   - `proto_self.output.v2`
+   - `proto_self.trace.v2`
+3. The cross-day observation target advanced from:
+   - `1 / 2`
+   to:
+   - `2 / 2`
+
+### Current State
+
+- default mainline:
+  - `proto_self.v2`
+- compatibility fallback:
+  - explicit session-scoped `v1`
+- same-session E5:
+  - reached
+- same-day cross-session continuity:
+  - reached
+- cross-day continuity:
+  - reached
+
+### Current Highest-Priority Gap
+
+- no remaining blocker inside the proto-self v2 cross-session / cross-day observation scope
+
+### Evidence Pointers
+
+- primary evidence index:
+  - [PROTO_SELF_V2_EVIDENCE_REPORT_20260328.md](/mnt/d/Project/AIProject/MyProject/Ego/EgoCore/artifacts/proto_self_v2/PROTO_SELF_V2_EVIDENCE_REPORT_20260328.md)
+- cross-day success:
+  - [PROTO_SELF_V2_CROSS_DAY_SUCCESS_20260329.md](/mnt/d/Project/AIProject/MyProject/Ego/EgoCore/artifacts/proto_self_v2/PROTO_SELF_V2_CROSS_DAY_SUCCESS_20260329.md)

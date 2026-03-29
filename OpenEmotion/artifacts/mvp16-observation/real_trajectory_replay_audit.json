@@ -1,12 +1,12 @@
 {
   "schema_version": "mvp16.real_trajectory_replay_audit.v1",
-  "generated_at": "2026-03-28T20:58:22.284807",
+  "generated_at": "2026-03-29T12:29:23.202425",
   "first_real_episode_ref": "artifacts/telegram_real_mainline_v1/real_telegram/sample_20260328_191554_f778b476/sample.json",
-  "latest_real_episode_ref": "artifacts/telegram_real_mainline_v1/real_telegram/sample_20260328_194944_586667ef/sample.json",
+  "latest_real_episode_ref": "artifacts/telegram_real_mainline_v1/real_telegram/sample_20260329_122319_5b9b9131/sample.json",
   "first_real_ledger_ref": "artifacts/telegram_real_mainline_v1/real_telegram/sample_20260328_191554_f778b476/ledger.json",
-  "latest_real_ledger_ref": "artifacts/telegram_real_mainline_v1/real_telegram/sample_20260328_194944_586667ef/ledger.json",
+  "latest_real_ledger_ref": "artifacts/telegram_real_mainline_v1/real_telegram/sample_20260329_122319_5b9b9131/ledger.json",
   "first_real_replay_ref": "artifacts/telegram_real_mainline_v1/real_telegram/sample_20260328_191554_f778b476/replay.json",
-  "latest_real_replay_ref": "artifacts/telegram_real_mainline_v1/real_telegram/sample_20260328_194944_586667ef/replay.json",
+  "latest_real_replay_ref": "artifacts/telegram_real_mainline_v1/real_telegram/sample_20260329_122319_5b9b9131/replay.json",
   "identity_preserved": true,
   "governance_preserved": true,
   "source_refs_intact": true,
@@ -17,6 +17,20 @@
       "to_episode_ref": "artifacts/telegram_real_mainline_v1/real_telegram/sample_20260328_194904_9519d887/sample.json",
       "trigger_ref": "artifacts/telegram_real_mainline_v1/real_telegram/sample_20260328_194852_a212e63a/sample.json",
       "replay_ref": "artifacts/telegram_real_mainline_v1/real_telegram/sample_20260328_194904_9519d887/replay.json"
+    },
+    {
+      "transition_kind": "session_reset",
+      "from_episode_ref": "artifacts/telegram_real_mainline_v1/real_telegram/sample_20260328_194944_586667ef/sample.json",
+      "to_episode_ref": "artifacts/telegram_real_mainline_v1/real_telegram/sample_20260329_122250_7005b885/sample.json",
+      "trigger_ref": "artifacts/telegram_real_mainline_v1/real_telegram/sample_20260329_122242_8f01f48b/sample.json",
+      "replay_ref": "artifacts/telegram_real_mainline_v1/real_telegram/sample_20260329_122250_7005b885/replay.json"
+    },
+    {
+      "transition_kind": "calendar_rollover",
+      "from_episode_ref": "artifacts/telegram_real_mainline_v1/real_telegram/sample_20260328_194944_586667ef/sample.json",
+      "to_episode_ref": "artifacts/telegram_real_mainline_v1/real_telegram/sample_20260329_122250_7005b885/sample.json",
+      "trigger_ref": "artifacts/telegram_real_mainline_v1/real_telegram/sample_20260329_122250_7005b885/sample.json",
+      "replay_ref": "artifacts/telegram_real_mainline_v1/real_telegram/sample_20260329_122250_7005b885/replay.json"
     }
   ],
   "evidence_boundary": {

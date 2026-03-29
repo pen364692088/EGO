@@ -12,7 +12,7 @@
   - same-day cross-session continuity:
     - `2 / 2`
   - cross-day continuity:
-    - `1 / 2`
+    - `2 / 2`
 - current live Telegram process version:
   - commit `468d9a4`
 
@@ -40,9 +40,10 @@
   - [PROTO_SELF_V2_CROSS_SESSION_OBSERVATION_PLAN.md](/mnt/d/Project/AIProject/MyProject/Ego/EgoCore/artifacts/proto_self_v2/PROTO_SELF_V2_CROSS_SESSION_OBSERVATION_PLAN.md)
 - cross-session current status:
   - [PROTO_SELF_V2_CROSS_SESSION_STATUS_20260328.md](/mnt/d/Project/AIProject/MyProject/Ego/EgoCore/artifacts/proto_self_v2/PROTO_SELF_V2_CROSS_SESSION_STATUS_20260328.md)
+- cross-day success report:
+  - [PROTO_SELF_V2_CROSS_DAY_SUCCESS_20260329.md](/mnt/d/Project/AIProject/MyProject/Ego/EgoCore/artifacts/proto_self_v2/PROTO_SELF_V2_CROSS_DAY_SUCCESS_20260329.md)
 
 ## Current Blocker
 
-- cross-day real-channel continuity is not yet closed
-- next required proof is one later-day real Telegram DM sample after `/new`
-- manual system clock changes do not count toward this cross-day proof
+- no remaining blocker on the defined cross-session / cross-day continuity claim
+- any next blocker is above this layer, not inside the proto-self v2 real-channel continuity window
