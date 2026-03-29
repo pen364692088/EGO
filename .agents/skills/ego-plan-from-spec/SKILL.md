@@ -1,6 +1,6 @@
 ---
 name: "ego-plan-from-spec"
-description: "Use when a task is complex, cross-module, ambiguous, expected to take more than about one hour, or needs phased delivery before coding, including repo design tasks and early layer3 dual-repo planning. Do not use when the change is a small scoped edit, a clear single-file bugfix, a review-only task, or the user already gave a precise milestone or step file and explicitly wants code changes now. Boundary: this skill plans and scopes the work; it does not start broad implementation unless the user explicitly asks to enter implementation."
+description: "Use when a task is complex, cross-module, ambiguous, expected to take more than about one hour, or needs phased delivery before coding, including repo design tasks and early layer3 dual-repo planning. Do not use when the change is a small scoped edit, a clear single-file bugfix, a review-only task, or the user already gave a precise milestone or step file and explicitly wants code changes now. Boundary: this skill plans and scopes the work; if a single prompt mixes plan and implement but the milestone is not yet locked, this skill should win and define the slice before coding."
 ---
 
 # Ego Plan From Spec

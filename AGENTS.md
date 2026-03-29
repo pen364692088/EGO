@@ -105,6 +105,9 @@
 - 恢复上下文、继续、接着做：优先使用 `ego-resume-context`
 - 交接 / 子代理派发 / brief：显式调用 `ego-handoff-brief`
 - 如果同一请求同时带有 `continue` 和明确的 bug / milestone / review / handoff 目标，优先选择更具体的 task skill；只有“恢复状态”本身是主要工作时才使用 `ego-resume-context`
+- 如果同一请求同时带有 `plan` 和 `implement`：
+  - 目标或 milestone 尚未锁定时，优先使用 `ego-plan-from-spec`
+  - 已有明确 step file / implementation task / acceptance slice，且用户明确要求现在动代码时，优先使用 `ego-implement-milestone`
 
 ## References
 

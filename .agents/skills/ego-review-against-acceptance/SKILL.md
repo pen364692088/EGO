@@ -1,6 +1,6 @@
 ---
 name: "ego-review-against-acceptance"
-description: "Use when reviewing a diff, uncommitted changes, or a completed task against acceptance criteria, review rules, done definitions, verify task docs, release gates, or admission reviews. Do not use when the work still needs initial planning, first-pass implementation, or general context restoration. Boundary: this skill evaluates completion strength and missing proof; if a resume-style prompt also asks whether the task is really done, this skill should win over ego-resume-context."
+description: "Use when reviewing a diff, uncommitted changes, or a completed task against acceptance criteria, review rules, done definitions, verify task docs, release gates, or admission reviews. Do not use when the work still needs initial planning, first-pass implementation, or general context restoration. Boundary: this skill evaluates completion strength and missing proof; if a single prompt mixes continue/resume with verify, rejudge, release, or done-claim language, this skill should win over ego-resume-context."
 ---
 
 # Ego Review Against Acceptance
