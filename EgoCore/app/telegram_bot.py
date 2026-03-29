@@ -48,6 +48,14 @@ try:
     _EVIDENCE_COLLECTOR_AVAILABLE = True
 except ImportError:
     _EVIDENCE_COLLECTOR_AVAILABLE = False
+try:
+    from app.openemotion_adapter.developmental_writeback import (
+        record_developmental_projection_from_finalized_sample,
+    )
+    _DEVELOPMENTAL_WRITEBACK_AVAILABLE = True
+except ImportError:
+    _DEVELOPMENTAL_WRITEBACK_AVAILABLE = False
+
 from app.runtime_v2 import (
     RuntimeV2FallbackRunner,
     RuntimeV2PromptFiles,
@@ -1921,6 +1929,14 @@ class TelegramBot:
                 if finalize_evidence:
                     sample = collector.finalize_sample()
                     if sample:
+                        if _DEVELOPMENTAL_WRITEBACK_AVAILABLE:
+                            try:
+                                record_developmental_projection_from_finalized_sample(
+                                    sample=sample,
+                                    sample_artifacts_dir=collector.artifacts_dir,
+                                )
+                            except Exception as e:
+                                logger.warning(f"[MVP16-DEVELOPMENTAL] Failed to sync finalized reply sample: {e}")
                         logger.info(f"[E4-EVIDENCE] Sample finalized: {sample.sample_id} complete={sample.is_complete()}")
             except Exception as e:
                 logger.warning(f"[E4-EVIDENCE] Failed to capture outbox_record: {e}")
@@ -1975,7 +1991,15 @@ class TelegramBot:
                         "success": True,
                     }
                 )
-                collector.finalize_sample()
+                sample = collector.finalize_sample()
+                if sample and _DEVELOPMENTAL_WRITEBACK_AVAILABLE:
+                    try:
+                        record_developmental_projection_from_finalized_sample(
+                            sample=sample,
+                            sample_artifacts_dir=collector.artifacts_dir,
+                        )
+                    except Exception as e:
+                        logger.warning(f"[MVP16-DEVELOPMENTAL] Failed to sync finalized command sample: {e}")
             except Exception as e:
                 logger.warning(f"[E4-EVIDENCE] Failed to finalize command sample: {e}")
 

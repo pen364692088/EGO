@@ -85,6 +85,9 @@ def check_continuity() -> dict:
         "identity_preserved": summary["identity_preserved"],
         "continuity_score": summary["continuity_score"],
         "persisted": summary.get("persisted", False),
+        "real_episode_count": summary.get("real_episode_count", 0),
+        "real_session_count": summary.get("real_session_count", 0),
+        "real_day_count": summary.get("real_day_count", 0),
         "has_real_data": True,
         "status": STATUS_PASS if summary["identity_preserved"] else STATUS_ALERT
     }
@@ -99,8 +102,10 @@ def check_metrics() -> dict:
     # DO NOT reset - we want real persisted data
     manager = get_developmental_manager()
     
-    # CRITICAL: Check if we have real data, not just defaults
-    if not manager.has_real_data():
+    summary = manager.get_summary()
+
+    # CRITICAL: Check if we have admission-grade real data, not just defaults
+    if not summary.get("has_real_data", False):
         return {
             "metrics": {},
             "alerts": [],
@@ -134,6 +139,9 @@ def check_metrics() -> dict:
     return {
         "metrics": metrics,
         "alerts": alerts,
+        "real_episode_count": summary.get("real_episode_count", 0),
+        "real_session_count": summary.get("real_session_count", 0),
+        "real_day_count": summary.get("real_day_count", 0),
         "has_real_data": True,
         "status": STATUS_PASS if not alerts else STATUS_ALERT
     }
@@ -148,8 +156,10 @@ def check_invariants() -> dict:
     # DO NOT reset - we want real persisted data
     manager = get_developmental_manager()
     
-    # CRITICAL: Check if we have real data, not just defaults
-    if not manager.has_real_data():
+    summary = manager.get_summary()
+
+    # CRITICAL: Check if we have admission-grade real data, not just defaults
+    if not summary.get("has_real_data", False):
         return {
             "violations": [],
             "violation_count": 0,
@@ -162,12 +172,52 @@ def check_invariants() -> dict:
     
     if not manager.check_identity_preservation():
         violations.append("identity_preserved = False")
+    if not summary.get("trajectory_refs_present", False):
+        violations.append("trajectory_refs_present = False")
+    if not summary.get("replay_refs_present", False):
+        violations.append("replay_refs_present = False")
     
     return {
         "violations": violations,
         "violation_count": len(violations),
+        "trajectory_refs_present": summary.get("trajectory_refs_present", False),
+        "replay_refs_present": summary.get("replay_refs_present", False),
         "has_real_data": True,
         "status": STATUS_PASS if not violations else STATUS_ALERT
+    }
+
+
+def check_admission_inputs() -> dict:
+    """Check admission-grade trajectory inputs from persisted real projection."""
+    manager = get_developmental_manager()
+    summary = manager.get_summary()
+
+    if not summary.get("has_real_data", False):
+        return {
+            "real_episode_count": 0,
+            "real_session_count": 0,
+            "real_day_count": 0,
+            "session_reset_transition_count": 0,
+            "calendar_rollover_transition_count": 0,
+            "trajectory_refs_present": False,
+            "replay_refs_present": False,
+            "admission_inputs_present": False,
+            "has_real_data": False,
+            "status": STATUS_INSUFFICIENT_EVIDENCE,
+            "reason": "No admission-grade real trajectory inputs found.",
+        }
+
+    return {
+        "real_episode_count": summary.get("real_episode_count", 0),
+        "real_session_count": summary.get("real_session_count", 0),
+        "real_day_count": summary.get("real_day_count", 0),
+        "session_reset_transition_count": summary.get("session_reset_transition_count", 0),
+        "calendar_rollover_transition_count": summary.get("calendar_rollover_transition_count", 0),
+        "trajectory_refs_present": summary.get("trajectory_refs_present", False),
+        "replay_refs_present": summary.get("replay_refs_present", False),
+        "admission_inputs_present": summary.get("admission_inputs_present", False),
+        "has_real_data": True,
+        "status": STATUS_PASS if summary.get("admission_inputs_present", False) else STATUS_ALERT,
     }
 
 
@@ -181,6 +231,7 @@ def run_daily_check() -> dict:
         "continuity": check_continuity(),
         "metrics": check_metrics(),
         "invariants": check_invariants(),
+        "admission_inputs": check_admission_inputs(),
     }
     
     # Overall status - handle insufficient_evidence as BLOCKED
@@ -190,10 +241,10 @@ def run_daily_check() -> dict:
         # If we don't have real data, this is BLOCKED, not PASS
         results["overall_status"] = STATUS_BLOCKED
         results["blocked_reason"] = "Insufficient real developmental data for validation"
-    elif STATUS_ALERT in all_statuses:
-        results["overall_status"] = STATUS_ALERT
     elif STATUS_FAIL in all_statuses:
         results["overall_status"] = STATUS_FAIL
+    elif STATUS_ALERT in all_statuses:
+        results["overall_status"] = STATUS_ALERT
     else:
         results["overall_status"] = STATUS_PASS
     
@@ -229,6 +280,9 @@ def format_report(results: dict) -> str:
             f"- Current Phase: {cont['current_phase']}",
             f"- Episodes: {cont['episodes']}",
             f"- Transitions: {cont['transitions']}",
+            f"- Real Episodes: {cont.get('real_episode_count', 0)}",
+            f"- Real Sessions: {cont.get('real_session_count', 0)}",
+            f"- Real Days: {cont.get('real_day_count', 0)}",
             f"- Identity Preserved: {cont['identity_preserved']}",
             f"- Continuity Score: {cont['continuity_score']:.2f}",
             f"- Persisted: {cont.get('persisted', False)}",
@@ -272,6 +326,8 @@ def format_report(results: dict) -> str:
     if inv.get("has_real_data"):
         lines.extend([
             f"- Violation Count: {inv['violation_count']}",
+            f"- Trajectory Refs Present: {inv.get('trajectory_refs_present', False)}",
+            f"- Replay Refs Present: {inv.get('replay_refs_present', False)}",
             f"- Status: {inv['status']}",
         ])
     else:
@@ -280,7 +336,32 @@ def format_report(results: dict) -> str:
             f"- **Status**: {inv['status']}",
             f"- **Reason**: {inv.get('reason', 'No real data')}",
         ])
-    
+
+    lines.extend([
+        f"",
+        f"## 5. Admission Inputs",
+    ])
+
+    adm = results["admission_inputs"]
+    if adm.get("has_real_data"):
+        lines.extend([
+            f"- Real Episode Count: {adm['real_episode_count']}",
+            f"- Real Session Count: {adm['real_session_count']}",
+            f"- Real Day Count: {adm['real_day_count']}",
+            f"- Session Reset Transitions: {adm['session_reset_transition_count']}",
+            f"- Calendar Rollover Transitions: {adm['calendar_rollover_transition_count']}",
+            f"- Trajectory Refs Present: {adm['trajectory_refs_present']}",
+            f"- Replay Refs Present: {adm['replay_refs_present']}",
+            f"- Admission Inputs Present: {adm['admission_inputs_present']}",
+            f"- Status: {adm['status']}",
+        ])
+    else:
+        lines.extend([
+            f"- **Has Real Data**: No",
+            f"- **Status**: {adm['status']}",
+            f"- **Reason**: {adm.get('reason', 'No real data')}",
+        ])
+
     lines.extend([
         f"",
         f"---",

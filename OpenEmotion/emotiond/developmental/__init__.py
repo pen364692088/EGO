@@ -9,13 +9,16 @@ from typing import Optional
 from .schema import (
     DevelopmentalState,
     DevelopmentalEpisode,
+    DevelopmentalWritebackEvent,
     TransitionRecord,
     GrowthMetric,
     DevelopmentalTrajectory,
 )
 from .manager import (
-    DevelopmentalManager, 
-    get_developmental_manager, 
+    DevelopmentalManager,
+    DEFAULT_OBSERVATION_DIR,
+    DEFAULT_REAL_SAMPLE_ARTIFACTS_DIR,
+    get_developmental_manager,
     reset_developmental_manager,
     DEFAULT_STATE_PATH,
 )
@@ -23,6 +26,7 @@ from .manager import (
 __all__ = [
     "DevelopmentalState",
     "DevelopmentalEpisode",
+    "DevelopmentalWritebackEvent",
     "TransitionRecord",
     "GrowthMetric",
     "DevelopmentalTrajectory",
@@ -30,4 +34,6 @@ __all__ = [
     "get_developmental_manager",
     "reset_developmental_manager",
     "DEFAULT_STATE_PATH",
+    "DEFAULT_REAL_SAMPLE_ARTIFACTS_DIR",
+    "DEFAULT_OBSERVATION_DIR",
 ]
