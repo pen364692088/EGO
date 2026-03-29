@@ -2,11 +2,13 @@
 Pytest configuration for OpenEmotion tests
 """
 import os
+import sys
 import pytest
 import pytest_asyncio
 import asyncio
 import tempfile
 import shutil
+import socket
 from emotiond.db import init_db
 from emotiond import api
 
@@ -39,21 +41,21 @@ async def isolated_db():
     """Setup isolated database for tests with proper cleanup"""
     from emotiond import config, db, core
     import importlib
-    
+
     test_data_dir = tempfile.mkdtemp(prefix="emotiond_test_")
     original_db_path = os.environ.get("EMOTIOND_DB_PATH")
     original_system_token = os.environ.get("EMOTIOND_SYSTEM_TOKEN")
     original_openclaw_token = os.environ.get("EMOTIOND_OPENCLAW_TOKEN")
-    
+
     os.environ["EMOTIOND_DB_PATH"] = os.path.join(test_data_dir, "test_emotiond.db")
     os.environ["EMOTIOND_SYSTEM_TOKEN"] = TEST_SYSTEM_TOKEN
     os.environ["EMOTIOND_OPENCLAW_TOKEN"] = TEST_OPENCLAW_TOKEN
-    
+
     importlib.reload(config)
     importlib.reload(db)
     importlib.reload(core)
     importlib.reload(api)
-    
+
     # Reset global state (including MVP-2 fields)
     core.emotion_state.valence = 0.0
     core.emotion_state.arousal = 0.3
@@ -69,26 +71,26 @@ async def isolated_db():
     core.emotion_state.energy = 0.7
     core.relationship_manager.relationships = {}
     core.relationship_manager.last_actions = {}
-    
+
     await db.init_db()
-    
+
     yield
-    
+
     if original_db_path:
         os.environ["EMOTIOND_DB_PATH"] = original_db_path
     else:
         os.environ.pop("EMOTIOND_DB_PATH", None)
-    
+
     if original_system_token:
         os.environ["EMOTIOND_SYSTEM_TOKEN"] = original_system_token
     else:
         os.environ.pop("EMOTIOND_SYSTEM_TOKEN", None)
-    
+
     if original_openclaw_token:
         os.environ["EMOTIOND_OPENCLAW_TOKEN"] = original_openclaw_token
     else:
         os.environ.pop("EMOTIOND_OPENCLAW_TOKEN", None)
-    
+
     # Reset state after test
     core.emotion_state.valence = 0.0
     core.emotion_state.arousal = 0.3
@@ -104,7 +106,7 @@ async def isolated_db():
     core.emotion_state.energy = 0.7
     core.relationship_manager.relationships = {}
     core.relationship_manager.last_actions = {}
-    
+
     shutil.rmtree(test_data_dir, ignore_errors=True)
 
 
@@ -118,21 +120,21 @@ async def setup_db():
     """Alias for isolated_db - backward compatibility"""
     from emotiond import config, db, core
     import importlib
-    
+
     test_data_dir = tempfile.mkdtemp(prefix="emotiond_test_")
     original_db_path = os.environ.get("EMOTIOND_DB_PATH")
     original_system_token = os.environ.get("EMOTIOND_SYSTEM_TOKEN")
     original_openclaw_token = os.environ.get("EMOTIOND_OPENCLAW_TOKEN")
-    
+
     os.environ["EMOTIOND_DB_PATH"] = os.path.join(test_data_dir, "test_emotiond.db")
     os.environ["EMOTIOND_SYSTEM_TOKEN"] = TEST_SYSTEM_TOKEN
     os.environ["EMOTIOND_OPENCLAW_TOKEN"] = TEST_OPENCLAW_TOKEN
-    
+
     importlib.reload(config)
     importlib.reload(db)
     importlib.reload(core)
     importlib.reload(api)
-    
+
     core.emotion_state.valence = 0.0
     core.emotion_state.arousal = 0.3
     core.emotion_state.subjective_time = 0
@@ -147,26 +149,26 @@ async def setup_db():
     core.emotion_state.energy = 0.7
     core.relationship_manager.relationships = {}
     core.relationship_manager.last_actions = {}
-    
+
     await db.init_db()
-    
+
     yield
-    
+
     if original_db_path:
         os.environ["EMOTIOND_DB_PATH"] = original_db_path
     else:
         os.environ.pop("EMOTIOND_DB_PATH", None)
-    
+
     if original_system_token:
         os.environ["EMOTIOND_SYSTEM_TOKEN"] = original_system_token
     else:
         os.environ.pop("EMOTIOND_SYSTEM_TOKEN", None)
-    
+
     if original_openclaw_token:
         os.environ["EMOTIOND_OPENCLAW_TOKEN"] = original_openclaw_token
     else:
         os.environ.pop("EMOTIOND_OPENCLAW_TOKEN", None)
-    
+
     core.emotion_state.valence = 0.0
     core.emotion_state.arousal = 0.3
     core.emotion_state.subjective_time = 0
@@ -181,7 +183,7 @@ async def setup_db():
     core.emotion_state.energy = 0.7
     core.relationship_manager.relationships = {}
     core.relationship_manager.last_actions = {}
-    
+
     shutil.rmtree(test_data_dir, ignore_errors=True)
 
 
@@ -201,22 +203,38 @@ def mock_emotiond_service():
     import subprocess
     import time
     import requests
-    import signal
     import os
-    
+    from contextlib import closing
+
+    def get_free_port():
+        with closing(socket.socket(socket.AF_INET, socket.SOCK_STREAM)) as sock:
+            sock.bind(("127.0.0.1", 0))
+            sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+            return sock.getsockname()[1]
+
+    mock_port = get_free_port()
+    mock_base_url = f"http://127.0.0.1:{mock_port}"
+    original_emotiond_url = os.environ.get("EMOTIOND_URL")
+    original_emotiond_base_url = os.environ.get("EMOTIOND_BASE_URL")
+    original_mock_port = os.environ.get("EMOTIOND_MOCK_PORT")
+
+    os.environ["EMOTIOND_URL"] = mock_base_url
+    os.environ["EMOTIOND_BASE_URL"] = mock_base_url
+    os.environ["EMOTIOND_MOCK_PORT"] = str(mock_port)
+
     # Start mock service
     mock_script = os.path.join(os.path.dirname(__file__), "fixtures", "mock_emotiond.py")
     proc = subprocess.Popen(
-        ["python3", mock_script],
+        [sys.executable, mock_script],
         stdout=subprocess.PIPE,
         stderr=subprocess.PIPE
     )
-    
+
     # Wait for service to be ready
     max_wait = 10
     for i in range(max_wait):
         try:
-            r = requests.get("http://127.0.0.1:18080/health", timeout=1)
+            r = requests.get(f"{mock_base_url}/health", timeout=1)
             if r.status_code == 200:
                 yield
                 break
@@ -226,11 +244,35 @@ def mock_emotiond_service():
         # Clean up if service never started
         proc.terminate()
         proc.wait()
+        if original_emotiond_url is not None:
+            os.environ["EMOTIOND_URL"] = original_emotiond_url
+        else:
+            os.environ.pop("EMOTIOND_URL", None)
+        if original_emotiond_base_url is not None:
+            os.environ["EMOTIOND_BASE_URL"] = original_emotiond_base_url
+        else:
+            os.environ.pop("EMOTIOND_BASE_URL", None)
+        if original_mock_port is not None:
+            os.environ["EMOTIOND_MOCK_PORT"] = original_mock_port
+        else:
+            os.environ.pop("EMOTIOND_MOCK_PORT", None)
         pytest.fail("Mock emotiond service failed to start")
-    
+
     # Clean up
     proc.terminate()
     proc.wait()
+    if original_emotiond_url is not None:
+        os.environ["EMOTIOND_URL"] = original_emotiond_url
+    else:
+        os.environ.pop("EMOTIOND_URL", None)
+    if original_emotiond_base_url is not None:
+        os.environ["EMOTIOND_BASE_URL"] = original_emotiond_base_url
+    else:
+        os.environ.pop("EMOTIOND_BASE_URL", None)
+    if original_mock_port is not None:
+        os.environ["EMOTIOND_MOCK_PORT"] = original_mock_port
+    else:
+        os.environ.pop("EMOTIOND_MOCK_PORT", None)
 
 
 # Override emotiond_available fixture to use mock service

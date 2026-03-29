@@ -13,47 +13,61 @@ import time
 import os
 import json
 import subprocess
+from pathlib import Path
 
-EMOTIOND_URL = os.environ.get('EMOTIOND_URL', 'http://127.0.0.1:18080')
-EMOTIOND_TOKEN = os.environ.get('EMOTIOND_OPENCLAW_TOKEN', '93e0a7a76de9e871b5c3ce658ce2c426b2ab69148b7b88b73100db0356ffcc72')
+DEFAULT_EMOTIOND_TOKEN = '93e0a7a76de9e871b5c3ce658ce2c426b2ab69148b7b88b73100db0356ffcc72'
+
+
+def _emotiond_url() -> str:
+    return os.environ.get('EMOTIOND_URL', 'http://127.0.0.1:18080')
+
+
+def _emotiond_token() -> str:
+    return os.environ.get('EMOTIOND_OPENCLAW_TOKEN', DEFAULT_EMOTIOND_TOKEN)
+
+
+def _outcome_capture_module_path() -> Path:
+    return (
+        Path(__file__).resolve().parent.parent
+        / 'integrations'
+        / 'openclaw'
+        / 'hooks'
+        / 'emotiond-bridge'
+        / 'outcomeCapture.js'
+    )
+
+
+def _node_module_literal(path: Path) -> str:
+    return json.dumps(path.as_posix())
 
 
 
 
 class TestOutcomeCapture:
     """Test D4 outcome capture functionality."""
-    
+
     def test_outcome_capture_module_exists(self):
         """Verify outcomeCapture.js module exists."""
-        module_path = os.path.join(
-            os.path.dirname(__file__), 
-            '..', 'integrations', 'openclaw', 'hooks', 'emotiond-bridge', 'outcomeCapture.js'
-        )
-        assert os.path.exists(module_path), f"outcomeCapture.js not found at {module_path}"
-    
+        module_path = _outcome_capture_module_path()
+        assert module_path.exists(), f"outcomeCapture.js not found at {module_path}"
+
     def test_outcome_capture_module_loads(self):
         """Verify outcomeCapture.js module loads without errors."""
-        module_path = os.path.join(
-            os.path.dirname(__file__), 
-            '..', 'integrations', 'openclaw', 'hooks', 'emotiond-bridge', 'outcomeCapture.js'
-        )
+        module_path = _outcome_capture_module_path()
         result = subprocess.run(
-            ['node', '-e', f'const m = require("{module_path}"); console.log("OK")'],
+            ['node', '-e', f'const m = require({_node_module_literal(module_path)}); console.log("OK")'],
             capture_output=True,
             text=True
         )
         assert result.returncode == 0, f"Module load failed: {result.stderr}"
         assert "OK" in result.stdout
-    
+
     def test_outcome_capture_exports(self):
         """Verify outcomeCapture.js exports required functions."""
-        module_path = os.path.join(
-            os.path.dirname(__file__), 
-            '..', 'integrations', 'openclaw', 'hooks', 'emotiond-bridge', 'outcomeCapture.js'
-        )
+        module_path = _outcome_capture_module_path()
         result = subprocess.run(
             ['node', '-e', f'''
-const m = require("{module_path}");
+const m = require({_node_module_literal(module_path)});
 const required = [
     'captureToolResult', 'captureEnvOutcome', 'captureInteractionOutcome',
     'captureAllOutcomes', 'extractToolResultFromContext', 'buildConsequenceSummary',
@@ -71,16 +85,16 @@ console.log("OK");
             text=True
         )
         assert result.returncode == 0, f"Export check failed: {result.stderr}"
-    
+
     def test_send_tool_result_event(self, emotiond_available):
         """Test sending tool_result world_event directly."""
         headers = {
             'Content-Type': 'application/json',
-            'Authorization': f'Bearer {EMOTIOND_TOKEN}'
+            'Authorization': f'Bearer {_emotiond_token()}'
         }
-        
+
         target_id = f'test_tool_result_{int(time.time())}'
-        
+
         # Build outcome payload
         payload = {
             'type': 'world_event',
@@ -105,25 +119,25 @@ console.log("OK");
                 }
             }
         }
-        
+
         r = requests.post(
-            f"{EMOTIOND_URL}/event",
+            f"{_emotiond_url()}/event",
             json=payload,
             headers=headers,
             timeout=5
         )
-        
+
         assert r.status_code in [200, 201, 202], f"Failed to send event: {r.status_code} {r.text}"
-    
+
     def test_send_env_outcome_event(self, emotiond_available):
         """Test sending env_outcome world_event directly."""
         headers = {
             'Content-Type': 'application/json',
-            'Authorization': f'Bearer {EMOTIOND_TOKEN}'
+            'Authorization': f'Bearer {_emotiond_token()}'
         }
-        
+
         target_id = f'test_env_{int(time.time())}'
-        
+
         payload = {
             'type': 'world_event',
             'actor': 'system',
@@ -146,25 +160,25 @@ console.log("OK");
                 }
             }
         }
-        
+
         r = requests.post(
-            f"{EMOTIOND_URL}/event",
+            f"{_emotiond_url()}/event",
             json=payload,
             headers=headers,
             timeout=5
         )
-        
+
         assert r.status_code in [200, 201, 202], f"Failed to send event: {r.status_code} {r.text}"
-    
+
     def test_send_interaction_outcome_event(self, emotiond_available):
         """Test sending interaction_outcome world_event directly."""
         headers = {
             'Content-Type': 'application/json',
-            'Authorization': f'Bearer {EMOTIOND_TOKEN}'
+            'Authorization': f'Bearer {_emotiond_token()}'
         }
-        
+
         target_id = f'test_interaction_{int(time.time())}'
-        
+
         payload = {
             'type': 'world_event',
             'actor': 'system',
@@ -187,25 +201,25 @@ console.log("OK");
                 }
             }
         }
-        
+
         r = requests.post(
-            f"{EMOTIOND_URL}/event",
+            f"{_emotiond_url()}/event",
             json=payload,
             headers=headers,
             timeout=5
         )
-        
+
         assert r.status_code in [200, 201, 202], f"Failed to send event: {r.status_code} {r.text}"
-    
+
     def test_tool_result_status_simulation_success(self, emotiond_available):
         """Simulate tool success outcome capture."""
         headers = {
             'Content-Type': 'application/json',
-            'Authorization': f'Bearer {EMOTIOND_TOKEN}'
+            'Authorization': f'Bearer {_emotiond_token()}'
         }
-        
+
         target_id = f'test_success_{int(time.time())}'
-        
+
         payload = {
             'type': 'world_event',
             'actor': 'system',
@@ -229,25 +243,25 @@ console.log("OK");
                 }
             }
         }
-        
+
         r = requests.post(
-            f"{EMOTIOND_URL}/event",
+            f"{_emotiond_url()}/event",
             json=payload,
             headers=headers,
             timeout=5
         )
-        
+
         assert r.status_code in [200, 201, 202]
-    
+
     def test_tool_result_status_simulation_failure(self, emotiond_available):
         """Simulate tool failure outcome capture."""
         headers = {
             'Content-Type': 'application/json',
-            'Authorization': f'Bearer {EMOTIOND_TOKEN}'
+            'Authorization': f'Bearer {_emotiond_token()}'
         }
-        
+
         target_id = f'test_failure_{int(time.time())}'
-        
+
         payload = {
             'type': 'world_event',
             'actor': 'system',
@@ -272,25 +286,25 @@ console.log("OK");
                 }
             }
         }
-        
+
         r = requests.post(
-            f"{EMOTIOND_URL}/event",
+            f"{_emotiond_url()}/event",
             json=payload,
             headers=headers,
             timeout=5
         )
-        
+
         assert r.status_code in [200, 201, 202]
-    
+
     def test_tool_result_status_simulation_timeout(self, emotiond_available):
         """Simulate tool timeout outcome capture."""
         headers = {
             'Content-Type': 'application/json',
-            'Authorization': f'Bearer {EMOTIOND_TOKEN}'
+            'Authorization': f'Bearer {_emotiond_token()}'
         }
-        
+
         target_id = f'test_timeout_{int(time.time())}'
-        
+
         payload = {
             'type': 'world_event',
             'actor': 'system',
@@ -314,25 +328,25 @@ console.log("OK");
                 }
             }
         }
-        
+
         r = requests.post(
-            f"{EMOTIOND_URL}/event",
+            f"{_emotiond_url()}/event",
             json=payload,
             headers=headers,
             timeout=5
         )
-        
+
         assert r.status_code in [200, 201, 202]
-    
+
     def test_payload_size_within_3kb_limit(self, emotiond_available):
         """Verify outcome payload is within 3KB limit."""
         headers = {
             'Content-Type': 'application/json',
-            'Authorization': f'Bearer {EMOTIOND_TOKEN}'
+            'Authorization': f'Bearer {_emotiond_token()}'
         }
-        
+
         target_id = f'test_size_{int(time.time())}'
-        
+
         # Build a payload that should be within 3KB
         payload = {
             'type': 'world_event',
@@ -357,30 +371,30 @@ console.log("OK");
                 }
             }
         }
-        
+
         # Verify payload size
         payload_size = len(json.dumps(payload))
         assert payload_size <= 3072, f"Payload size {payload_size} exceeds 3KB limit"
-        
+
         r = requests.post(
-            f"{EMOTIOND_URL}/event",
+            f"{_emotiond_url()}/event",
             json=payload,
             headers=headers,
             timeout=5
         )
-        
+
         assert r.status_code in [200, 201, 202]
-    
+
     def test_replayable_trace_pointer(self, emotiond_available):
         """Test that trace pointer is included for replay verification."""
         headers = {
             'Content-Type': 'application/json',
-            'Authorization': f'Bearer {EMOTIOND_TOKEN}'
+            'Authorization': f'Bearer {_emotiond_token()}'
         }
-        
+
         target_id = f'test_trace_{int(time.time())}'
         trace_hash = 'a1b2c3d4'  # Simulated hash of trace path
-        
+
         payload = {
             'type': 'world_event',
             'actor': 'system',
@@ -404,16 +418,16 @@ console.log("OK");
                 }
             }
         }
-        
+
         r = requests.post(
-            f"{EMOTIOND_URL}/event",
+            f"{_emotiond_url()}/event",
             json=payload,
             headers=headers,
             timeout=5
         )
-        
+
         assert r.status_code in [200, 201, 202]
-        
+
         # Verify trace pointer structure
         trace_pointer = payload['meta']['outcome']['payload']['p']
         assert trace_pointer['tid'] == target_id
@@ -423,19 +437,16 @@ console.log("OK");
 
 class TestOutcomeCaptureSafeWrapper:
     """Test safe wrapper functionality - no throw if emotiond unavailable."""
-    
+
     def test_safe_wrapper_no_throw_on_connection_error(self):
         """Verify safe wrapper handles connection errors gracefully."""
-        module_path = os.path.join(
-            os.path.dirname(__file__), 
-            '..', 'integrations', 'openclaw', 'hooks', 'emotiond-bridge', 'outcomeCapture.js'
-        )
-        
+        module_path = _outcome_capture_module_path()
+
         # Test with invalid URL
         result = subprocess.run(
             ['node', '-e', f'''
 process.env.EMOTIOND_BASE_URL = 'http://localhost:59999';
-const m = require("{module_path}");
+const m = require({_node_module_literal(module_path)});
 
 async function test() {{
     const result = await m.captureToolResult(
@@ -458,7 +469,7 @@ test().catch(e => {{
             text=True,
             timeout=10
         )
-        
+
         # Should not throw, should return error result
         assert "OK" in result.stdout, f"Test failed: {result.stderr}"
         assert "success: false" in result.stdout
