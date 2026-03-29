@@ -182,7 +182,9 @@ Step 03 开始前，先执行一个固定前置守门：
 - `Step 06B` 已完成并发布，正式结论为：`reflection/counterfactual guidance now shows bounded downstream behavioral relevance on the current /plan and /decision/target explanation mainline surfaces while preserving proposal_only discipline and behavioral_authority = none`
 - `Step 07` 已完成并发布，正式结论为：`MVP16 unblock audit is complete; the remaining formal gate is admission review rather than upstream component-proof gaps`
 - `Step 08` 已完成并发布，正式结论为：`admission review = not admitted because real developmental data and long-horizon evidence are still insufficient`
-- 后续正式施工从 `Step 08A` 开始
+- `Step 08A` 已完成并通过 verifier，正式结论为：`real developmental admission inputs are established on a persisted real trajectory`
+- `Step 08B` 已完成 author-side retry review，正式结论为：`recommends_admit while formal publication remains blocked pending independent reviewer`
+- 后续正式施工从 `Step 08B` 的独立 reviewer 开始
 `Step 04` 仍必须继续服从 `Step 03A` 与 `Step 03` 已落定的 scope guard。
 
 补充说明：
@@ -238,6 +240,8 @@ Step 03 开始前，先执行一个固定前置守门：
 - `OpenEmotion/roadmap/SELF_AWARE_STEP_07_REVIEW_20260330.md`
 - `OpenEmotion/roadmap/SELF_AWARE_STEP_08_EXECUTION_REPORT_20260330.md`
 - `OpenEmotion/roadmap/SELF_AWARE_STEP_08_REVIEW_20260330.md`
+- `OpenEmotion/roadmap/SELF_AWARE_STEP_08B_EXECUTION_REPORT_20260329.md`
+- `OpenEmotion/roadmap/SELF_AWARE_STEP_08B_REVIEW_20260329.md`
 
 ### 6.2 版本 spec
 
@@ -271,6 +275,7 @@ Step 03 开始前，先执行一个固定前置守门：
 - `Tasks/active/SELF_AWARE_STEP_07_mvp16_unblock.md`
 - `Tasks/active/SELF_AWARE_STEP_08_admission_review.md`
 - `Tasks/active/SELF_AWARE_STEP_08A_real_developmental_evidence_closure.md`
+- `Tasks/active/SELF_AWARE_STEP_08B_admission_retry_review.md`
 
 ---
 

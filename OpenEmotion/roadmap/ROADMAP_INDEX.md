@@ -52,6 +52,8 @@
 - Step04E 执行报告：`OpenEmotion/roadmap/SELF_AWARE_STEP_04E_EXECUTION_REPORT_20260329.md`
 - Step04F 执行报告：`OpenEmotion/roadmap/SELF_AWARE_STEP_04F_EXECUTION_REPORT_20260329.md`
 - Step04F review：`OpenEmotion/roadmap/SELF_AWARE_STEP_04F_REVIEW_20260329.md`
+- Step08B 执行报告：`OpenEmotion/roadmap/SELF_AWARE_STEP_08B_EXECUTION_REPORT_20260329.md`
+- Step08B review：`OpenEmotion/roadmap/SELF_AWARE_STEP_08B_REVIEW_20260329.md`
 - 逐步任务：
   - `Tasks/active/SELF_AWARE_STEP_00_normalization_layer.md`
   - `Tasks/active/SELF_AWARE_STEP_01_current_state_recompute.md`
@@ -74,6 +76,8 @@
   - `Tasks/active/SELF_AWARE_STEP_06B_reflection_behavioral_relevance_formal_proof.md`
   - `Tasks/active/SELF_AWARE_STEP_07_mvp16_unblock.md`
   - `Tasks/active/SELF_AWARE_STEP_08_admission_review.md`
+  - `Tasks/active/SELF_AWARE_STEP_08A_real_developmental_evidence_closure.md`
+  - `Tasks/active/SELF_AWARE_STEP_08B_admission_retry_review.md`
 
 ## Phase Navigation
 
@@ -156,7 +160,7 @@
 - 主入口：`OpenEmotion/docs/mvp15/MVP15_STAGE_OVERVIEW.md`
 - 目标：建立受治理的自我反思与反事实自我评估
 - 进入条件：MVP14 completed
-- 注：当前路线里，`MVP15` 已完成基础 infra、shadow artifact 诊断、bounded mainline consumer convergence，以及 bounded downstream behavioral relevance proof；`Step07` 与 `Step08` 已完成，当前下一步是 `Step08A` 的 real developmental evidence closure
+- 注：当前路线里，`MVP15` 已完成基础 infra、shadow artifact 诊断、bounded mainline consumer convergence，以及 bounded downstream behavioral relevance proof；`Step07`、`Step08`、`Step08A` 已完成，`Step08B` author-side retry review 已给出 recommends admit，当前唯一剩余门是 independent reviewer
 - 离开条件：reflection proposals、counterfactual evaluation、replayability 达标
 - 建议读取顺序：
   1. `OpenEmotion/docs/mvp15/MVP15_STAGE_OVERVIEW.md`
@@ -178,6 +182,9 @@
   17. `OpenEmotion/roadmap/SELF_AWARE_STEP_08_EXECUTION_REPORT_20260330.md`
   18. `OpenEmotion/roadmap/SELF_AWARE_STEP_08_REVIEW_20260330.md`
   19. `Tasks/active/SELF_AWARE_STEP_08A_real_developmental_evidence_closure.md`
+  20. `Tasks/active/SELF_AWARE_STEP_08B_admission_retry_review.md`
+  21. `OpenEmotion/roadmap/SELF_AWARE_STEP_08B_EXECUTION_REPORT_20260329.md`
+  22. `OpenEmotion/roadmap/SELF_AWARE_STEP_08B_REVIEW_20260329.md`
 
 ### MVP16 — Open Developmental Self
 - 主入口：`OpenEmotion/docs/mvp16/MVP16_STAGE_OVERVIEW.md`

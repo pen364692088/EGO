@@ -6,19 +6,19 @@
     "start": "2026-03-12",
     "duration_days": 14,
     "day": 18,
-    "last_check": "2026-03-29T12:29:06.312070",
+    "last_check": "2026-03-29T12:33:50.139676",
     "overall_status": "PASS",
     "note": "Daily check now correctly returns insufficient_evidence when no real data exists. Persistence-backed verification is working."
   },
   "promotion_blocked": true,
-  "block_reason": "mvp16_admission_not_granted_insufficient_real_developmental_data",
+  "block_reason": "mvp16_admission_retry_independent_review_pending",
   "next_version": null,
   "allowed_workstreams": [
     "verification_fix",
     "minimal_wiring_fix",
     "documentation_alignment",
     "bug_fixes",
-    "real_developmental_evidence_closure"
+    "admission_retry_review"
   ],
   "forbidden_workstreams": [
     "new_features",
@@ -27,8 +27,7 @@
     "observation_based_promotion"
   ],
   "active_blockers": [
-    "MVP16 admission review completed with no-go: no real developmental data is currently available for continuity / metrics / invariants validation",
-    "long-horizon continuity / governed growth / identity-preserving replay are still not evidenced on a real accumulated developmental trajectory"
+    "Step08B author-side admission retry review recommends admit, but formal publication still requires the mandatory independent reviewer"
   ],
   "resolved_blockers": [
     {
@@ -60,24 +59,36 @@
       "resolved_at": "2026-03-30T04:10:00Z",
       "resolution": "Step07 completed the unblock audit and confirmed that the primary remaining gate is admission review rather than upstream MVP12-15 component-proof gaps.",
       "repair_task": "SELF_AWARE_STEP_07"
+    },
+    {
+      "blocker": "MVP16 admission review completed with no-go: no real developmental data is currently available for continuity / metrics / invariants validation",
+      "resolved_at": "2026-03-29T12:33:50.139676",
+      "resolution": "Step08A established real developmental admission inputs on the persisted proto_self.v2 Telegram trajectory, and Step08B author-side retry review now recommends admit.",
+      "repair_task": "SELF_AWARE_STEP_08A"
+    },
+    {
+      "blocker": "long-horizon continuity / governed growth / identity-preserving replay are still not evidenced on a real accumulated developmental trajectory",
+      "resolved_at": "2026-03-29T12:33:50.139676",
+      "resolution": "day_18.md, real_trajectory_index.json, and real_trajectory_replay_audit.json now jointly provide admission-grade continuity, governance, identity, and replay evidence on a persisted real trajectory.",
+      "repair_task": "SELF_AWARE_STEP_08A"
     }
   ],
   "mvp16_completion": {
     "status": "blocked",
-    "reason": "mvp16_admission_not_granted_insufficient_real_developmental_data",
+    "reason": "mvp16_admission_retry_independent_review_pending",
     "tests": 30,
     "gates": [
       "A",
       "B",
       "C"
     ],
-    "exit_criteria_met": "admission_not_granted_real_developmental_evidence_missing"
+    "exit_criteria_met": "author_recommended_admit_independent_review_pending"
   },
   "observation_metrics": {
     "status": "valid",
     "note": "Persistence-backed daily check is now working. Returns insufficient_evidence when no real data exists."
   },
-  "last_update": "2026-03-29T12:29:06.312070",
+  "last_update": "2026-03-29T12:33:50.139676",
   "history": [
     {
       "phase": "MVP11.5",
@@ -103,6 +114,11 @@
       "phase": "MVP16",
       "audit_status": "Admission Reviewed - Not Admitted",
       "reason": "mvp16_admission_not_granted_insufficient_real_developmental_data"
+    },
+    {
+      "phase": "MVP16",
+      "audit_status": "Admission Retry Author Review - Recommends Admit",
+      "reason": "mvp16_admission_retry_independent_review_pending"
     }
   ],
   "repair_verification": {

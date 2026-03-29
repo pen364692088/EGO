@@ -1,6 +1,6 @@
 {
   "schema_version": "self_aware.normalized_state.v1",
-  "generated_at": "2026-03-30T04:10:00Z",
+  "generated_at": "2026-03-29T12:33:50Z",
   "owner": "Codex",
   "authority_priority": [
     "EgoCore/docs/PROGRAM_STATE_UNIFIED.yaml",
@@ -21,7 +21,7 @@
       "version": "MVP16",
       "phase": "Open Developmental Self",
       "status": "blocked",
-      "block_reason": "mvp16_admission_not_granted_insufficient_real_developmental_data"
+      "block_reason": "mvp16_admission_retry_independent_review_pending"
     },
     "host_support": {
       "eg_phase_state": "shadow_running",
@@ -81,7 +81,7 @@
     {
       "ref": "OE_MVP:16",
       "status": "blocked",
-      "note": "Step07 completed the unblock audit and Step08 completed the formal admission review; MVP16 is still blocked because no real developmental data currently exists for admission-grade continuity / governed-growth / identity / replay evidence"
+      "note": "Step07 completed the unblock audit, Step08 produced a historical no-go, Step08A then established real developmental admission inputs on a persisted real trajectory, and Step08B author-side retry review now recommends admit; the formal state remains blocked only because the mandatory independent reviewer has not yet published the retry verdict"
     }
   ],
   "allowed_workstreams": [
@@ -89,7 +89,7 @@
     "minimal_wiring_fix",
     "documentation_alignment",
     "bug_fixes",
-    "real_developmental_evidence_closure"
+    "admission_retry_review"
   ],
   "forbidden_workstreams": [
     "new_features",
@@ -102,8 +102,8 @@
       "topic": "mvp16_state",
       "higher_priority_source": "OpenEmotion/roadmap/ROADMAP_STATE.json",
       "lower_priority_source": "OpenEmotion/artifacts/handoff/LATEST_HANDOFF.md",
-      "resolution": "formal_state=blocked",
-      "reason": "handoff cannot override blocked roadmap state; upstream component blockers are narrowed, but admission was not granted because real developmental evidence is still insufficient"
+      "resolution": "formal_state=blocked_pending_independent_review",
+      "reason": "the real developmental evidence blocker is now closed, but the author-side admission retry still cannot be published as formal admission until the mandatory independent reviewer completes"
     },
     {
       "topic": "mvp14_status",
@@ -149,13 +149,13 @@
     }
   },
   "next_action": {
-      "step": "SELF_AWARE_STEP_08A",
-      "title": "MVP16 Real Developmental Evidence Closure",
-      "next_minimal_closure_action": "accumulate real developmental episodes / transitions and generate admission-grade continuity, governed-growth, identity, and replay evidence on a persisted trajectory",
+      "step": "SELF_AWARE_STEP_08B",
+      "title": "MVP16 Admission Retry Review",
+      "next_minimal_closure_action": "run the mandatory independent reviewer on the Step08B retry package; if it concurs, publish the admitted verdict and clear the blocked state",
       "workflow_requirements": {
         "full_spec_required": true,
         "independent_reviewer_required": true,
-      "verifier_required": true
-    }
+        "verifier_required": true
+      }
   }
 }
