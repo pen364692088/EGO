@@ -967,6 +967,35 @@ def build_runtime_status_reply(state: Any) -> str:
     if not (hasattr(state, "is_busy") and state.is_busy()):
         return "当前没有运行中的任务。"
 
+    if hasattr(state, "pending_task_conflict") and getattr(state, "pending_task_conflict", None):
+        conflict = getattr(state, "pending_task_conflict", None) or {}
+        incoming_text = str(conflict.get("incoming_text") or "").strip()
+        if incoming_text:
+            return (
+                "当前有一个待确认的新任务。\n\n"
+                f"新任务：{incoming_text[:120]}\n\n"
+                "回复“替换”会结束旧任务并开始新任务；回复“追加”会把它排到当前任务后面；回复“取消”会保持当前任务不变。"
+            )
+        return "当前有一个待确认的新任务。回复“替换 / 追加 / 取消”来决定如何处理。"
+
+    if hasattr(state, "get_run_item_status_summary"):
+        summary = state.get_run_item_status_summary()
+        completed = list(summary.get("completed") or [])
+        active = summary.get("active")
+        pending = list(summary.get("pending") or [])
+        blocked = list(summary.get("blocked") or [])
+        parts = []
+        if completed:
+            parts.append(f"已完成：{'、'.join(completed[:3])}")
+        if active:
+            parts.append(f"当前正在处理：{active}")
+        if pending:
+            parts.append(f"后续还有：{'、'.join(pending[:3])}")
+        if blocked:
+            parts.append(f"当前卡住：{'、'.join(blocked[:3])}")
+        if parts:
+            return "\n".join(parts)
+
     # 有 current_step
     if hasattr(state, "current_step") and state.current_step:
         goal = getattr(state, "current_goal", "任务")

@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import inspect
+
 from app.telegram_runtime_result import TelegramTurnReply, TelegramTurnResult
 from app.runtime_v2.state import RuntimeV2State
 
@@ -31,13 +33,19 @@ class TelegramRuntimeFallbackRunner:
         user_input: str,
         state: RuntimeV2State,
         progress_callback=None,
+        run_event_callback=None,
     ) -> TelegramTurnResult:
         loop = self.attach_state(session_key, state)
-        result = await loop.run_turn_typed(
-            session_id=session_key,
-            user_input=user_input,
-            progress_callback=progress_callback,
-        )
+        kwargs = {
+            "session_id": session_key,
+            "user_input": user_input,
+        }
+        parameters = inspect.signature(loop.run_turn_typed).parameters
+        if "progress_callback" in parameters:
+            kwargs["progress_callback"] = progress_callback
+        if "run_event_callback" in parameters:
+            kwargs["run_event_callback"] = run_event_callback
+        result = await loop.run_turn_typed(**kwargs)
         return self.adapt_result(result)
 
     def adapt_result(self, result) -> TelegramTurnResult:

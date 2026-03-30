@@ -7,6 +7,7 @@ from typing import Any, Dict, List, Optional
 from .action_protocol import RuntimeV2Action
 from .progress_events import ProgressEvent, ProgressEventType, build_progress_event
 from .runtime_reply import RuntimeV2Reply, RuntimeV2TurnResult
+from .run_items import CompletionGateResult, verify_run_item
 from .state import RuntimeV2State
 from .tool_broker import RuntimeV2ToolBroker
 from .verifier import RuntimeV2Verifier
@@ -14,7 +15,7 @@ from .verifier import RuntimeV2Verifier
 # stdout 截断阈值
 MAX_STDOUT_IN_STATE = 2000  # 字符
 MAX_STDERR_IN_STATE = 500
-EXPLICIT_OUTPUT_FILENAME_RE = re.compile(r"(?<![\\/])([A-Za-z0-9][A-Za-z0-9 _.-]{0,120}\.[A-Za-z0-9]{1,8})")
+EXPLICIT_OUTPUT_FILENAME_RE = re.compile(r"(?<![A-Za-z0-9_.\\/\\-])([A-Za-z0-9][A-Za-z0-9 _.-]{0,120}\.[A-Za-z0-9]{1,8})")
 WINDOWS_TARGET_DIRECTORY_RE = re.compile(r"([A-Za-z]:\\[^\"\n\r]+?)(?=\s*目录下)")
 
 
@@ -185,6 +186,67 @@ def _verify_declared_outputs_exist(state: RuntimeV2State) -> Optional[Dict[str, 
     }
 
 
+def _evaluate_run_items_completion(state: RuntimeV2State) -> Optional[CompletionGateResult]:
+    run_items = state.get_run_items() if hasattr(state, "get_run_items") else []
+    if not run_items:
+        return None
+
+    active_item = state.get_active_run_item() if hasattr(state, "get_active_run_item") else None
+    if active_item is not None and active_item.status in {"running", "blocked"}:
+        verification = verify_run_item(active_item)
+        if verification.get("passed"):
+            state.mark_active_run_item_verified(verification)
+        else:
+            state.mark_active_run_item_blocked(verification)
+            return CompletionGateResult(
+                passed=False,
+                reason=verification.get("reason") or "run_item_verification_failed",
+                pending_items=[
+                    item.description for item in state.get_run_items() if item.status != "verified"
+                ],
+                verification_result=verification,
+            )
+
+    state.ensure_active_run_item_started()
+    remaining_items = [item.description for item in state.get_run_items() if item.status != "verified"]
+    if remaining_items:
+        return CompletionGateResult(
+            passed=False,
+            reason="next_item_pending",
+            pending_items=remaining_items,
+            verification_result={
+                "passed": True,
+                "reason": "current_item_verified",
+                "evidence": {"remaining_items": remaining_items},
+            },
+        )
+
+    return CompletionGateResult(
+        passed=True,
+        reason="run_items_verified",
+        pending_items=[],
+        verification_result={
+            "passed": True,
+            "reason": "run_items_verified",
+            "evidence": {"checked_items": [item.description for item in state.get_run_items()]},
+        },
+    )
+
+
+def _build_host_completion_summary(state: RuntimeV2State, fallback_summary: Optional[str]) -> str:
+    run_items = state.get_run_items() if hasattr(state, "get_run_items") else []
+    if not run_items:
+        return fallback_summary or "已完成。"
+    verified_items = [item for item in run_items if item.status == "verified"]
+    if not verified_items:
+        return fallback_summary or "已完成。"
+    lines = ["已完成这些任务："]
+    for index, item in enumerate(verified_items, start=1):
+        target = Path(item.canonical_path).name if item.canonical_path else item.description
+        lines.append(f"{index}. 已验证 {target}")
+    return "\n".join(lines)
+
+
 class RuntimeV2TransitionEngine:
     def __init__(self, tool_broker: RuntimeV2ToolBroker, verifier: RuntimeV2Verifier) -> None:
         self.tool_broker = tool_broker
@@ -260,7 +322,34 @@ class RuntimeV2TransitionEngine:
             state.push_progress_event(verify_event)
             
             verification = self.verifier.verify_complete(action.verification, state.last_tool_result)
-            declared_outputs_verification = _verify_declared_outputs_exist(state)
+            completion_gate = _evaluate_run_items_completion(state)
+            if verification.get("passed") and completion_gate is not None:
+                if not completion_gate.passed and completion_gate.reason != "next_item_pending":
+                    verification = {
+                        "passed": False,
+                        "reason": completion_gate.reason,
+                        "verifier": "run_items",
+                        "target": state.get_active_run_item().canonical_path if state.get_active_run_item() else None,
+                        "evidence": {
+                            "remaining_items": completion_gate.pending_items,
+                            "item_verification": completion_gate.verification_result or {},
+                        },
+                        "warnings": [],
+                    }
+                elif not completion_gate.passed:
+                    state.last_verification_result = completion_gate.to_dict()
+                    state.record("system", {"run_items_pending": completion_gate.pending_items})
+                    return {"done": False}
+                else:
+                    verification = {
+                        "passed": True,
+                        "reason": completion_gate.reason,
+                        "verifier": "run_items",
+                        "target": None,
+                        "evidence": (completion_gate.verification_result or {}).get("evidence") or {},
+                        "warnings": [],
+                    }
+            declared_outputs_verification = None if state.get_run_items() else _verify_declared_outputs_exist(state)
             if verification.get("passed") and declared_outputs_verification and not declared_outputs_verification.get("passed"):
                 verification = declared_outputs_verification
             state.last_verification_result = verification
@@ -272,7 +361,18 @@ class RuntimeV2TransitionEngine:
                 completed_event = build_progress_event(ProgressEventType.COMPLETED)
                 state.push_progress_event(completed_event)
                 
-                return {"done": True, "result": RuntimeV2TurnResult(status="completed_verified", state=state, reply=RuntimeV2Reply(reply_text=action.summary or "", delivery_kind="final", status="completed_verified"))}
+                return {
+                    "done": True,
+                    "result": RuntimeV2TurnResult(
+                        status="completed_verified",
+                        state=state,
+                        reply=RuntimeV2Reply(
+                            reply_text=_build_host_completion_summary(state, action.summary or ""),
+                            delivery_kind="final",
+                            status="completed_verified",
+                        ),
+                    ),
+                }
             
             # 验证失败，记录
             state.record("system", {"verification_failed": verification})

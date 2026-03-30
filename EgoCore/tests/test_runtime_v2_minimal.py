@@ -1,9 +1,12 @@
 import json
+from pathlib import Path
 
 import pytest
 
 from app.runtime_v2.action_protocol import RuntimeV2Action
 from app.runtime_v2.loop import RuntimeV2Loop
+from app.runtime_v2.run_items import RunConflictState, build_run_items_from_request
+from app.runtime_v2.semantic_parser import build_runtime_status_reply
 from app.runtime_v2.state import RuntimeV2State
 from app.runtime_v2.verifier import RuntimeV2Verifier
 
@@ -214,6 +217,165 @@ def test_runtime_v2_loop_promotes_explicit_analyze_shell_read_to_file_read():
     assert normalized.tool == "file"
     assert normalized.input == {"operation": "read", "path": target}
     assert normalized.raw["host_normalization"]["kind"] == "explicit_path_analyze_promoted_to_file_read"
+
+
+def test_build_run_items_from_request_preserves_user_order_and_verify_target(tmp_path):
+    prompt = (
+        f"在 {tmp_path} 目录下创建 demo.txt，写入三行内容：第一行是 hello，第二行是当前日期，第三行是 autonomous chain test。"
+        "然后读取这个文件确认内容。然后再创建一个参照youtube的html页面,只是看着像,不用做真正的功能."
+        "最后做一个print hello world.py文件"
+    )
+
+    items = build_run_items_from_request(
+        prompt,
+        ingress_context={
+            "runtime_action": "execute_task",
+            "requested_output": {"target_directory": str(tmp_path)},
+        },
+    )
+
+    assert [(item.kind, item.canonical_path.split("\\")[-1].split("/")[-1]) for item in items] == [
+        ("file_write", "demo.txt"),
+        ("file_verify", "demo.txt"),
+        ("page_generate", "youtube_lookalike.html"),
+        ("script_generate", "print hello world.py"),
+    ]
+    assert items[1].metadata["verify_source_item_id"] == items[0].item_id
+
+
+@pytest.mark.asyncio
+async def test_runtime_v2_loop_emits_ordered_run_item_events_during_turn(monkeypatch, tmp_path):
+    loop = RuntimeV2Loop()
+    prompt = (
+        f"在 {tmp_path} 目录下创建 demo.txt，写入 hello。"
+        "然后再创建一个print hello world.py文件"
+    )
+    state = loop.get_state("session:run-items")
+    state.ingress_context = {
+        "runtime_action": "execute_task",
+        "requested_output": {"target_directory": str(tmp_path)},
+    }
+    state.set_run_items(build_run_items_from_request(prompt, ingress_context=state.ingress_context))
+
+    actions = iter(
+        [
+            RuntimeV2Action.from_model_output(
+                json.dumps(
+                    {
+                        "type": "act",
+                        "tool": "file",
+                        "input": {"operation": "write", "path": str(tmp_path / "demo.txt"), "content": "hello"},
+                    },
+                    ensure_ascii=False,
+                )
+            ),
+            RuntimeV2Action.from_model_output(
+                json.dumps(
+                    {
+                        "type": "complete",
+                        "summary": "demo 完成",
+                        "verification": {"target": str(tmp_path / "demo.txt"), "expected": "hello"},
+                    },
+                    ensure_ascii=False,
+                )
+            ),
+            RuntimeV2Action.from_model_output(
+                json.dumps(
+                    {
+                        "type": "act",
+                        "tool": "file",
+                        "input": {
+                            "operation": "write",
+                            "path": str(tmp_path / "print hello world.py"),
+                            "content": 'print("hello world")',
+                        },
+                    },
+                    ensure_ascii=False,
+                )
+            ),
+            RuntimeV2Action.from_model_output(
+                json.dumps(
+                    {
+                        "type": "complete",
+                        "summary": "脚本完成",
+                        "verification": {"target": str(tmp_path / "print hello world.py"), "expected": "hello world"},
+                    },
+                    ensure_ascii=False,
+                )
+            ),
+        ]
+    )
+    run_events = []
+
+    async def fake_decide(_state):
+        return next(actions)
+
+    async def fake_execute(_tool, tool_input):
+        path = tmp_path / Path(tool_input["path"]).name
+        path.write_text(tool_input["content"], encoding="utf-8")
+        return {
+            "success": True,
+            "tool": "file",
+            "stdout": f"Successfully wrote to {path}",
+            "stderr": "",
+            "exit_code": 0,
+            "metadata": {"path": str(path)},
+        }
+
+    async def run_event_callback(event):
+        run_events.append((event.event_type, event.text))
+
+    monkeypatch.setattr(loop, "_decide", fake_decide)
+    monkeypatch.setattr(loop.tool_broker, "execute", fake_execute)
+
+    result = await loop.run_turn_typed(
+        "session:run-items",
+        prompt,
+        max_steps=4,
+        run_event_callback=run_event_callback,
+    )
+
+    assert result.status == "completed_verified"
+    assert run_events == [
+        ("item_started", "开始处理 demo.txt。"),
+        ("item_verified", "已验证 demo.txt。"),
+        ("item_started", "开始处理 print hello world.py。"),
+        ("item_verified", "已验证 print hello world.py。"),
+    ]
+
+
+def test_runtime_status_reply_prefers_run_items_and_pending_conflict_over_stale_goal(tmp_path):
+    state = RuntimeV2State(session_id="session:status")
+    state.current_goal = "旧的 bilibili 页面任务"
+    state.current_step = "tool:file"
+    state.ingress_context = {
+        "runtime_action": "execute_task",
+        "requested_output": {"target_directory": str(tmp_path)},
+    }
+    state.set_run_items(
+        build_run_items_from_request(
+            f"在 {tmp_path} 目录下创建 demo.txt。最后做一个print hello world.py文件",
+            ingress_context=state.ingress_context,
+        )
+    )
+    state.ensure_active_run_item_started()
+
+    reply = build_runtime_status_reply(state)
+    assert "demo.txt" in reply
+    assert "print hello world.py" in reply
+    assert "bilibili" not in reply
+
+    state.set_pending_task_conflict(
+        RunConflictState(
+            existing_run_id="run_1",
+            existing_objective="旧任务",
+            incoming_text="新任务：创建 youtube 页面",
+            incoming_run_items=[],
+        )
+    )
+    conflict_reply = build_runtime_status_reply(state)
+    assert "待确认的新任务" in conflict_reply
+    assert "替换" in conflict_reply
 
 
 @pytest.mark.asyncio

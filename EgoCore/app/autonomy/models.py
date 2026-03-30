@@ -14,6 +14,7 @@ class AutonomyRunStatus(str, Enum):
     BLOCKED = "blocked"
     COMPLETED = "completed"
     FAILED = "failed"
+    SUPERSEDED = "superseded"
 
 
 class AutonomyExecutorKind(str, Enum):

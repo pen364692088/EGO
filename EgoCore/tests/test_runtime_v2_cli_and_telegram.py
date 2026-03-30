@@ -11,6 +11,7 @@ def test_runtime_v2_cli_entry_imports():
 @pytest.mark.asyncio
 async def test_telegram_bot_runtime_v2_path(monkeypatch):
     bot = TelegramBot(token="test-token", use_runtime_v2=True)
+    runtime_loop = bot._get_runtime_v2_loop()
 
     class DummyBot:
         async def send_chat_action(self, chat_id, action):
@@ -43,11 +44,11 @@ async def test_telegram_bot_runtime_v2_path(monkeypatch):
         from app.runtime_v2.runtime_reply import RuntimeV2Reply, RuntimeV2TurnResult
         return RuntimeV2TurnResult(
             status="chat",
-            state=bot.runtime_v2_loop.get_state(session_id),
+            state=runtime_loop.get_state(session_id),
             reply=RuntimeV2Reply(reply_text="你好，我在。", delivery_kind="chat", status="chat"),
         )
 
-    monkeypatch.setattr(bot.runtime_v2_loop, "run_turn_typed", fake_run_turn_typed)
+    monkeypatch.setattr(runtime_loop, "run_turn_typed", fake_run_turn_typed)
     await bot.handle_message(DummyUpdate(), None)
     assert bot.runtime_v2_loop is not None
     assert DummyUpdate.message.last_text == "你好，我在。"
@@ -84,7 +85,9 @@ async def test_telegram_bot_runtime_v2_busy_short_probe_enters_runtime(monkeypat
         effective_user = DummyUser()
 
     bot.app = type('A', (), {'bot': DummyBot()})()
-    state = bot.runtime_v2_loop.get_state('telegram:dm:456')
+    runtime_loop = bot._get_runtime_v2_loop()
+    state = bot._get_runtime_state('telegram:dm:456')
+    bot._sync_state_into_runtime_v2_loop('telegram:dm:456', state)
     state.task_status = 'running'
     state.current_goal = '修改 hello.html 配色'
 
@@ -101,7 +104,7 @@ async def test_telegram_bot_runtime_v2_busy_short_probe_enters_runtime(monkeypat
             ),
         )
 
-    monkeypatch.setattr(bot.runtime_v2_loop, 'run_turn_typed', fake_run_turn_typed)
+    monkeypatch.setattr(runtime_loop, 'run_turn_typed', fake_run_turn_typed)
     await bot.handle_message(DummyUpdate(), None)
     # 短探针现在会进入 runtime，返回正常回复
     assert DummyUpdate.message.last_text == '我正在处理你的任务，请稍等。'
@@ -140,7 +143,9 @@ async def test_telegram_bot_runtime_v2_recent_completion_short_probe_enters_runt
         effective_user = DummyUser()
 
     bot.app = type('A', (), {'bot': DummyBot()})()
-    state = bot.runtime_v2_loop.get_state('telegram:dm:456')
+    runtime_loop = bot._get_runtime_v2_loop()
+    state = bot._get_runtime_state('telegram:dm:456')
+    bot._sync_state_into_runtime_v2_loop('telegram:dm:456', state)
     state.mark_task_completed()
 
     async def fake_run_turn_typed(session_id, user_input):
@@ -156,7 +161,7 @@ async def test_telegram_bot_runtime_v2_recent_completion_short_probe_enters_runt
             ),
         )
 
-    monkeypatch.setattr(bot.runtime_v2_loop, 'run_turn_typed', fake_run_turn_typed)
+    monkeypatch.setattr(runtime_loop, 'run_turn_typed', fake_run_turn_typed)
     await bot.handle_message(DummyUpdate(), None)
     await bot.handle_message(DummyUpdate(), None)
     # 短探针现在会进入 runtime，返回正常回复

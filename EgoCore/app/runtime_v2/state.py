@@ -8,6 +8,15 @@ import time
 
 from .contracts import DeliveryLedger
 from .delivery_policy import RuntimeV2DeliveryPolicy
+from .run_items import (
+    RunConflictState,
+    RunEvent,
+    RunItem,
+    VerificationBaseline,
+    build_output_obligations,
+    build_run_item_started_text,
+    build_run_item_verified_text,
+)
 
 
 # 截断阈值
@@ -83,6 +92,22 @@ def _summarize_autonomy_context(autonomy_context: Optional[Dict[str, Any]]) -> O
         if value not in (None, "", [], {}):
             summary[key] = value
     return summary or None
+
+
+def _summarize_run_items(run_items: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+    summary: List[Dict[str, Any]] = []
+    for item in run_items[:6]:
+        summary.append(
+            {
+                "item_id": item.get("item_id"),
+                "order_index": item.get("order_index"),
+                "kind": item.get("kind"),
+                "description": item.get("description"),
+                "canonical_path": item.get("canonical_path"),
+                "status": item.get("status"),
+            }
+        )
+    return summary
 
 
 def _truncate_tool_result(tool_result: Optional[Dict[str, Any]]) -> Optional[Dict[str, Any]]:
@@ -236,6 +261,10 @@ class RuntimeV2State:
     contract_phase: str = "pending"
     autonomy_context: Optional[Dict[str, Any]] = None
     output_obligations: List[Dict[str, Any]] = field(default_factory=list)
+    run_items: List[Dict[str, Any]] = field(default_factory=list)
+    pending_task_conflict: Optional[Dict[str, Any]] = None
+    active_item_id: Optional[str] = None
+    pending_run_events: List[Dict[str, Any]] = field(default_factory=list)
 
     def to_prompt_context(self) -> Dict[str, Any]:
         """
@@ -298,6 +327,10 @@ class RuntimeV2State:
             "contract_phase": self.contract_phase,
             "autonomy_context": self.autonomy_context,
             "output_obligations": self.output_obligations,
+            "run_items": _summarize_run_items(self.run_items),
+            "pending_task_conflict": self.pending_task_conflict,
+            "active_item_id": self.active_item_id,
+            "pending_run_events_count": len(self.pending_run_events),
         }
 
     def to_decision_prompt_context(self) -> Dict[str, Any]:
@@ -344,6 +377,10 @@ class RuntimeV2State:
             "contract_phase": self.contract_phase,
             "autonomy_context": _summarize_autonomy_context(self.autonomy_context),
             "output_obligations": list(self.output_obligations),
+            "run_items": _summarize_run_items(self.run_items),
+            "pending_task_conflict": self.pending_task_conflict,
+            "active_item_id": self.active_item_id,
+            "pending_run_events_count": len(self.pending_run_events),
         }
 
     def add_pending_artifact(self, artifact_id: str, filename: Optional[str] = None,
@@ -407,7 +444,11 @@ class RuntimeV2State:
         return self.total_prompt_tokens + self.total_completion_tokens
 
     def is_busy(self) -> bool:
-        return self.task_status in {"running", "waiting_input", "resumable_pause"} or bool(self.current_goal)
+        return (
+            self.task_status in {"running", "waiting_input", "resumable_pause", "blocked"}
+            or bool(self.current_goal)
+            or bool(self.pending_task_conflict)
+        )
 
     def mark_task_started(self, goal: Optional[str] = None) -> None:
         self.task_status = "running"
@@ -446,6 +487,10 @@ class RuntimeV2State:
         self.pending_progress_events = []
         self.autonomy_context = None
         self.output_obligations = []
+        self.run_items = []
+        self.pending_task_conflict = None
+        self.active_item_id = None
+        self.pending_run_events = []
 
     def set_task_contract(self, contract: Optional[Dict[str, Any]]) -> None:
         self.task_contract = contract
@@ -496,6 +541,10 @@ class RuntimeV2State:
         self.pending_progress_events = []
         self.autonomy_context = None
         self.output_obligations = []
+        self.run_items = []
+        self.pending_task_conflict = None
+        self.active_item_id = None
+        self.pending_run_events = []
         # 保留 pending_artifacts，因为用户可能在 reset 后继续用同一批文件
         return self.generation_id
 
@@ -592,6 +641,169 @@ class RuntimeV2State:
         """检查是否有待发送的进度事件"""
         return len(self.pending_progress_events) > 0
 
+    def push_run_event(self, event: RunEvent) -> None:
+        self.pending_run_events.append(event.to_dict())
+
+    def pop_run_events(self) -> List[RunEvent]:
+        events = [event for event in (RunEvent(**raw) for raw in self.pending_run_events) if event is not None]
+        self.pending_run_events = []
+        return events
+
+    def has_pending_run_events(self) -> bool:
+        return len(self.pending_run_events) > 0
+
+    def set_run_items(self, items: List[RunItem]) -> None:
+        self.run_items = [item.to_dict() for item in items]
+        self.output_obligations = build_output_obligations(items)
+        self.active_item_id = None
+        self.pending_run_events = []
+
+    def get_run_items(self) -> List[RunItem]:
+        return [item for item in (RunItem.from_dict(raw) for raw in self.run_items) if item is not None]
+
+    def get_active_run_item(self) -> Optional[RunItem]:
+        if not self.active_item_id:
+            return None
+        for item in self.get_run_items():
+            if item.item_id == self.active_item_id:
+                return item
+        return None
+
+    def get_next_pending_run_item(self) -> Optional[RunItem]:
+        for item in self.get_run_items():
+            if item.status == "pending":
+                return item
+        return None
+
+    def _write_back_run_items(self, items: List[RunItem]) -> None:
+        self.run_items = [item.to_dict() for item in items]
+        self.output_obligations = build_output_obligations(items)
+
+    def set_pending_task_conflict(self, conflict: Optional[RunConflictState]) -> None:
+        self.pending_task_conflict = conflict.to_dict() if conflict else None
+
+    def get_pending_task_conflict(self) -> Optional[RunConflictState]:
+        return RunConflictState.from_dict(self.pending_task_conflict)
+
+    def clear_pending_task_conflict(self) -> None:
+        self.pending_task_conflict = None
+
+    def ensure_active_run_item_started(self) -> Optional[RunItem]:
+        items = self.get_run_items()
+        active = None
+        for item in items:
+            if item.item_id == self.active_item_id:
+                active = item
+                break
+        if active is not None and active.status in {"running", "blocked"}:
+            return active
+        if active is not None and active.status == "verified":
+            self.active_item_id = None
+        next_item = next((item for item in items if item.status == "pending"), None)
+        if next_item is None:
+            self._write_back_run_items(items)
+            return None
+        next_item.status = "running"
+        next_item.started_at = time.time()
+        if next_item.canonical_path:
+            next_item.baseline_snapshot = VerificationBaseline.capture(next_item.canonical_path)
+        self.active_item_id = next_item.item_id
+        self.current_step = next_item.description
+        self._write_back_run_items(items)
+        self.push_run_event(
+            RunEvent(
+                event_type="item_started",
+                text=build_run_item_started_text(next_item),
+                item_id=next_item.item_id,
+                item_label=next_item.description,
+            )
+        )
+        return next_item
+
+    def update_run_item(self, updated_item: RunItem) -> None:
+        items = self.get_run_items()
+        for index, item in enumerate(items):
+            if item.item_id == updated_item.item_id:
+                items[index] = updated_item
+                break
+        self._write_back_run_items(items)
+
+    def mark_active_run_item_verified(self, verification_result: Optional[Dict[str, Any]] = None) -> Optional[RunItem]:
+        item = self.get_active_run_item()
+        if item is None:
+            return None
+        item.status = "verified"
+        item.completed_at = item.completed_at or time.time()
+        item.verified_at = time.time()
+        item.verification_result = verification_result
+        self.update_run_item(item)
+        self.active_item_id = None
+        self.current_step = None
+        self.push_run_event(
+            RunEvent(
+                event_type="item_verified",
+                text=build_run_item_verified_text(item),
+                item_id=item.item_id,
+                item_label=item.description,
+            )
+        )
+        return item
+
+    def mark_active_run_item_blocked(self, verification_result: Optional[Dict[str, Any]] = None) -> Optional[RunItem]:
+        item = self.get_active_run_item()
+        if item is None:
+            return None
+        item.status = "blocked"
+        item.verification_result = verification_result
+        self.update_run_item(item)
+        self.current_step = item.description
+        self.push_run_event(
+            RunEvent(
+                event_type="run_blocked",
+                text=f"当前任务卡在 {item.description}。",
+                item_id=item.item_id,
+                item_label=item.description,
+                metadata={"verification_result": verification_result or {}},
+            )
+        )
+        return item
+
+    def append_run_items(self, items_to_append: List[RunItem]) -> None:
+        existing = self.get_run_items()
+        next_index = len(existing)
+        seen_paths = {
+            (item.canonical_path or "").lower()
+            for item in existing
+            if item.canonical_path
+        }
+        for item in items_to_append:
+            canonical_key = (item.canonical_path or "").lower()
+            if canonical_key and canonical_key in seen_paths:
+                continue
+            item.order_index = next_index
+            next_index += 1
+            existing.append(item)
+            if canonical_key:
+                seen_paths.add(canonical_key)
+        self._write_back_run_items(existing)
+
+    def get_run_item_status_summary(self) -> Dict[str, Any]:
+        items = self.get_run_items()
+        completed = [item.description for item in items if item.status == "verified"]
+        active = self.get_active_run_item()
+        pending = [
+            item.description
+            for item in items
+            if item.status in {"pending", "running"} and item.item_id != self.active_item_id
+        ]
+        blocked = [item.description for item in items if item.status == "blocked"]
+        return {
+            "completed": completed,
+            "active": active.description if active else None,
+            "pending": pending,
+            "blocked": blocked,
+        }
+
     def to_snapshot(self) -> Dict[str, Any]:
         return {
             "session_id": self.session_id,
@@ -640,6 +852,10 @@ class RuntimeV2State:
             "contract_phase": self.contract_phase,
             "autonomy_context": self.autonomy_context,
             "output_obligations": list(self.output_obligations),
+            "run_items": list(self.run_items),
+            "pending_task_conflict": self.pending_task_conflict,
+            "active_item_id": self.active_item_id,
+            "pending_run_events": list(self.pending_run_events),
         }
 
     @classmethod
@@ -694,6 +910,10 @@ class RuntimeV2State:
         state.contract_phase = snapshot.get("contract_phase") or "pending"
         state.autonomy_context = snapshot.get("autonomy_context")
         state.output_obligations = list(snapshot.get("output_obligations") or [])
+        state.run_items = list(snapshot.get("run_items") or [])
+        state.pending_task_conflict = snapshot.get("pending_task_conflict")
+        state.active_item_id = snapshot.get("active_item_id")
+        state.pending_run_events = list(snapshot.get("pending_run_events") or [])
         return state
 
     # ==================== WS-2: Target Binding ====================

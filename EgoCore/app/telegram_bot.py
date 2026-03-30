@@ -63,6 +63,15 @@ from app.runtime_v2 import (
     RuntimeV2PromptFiles,
     RuntimeV2State,
 )
+from app.runtime_v2.run_items import (
+    RunConflictState,
+    RunEvent,
+    RunItem,
+    build_output_obligations,
+    build_run_item_started_text,
+    build_run_item_verified_text,
+    build_run_items_from_request,
+)
 from app.runtime_v2.progress_events import ProgressEvent, is_terminal_event
 from app.autonomy import (
     AutonomyExecutorKind,
@@ -102,7 +111,7 @@ except ImportError:
     _METRICS_AVAILABLE = False
 
 logger = logging.getLogger(__name__)
-EXPLICIT_OUTPUT_FILENAME_RE = re.compile(r"(?<![\\/])([A-Za-z0-9][A-Za-z0-9 _.-]{0,120}\.[A-Za-z0-9]{1,8})")
+EXPLICIT_OUTPUT_FILENAME_RE = re.compile(r"(?<![A-Za-z0-9_.\\/\\-])([A-Za-z0-9][A-Za-z0-9 _.-]{0,120}\.[A-Za-z0-9]{1,8})")
 
 
 class TelegramBot:
@@ -223,52 +232,18 @@ class TelegramBot:
         )
 
     def _extract_output_obligations(self, text: str, state: RuntimeV2State) -> list[dict]:
+        run_items = self._build_run_items_for_request(text, state)
+        return build_output_obligations(run_items) if run_items else []
+
+    def _build_run_items_for_request(self, text: str, state: RuntimeV2State) -> list[RunItem]:
         ingress_context = state.ingress_context or {}
         if ingress_context.get("runtime_action") != "execute_task":
             return []
-
-        filenames: list[str] = []
-        for match in EXPLICIT_OUTPUT_FILENAME_RE.findall(text or ""):
-            candidate = match.strip().strip("\"'`")
-            lowered = candidate.lower()
-            if lowered.endswith((".txt", ".py", ".html", ".htm", ".md", ".json", ".js", ".css")):
-                filenames.append(candidate)
-
-        deduped: list[str] = []
-        seen = set()
-        for filename in filenames:
-            key = filename.lower()
-            if key in seen:
-                continue
-            seen.add(key)
-            deduped.append(filename)
-
-        if not deduped:
-            return []
-
-        resolved_target = ingress_context.get("resolved_target") or {}
-        requested_output = ingress_context.get("requested_output") or {}
-        base_dir = (
-            requested_output.get("target_directory")
-            or requested_output.get("directory_path")
-            or resolved_target.get("path")
-            or state.last_explicit_target
+        return build_run_items_from_request(
+            text,
+            ingress_context=ingress_context,
+            last_explicit_target=state.last_explicit_target,
         )
-        base_path = Path(base_dir) if isinstance(base_dir, str) and base_dir.strip() else None
-        if base_path is not None and base_path.suffix:
-            base_path = base_path.parent
-
-        obligations: list[dict] = []
-        for filename in deduped:
-            obligation_path = str((base_path / filename) if base_path is not None and not Path(filename).is_absolute() else Path(filename))
-            obligations.append(
-                {
-                    "name": filename,
-                    "path": obligation_path,
-                    "status": "pending",
-                }
-            )
-        return obligations
 
     def _capture_pre_runtime_response_plan(self, reply_text: str, pre_runtime) -> None:
         if not _EVIDENCE_COLLECTOR_AVAILABLE:
@@ -390,6 +365,280 @@ class TelegramBot:
             "stop_reason": verification.get("stop_reason"),
             "contract_delta": verification.get("contract_delta") or {},
         }
+
+    def _looks_like_replace_task(self, text: str) -> bool:
+        return (text or "").strip().lower() in {"替换", "replace"}
+
+    def _looks_like_append_task(self, text: str) -> bool:
+        return (text or "").strip().lower() in {"追加", "append"}
+
+    def _looks_like_cancel_task(self, text: str) -> bool:
+        return (text or "").strip().lower() in {"取消", "cancel"}
+
+    def _build_task_conflict_reply(self, state: RuntimeV2State) -> str:
+        conflict = state.get_pending_task_conflict()
+        if conflict is None:
+            return "当前没有待确认的新任务。"
+        return (
+            "当前已有一个活跃任务。你刚刚又发了一个新的执行任务。\n\n"
+            f"新任务：{conflict.incoming_text[:140]}\n\n"
+            "回复“替换”会结束旧任务并开始新任务；回复“追加”会把它排到当前任务后面；回复“取消”会保持当前任务不变。"
+        )
+
+    def _get_conflicted_active_run(self, session_key: str) -> Optional[AutonomyRun]:
+        if self.autonomy_orchestrator is None:
+            return None
+        latest_run = self.autonomy_orchestrator.get_latest_run(session_key)
+        if latest_run is None:
+            return None
+        if latest_run.status in {
+            AutonomyRunStatus.RUNNING,
+            AutonomyRunStatus.RESUMABLE_PAUSE,
+            AutonomyRunStatus.WAITING_USER_INPUT,
+            AutonomyRunStatus.BLOCKED,
+        }:
+            return latest_run
+        return None
+
+    def _prepare_run_items_for_new_task(self, text: str, state: RuntimeV2State) -> list[RunItem]:
+        run_items = self._build_run_items_for_request(text, state)
+        if run_items:
+            state.set_run_items(run_items)
+        else:
+            state.set_run_items([])
+        return run_items
+
+    async def _maybe_handle_pending_task_conflict(
+        self,
+        *,
+        update: Update,
+        state: RuntimeV2State,
+        text: str,
+        trace_id: Optional[str],
+        ingress_message_id: Optional[int],
+        session_key: str,
+    ) -> Optional[str]:
+        conflict = state.get_pending_task_conflict()
+        if conflict is None:
+            return None
+
+        if self._looks_like_replace_task(text):
+            if self.autonomy_orchestrator is not None and conflict.existing_run_id:
+                existing_run = self.autonomy_orchestrator.repository.get(conflict.existing_run_id)
+                if existing_run is not None:
+                    existing_run.status = AutonomyRunStatus.SUPERSEDED
+                    existing_run.current_phase = "superseded"
+                    self.autonomy_orchestrator.repository.update(existing_run)
+            state.clear_pending_task_conflict()
+            state.reset_active_task_context()
+            return conflict.incoming_text
+
+        if self._looks_like_append_task(text):
+            appended_items = [item for item in (RunItem.from_dict(raw) for raw in conflict.incoming_run_items) if item is not None]
+            state.append_run_items(appended_items)
+            state.clear_pending_task_conflict()
+            await self._publish_phase1_event(
+                session_key=session_key,
+                kind="telegram_delivery",
+                trace_id=trace_id,
+                message_id=ingress_message_id,
+                payload={
+                    "text": "已把新任务追加到当前任务队列。",
+                    "delivery_kind": "final",
+                    "status": "task_conflict_appended",
+                },
+            )
+            await self._send_reply(update, "已把新任务追加到当前任务队列。当前任务恢复后会按顺序继续。")
+            return ""
+
+        if self._looks_like_cancel_task(text):
+            state.clear_pending_task_conflict()
+            await self._publish_phase1_event(
+                session_key=session_key,
+                kind="telegram_delivery",
+                trace_id=trace_id,
+                message_id=ingress_message_id,
+                payload={
+                    "text": "已取消这次新任务，保持当前任务不变。",
+                    "delivery_kind": "final",
+                    "status": "task_conflict_cancelled",
+                },
+            )
+            await self._send_reply(update, "已取消这次新任务，保持当前任务不变。")
+            return ""
+
+        await self._send_reply(update, self._build_task_conflict_reply(state))
+        return ""
+
+    async def _maybe_create_task_conflict(
+        self,
+        *,
+        update: Update,
+        state: RuntimeV2State,
+        session_key: str,
+        text: str,
+        trace_id: Optional[str],
+        ingress_message_id: Optional[int],
+    ) -> bool:
+        active_run = self._get_conflicted_active_run(session_key)
+        if active_run is None:
+            return False
+        if state.get_pending_task_conflict() is not None:
+            return True
+
+        run_items = self._build_run_items_for_request(text, state)
+        state.set_pending_task_conflict(
+            RunConflictState(
+                existing_run_id=active_run.id,
+                existing_objective=active_run.objective,
+                incoming_text=text,
+                incoming_run_items=[item.to_dict() for item in run_items],
+            )
+        )
+        await self._publish_phase1_event(
+            session_key=session_key,
+            kind="telegram_delivery",
+            trace_id=trace_id,
+            message_id=ingress_message_id,
+            payload={
+                "text": self._build_task_conflict_reply(state)[:1000],
+                "delivery_kind": "final",
+                "status": "task_conflict_pending",
+            },
+        )
+        await self._send_reply(update, self._build_task_conflict_reply(state))
+        return True
+
+    def _build_run_item_started_text(self, item: RunItem) -> str:
+        return build_run_item_started_text(item)
+
+    def _build_run_item_verified_text(self, item: RunItem) -> str:
+        return build_run_item_verified_text(item)
+
+    def _should_use_run_item_timeline(self, state: RuntimeV2State) -> bool:
+        return (state.ingress_context or {}).get("runtime_action") == "execute_task" and bool(state.run_items)
+
+    async def _emit_run_event_message(
+        self,
+        *,
+        state: RuntimeV2State,
+        session_key: str,
+        event: RunEvent,
+        update: Optional[Update],
+        chat_id: Optional[int],
+        trace_id: Optional[str],
+        ingress_message_id: Optional[int],
+    ) -> None:
+        delivery_state = self._get_progress_delivery_state(state)
+        signature = f"{event.event_type}:{event.item_id or ''}:{event.text}"
+        if delivery_state.get("last_run_event_signature") == signature:
+            return
+        await self._publish_phase1_event(
+            session_key=session_key,
+            kind="telegram_progress_delivery",
+            trace_id=trace_id,
+            message_id=ingress_message_id,
+            payload={
+                "phase_key": event.event_type,
+                "text": event.text[:300],
+                "delivery_mode": "send",
+                "item_id": event.item_id,
+            },
+        )
+        if isinstance(chat_id, int):
+            await self._send_chat_message(chat_id, event.text, finalize_evidence=False)
+        elif update is not None:
+            await self._send_reply(update, event.text, finalize_evidence=False)
+        delivery_state["last_run_event_signature"] = signature
+
+    async def _emit_pending_run_events(
+        self,
+        *,
+        state: RuntimeV2State,
+        session_key: str,
+        update: Optional[Update],
+        chat_id: Optional[int],
+        trace_id: Optional[str],
+        ingress_message_id: Optional[int],
+    ) -> None:
+        if not state.has_pending_run_events():
+            return
+        for event in state.pop_run_events():
+            await self._emit_run_event_message(
+                state=state,
+                session_key=session_key,
+                event=event,
+                update=update,
+                chat_id=chat_id,
+                trace_id=trace_id,
+                ingress_message_id=ingress_message_id,
+            )
+
+    async def _ensure_active_run_item_message(
+        self,
+        *,
+        state: RuntimeV2State,
+        session_key: str,
+        update: Optional[Update],
+        chat_id: Optional[int],
+        trace_id: Optional[str],
+        ingress_message_id: Optional[int],
+    ) -> Optional[RunItem]:
+        item = state.ensure_active_run_item_started()
+        await self._emit_pending_run_events(
+            state=state,
+            session_key=session_key,
+            update=update,
+            chat_id=chat_id,
+            trace_id=trace_id,
+            ingress_message_id=ingress_message_id,
+        )
+        return item
+
+    async def _emit_verified_run_item_message(
+        self,
+        *,
+        state: RuntimeV2State,
+        session_key: str,
+        item: RunItem,
+        update: Optional[Update],
+        chat_id: Optional[int],
+        trace_id: Optional[str],
+        ingress_message_id: Optional[int],
+    ) -> None:
+        await self._emit_run_event_message(
+            state=state,
+            session_key=session_key,
+            event=RunEvent(
+                event_type="item_verified",
+                text=self._build_run_item_verified_text(item),
+                item_id=item.item_id,
+                item_label=item.description,
+            ),
+            update=update,
+            chat_id=chat_id,
+            trace_id=trace_id,
+            ingress_message_id=ingress_message_id,
+        )
+
+    async def _emit_newly_verified_run_items(
+        self,
+        *,
+        state: RuntimeV2State,
+        session_key: str,
+        update: Optional[Update],
+        chat_id: Optional[int],
+        trace_id: Optional[str],
+        ingress_message_id: Optional[int],
+    ) -> None:
+        await self._emit_pending_run_events(
+            state=state,
+            session_key=session_key,
+            update=update,
+            chat_id=chat_id,
+            trace_id=trace_id,
+            ingress_message_id=ingress_message_id,
+        )
 
     def _ensure_phase1_bus(self) -> None:
         if self._phase1_bus_ready:
@@ -592,20 +841,21 @@ class TelegramBot:
 
         verification = state.last_verification_result or {}
         evidence = verification.get("evidence") or {}
-        obligations = list(state.output_obligations or [])
-        if obligations:
+        run_items = state.get_run_items()
+        if run_items:
             marker = {
                 "finish_reason": getattr(result, "finish_reason", None),
                 "verification_reason": verification.get("reason"),
-                "verified_outputs": sorted(
-                    str(item.get("name") or "")
-                    for item in obligations
-                    if str(item.get("status") or "").lower() == "verified"
+                "active_item_id": state.active_item_id,
+                "verified_items": sorted(
+                    item.description
+                    for item in run_items
+                    if item.status == "verified"
                 ),
-                "pending_outputs": sorted(
-                    str(item.get("name") or "")
-                    for item in obligations
-                    if str(item.get("status") or "").lower() != "verified"
+                "pending_items": sorted(
+                    item.description
+                    for item in run_items
+                    if item.status != "verified"
                 ),
             }
         else:
@@ -633,22 +883,22 @@ class TelegramBot:
         run.metadata["no_progress_count"] = count
         run.metadata["no_progress_reason"] = (state.last_verification_result or {}).get("reason")
         run.metadata["no_progress_pending_outputs"] = [
-            str(item.get("name") or "")
-            for item in (state.output_obligations or [])
-            if str(item.get("status") or "").lower() != "verified"
+            item.description
+            for item in state.get_run_items()
+            if item.status != "verified"
         ]
         return count
 
     def _build_no_progress_blocked_reply(self, state: RuntimeV2State) -> str:
         pending_outputs = [
-            str(item.get("name") or "")
-            for item in (state.output_obligations or [])
-            if str(item.get("status") or "").lower() != "verified"
+            item.description
+            for item in state.get_run_items()
+            if item.status != "verified"
         ]
         verification = state.last_verification_result or {}
         reason = str(verification.get("reason") or "").strip()
         if pending_outputs:
-            detail = f"还没稳定完成这些显式产物：{', '.join(pending_outputs)}。"
+            detail = f"还没稳定完成这些任务项：{', '.join(pending_outputs)}。"
         elif reason:
             detail = f"当前卡点：{reason}。"
         else:
@@ -832,6 +1082,9 @@ class TelegramBot:
         trace_id: Optional[str] = None,
         ingress_message_id: Optional[int] = None,
     ) -> int:
+        if self._should_use_run_item_timeline(state):
+            state.pop_progress_events()
+            return 0
         if not state.has_pending_progress_events():
             return 0
         events = state.pop_progress_events()
@@ -1805,6 +2058,19 @@ class TelegramBot:
         state = self._get_runtime_state(session_key)
         ingress_message_id = update.message.message_id if update.message else None
 
+        pending_override_text = await self._maybe_handle_pending_task_conflict(
+            update=update,
+            state=state,
+            text=text,
+            trace_id=trace_id,
+            ingress_message_id=ingress_message_id,
+            session_key=session_key,
+        )
+        if pending_override_text == "":
+            return
+        if pending_override_text is not None:
+            text = pending_override_text
+
         if self.autonomy_orchestrator is not None and self._looks_like_manual_continue(text):
             latest_run = self.autonomy_orchestrator.get_latest_run(session_key)
             if latest_run is not None and (
@@ -1867,7 +2133,16 @@ class TelegramBot:
         pre_runtime = self.telegram_runtime_bridge.plan_pre_runtime(ingress, state)
         runtime_action = getattr(ingress, "_runtime_action", None)
         if runtime_action == "execute_task":
-            state.output_obligations = self._extract_output_obligations(text, state)
+            if await self._maybe_create_task_conflict(
+                update=update,
+                state=state,
+                session_key=session_key,
+                text=text,
+                trace_id=trace_id,
+                ingress_message_id=ingress_message_id,
+            ):
+                return
+            self._prepare_run_items_for_new_task(text, state)
         logger.info("runtime_v2.turn.start session=%s text=%r ingress=%s parser_source=%s",
                     session_key, text[:200], ingress,
                     ingress._parsed_intent_graph.parser_source if ingress._parsed_intent_graph else "none")
@@ -1988,10 +2263,25 @@ class TelegramBot:
         chat_id: Optional[int] = None,
     ) -> TelegramTurnResult:
         async def emit_runtime_progress(event: ProgressEvent) -> None:
+            if self._should_use_run_item_timeline(state):
+                return
             await self._send_autonomy_progress_update(
                 state=state,
                 phase_key=event.event_type.value,
                 text=event.message,
+                update=update,
+                chat_id=chat_id,
+                trace_id=trace_id,
+                ingress_message_id=ingress_message_id,
+            )
+
+        async def emit_run_event(event: RunEvent) -> None:
+            if not self._should_use_run_item_timeline(state):
+                return
+            await self._emit_run_event_message(
+                state=state,
+                session_key=session_key,
+                event=event,
                 update=update,
                 chat_id=chat_id,
                 trace_id=trace_id,
@@ -2005,6 +2295,16 @@ class TelegramBot:
                     await self._send_reply(update, ack_text, finalize_evidence=False)
                 except Exception:
                     pass
+
+            if self._should_use_run_item_timeline(state):
+                await self._ensure_active_run_item_message(
+                    state=state,
+                    session_key=session_key,
+                    update=update,
+                    chat_id=chat_id,
+                    trace_id=trace_id,
+                    ingress_message_id=ingress_message_id,
+                )
 
             # 闭环2：把 pending_artifacts 信息注入 user_input，帮 LLM 知道要执行什么
             enhanced_input = text
@@ -2023,6 +2323,7 @@ class TelegramBot:
                 user_input=enhanced_input,
                 state=state,
                 progress_callback=emit_runtime_progress,
+                run_event_callback=emit_run_event,
             )
             self.runtime_v2_loop = runner.loop
             return result
@@ -2039,10 +2340,25 @@ class TelegramBot:
         chat_id: Optional[int] = None,
     ) -> TelegramTurnResult:
         async def emit_runtime_progress(event: ProgressEvent) -> None:
+            if self._should_use_run_item_timeline(state):
+                return
             await self._send_autonomy_progress_update(
                 state=state,
                 phase_key=event.event_type.value,
                 text=event.message,
+                chat_id=chat_id,
+                trace_id=trace_id,
+                ingress_message_id=ingress_message_id,
+            )
+
+        async def emit_run_event(event: RunEvent) -> None:
+            if not self._should_use_run_item_timeline(state):
+                return
+            await self._emit_run_event_message(
+                state=state,
+                session_key=session_key,
+                event=event,
+                update=None,
                 chat_id=chat_id,
                 trace_id=trace_id,
                 ingress_message_id=ingress_message_id,
@@ -2055,10 +2371,20 @@ class TelegramBot:
             self.runtime_v2_fallback_runner = runner
         loop = runner.attach_state(session_key, state)
         self.runtime_v2_loop = loop
+        if self._should_use_run_item_timeline(state):
+            await self._ensure_active_run_item_message(
+                state=state,
+                session_key=session_key,
+                update=None,
+                chat_id=chat_id,
+                trace_id=trace_id,
+                ingress_message_id=ingress_message_id,
+            )
         result = await loop.continue_turn_typed(
             session_id=session_key,
             state=state,
             progress_callback=emit_runtime_progress,
+            run_event_callback=emit_run_event,
         )
         self.runtime_v2_loop = loop
         return runner.adapt_result(result)
@@ -2121,6 +2447,15 @@ class TelegramBot:
                     "autonomy_run_id": run.id,
                 },
             )
+            if self._should_use_run_item_timeline(state):
+                await self._emit_newly_verified_run_items(
+                    state=state,
+                    session_key=session_key,
+                    update=update,
+                    chat_id=chat_id,
+                    trace_id=trace_id,
+                    ingress_message_id=ingress_message_id,
+                )
             if result.status == "resumable_pause":
                 blocked_result = await self._maybe_block_no_progress_run(
                     run=run,
@@ -2144,7 +2479,7 @@ class TelegramBot:
                         ingress_message_id=ingress_message_id,
                     )
                 progress_text = "我继续处理这个任务，做完直接给你结果。"
-                if not ack_text and sent_progress == 0:
+                if not ack_text and sent_progress == 0 and not self._should_use_run_item_timeline(state):
                     await self._send_autonomy_progress_update(
                         state=state,
                         phase_key="planning_current_slice",
@@ -2166,6 +2501,15 @@ class TelegramBot:
                 )
                 state.task_status = "resumable_pause"
                 state.waiting_for_user_input = False
+                if self._should_use_run_item_timeline(state):
+                    await self._ensure_active_run_item_message(
+                        state=state,
+                        session_key=session_key,
+                        update=update,
+                        chat_id=chat_id,
+                        trace_id=trace_id,
+                        ingress_message_id=ingress_message_id,
+                    )
                 return self._build_autonomy_outcome(
                     run=run,
                     state=state,
@@ -2282,6 +2626,16 @@ class TelegramBot:
                 ingress_message_id=run.metadata.get("ingress_message_id"),
             )
 
+        if self._should_use_run_item_timeline(state):
+            await self._emit_newly_verified_run_items(
+                state=state,
+                session_key=run.session_key,
+                update=None,
+                chat_id=chat_id if isinstance(chat_id, int) else None,
+                trace_id=run.metadata.get("trace_id"),
+                ingress_message_id=run.metadata.get("ingress_message_id"),
+            )
+
         if result.status == "resumable_pause":
             blocked_result = await self._maybe_block_no_progress_run(
                 run=run,
@@ -2319,7 +2673,21 @@ class TelegramBot:
         else:
             state.task_status = "resumable_pause"
             state.waiting_for_user_input = False
-            if isinstance(chat_id, int) and run.executor_kind == AutonomyExecutorKind.GENERIC_RUNTIME and sent_progress == 0:
+            if self._should_use_run_item_timeline(state):
+                await self._ensure_active_run_item_message(
+                    state=state,
+                    session_key=run.session_key,
+                    update=None,
+                    chat_id=chat_id if isinstance(chat_id, int) else None,
+                    trace_id=run.metadata.get("trace_id"),
+                    ingress_message_id=run.metadata.get("ingress_message_id"),
+                )
+            if (
+                isinstance(chat_id, int)
+                and run.executor_kind == AutonomyExecutorKind.GENERIC_RUNTIME
+                and sent_progress == 0
+                and not self._should_use_run_item_timeline(state)
+            ):
                 await self._send_autonomy_progress_update(
                     state=state,
                     phase_key="planning_current_slice",
@@ -2482,11 +2850,23 @@ class TelegramBot:
         async def emit_native_progress(phase_key: str, payload: Optional[dict] = None) -> None:
             if runtime_action != "execute_task":
                 return
+            if self._should_use_run_item_timeline(state):
+                return
             progress_text = self._build_autonomy_progress_text(phase_key, payload)
             await self._send_autonomy_progress_update(
                 state=state,
                 phase_key=phase_key,
                 text=progress_text,
+                update=update,
+                chat_id=chat_id,
+                trace_id=trace_id,
+                ingress_message_id=ingress_message_id,
+            )
+
+        if self._should_use_run_item_timeline(state):
+            await self._ensure_active_run_item_message(
+                state=state,
+                session_key=session_key,
                 update=update,
                 chat_id=chat_id,
                 trace_id=trace_id,

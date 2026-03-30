@@ -9,6 +9,7 @@ import re
 from .action_protocol import RuntimeV2Action
 from .decision_engine import RuntimeV2DecisionEngine
 from .runtime_reply import RuntimeV2Reply, RuntimeV2TurnResult
+from .run_items import RunEvent
 from .state import RuntimeV2State
 from .tool_broker import RuntimeV2ToolBroker
 from .transition import RuntimeV2TransitionEngine
@@ -249,6 +250,7 @@ class RuntimeV2Loop:
         source: str = "telegram",
         evidence_collector: Optional[Any] = None,
         progress_callback: Optional[Callable[[ProgressEvent], Awaitable[None]]] = None,
+        run_event_callback: Optional[Callable[[RunEvent], Awaitable[None]]] = None,
     ) -> RuntimeV2TurnResult:
         logger.info(f"[PSK-TG-TRACE-01] run_turn_typed called session_id={session_id}, user_input={user_input[:50]}...")
         state = self.get_state(session_id)
@@ -293,6 +295,7 @@ class RuntimeV2Loop:
             turn_id=turn_id,
             generation_id=generation_id,
             progress_callback=progress_callback,
+            run_event_callback=run_event_callback,
         )
 
     async def continue_turn_typed(
@@ -304,6 +307,7 @@ class RuntimeV2Loop:
         evidence_collector: Optional[Any] = None,
         state: Optional[RuntimeV2State] = None,
         progress_callback: Optional[Callable[[ProgressEvent], Awaitable[None]]] = None,
+        run_event_callback: Optional[Callable[[RunEvent], Awaitable[None]]] = None,
     ) -> RuntimeV2TurnResult:
         state = state or self.get_state(session_id)
         if not state.task_id:
@@ -324,6 +328,7 @@ class RuntimeV2Loop:
             turn_id=turn_id,
             generation_id=generation_id,
             progress_callback=progress_callback,
+            run_event_callback=run_event_callback,
         )
 
     async def _advance_turn(
@@ -337,7 +342,11 @@ class RuntimeV2Loop:
         turn_id: str,
         generation_id: int,
         progress_callback: Optional[Callable[[ProgressEvent], Awaitable[None]]],
+        run_event_callback: Optional[Callable[[RunEvent], Awaitable[None]]],
     ) -> RuntimeV2TurnResult:
+        if hasattr(state, "get_run_items") and state.get_run_items() and not state.get_active_run_item():
+            state.ensure_active_run_item_started()
+        await self._emit_run_events(state, run_event_callback)
         invalid_json_retries = 0
         for step in range(max_steps):
             action = await self._decide(state)
@@ -395,6 +404,7 @@ class RuntimeV2Loop:
 
             transition = await self.transition_engine.apply(state, action)
             await self._emit_progress_events(state, progress_callback)
+            await self._emit_run_events(state, run_event_callback)
 
             if self.proto_self_runtime and action.type == "act" and state.last_tool_result:
                 try:
@@ -462,3 +472,13 @@ class RuntimeV2Loop:
                 state.push_progress_event(event)
                 continue
             await progress_callback(event)
+
+    async def _emit_run_events(
+        self,
+        state: RuntimeV2State,
+        run_event_callback: Optional[Callable[[RunEvent], Awaitable[None]]],
+    ) -> None:
+        if run_event_callback is None or not getattr(state, "has_pending_run_events", lambda: False)():
+            return
+        for event in state.pop_run_events():
+            await run_event_callback(event)
