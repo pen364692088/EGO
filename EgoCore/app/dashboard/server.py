@@ -28,6 +28,14 @@ from app.dashboard.index_builder import (
 STATIC_DIR = Path(__file__).with_name("static")
 
 
+def _asset_version() -> int:
+    candidates = [
+        STATIC_DIR / "dashboard.js",
+        STATIC_DIR / "dashboard.css",
+    ]
+    return int(max(path.stat().st_mtime for path in candidates if path.exists()))
+
+
 class DashboardDataStore:
     def __init__(
         self,
@@ -272,13 +280,14 @@ class DashboardRequestHandler(BaseHTTPRequestHandler):
             view = "sample"
             sample_id = path.rsplit("/", 1)[-1]
 
+        asset_version = _asset_version()
         html = f"""<!doctype html>
 <html lang="zh-CN">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>OpenEmotion Growth Dashboard v1</title>
-  <link rel="stylesheet" href="/static/dashboard.css">
+  <link rel="stylesheet" href="/static/dashboard.css?v={asset_version}">
 </head>
 <body data-view="{view}" data-sample-id="{sample_id}">
   <div class="background-grid"></div>
@@ -305,7 +314,7 @@ class DashboardRequestHandler(BaseHTTPRequestHandler):
     <section class="meta-bar" id="meta-bar"></section>
     <section class="content" id="app"></section>
   </main>
-  <script src="/static/dashboard.js"></script>
+  <script src="/static/dashboard.js?v={asset_version}"></script>
 </body>
 </html>"""
         body = html.encode("utf-8")

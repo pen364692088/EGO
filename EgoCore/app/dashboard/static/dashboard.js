@@ -65,7 +65,7 @@ const I18N = {
       translated_summary: "摘要说明",
       because: "原因",
       auto_refresh: "5 秒自动刷新",
-      continuity: "continuity",
+      continuity: "连续性",
       sample: "样本",
       focus: "关注点",
       candidate: "候选动作",
@@ -122,6 +122,7 @@ const I18N = {
         revision_trend: "修订走势",
         appraisal: "内部驱动均值",
         motion: "成长动向分布",
+        reflection_trigger: "反思触发分布",
         focus_timeline: "关注点时间线",
         recent: "最近成长记录",
       },
@@ -301,7 +302,7 @@ const I18N = {
       translated_summary: "Summary",
       because: "Because",
       auto_refresh: "Auto-refresh every 5s",
-      continuity: "continuity",
+      continuity: "Continuity",
       sample: "Sample",
       focus: "Focus",
       candidate: "Candidate",
@@ -358,6 +359,7 @@ const I18N = {
         revision_trend: "Revision trend",
         appraisal: "Mean appraisal components",
         motion: "Growth motion distribution",
+        reflection_trigger: "Reflection trigger distribution",
         focus_timeline: "Focus timeline",
         recent: "Recent growth records",
       },
@@ -491,6 +493,151 @@ const I18N = {
   },
 };
 
+const CODE_LABELS = {
+  zh: {
+    actions: {
+      continue_pending_commitment: "继续当前承诺",
+      inspect_file: "查看文件",
+      ask: "提问澄清",
+      file: "读取文件",
+      shell: "执行 shell 命令",
+      read_lines: "按行读取",
+      none: "无",
+    },
+    host_status: {
+      approved: "宿主放行",
+      no_candidate: "本轮没有候选动作",
+      exec_result: "当前是执行结果回写阶段",
+      unknown: "宿主状态未知",
+    },
+    continuity_status: {
+      direct_real: "直接真实证据",
+      cross_evidence: "跨证据链成立",
+      missing: "仍未证明",
+      unknown: "未知",
+    },
+    continuity_scenario: {
+      new: "新会话",
+      restart: "重启后",
+      restore: "恢复后",
+    },
+    appraisal: {
+      curiosity: "好奇驱动",
+      caution: "谨慎驱动",
+      coherence_pressure: "一致性压力",
+      completion_pressure: "完成压力",
+      social_tension: "社交张力",
+    },
+    reflection_trigger: {
+      drive_spike: "驱动突增",
+      exec_failure: "执行失败触发",
+      none: "无",
+    },
+    focus: {
+      inspect_target: "查看目标",
+      repair: "修补问题",
+      none: "无",
+    },
+    failure_cause: {
+      contract_error: "contract / schema 错误",
+      runtime_error: "运行时错误",
+      delivery_error: "投递错误",
+      none: "无",
+    },
+    severity: {
+      low: "低",
+      medium: "中",
+      high: "高",
+      critical: "严重",
+    },
+    retest: {
+      open: "未重测",
+      closed: "已关闭",
+      true: "已重测",
+      false: "未重测",
+      none: "无",
+    },
+    why: {
+      none: "无",
+      exec_result_pass: "当前是执行结果回写阶段",
+      post_restart_sample_not_full_e4_bundle: "restart 后首个样本还不是完整 E4 证据包",
+      evidence_gap_still_present: "证据缺口仍然存在",
+      plasticity_reflection_still_weak: "可塑性反思证据仍偏弱",
+    },
+  },
+  en: {
+    actions: {
+      continue_pending_commitment: "Continue current commitment",
+      inspect_file: "Inspect file",
+      ask: "Ask a clarifying question",
+      file: "Read file",
+      shell: "Run shell command",
+      read_lines: "Read selected lines",
+      none: "none",
+    },
+    host_status: {
+      approved: "Host approved",
+      no_candidate: "No candidate this turn",
+      exec_result: "In exec-result feedback pass",
+      unknown: "Host status unknown",
+    },
+    continuity_status: {
+      direct_real: "Direct real evidence",
+      cross_evidence: "Established across evidence chains",
+      missing: "Still not proved",
+      unknown: "unknown",
+    },
+    continuity_scenario: {
+      new: "New session",
+      restart: "After restart",
+      restore: "After restore",
+    },
+    appraisal: {
+      curiosity: "Curiosity",
+      caution: "Caution",
+      coherence_pressure: "Coherence pressure",
+      completion_pressure: "Completion pressure",
+      social_tension: "Social tension",
+    },
+    reflection_trigger: {
+      drive_spike: "Drive spike",
+      exec_failure: "Execution failure",
+      none: "none",
+    },
+    focus: {
+      inspect_target: "Inspect target",
+      repair: "Repair",
+      none: "none",
+    },
+    failure_cause: {
+      contract_error: "Contract / schema error",
+      runtime_error: "Runtime error",
+      delivery_error: "Delivery error",
+      none: "none",
+    },
+    severity: {
+      low: "Low",
+      medium: "Medium",
+      high: "High",
+      critical: "Critical",
+    },
+    retest: {
+      open: "Open",
+      closed: "Closed",
+      true: "Retested",
+      false: "Not retested",
+      none: "none",
+    },
+    why: {
+      none: "none",
+      exec_result_pass: "This is the exec-result writeback pass",
+      post_restart_sample_not_full_e4_bundle: "The first post-restart sample is not yet a full E4 bundle",
+      evidence_gap_still_present: "Evidence gap is still present",
+      plasticity_reflection_still_weak: "Plasticity reflection evidence is still weak",
+    },
+  },
+};
+
 function deepGet(object, path) {
   return path.split(".").reduce((current, part) => (current && current[part] !== undefined ? current[part] : undefined), object);
 }
@@ -498,6 +645,11 @@ function deepGet(object, path) {
 function t(path, variables = {}) {
   const source = deepGet(I18N[UI_STATE.locale], path) ?? deepGet(I18N.zh, path) ?? path;
   return String(source).replaceAll(/\{(\w+)\}/g, (_, key) => String(variables[key] ?? ""));
+}
+
+function lookupCodeLabel(group, code) {
+  if (code === null || code === undefined) return null;
+  return CODE_LABELS[UI_STATE.locale]?.[group]?.[code] ?? CODE_LABELS.zh?.[group]?.[code] ?? null;
 }
 
 async function fetchJson(path) {
@@ -551,7 +703,36 @@ function setLocale(locale) {
 }
 
 function semanticText(group, code) {
-  return t(`semantic.${group}.${code || "unknown"}`);
+  return lookupCodeLabel(group, code) ?? t(`semantic.${group}.${code || "unknown"}`);
+}
+
+function prefixedSemantic(label) {
+  const match = String(label ?? "").match(/^semantic\.(intent|host|result|growth|evidence|headline|why)\.(.+)$/);
+  return match ? { group: match[1], code: match[2] } : null;
+}
+
+function translateLabel(label, labelType = "raw") {
+  if (label === null || label === undefined || label === "") return t("common.none");
+  const semantic = prefixedSemantic(label);
+  if (semantic) return semanticText(semantic.group, semantic.code);
+  if (labelType === "headline") return semanticText("headline", label);
+  if (labelType === "intent") return semanticText("intent", label);
+  if (labelType === "host") return semanticText("host", label);
+  if (labelType === "result") return semanticText("result", label);
+  if (labelType === "growth") return semanticText("growth", label);
+  if (labelType === "evidence") return semanticText("evidence", label);
+  if (labelType === "why") return lookupCodeLabel("why", label) ?? semanticText("why", label);
+  if (labelType === "action") return lookupCodeLabel("actions", label) ?? String(label);
+  if (labelType === "host_status") return lookupCodeLabel("host_status", label) ?? String(label);
+  if (labelType === "continuity_status") return lookupCodeLabel("continuity_status", label) ?? String(label);
+  if (labelType === "continuity_scenario") return lookupCodeLabel("continuity_scenario", label) ?? String(label);
+  if (labelType === "appraisal") return lookupCodeLabel("appraisal", label) ?? String(label);
+  if (labelType === "reflection_trigger") return lookupCodeLabel("reflection_trigger", label) ?? String(label);
+  if (labelType === "focus") return lookupCodeLabel("focus", label) ?? String(label);
+  if (labelType === "failure_cause") return lookupCodeLabel("failure_cause", label) ?? String(label);
+  if (labelType === "severity") return lookupCodeLabel("severity", label) ?? String(label);
+  if (labelType === "retest") return lookupCodeLabel("retest", String(label)) ?? String(label);
+  return String(label);
 }
 
 function artifactLabel(name) {
@@ -604,8 +785,8 @@ function renderMeta(buildMeta = {}, gapSummary = {}) {
   const continuityItems = Object.entries(gapSummary.continuity_status || {}).map(
     ([label, value]) => `
       <article class="stat-card">
-        <strong>${escapeHtml(value)}</strong>
-        <span>${escapeHtml(`${t("common.continuity")} · ${label}`)}</span>
+        <strong>${escapeHtml(translateLabel(value, "continuity_status"))}</strong>
+        <span>${escapeHtml(`${t("common.continuity")} · ${translateLabel(label, "continuity_scenario")}`)}</span>
       </article>
     `,
   );
@@ -674,22 +855,7 @@ function renderDistribution(title, values = {}, labelType = "raw") {
       <div class="distribution-list">
         ${entries
           .map(([label, value]) => {
-            const text =
-              labelType === "headline"
-                ? semanticText("headline", label)
-                : labelType === "intent"
-                  ? semanticText("intent", label)
-                  : labelType === "host"
-                    ? semanticText("host", label)
-                    : labelType === "result"
-                      ? semanticText("result", label)
-                      : labelType === "growth"
-                        ? semanticText("growth", label)
-                        : labelType === "evidence"
-                          ? semanticText("evidence", label)
-                          : labelType === "why"
-                            ? semanticText("why", label)
-                            : label;
+            const text = translateLabel(label, labelType);
             return `
               <div class="distribution-row">
                 <span class="distribution-label">${escapeHtml(text)}</span>
@@ -780,7 +946,13 @@ function agencyStoryCards(cards = []) {
           };
           const group = groupMap[card.slot] || "headline";
           const value =
-            Array.isArray(card.value) ? card.value.join(", ") : card.value === null || card.value === undefined ? t("common.none") : String(card.value);
+            Array.isArray(card.value)
+              ? actionList(card.value)
+              : card.value === null || card.value === undefined
+                ? t("common.none")
+                : card.slot === "result"
+                  ? translateLabel(card.value, "action")
+                  : String(card.value);
           return `
             <article class="story-card">
               <span>${escapeHtml(t(`common.${card.slot}`))}</span>
@@ -818,7 +990,7 @@ function renderAgency(payload) {
 
   const latestSummary = latest
     ? [
-        `${t("meta.current_focus")}: ${latest.focus_goal || t("common.none")}`,
+        `${t("meta.current_focus")}: ${translateLabel(latest.focus_goal || "none", "focus")}`,
         `${t("common.result")}: ${semanticText("result", latest.semantic?.result_state_code || "unknown")}`,
       ]
     : [];
@@ -876,9 +1048,9 @@ function renderAgency(payload) {
       ${buildNumericTrendSvg(trends, "urge_score", "candidate_generated")}
     </section>
     <section class="distribution-grid">
-      ${renderDistribution(t("pages.agency.distributions.candidate"), distributions.candidate_actions)}
-      ${renderDistribution(t("pages.agency.distributions.governor"), distributions.governor_status, "host")}
-      ${renderDistribution(t("pages.agency.distributions.final"), distributions.final_host_action)}
+      ${renderDistribution(t("pages.agency.distributions.candidate"), distributions.candidate_actions, "action")}
+      ${renderDistribution(t("pages.agency.distributions.governor"), distributions.governor_status, "host_status")}
+      ${renderDistribution(t("pages.agency.distributions.final"), distributions.final_host_action, "action")}
       ${renderDistribution(t("pages.agency.distributions.suppression"), distributions.suppression_reason, "why")}
       ${renderDistribution(`${t("pages.agency.title")} · intent`, semanticSummary.intent || {}, "intent")}
       ${renderDistribution(`${t("pages.agency.title")} · result`, semanticSummary.result_state || {}, "result")}
@@ -898,7 +1070,7 @@ function renderAgency(payload) {
                   <a class="subtle-link" href="/samples/${encodeURIComponent(item.sample_id)}">${escapeHtml(t("common.view_sample"))}</a>
                 </div>
                 <p class="muted">${escapeHtml(
-                  `${item.sample_id} · ${formatFloat(item.urge_score, 3)} · ${actionList(item.candidate_actions)} · ${item.final_host_action || t("common.none")}`,
+                  `${item.sample_id} · ${formatFloat(item.urge_score, 3)} · ${actionList(item.candidate_actions)} · ${translateLabel(item.final_host_action || "none", "action")}`,
                 )}</p>
                 <div class="pill-row">
                   ${semanticPills(item.semantic)}
@@ -915,7 +1087,7 @@ function renderAgency(payload) {
 
 function actionList(actions) {
   if (!actions?.length) return t("common.none");
-  return actions.join(", ");
+  return actions.map((action) => translateLabel(action, "action")).join(", ");
 }
 
 function renderRuns(payload) {
@@ -933,7 +1105,10 @@ function renderRuns(payload) {
   }
 
   const continuityPills = continuity.map(
-    (item) => `<span class="pill ${item.status === "missing" ? "danger" : item.status === "cross_evidence" ? "warning" : "ok"}">${escapeHtml(`${item.scenario}: ${item.status}`)}</span>`,
+    (item) =>
+      `<span class="pill ${item.status === "missing" ? "danger" : item.status === "cross_evidence" ? "warning" : "ok"}">${escapeHtml(
+        `${translateLabel(item.scenario, "continuity_scenario")}: ${translateLabel(item.status, "continuity_status")}`,
+      )}</span>`,
   );
 
   app.innerHTML = `
@@ -955,9 +1130,9 @@ function renderRuns(payload) {
       ${buildRunTimeline(charts.bundle_trend || [])}
     </section>
     <section class="distribution-grid">
-      ${renderDistribution(t("pages.runs.state_dist"), charts.oe_state_distribution || {})}
+      ${renderDistribution(t("pages.runs.state_dist"), charts.oe_state_distribution || {}, "evidence")}
       ${renderDistribution(t("pages.runs.gap_dist"), charts.gap_type_distribution || {}, "why")}
-      ${renderDistribution(t("pages.runs.continuity"), charts.continuity_status || {})}
+      ${renderDistribution(t("pages.runs.continuity"), charts.continuity_status || {}, "continuity_status")}
     </section>
     <section class="panel">
       <div class="section-head">
@@ -1015,10 +1190,10 @@ function renderGrowth(payload) {
       ${buildNumericTrendSvg(charts.revision_trend || [], "revision_counter")}
     </section>
     <section class="distribution-grid">
-      ${renderDistribution(t("pages.growth.appraisal"), charts.appraisal_component_means || {})}
+      ${renderDistribution(t("pages.growth.appraisal"), charts.appraisal_component_means || {}, "appraisal")}
       ${renderDistribution(t("pages.growth.motion"), charts.growth_motion_distribution || {}, "growth")}
-      ${renderDistribution("Reflection Trigger", charts.reflection_trigger_distribution || {})}
-      ${renderDistribution(t("pages.growth.focus_timeline"), payload.semantic_summary?.focus || {})}
+      ${renderDistribution(t("pages.growth.reflection_trigger"), charts.reflection_trigger_distribution || {}, "reflection_trigger")}
+      ${renderDistribution(t("pages.growth.focus_timeline"), payload.semantic_summary?.focus || {}, "focus")}
     </section>
     <section class="panel">
       <div class="section-head">
@@ -1035,7 +1210,7 @@ function renderGrowth(payload) {
                   <a class="subtle-link" href="/samples/${encodeURIComponent(item.sample_id)}">${escapeHtml(t("common.view_sample"))}</a>
                 </div>
                 <p class="muted">${escapeHtml(
-                  `${item.sample_id} · ${item.focus_goal || t("common.none")} · rev=${item.revision_counter}`,
+                  `${item.sample_id} · ${translateLabel(item.focus_goal || "none", "focus")} · rev=${item.revision_counter}`,
                 )}</p>
                 <div class="pill-row">
                   ${semanticPills(item.semantic)}
@@ -1069,13 +1244,13 @@ function renderFailures(payload) {
       [t("pages.failures.total"), summary.total_failures],
       [t("pages.failures.unresolved"), summary.unresolved_count],
       [t("pages.failures.retested_rate"), formatPercent(summary.retested_rate)],
-      [t("pages.failures.top_cause"), summary.top_cause || t("common.none")],
+      [t("pages.failures.top_cause"), translateLabel(summary.top_cause || "none", "failure_cause")],
       [t("pages.failures.replay_mismatch"), summary.replay_mismatch_count],
     ])}
     <section class="distribution-grid">
-      ${renderDistribution(t("pages.failures.cause_dist"), charts.cause_distribution || {})}
-      ${renderDistribution(t("pages.failures.severity_dist"), charts.severity_distribution || {})}
-      ${renderDistribution(t("pages.failures.retested_dist"), charts.retested_distribution || {})}
+      ${renderDistribution(t("pages.failures.cause_dist"), charts.cause_distribution || {}, "failure_cause")}
+      ${renderDistribution(t("pages.failures.severity_dist"), charts.severity_distribution || {}, "severity")}
+      ${renderDistribution(t("pages.failures.retested_dist"), charts.retested_distribution || {}, "retest")}
       ${renderDistribution(t("pages.failures.blockers"), Object.fromEntries((charts.top_blockers || []).map((item) => [item.label, item.count])), "why")}
     </section>
     <section class="panel">
@@ -1095,7 +1270,9 @@ function renderFailures(payload) {
                     open ? t("common.details_hidden") : t("common.view_details"),
                   )}</button>
                 </div>
-                <p class="muted">${escapeHtml(`${item.failure_id} · ${item.cause_type} · ${item.severity}`)}</p>
+                <p class="muted">${escapeHtml(
+                  `${item.failure_id} · ${translateLabel(item.cause_type, "failure_cause")} · ${translateLabel(item.severity, "severity")}`,
+                )}</p>
                 <div class="pill-row">
                   ${semanticPills(item.semantic)}
                   ${whyPills(item.semantic?.why_codes || [])}
