@@ -192,7 +192,21 @@ def _evaluate_run_items_completion(state: RuntimeV2State) -> Optional[Completion
         return None
 
     active_item = state.get_active_run_item() if hasattr(state, "get_active_run_item") else None
-    if active_item is not None and active_item.status in {"running", "blocked"}:
+    if active_item is not None and active_item.status == "running":
+        observation = state.observe_active_run_item_progress()
+        active_item = state.get_active_run_item() if hasattr(state, "get_active_run_item") else active_item
+        if active_item is not None and active_item.status == "running":
+            return CompletionGateResult(
+                passed=False,
+                reason="current_item_pending",
+                pending_items=[
+                    item.description for item in state.get_run_items() if item.status != "verified"
+                ],
+                verification_result=observation,
+            )
+
+    active_item = state.get_active_run_item() if hasattr(state, "get_active_run_item") else active_item
+    if active_item is not None and active_item.status == "completed":
         verification = verify_run_item(active_item)
         if verification.get("passed"):
             state.mark_active_run_item_verified(verification)
@@ -206,6 +220,16 @@ def _evaluate_run_items_completion(state: RuntimeV2State) -> Optional[Completion
                 ],
                 verification_result=verification,
             )
+    elif active_item is not None and active_item.status == "blocked":
+        verification = active_item.verification_result or {}
+        return CompletionGateResult(
+            passed=False,
+            reason=verification.get("reason") or "blocked_current_item",
+            pending_items=[
+                item.description for item in state.get_run_items() if item.status != "verified"
+            ],
+            verification_result=verification,
+        )
 
     state.ensure_active_run_item_started()
     remaining_items = [item.description for item in state.get_run_items() if item.status != "verified"]
@@ -314,6 +338,8 @@ class RuntimeV2TransitionEngine:
             
             # P3: history 记录也要截断
             state.record("tool", truncated_result)
+            if self._has_host_owned_run_items(state):
+                state.observe_active_run_item_progress()
             return {"done": False}
 
         if action.type == "complete":
@@ -389,3 +415,6 @@ class RuntimeV2TransitionEngine:
             return {"done": False}
 
         return {"done": False}
+
+    def _has_host_owned_run_items(self, state: RuntimeV2State) -> bool:
+        return bool(state.get_run_items())

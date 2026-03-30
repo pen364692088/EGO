@@ -390,7 +390,7 @@ async def test_manual_resume_resets_delivery_state_and_re_emits_progress():
     outcome = await bot._resume_telegram_autonomy_run(run, trigger_source="manual")
 
     assert outcome.status == AutonomyRunStatus.RESUMABLE_PAUSE
-    assert bot.app.bot.sent == [(8420019401, "我继续处理这个任务，做完直接给你结果。")]
+    assert bot.app.bot.sent == []
 
 
 @pytest.mark.asyncio

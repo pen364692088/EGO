@@ -73,6 +73,7 @@ from app.runtime_v2.run_items import (
     build_run_items_from_request,
 )
 from app.runtime_v2.progress_events import ProgressEvent, is_terminal_event
+from app.runtime_v2.semantic_parser import build_runtime_status_reply, parse_session_control_intent
 from app.autonomy import (
     AutonomyExecutorKind,
     AutonomyOrchestrator,
@@ -385,20 +386,44 @@ class TelegramBot:
             "回复“替换”会结束旧任务并开始新任务；回复“追加”会把它排到当前任务后面；回复“取消”会保持当前任务不变。"
         )
 
-    def _get_conflicted_active_run(self, session_key: str) -> Optional[AutonomyRun]:
+    def _build_invalid_task_conflict_reply(self) -> str:
+        return "当前没有待确认的新任务。"
+
+    def _get_active_run(self, session_key: str) -> Optional[AutonomyRun]:
         if self.autonomy_orchestrator is None:
             return None
-        latest_run = self.autonomy_orchestrator.get_latest_run(session_key)
-        if latest_run is None:
-            return None
-        if latest_run.status in {
-            AutonomyRunStatus.RUNNING,
-            AutonomyRunStatus.RESUMABLE_PAUSE,
-            AutonomyRunStatus.WAITING_USER_INPUT,
-            AutonomyRunStatus.BLOCKED,
-        }:
-            return latest_run
-        return None
+        return self.autonomy_orchestrator.get_active_run(session_key)
+
+    def _get_conflicted_active_run(self, session_key: str) -> Optional[AutonomyRun]:
+        return self._get_active_run(session_key)
+
+    def _build_runtime_status_control_reply(self, session_key: str, state: RuntimeV2State) -> str:
+        if state.get_pending_task_conflict() is not None:
+            return self._build_task_conflict_reply(state)
+        active_run = self._get_active_run(session_key)
+        if active_run is None:
+            return "当前没有运行中的任务。"
+        source_state = state
+        snapshot = active_run.runtime_state_snapshot or {}
+        if snapshot:
+            source_state = RuntimeV2State.from_snapshot(snapshot)
+        return build_runtime_status_reply(source_state, assume_active=True)
+
+    def _build_manual_resume_ack_text(self, run: AutonomyRun) -> str:
+        snapshot = run.runtime_state_snapshot or {}
+        snapshot_state = RuntimeV2State.from_snapshot(snapshot) if snapshot else None
+        active_item = snapshot_state.get_active_run_item() if snapshot_state else None
+        if active_item is None and snapshot_state is not None:
+            active_item = snapshot_state.get_next_pending_run_item()
+        if active_item is None:
+            return "继续处理当前任务。"
+        if active_item.canonical_path:
+            target = Path(active_item.canonical_path).name
+            if target == active_item.canonical_path and "\\" in active_item.canonical_path:
+                target = active_item.canonical_path.rsplit("\\", 1)[-1]
+        else:
+            target = active_item.description
+        return f"继续处理 {target}。"
 
     def _prepare_run_items_for_new_task(self, text: str, state: RuntimeV2State) -> list[RunItem]:
         run_items = self._build_run_items_for_request(text, state)
@@ -840,25 +865,27 @@ class TelegramBot:
             return None
 
         verification = state.last_verification_result or {}
-        evidence = verification.get("evidence") or {}
         run_items = state.get_run_items()
         if run_items:
+            active_item = state.get_active_run_item()
+            progress_marker = state.capture_active_run_item_progress_marker() or {}
             marker = {
                 "finish_reason": getattr(result, "finish_reason", None),
                 "verification_reason": verification.get("reason"),
-                "active_item_id": state.active_item_id,
-                "verified_items": sorted(
-                    item.description
-                    for item in run_items
-                    if item.status == "verified"
+                "active_item_id": active_item.item_id if active_item else state.active_item_id,
+                "active_item_status": active_item.status if active_item else None,
+                "active_item_path": active_item.canonical_path if active_item else None,
+                "active_item_attempt_count": active_item.attempt_count if active_item else None,
+                "progress_marker": progress_marker,
+                "completed_items": sorted(
+                    item.description for item in run_items if item.status == "verified"
                 ),
-                "pending_items": sorted(
-                    item.description
-                    for item in run_items
-                    if item.status != "verified"
+                "remaining_items": sorted(
+                    item.description for item in run_items if item.status != "verified"
                 ),
             }
         else:
+            evidence = verification.get("evidence") or {}
             marker = {
                 "finish_reason": getattr(result, "finish_reason", None),
                 "verification_reason": verification.get("reason"),
@@ -890,22 +917,30 @@ class TelegramBot:
         return count
 
     def _build_no_progress_blocked_reply(self, state: RuntimeV2State) -> str:
-        pending_outputs = [
-            item.description
-            for item in state.get_run_items()
-            if item.status != "verified"
-        ]
-        verification = state.last_verification_result or {}
-        reason = str(verification.get("reason") or "").strip()
-        if pending_outputs:
-            detail = f"还没稳定完成这些任务项：{', '.join(pending_outputs)}。"
-        elif reason:
-            detail = f"当前卡点：{reason}。"
-        else:
-            detail = "当前步骤连续多次没有产生新的可验证结果。"
+        summary = state.get_run_item_status_summary()
+        completed = list(summary.get("completed") or [])
+        active = summary.get("active")
+        pending = list(summary.get("pending") or [])
+        blocked = list(summary.get("blocked") or [])
+        details = []
+        if completed:
+            details.append(f"已完成：{', '.join(completed)}。")
+        if blocked:
+            details.append(f"当前卡住：{', '.join(blocked)}。")
+        elif active:
+            details.append(f"当前卡住：{active}。")
+        if pending:
+            details.append(f"还未开始：{', '.join(pending)}。")
+        if not details:
+            verification = state.last_verification_result or {}
+            reason = str(verification.get("reason") or "").strip()
+            if reason:
+                details.append(f"当前卡点：{reason}。")
+            else:
+                details.append("当前步骤连续多次没有产生新的可验证结果。")
         return (
             "这个任务在同一阶段连续多次没有新进展，我先停下来，避免继续空转。\n\n"
-            f"{detail}\n\n"
+            f"{' '.join(details)}\n\n"
             "你回复“继续”可以再试一次，或者把任务拆小后再试。"
         )
 
@@ -1539,6 +1574,8 @@ class TelegramBot:
         session_key = self._resolve_session_key(update, chat_id, user_id)
         context_store = get_session_context_store()
         context_store.clear_session(session_key)
+        if self.autonomy_orchestrator is not None:
+            self.autonomy_orchestrator.supersede_session_runs(session_key)
         runtime_loop = self.runtime_v2_loop
         if runtime_loop is not None:
             state = runtime_loop.reset_session(session_key, command=f"/{command}")
@@ -2057,39 +2094,59 @@ class TelegramBot:
         session_key = self._resolve_session_key(update, chat_id, user_id)
         state = self._get_runtime_state(session_key)
         ingress_message_id = update.message.message_id if update.message else None
+        control_intent = parse_session_control_intent(text)
 
-        pending_override_text = await self._maybe_handle_pending_task_conflict(
-            update=update,
-            state=state,
-            text=text,
-            trace_id=trace_id,
-            ingress_message_id=ingress_message_id,
-            session_key=session_key,
-        )
-        if pending_override_text == "":
-            return
-        if pending_override_text is not None:
-            text = pending_override_text
-
-        if self.autonomy_orchestrator is not None and self._looks_like_manual_continue(text):
-            latest_run = self.autonomy_orchestrator.get_latest_run(session_key)
-            if latest_run is not None and (
-                latest_run.status == AutonomyRunStatus.RESUMABLE_PAUSE
-                or self._is_manual_resumable_blocked_run(latest_run)
-            ):
-                await self._publish_phase1_event(
-                    session_key=session_key,
-                    kind="telegram_manual_resume",
-                    trace_id=trace_id,
-                    message_id=ingress_message_id,
-                    payload={
-                        "run_id": latest_run.id,
-                        "status": latest_run.status.value,
-                        "hard_blocker_reason": latest_run.hard_blocker_reason,
-                    },
-                )
-                await self.autonomy_orchestrator.resume_run(latest_run.id, trigger_source="manual")
+        if control_intent.kind == "task_conflict_resolution":
+            if state.get_pending_task_conflict() is None:
+                await self._send_reply(update, self._build_invalid_task_conflict_reply())
                 return
+            pending_override_text = await self._maybe_handle_pending_task_conflict(
+                update=update,
+                state=state,
+                text=text,
+                trace_id=trace_id,
+                ingress_message_id=ingress_message_id,
+                session_key=session_key,
+            )
+            if pending_override_text == "":
+                return
+            if pending_override_text is not None:
+                text = pending_override_text
+        elif state.get_pending_task_conflict() is not None:
+            await self._send_reply(update, self._build_task_conflict_reply(state))
+            return
+
+        if control_intent.kind == "status_probe":
+            reply_text = self._build_runtime_status_control_reply(session_key, state)
+            await self._send_reply(update, reply_text)
+            return
+
+        if control_intent.kind == "manual_resume":
+            active_run = self._get_active_run(session_key)
+            if active_run is None or not (
+                active_run.status == AutonomyRunStatus.RESUMABLE_PAUSE
+                or self._is_manual_resumable_blocked_run(active_run)
+            ):
+                await self._send_reply(update, "当前没有可继续的任务。")
+                return
+            await self._publish_phase1_event(
+                session_key=session_key,
+                kind="telegram_manual_resume",
+                trace_id=trace_id,
+                message_id=ingress_message_id,
+                payload={
+                    "run_id": active_run.id,
+                    "status": active_run.status.value,
+                    "hard_blocker_reason": active_run.hard_blocker_reason,
+                },
+            )
+            await self._send_reply(
+                update,
+                self._build_manual_resume_ack_text(active_run),
+                finalize_evidence=False,
+            )
+            await self.autonomy_orchestrator.resume_run(active_run.id, trigger_source="manual")
+            return
 
         # 记录 ingress 信息
         if ingress_message_id is not None:
@@ -2554,6 +2611,8 @@ class TelegramBot:
         if trigger_source == "manual":
             self._reset_autonomy_delivery_state(state)
             self._clear_no_progress_tracking(run)
+            if self._should_use_run_item_timeline(state):
+                state.resume_active_run_item()
         chat_id = run.metadata.get("chat_id")
         if (
             trigger_source == "driver"
@@ -2687,6 +2746,7 @@ class TelegramBot:
                 and run.executor_kind == AutonomyExecutorKind.GENERIC_RUNTIME
                 and sent_progress == 0
                 and not self._should_use_run_item_timeline(state)
+                and trigger_source != "manual"
             ):
                 await self._send_autonomy_progress_update(
                     state=state,

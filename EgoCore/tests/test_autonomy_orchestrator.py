@@ -99,3 +99,38 @@ async def test_autonomy_orchestrator_manual_resume_allows_retryable_blocked_run(
     assert resumed is not None
     assert resumed.status == AutonomyRunStatus.COMPLETED
     assert resumed.resume_count == 1
+
+
+def test_autonomy_orchestrator_can_resolve_active_run_and_supersede_session_runs(tmp_path):
+    repo = AutonomyRunRepository(Database(tmp_path / "autonomy.db"))
+    orchestrator = AutonomyOrchestrator(repository=repo)
+
+    completed = AutonomyRun.create(
+        session_key="telegram:dm:test",
+        surface="telegram",
+        status=AutonomyRunStatus.COMPLETED,
+        executor_kind=AutonomyExecutorKind.GENERIC_RUNTIME,
+        objective="旧完成任务",
+    )
+    active = AutonomyRun.create(
+        session_key="telegram:dm:test",
+        surface="telegram",
+        status=AutonomyRunStatus.BLOCKED,
+        executor_kind=AutonomyExecutorKind.GENERIC_RUNTIME,
+        objective="当前活跃任务",
+        current_phase="blocked",
+    )
+    repo.create(completed)
+    repo.create(active)
+
+    active_run = orchestrator.get_active_run("telegram:dm:test")
+    assert active_run is not None
+    assert active_run.id == active.id
+
+    updated_count = orchestrator.supersede_session_runs("telegram:dm:test")
+    assert updated_count == 1
+
+    superseded = repo.get(active.id)
+    assert superseded is not None
+    assert superseded.status == AutonomyRunStatus.SUPERSEDED
+    assert orchestrator.get_active_run("telegram:dm:test") is None

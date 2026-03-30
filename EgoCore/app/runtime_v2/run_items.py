@@ -90,6 +90,8 @@ class RunItem:
     baseline_snapshot: Optional[VerificationBaseline] = None
     verification_result: Optional[Dict[str, Any]] = None
     metadata: Dict[str, Any] = field(default_factory=dict)
+    attempt_count: int = 0
+    last_progress_at: Optional[float] = None
     started_at: Optional[float] = None
     completed_at: Optional[float] = None
     verified_at: Optional[float] = None
@@ -105,6 +107,8 @@ class RunItem:
             "baseline_snapshot": self.baseline_snapshot.to_dict() if self.baseline_snapshot else None,
             "verification_result": self.verification_result,
             "metadata": dict(self.metadata),
+            "attempt_count": self.attempt_count,
+            "last_progress_at": self.last_progress_at,
             "started_at": self.started_at,
             "completed_at": self.completed_at,
             "verified_at": self.verified_at,
@@ -124,6 +128,8 @@ class RunItem:
             baseline_snapshot=VerificationBaseline.from_dict(data.get("baseline_snapshot")),
             verification_result=data.get("verification_result"),
             metadata=dict(data.get("metadata") or {}),
+            attempt_count=int(data.get("attempt_count") or 0),
+            last_progress_at=data.get("last_progress_at"),
             started_at=data.get("started_at"),
             completed_at=data.get("completed_at"),
             verified_at=data.get("verified_at"),
@@ -424,7 +430,7 @@ def _expected_lines_match(path: Path, expected_lines: List[Dict[str, str]]) -> b
     return True
 
 
-def _path_changed_from_baseline(path: Path, baseline: Optional[VerificationBaseline]) -> bool:
+def path_changed_from_baseline(path: Path, baseline: Optional[VerificationBaseline]) -> bool:
     if baseline is None:
         return path.exists()
     if not path.exists():
@@ -460,7 +466,7 @@ def verify_run_item(item: RunItem) -> Dict[str, Any]:
             "evidence": {"path": str(path)},
         }
 
-    if item.kind in {"file_write", "script_generate", "page_generate"} and not _path_changed_from_baseline(path, item.baseline_snapshot):
+    if item.kind in {"file_write", "script_generate", "page_generate"} and not path_changed_from_baseline(path, item.baseline_snapshot):
         return {
             "passed": False,
             "reason": "run_item_not_updated",

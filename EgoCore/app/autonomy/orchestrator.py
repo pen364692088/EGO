@@ -45,6 +45,12 @@ class AutonomyOrchestrator:
     def get_latest_run(self, session_key: str) -> Optional[AutonomyRun]:
         return self.repository.get_latest_for_session(session_key)
 
+    def get_active_run(self, session_key: str) -> Optional[AutonomyRun]:
+        return self.repository.get_active_for_session(session_key)
+
+    def supersede_session_runs(self, session_key: str) -> int:
+        return self.repository.supersede_session_runs(session_key)
+
     async def submit_ingress(
         self,
         *,

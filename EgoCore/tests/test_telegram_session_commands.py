@@ -15,6 +15,7 @@ if "requests" not in sys.modules:
     )
 
 import app.telegram_bot as telegram_bot_module
+from app.autonomy import AutonomyExecutorKind, AutonomyRun, AutonomyRunStatus
 from app.telegram_bot import TelegramBot
 from app.interaction.session_context_store import get_session_context_store
 
@@ -56,6 +57,50 @@ async def test_new_command_resets_runtime_v2_session():
     assert new_state.task_status == "idle"
     assert new_state.current_goal is None
     assert get_session_context_store().get_recent_turns(session_key) == []
+
+
+@pytest.mark.asyncio
+async def test_new_command_supersedes_active_durable_runs():
+    bot = TelegramBot(token="test-token", use_runtime_v2=True)
+
+    class DummyMessage:
+        text = "/new"
+        message_id = 31
+        reply_to_message = None
+        last_text = None
+
+        async def reply_text(self, text, parse_mode=None):
+            self.last_text = text
+
+    class DummyChat:
+        id = 123
+        type = "private"
+
+    class DummyUser:
+        id = 456
+        username = "moonlight"
+
+    class DummyUpdate:
+        message = DummyMessage()
+        effective_chat = DummyChat()
+        effective_user = DummyUser()
+
+    session_key = "telegram:dm:456"
+    run = AutonomyRun.create(
+        session_key=session_key,
+        surface="telegram",
+        status=AutonomyRunStatus.BLOCKED,
+        executor_kind=AutonomyExecutorKind.GENERIC_RUNTIME,
+        objective="旧活跃任务",
+        current_phase="blocked",
+    )
+    bot.autonomy_orchestrator.repository.create(run)
+
+    await bot.handle_command(DummyUpdate(), None)
+
+    superseded = bot.autonomy_orchestrator.repository.get(run.id)
+    assert superseded is not None
+    assert superseded.status == AutonomyRunStatus.SUPERSEDED
 
 
 @pytest.mark.asyncio

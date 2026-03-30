@@ -159,6 +159,27 @@ class ParsedIntentGraph:
         }
 
 
+@dataclass
+class SessionControlIntent:
+    kind: str
+    resolution: Optional[str] = None
+
+
+def parse_session_control_intent(text: str) -> SessionControlIntent:
+    normalized = _normalize_short_probe(text)
+    if normalized in SHORT_STATUS_PATTERNS or normalized in {"status", "进度", "如何了"}:
+        return SessionControlIntent(kind="status_probe")
+    if normalized in {"继续", "continue", "继续执行", "继续这个任务", "resume"}:
+        return SessionControlIntent(kind="manual_resume")
+    if normalized in {"替换", "replace"}:
+        return SessionControlIntent(kind="task_conflict_resolution", resolution="replace")
+    if normalized in {"追加", "append"}:
+        return SessionControlIntent(kind="task_conflict_resolution", resolution="append")
+    if normalized in {"取消", "cancel"}:
+        return SessionControlIntent(kind="task_conflict_resolution", resolution="cancel")
+    return SessionControlIntent(kind="execute_task")
+
+
 # =============================================================================
 # LLM 调用规范
 # =============================================================================
@@ -957,14 +978,14 @@ def decide_runtime_action(graph: ParsedIntentGraph, state: Any) -> str:
     return "chat"
 
 
-def build_runtime_status_reply(state: Any) -> str:
+def build_runtime_status_reply(state: Any, *, assume_active: bool = False) -> str:
     """
     构建状态查询回复。
 
     内容必须来自 runtime snapshot，不能由 LLM 自由生成。
     """
     # 没有运行中的任务
-    if not (hasattr(state, "is_busy") and state.is_busy()):
+    if not assume_active and not (hasattr(state, "is_busy") and state.is_busy()):
         return "当前没有运行中的任务。"
 
     if hasattr(state, "pending_task_conflict") and getattr(state, "pending_task_conflict", None):

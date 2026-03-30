@@ -378,6 +378,35 @@ def test_runtime_status_reply_prefers_run_items_and_pending_conflict_over_stale_
     assert "替换" in conflict_reply
 
 
+def test_verify_run_item_advances_without_requiring_new_file_delta(tmp_path):
+    state = RuntimeV2State(session_id="session:verify-item")
+    state.ingress_context = {
+        "runtime_action": "execute_task",
+        "requested_output": {"target_directory": str(tmp_path)},
+    }
+    target = tmp_path / "demo.txt"
+    target.write_text("hello\n2026-03-30\nautonomous chain test", encoding="utf-8")
+
+    state.set_run_items(
+        build_run_items_from_request(
+            f"在 {tmp_path} 目录下创建 demo.txt，写入三行内容：第一行是 hello，第二行是当前日期，第三行是 autonomous chain test。然后读取这个文件确认内容。",
+            ingress_context=state.ingress_context,
+        )
+    )
+    state.ensure_active_run_item_started()
+    state.mark_active_run_item_verified({"passed": True, "reason": "run_item_verified"})
+    verify_item = state.ensure_active_run_item_started()
+
+    assert verify_item is not None
+    assert verify_item.kind == "file_verify"
+
+    observation = state.observe_active_run_item_progress()
+
+    assert observation["reason"] == "verify_item_ready"
+    assert state.get_active_run_item() is not None
+    assert state.get_active_run_item().status == "completed"
+
+
 @pytest.mark.asyncio
 async def test_runtime_v2_loop_executes_explicit_analyze_with_file_tool(monkeypatch):
     loop = RuntimeV2Loop()

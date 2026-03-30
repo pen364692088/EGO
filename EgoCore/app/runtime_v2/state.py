@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from pathlib import PurePosixPath, PureWindowsPath
+from pathlib import Path, PurePosixPath, PureWindowsPath
 import re
 from typing import Any, Dict, List, Optional
 import time
@@ -16,6 +16,7 @@ from .run_items import (
     build_output_obligations,
     build_run_item_started_text,
     build_run_item_verified_text,
+    path_changed_from_baseline,
 )
 
 
@@ -695,7 +696,7 @@ class RuntimeV2State:
             if item.item_id == self.active_item_id:
                 active = item
                 break
-        if active is not None and active.status in {"running", "blocked"}:
+        if active is not None and active.status in {"running", "completed", "blocked"}:
             return active
         if active is not None and active.status == "verified":
             self.active_item_id = None
@@ -705,6 +706,8 @@ class RuntimeV2State:
             return None
         next_item.status = "running"
         next_item.started_at = time.time()
+        next_item.attempt_count += 1
+        next_item.last_progress_at = next_item.started_at
         if next_item.canonical_path:
             next_item.baseline_snapshot = VerificationBaseline.capture(next_item.canonical_path)
         self.active_item_id = next_item.item_id
@@ -719,6 +722,29 @@ class RuntimeV2State:
             )
         )
         return next_item
+
+    def resume_active_run_item(self) -> Optional[RunItem]:
+        item = self.get_active_run_item()
+        if item is None or item.status != "blocked":
+            return item
+        item.status = "running"
+        item.attempt_count += 1
+        item.last_progress_at = time.time()
+        self.update_run_item(item)
+        self.current_step = item.description
+        return item
+
+    def mark_active_run_item_completed(self, observation_result: Optional[Dict[str, Any]] = None) -> Optional[RunItem]:
+        item = self.get_active_run_item()
+        if item is None:
+            return None
+        item.status = "completed"
+        item.completed_at = time.time()
+        item.last_progress_at = item.completed_at
+        item.verification_result = observation_result
+        self.update_run_item(item)
+        self.current_step = item.description
+        return item
 
     def update_run_item(self, updated_item: RunItem) -> None:
         items = self.get_run_items()
@@ -754,6 +780,7 @@ class RuntimeV2State:
         if item is None:
             return None
         item.status = "blocked"
+        item.last_progress_at = time.time()
         item.verification_result = verification_result
         self.update_run_item(item)
         self.current_step = item.description
@@ -767,6 +794,65 @@ class RuntimeV2State:
             )
         )
         return item
+
+    def capture_active_run_item_progress_marker(self) -> Optional[Dict[str, Any]]:
+        item = self.get_active_run_item()
+        if item is None:
+            return None
+        marker: Dict[str, Any] = {
+            "item_id": item.item_id,
+            "status": item.status,
+            "canonical_path": item.canonical_path,
+            "attempt_count": item.attempt_count,
+            "last_progress_at": item.last_progress_at,
+        }
+        if item.canonical_path:
+            current = VerificationBaseline.capture(item.canonical_path)
+            marker["current_observation"] = current.to_dict()
+            marker["baseline_snapshot"] = item.baseline_snapshot.to_dict() if item.baseline_snapshot else None
+        return marker
+
+    def observe_active_run_item_progress(self) -> Optional[Dict[str, Any]]:
+        item = self.get_active_run_item()
+        if item is None:
+            return None
+        if item.status not in {"running", "completed"}:
+            return {
+                "progressed": False,
+                "reason": f"item_status_{item.status}",
+                "item_id": item.item_id,
+            }
+        if not item.canonical_path:
+            return {
+                "progressed": False,
+                "reason": "missing_canonical_path",
+                "item_id": item.item_id,
+            }
+        if item.kind == "file_verify":
+            observation = {
+                "progressed": True,
+                "reason": "verify_item_ready",
+                "item_id": item.item_id,
+                "canonical_path": item.canonical_path,
+            }
+            if item.status == "running":
+                self.mark_active_run_item_completed(observation)
+            return observation
+        path = PureWindowsPath(item.canonical_path) if WINDOWS_PATH_RE.match(item.canonical_path or "") else PurePosixPath(item.canonical_path)
+        baseline = item.baseline_snapshot
+        current = VerificationBaseline.capture(str(path))
+        changed = path_changed_from_baseline(Path(str(path)), baseline)
+        observation = {
+            "progressed": changed,
+            "reason": "host_delta_observed" if changed else "no_host_delta",
+            "item_id": item.item_id,
+            "canonical_path": item.canonical_path,
+            "baseline_snapshot": baseline.to_dict() if baseline else None,
+            "current_observation": current.to_dict(),
+        }
+        if changed and item.status == "running":
+            self.mark_active_run_item_completed(observation)
+        return observation
 
     def append_run_items(self, items_to_append: List[RunItem]) -> None:
         existing = self.get_run_items()

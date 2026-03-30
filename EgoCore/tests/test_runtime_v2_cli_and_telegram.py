@@ -1,5 +1,7 @@
 import pytest
 
+from app.autonomy import AutonomyExecutorKind, AutonomyRun, AutonomyRunStatus
+from app.runtime_v2.run_items import build_run_items_from_request
 from app.runtime_v2.cli import run_cli
 from app.telegram_bot import TelegramBot
 
@@ -112,7 +114,7 @@ async def test_telegram_bot_runtime_v2_busy_short_probe_enters_runtime(monkeypat
 
 @pytest.mark.asyncio
 async def test_telegram_bot_runtime_v2_recent_completion_short_probe_enters_runtime(monkeypatch):
-    """短探针不再被吸收，而是进入 runtime 获取正常回复"""
+    """短探针现在先走 control-plane，不再进入 execute/runtime 路径"""
     bot = TelegramBot(token="test-token", use_runtime_v2=True)
 
     class DummyBot:
@@ -147,6 +149,7 @@ async def test_telegram_bot_runtime_v2_recent_completion_short_probe_enters_runt
     state = bot._get_runtime_state('telegram:dm:456')
     bot._sync_state_into_runtime_v2_loop('telegram:dm:456', state)
     state.mark_task_completed()
+    monkeypatch.setattr(bot, "_get_active_run", lambda session_key: None)
 
     async def fake_run_turn_typed(session_id, user_input):
         from app.runtime_v2.runtime_reply import RuntimeV2Reply, RuntimeV2TurnResult
@@ -164,6 +167,116 @@ async def test_telegram_bot_runtime_v2_recent_completion_short_probe_enters_runt
     monkeypatch.setattr(runtime_loop, 'run_turn_typed', fake_run_turn_typed)
     await bot.handle_message(DummyUpdate(), None)
     await bot.handle_message(DummyUpdate(), None)
-    # 短探针现在会进入 runtime，返回正常回复
-    assert DummyUpdate.message.last_text == '任务已完成，还有什么需要帮忙的吗？'
+    # 短探针现在由 control-plane 直接响应
+    assert DummyUpdate.message.last_text == '当前没有运行中的任务。'
     assert DummyUpdate.message.call_count == 2
+
+
+@pytest.mark.asyncio
+async def test_telegram_bot_manual_resume_is_control_plane_with_immediate_ack(monkeypatch, tmp_path):
+    bot = TelegramBot(token="test-token", use_runtime_v2=True)
+
+    class DummyBot:
+        async def send_chat_action(self, chat_id, action):
+            return None
+
+    class DummyMessage:
+        text = "继续"
+        message_id = 4
+        reply_to_message = None
+        last_text = None
+
+        async def reply_text(self, text, parse_mode=None):
+            self.last_text = text
+
+    class DummyChat:
+        id = 123
+        type = "private"
+
+    class DummyUser:
+        id = 456
+        username = "moonlight"
+
+    class DummyUpdate:
+        message = DummyMessage()
+        effective_chat = DummyChat()
+        effective_user = DummyUser()
+
+    bot.app = type("A", (), {"bot": DummyBot()})()
+    monkeypatch.setattr(bot, "_publish_phase1_event", lambda **kwargs: __import__("asyncio").sleep(0))
+
+    state = bot._get_runtime_state("telegram:dm:456")
+    state.ingress_context = {
+        "runtime_action": "execute_task",
+        "requested_output": {"target_directory": str(tmp_path)},
+    }
+    state.set_run_items(
+        build_run_items_from_request(
+            f"在 {tmp_path} 目录下创建 demo.txt。",
+            ingress_context=state.ingress_context,
+        )
+    )
+    state.ensure_active_run_item_started()
+    state.mark_active_run_item_blocked({"reason": "run_item_missing"})
+
+    run = AutonomyRun.create(
+        session_key="telegram:dm:456",
+        surface="telegram",
+        status=AutonomyRunStatus.BLOCKED,
+        executor_kind=AutonomyExecutorKind.GENERIC_RUNTIME,
+        objective="继续当前任务",
+        current_phase="blocked",
+    )
+    run.hard_blocker_reason = "no_progress_stall_detected"
+    run.runtime_state_snapshot = state.to_snapshot()
+    bot.autonomy_orchestrator.repository.create(run)
+
+    resumed = {}
+
+    async def fake_resume_run(run_id, *, trigger_source="manual"):
+        resumed["run_id"] = run_id
+        resumed["trigger_source"] = trigger_source
+        return run
+
+    monkeypatch.setattr(bot.autonomy_orchestrator, "resume_run", fake_resume_run)
+
+    await bot.handle_message(DummyUpdate(), None)
+
+    assert DummyUpdate.message.last_text == "继续处理 demo.txt。"
+    assert resumed == {"run_id": run.id, "trigger_source": "manual"}
+
+
+@pytest.mark.asyncio
+async def test_telegram_bot_conflict_resolution_outside_conflict_returns_invalid_reply():
+    bot = TelegramBot(token="test-token", use_runtime_v2=True)
+
+    class DummyBot:
+        async def send_chat_action(self, chat_id, action):
+            return None
+
+    class DummyMessage:
+        text = "替换"
+        message_id = 5
+        reply_to_message = None
+        last_text = None
+
+        async def reply_text(self, text, parse_mode=None):
+            self.last_text = text
+
+    class DummyChat:
+        id = 123
+        type = "private"
+
+    class DummyUser:
+        id = 456
+        username = "moonlight"
+
+    class DummyUpdate:
+        message = DummyMessage()
+        effective_chat = DummyChat()
+        effective_user = DummyUser()
+
+    bot.app = type("A", (), {"bot": DummyBot()})()
+    await bot.handle_message(DummyUpdate(), None)
+
+    assert DummyUpdate.message.last_text == "当前没有待确认的新任务。"
