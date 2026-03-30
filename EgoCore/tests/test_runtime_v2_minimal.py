@@ -183,3 +183,30 @@ async def test_runtime_v2_loop_max_steps_exhausted_returns_resumable_pause(monke
     assert result.status == "resumable_pause"
     assert result.finish_reason == "max_steps_exhausted"
     assert result.checkpoint_payload["state_snapshot"]["task_status"] == "resumable_pause"
+
+
+@pytest.mark.asyncio
+async def test_runtime_v2_loop_transient_decision_error_returns_resumable_pause(monkeypatch):
+    loop = RuntimeV2Loop()
+
+    async def fake_decide(_state):
+        return RuntimeV2Action(
+            type="ask",
+            question="Runtime v2 模型暂时不可用，我会继续自动重试。",
+            raw={
+                "type": "ask",
+                "kind": "transient_decision_error",
+                "retryable": True,
+                "error": "Server error 500",
+                "error_class": "HTTPStatusError",
+                "status_code": 500,
+            },
+        )
+
+    monkeypatch.setattr(loop, "_decide", fake_decide)
+
+    result = await loop.run_turn_typed("session:transient-decision-error", "继续这个执行任务", max_steps=2)
+
+    assert result.status == "resumable_pause"
+    assert result.finish_reason == "transient_decision_error"
+    assert result.checkpoint_payload["state_snapshot"]["task_status"] == "resumable_pause"

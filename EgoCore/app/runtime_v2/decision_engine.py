@@ -4,6 +4,8 @@ import asyncio
 import json
 from typing import Dict, List
 
+import httpx
+
 from app.llm_client import get_llm_client
 
 from .action_protocol import RUNTIME_V2_SYSTEM_PROMPT, RuntimeV2Action
@@ -187,11 +189,7 @@ class RuntimeV2DecisionEngine:
                 state.record_token_usage(prompt_tokens, completion_tokens)
             return RuntimeV2Action.from_model_output(response.content)
         except Exception as e:
-            return RuntimeV2Action(
-                type="ask",
-                question=f"Runtime v2 当前模型决策不可用：{e}",
-                raw={"type": "ask", "error": str(e)},
-            )
+            return self._build_error_action(e)
 
     def _decide_max_tokens(self, state: RuntimeV2State) -> int:
         ingress = state.ingress_context or {}
@@ -201,3 +199,43 @@ class RuntimeV2DecisionEngine:
         if ingress.get("request_mode") == "write":
             return 4000
         return 1200
+
+    def _is_transient_decision_error(self, error: Exception) -> bool:
+        if isinstance(error, httpx.HTTPStatusError):
+            response = getattr(error, "response", None)
+            status_code = getattr(response, "status_code", None)
+            return status_code in {408, 429, 500, 502, 503, 504}
+        return isinstance(
+            error,
+            (
+                httpx.TimeoutException,
+                httpx.NetworkError,
+                TimeoutError,
+                ConnectionError,
+            ),
+        )
+
+    def _build_error_action(self, error: Exception) -> RuntimeV2Action:
+        response = getattr(error, "response", None)
+        status_code = getattr(response, "status_code", None)
+        retryable = self._is_transient_decision_error(error)
+        kind = "transient_decision_error" if retryable else "decision_error"
+        question = (
+            "Runtime v2 模型暂时不可用，我会继续自动重试。"
+            if retryable
+            else f"Runtime v2 当前模型决策不可用：{error}"
+        )
+        raw = {
+            "type": "ask",
+            "kind": kind,
+            "retryable": retryable,
+            "error": str(error),
+            "error_class": type(error).__name__,
+        }
+        if status_code is not None:
+            raw["status_code"] = status_code
+        return RuntimeV2Action(
+            type="ask",
+            question=question,
+            raw=raw,
+        )

@@ -281,7 +281,56 @@ class RuntimeV2Loop:
                 # Proto-Self Kernel 失败不影响主流程
                 logger.error(f"[PSK-TG-TRACE-ERROR] {e}")
                 state.record("proto_self", {"error": str(e)})
+        return await self._advance_turn(
+            session_id=session_id,
+            state=state,
+            max_steps=max_steps,
+            source=source,
+            evidence_collector=evidence_collector,
+            turn_id=turn_id,
+            generation_id=generation_id,
+        )
 
+    async def continue_turn_typed(
+        self,
+        session_id: str,
+        *,
+        max_steps: int = 6,
+        source: str = "autonomy",
+        evidence_collector: Optional[Any] = None,
+        state: Optional[RuntimeV2State] = None,
+    ) -> RuntimeV2TurnResult:
+        state = state or self.get_state(session_id)
+        if not state.task_id:
+            state.task_id = f"task_{uuid.uuid4().hex[:8]}"
+        if not state.active_turn_id:
+            turn_id = state.start_turn()
+        else:
+            turn_id = state.active_turn_id
+            state.active_turn_status = "running"
+            state.final_sent = False
+        generation_id = state.generation_id
+        return await self._advance_turn(
+            session_id=session_id,
+            state=state,
+            max_steps=max_steps,
+            source=source,
+            evidence_collector=evidence_collector,
+            turn_id=turn_id,
+            generation_id=generation_id,
+        )
+
+    async def _advance_turn(
+        self,
+        *,
+        session_id: str,
+        state: RuntimeV2State,
+        max_steps: int,
+        source: str,
+        evidence_collector: Optional[Any],
+        turn_id: str,
+        generation_id: int,
+    ) -> RuntimeV2TurnResult:
         invalid_json_retries = 0
         for step in range(max_steps):
             action = await self._decide(state)
@@ -294,24 +343,51 @@ class RuntimeV2Loop:
                 state.record("system", {"retry_reason": action.raw.get("kind")})
                 if invalid_json_retries <= 1:
                     continue
-                state.task_status = "waiting_input"
-                # 不再发送 generic busy 文案，返回空回复
+                state.task_status = "resumable_pause"
                 return RuntimeV2TurnResult(
-                    status="waiting_input",
+                    status="resumable_pause",
                     state=state,
                     reply=RuntimeV2Reply(
-                        reply_text="",  # 空回复，不发送 generic busy
+                        reply_text="",
                         delivery_kind="progress",
-                        status="waiting_input",
+                        status="resumable_pause",
                         suppressible=True,
                         generation_id=generation_id,
                         turn_id=turn_id,
                     ),
+                    finish_reason="invalid_json_retry_exhausted",
+                    checkpoint_payload={"state_snapshot": state.to_snapshot()},
+                )
+
+            if action.type == "ask" and action.raw.get("kind") == "transient_decision_error":
+                state.record(
+                    "system",
+                    {
+                        "retry_reason": "transient_decision_error",
+                        "error": action.raw.get("error"),
+                        "error_class": action.raw.get("error_class"),
+                        "status_code": action.raw.get("status_code"),
+                    },
+                )
+                state.task_status = "resumable_pause"
+                state.waiting_for_user_input = False
+                return RuntimeV2TurnResult(
+                    status="resumable_pause",
+                    state=state,
+                    reply=RuntimeV2Reply(
+                        reply_text="",
+                        delivery_kind="progress",
+                        status="resumable_pause",
+                        suppressible=True,
+                        generation_id=generation_id,
+                        turn_id=turn_id,
+                    ),
+                    finish_reason="transient_decision_error",
+                    checkpoint_payload={"state_snapshot": state.to_snapshot()},
                 )
 
             transition = await self.transition_engine.apply(state, action)
 
-            # Proto-Self Kernel: 工具执行后回流 external_result
             if self.proto_self_runtime and action.type == "act" and state.last_tool_result:
                 try:
                     self.proto_self_runtime.process_external_result(
@@ -322,19 +398,16 @@ class RuntimeV2Loop:
                         evidence_collector=evidence_collector,
                     )
                 except Exception as e:
-                    # Proto-Self Kernel 失败不影响主流程
                     state.record("proto_self", {"external_result_error": str(e)})
 
             if transition.get("done"):
                 result = transition["result"]
                 if not isinstance(result, RuntimeV2TurnResult):
                     raise TypeError(f"Runtime v2 transition must return RuntimeV2TurnResult, got {type(result)!r}")
-                # WS-1: 注入 generation_id 和 turn_id
                 if result.reply:
                     result.reply.generation_id = generation_id
                     result.reply.turn_id = turn_id
 
-                # E4 Evidence: Capture response_plan
                 if self.proto_self_runtime:
                     try:
                         self.proto_self_runtime.capture_response_plan(
@@ -347,19 +420,20 @@ class RuntimeV2Loop:
 
                 return result
 
-        state.task_status = "waiting_input"
-        # 不再发送 generic busy 文案，返回空回复
+        state.task_status = "resumable_pause"
         return RuntimeV2TurnResult(
-            status="waiting_input",
+            status="resumable_pause",
             state=state,
             reply=RuntimeV2Reply(
-                reply_text="",  # 空回复，不发送 generic busy
+                reply_text="",
                 delivery_kind="progress",
-                status="waiting_input",
+                status="resumable_pause",
                 suppressible=True,
                 generation_id=generation_id,
                 turn_id=turn_id,
             ),
+            finish_reason="max_steps_exhausted",
+            checkpoint_payload={"state_snapshot": state.to_snapshot()},
         )
 
     async def _decide(self, state: RuntimeV2State) -> RuntimeV2Action:
