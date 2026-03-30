@@ -1900,10 +1900,18 @@ class TelegramBot:
                 if run.executor_kind == AutonomyExecutorKind.CONTRACT_EXECUTE:
                     if result.reply_text:
                         await self._send_chat_message(chat_id, result.reply_text, finalize_evidence=True)
+                        state.final_sent = True
                 else:
                     delivery = self.telegram_runtime_bridge.plan_delivery(result, state, False)
                     if delivery.should_send and delivery.text:
                         await self._send_chat_message(chat_id, delivery.text, finalize_evidence=True)
+                        if getattr(result, "delivery_kind", "final") == "final" or result.status in {
+                            "completed_verified",
+                            "completed",
+                            "blocked",
+                            "failed",
+                        }:
+                            state.final_sent = True
         else:
             state.task_status = "resumable_pause"
             state.waiting_for_user_input = False
@@ -2390,6 +2398,13 @@ class TelegramBot:
                 },
             )
             await self._send_reply(update, delivery.text)
+            if getattr(result, "delivery_kind", "final") == "final" or result.status in {
+                "completed_verified",
+                "completed",
+                "blocked",
+                "failed",
+            }:
+                state.final_sent = True
 
     async def _handle_with_new_runtime(
         self,

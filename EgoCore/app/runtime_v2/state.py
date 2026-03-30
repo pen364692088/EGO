@@ -307,7 +307,6 @@ class RuntimeV2State:
         self.task_status = "completed_verified"
         self.waiting_for_user_input = False
         self.last_task_completed_at = time.time()
-        self.final_sent = True
         self.active_turn_status = "terminal"
         self.contract_phase = "completed"
 
