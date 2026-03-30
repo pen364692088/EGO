@@ -9,6 +9,7 @@ from app.autonomy import (
     AutonomyRunRepository,
     AutonomyRunStatus,
     AutonomySliceOutcome,
+    AutonomyStopReason,
 )
 from app.storage.db import Database
 
@@ -66,3 +67,35 @@ async def test_autonomy_orchestrator_auto_resumes_until_completed(tmp_path):
     assert terminal.current_phase == "completed"
     assert terminal.resume_count == 2
     assert calls["count"] == 3
+
+
+@pytest.mark.asyncio
+async def test_autonomy_orchestrator_manual_resume_allows_retryable_blocked_run(tmp_path):
+    repo = AutonomyRunRepository(Database(tmp_path / "autonomy.db"))
+    orchestrator = AutonomyOrchestrator(repository=repo)
+    run = AutonomyRun.create(
+        session_key="telegram:dm:test",
+        surface="telegram",
+        status=AutonomyRunStatus.BLOCKED,
+        executor_kind=AutonomyExecutorKind.GENERIC_RUNTIME,
+        objective="继续当前任务",
+        current_phase="blocked",
+    )
+    run.hard_blocker_reason = AutonomyStopReason.TRANSIENT_RETRY_BUDGET_EXCEEDED.value
+    repo.create(run)
+
+    async def resume_execute(_run: AutonomyRun, _trigger_source: str) -> AutonomySliceOutcome:
+        return AutonomySliceOutcome(
+            status=AutonomyRunStatus.COMPLETED,
+            stop_reason="completed",
+            current_phase="completed",
+            runtime_state_snapshot={"session_id": "telegram:dm:test"},
+            last_result_summary={"status": "completed_verified"},
+        )
+
+    orchestrator.register_surface("telegram", resume_execute)
+    resumed = await orchestrator.resume_run(run.id, trigger_source="manual")
+
+    assert resumed is not None
+    assert resumed.status == AutonomyRunStatus.COMPLETED
+    assert resumed.resume_count == 1

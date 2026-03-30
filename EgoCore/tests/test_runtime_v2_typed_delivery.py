@@ -1,5 +1,6 @@
 import pytest
 
+from app.autonomy import AutonomyExecutorKind, AutonomyRun, AutonomyRunStatus
 from app.runtime_v2.progress_events import ProgressEvent, ProgressEventType
 from app.runtime_v2.runtime_reply import RuntimeV2Reply, RuntimeV2TurnResult
 from app.telegram_bot import TelegramBot
@@ -126,3 +127,78 @@ async def test_telegram_runtime_v2_delivery_keeps_progress_visible_after_interna
         "已经改好了。",
     ]
     assert state.final_sent is True
+
+
+@pytest.mark.asyncio
+async def test_telegram_progress_delivery_dedupes_identical_phase_text():
+    bot = TelegramBot(token="test-token", use_runtime_v2=True)
+
+    class DummyMessage:
+        replies = []
+
+        async def reply_text(self, text, parse_mode=None):
+            self.replies.append(text)
+
+    class DummyUpdate:
+        message = DummyMessage()
+
+    state = bot._get_runtime_state("telegram:dm:dup")
+    state.autonomy_context = {"run_id": "autonomy_dup", "status": "running", "progress_delivery": {}}
+
+    first = await bot._send_autonomy_progress_update(
+        state=state,
+        phase_key="planning_current_slice",
+        text="我继续处理这个任务，做完直接给你结果。",
+        update=DummyUpdate(),
+        trace_id="trace_dup",
+        ingress_message_id=1,
+    )
+    second = await bot._send_autonomy_progress_update(
+        state=state,
+        phase_key="planning_current_slice",
+        text="我继续处理这个任务，做完直接给你结果。",
+        update=DummyUpdate(),
+        trace_id="trace_dup",
+        ingress_message_id=1,
+    )
+
+    assert first is True
+    assert second is False
+    assert DummyUpdate.message.replies == ["我继续处理这个任务，做完直接给你结果。"]
+
+
+@pytest.mark.asyncio
+async def test_resume_telegram_autonomy_run_blocks_after_transient_retry_budget():
+    bot = TelegramBot(token="test-token", use_runtime_v2=True)
+    sent = []
+
+    async def fake_send_chat_message(chat_id, text, finalize_evidence=True):
+        sent.append((chat_id, text, finalize_evidence))
+
+    bot._send_chat_message = fake_send_chat_message
+
+    state = bot._get_runtime_state("telegram:dm:retry")
+    bot._sync_state_into_runtime_v2_loop("telegram:dm:retry", state)
+    state.autonomy_context = {"run_id": "autonomy_retry", "status": "resumable_pause", "progress_delivery": {}}
+    state.task_status = "resumable_pause"
+
+    run = AutonomyRun.create(
+        session_key="telegram:dm:retry",
+        surface="telegram",
+        status=AutonomyRunStatus.RESUMABLE_PAUSE,
+        executor_kind=AutonomyExecutorKind.GENERIC_RUNTIME,
+        objective="长任务",
+        current_phase="planning_current_slice",
+    )
+    run.metadata = {"chat_id": 8420019401}
+    run.resume_count = bot.autonomy_transient_retry_limit
+    run.runtime_state_snapshot = state.to_snapshot()
+    run.last_result_summary = {"status": "resumable_pause", "finish_reason": "transient_decision_error"}
+
+    outcome = await bot._resume_telegram_autonomy_run(run, trigger_source="driver")
+
+    assert outcome.status == AutonomyRunStatus.BLOCKED
+    assert outcome.hard_blocker_reason == "transient_retry_budget_exceeded"
+    assert len(sent) == 1
+    assert sent[0][0] == 8420019401
+    assert "连续多次临时失败" in sent[0][1]

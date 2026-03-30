@@ -68,6 +68,7 @@ from app.autonomy import (
     AutonomyRun,
     AutonomyRunStatus,
     AutonomySliceOutcome,
+    AutonomyStopReason,
 )
 from app.core_bus import BusEvent, get_message_bus, get_session_worker_pool
 from app.session_store import SessionLogManager
@@ -159,6 +160,7 @@ class TelegramBot:
         self._phase1_bus_ready = False
         self._runtime_states: dict[str, RuntimeV2State] = {}
         self.autonomy_orchestrator = AutonomyOrchestrator() if use_runtime_v2 else None
+        self.autonomy_transient_retry_limit = 3
         # Ingestion Manager
         self._ingestion_manager: Optional[IngestionManager] = None
         self._pending_restore_observation = pending_restore_observation
@@ -454,6 +456,14 @@ class TelegramBot:
         normalized = (text or "").strip().lower()
         return normalized in {"继续", "continue", "继续执行", "继续这个任务", "resume"}
 
+    def _is_manual_resumable_blocked_run(self, run: Optional[AutonomyRun]) -> bool:
+        if run is None or run.status != AutonomyRunStatus.BLOCKED:
+            return False
+        return run.hard_blocker_reason in {
+            AutonomyStopReason.TRANSIENT_RETRY_BUDGET_EXCEEDED.value,
+            AutonomyStopReason.AUTONOMY_SAFETY_CAP_EXCEEDED.value,
+        }
+
     def _sync_autonomy_context(
         self,
         state: RuntimeV2State,
@@ -535,11 +545,9 @@ class TelegramBot:
         if not text or state.final_sent:
             return False
         progress_delivery = self._get_progress_delivery_state(state)
-        now = time.time()
         if (
             progress_delivery.get("last_phase_key") == phase_key
             and progress_delivery.get("last_text") == text
-            and (now - float(progress_delivery.get("last_sent_at") or 0.0)) < 5.0
         ):
             return False
 
@@ -559,8 +567,14 @@ class TelegramBot:
 
         progress_delivery["last_phase_key"] = phase_key
         progress_delivery["last_text"] = text
-        progress_delivery["last_sent_at"] = now
+        progress_delivery["last_sent_at"] = time.time()
         return True
+
+    def _build_transient_retry_exhausted_reply(self) -> str:
+        return (
+            "模型决策服务连续多次临时失败，我先停止自动重试，避免一直空转。\n\n"
+            "你稍后回复“继续”可以从当前任务恢复，或者把任务拆小后再试。"
+        )
 
     async def _deliver_runtime_progress_events(
         self,
@@ -1543,7 +1557,10 @@ class TelegramBot:
 
         if self.autonomy_orchestrator is not None and self._looks_like_manual_continue(text):
             latest_run = self.autonomy_orchestrator.get_latest_run(session_key)
-            if latest_run is not None and latest_run.status == AutonomyRunStatus.RESUMABLE_PAUSE:
+            if latest_run is not None and (
+                latest_run.status == AutonomyRunStatus.RESUMABLE_PAUSE
+                or self._is_manual_resumable_blocked_run(latest_run)
+            ):
                 await self.autonomy_orchestrator.resume_run(latest_run.id, trigger_source="manual")
                 return
 
@@ -1872,6 +1889,35 @@ class TelegramBot:
         state = self._restore_runtime_state_snapshot(run.session_key, run.runtime_state_snapshot)
         self._sync_autonomy_context(state, run, status=AutonomyRunStatus.RUNNING.value)
         chat_id = run.metadata.get("chat_id")
+        if (
+            trigger_source == "driver"
+            and run.executor_kind == AutonomyExecutorKind.GENERIC_RUNTIME
+            and (run.last_result_summary or {}).get("finish_reason") == "transient_decision_error"
+            and run.resume_count >= self.autonomy_transient_retry_limit
+        ):
+            blocked_text = self._build_transient_retry_exhausted_reply()
+            state.task_status = "blocked"
+            state.waiting_for_user_input = False
+            if isinstance(chat_id, int):
+                await self._send_chat_message(chat_id, blocked_text, finalize_evidence=True)
+                state.final_sent = True
+            blocked_result = TelegramTurnResult(
+                status="blocked",
+                state=state,
+                reply=TelegramTurnReply(
+                    reply_text=blocked_text,
+                    delivery_kind="final",
+                    status="blocked",
+                ),
+                finish_reason=AutonomyStopReason.TRANSIENT_RETRY_BUDGET_EXCEEDED.value,
+                checkpoint_payload=run.checkpoint_payload,
+            )
+            return self._build_autonomy_outcome(
+                run=run,
+                state=state,
+                result=blocked_result,
+                default_phase="blocked",
+            )
         if run.executor_kind == AutonomyExecutorKind.CONTRACT_EXECUTE:
             result = await self._run_native_loop_turn(
                 update=None,

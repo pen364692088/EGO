@@ -72,13 +72,21 @@ class AutonomyOrchestrator:
         run = self.repository.get(run_id)
         if run is None:
             return None
-        if run.status not in {AutonomyRunStatus.RUNNING, AutonomyRunStatus.RESUMABLE_PAUSE}:
+        if run.status not in {AutonomyRunStatus.RUNNING, AutonomyRunStatus.RESUMABLE_PAUSE} and not (
+            trigger_source == "manual"
+            and run.status == AutonomyRunStatus.BLOCKED
+            and run.hard_blocker_reason in {
+                AutonomyStopReason.TRANSIENT_RETRY_BUDGET_EXCEEDED.value,
+                AutonomyStopReason.AUTONOMY_SAFETY_CAP_EXCEEDED.value,
+            }
+        ):
             return run
         handler = self._resume_handlers.get(run.surface)
         if handler is None:
             raise RuntimeError(f"no autonomy resume handler registered for surface={run.surface}")
 
         run.status = AutonomyRunStatus.RUNNING
+        run.hard_blocker_reason = None
         if run.current_phase not in {"blocked", "completed"}:
             run.current_phase = "planning_current_slice"
         self.repository.update(run)

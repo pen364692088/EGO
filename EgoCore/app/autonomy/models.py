@@ -27,6 +27,7 @@ class AutonomyStopReason(str, Enum):
     MAX_STEPS_EXHAUSTED = "max_steps_exhausted"
     CONTEXT_COMPACTION_NEEDED = "context_compaction_needed"
     TRANSIENT_TIMEOUT = "transient_timeout"
+    TRANSIENT_RETRY_BUDGET_EXCEEDED = "transient_retry_budget_exceeded"
     WAITING_USER_INPUT = "waiting_user_input"
     BLOCKED = "blocked"
     COMPLETED = "completed"
