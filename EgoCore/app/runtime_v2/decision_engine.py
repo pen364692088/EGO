@@ -167,7 +167,7 @@ class RuntimeV2DecisionEngine:
                 "role": "user",
                 "content": json.dumps(
                     {
-                        "state": state.to_prompt_context(),
+                        "state": state.to_decision_prompt_context(),
                         "instruction": "根据当前状态输出下一个 JSON action。若需要执行，优先 act；若执行后可验证完成，则 complete；若只是寒暄，chat。",
                     },
                     ensure_ascii=False,
@@ -260,9 +260,25 @@ class RuntimeV2DecisionEngine:
                 return str(model_id)
         return None
 
+    def _resolve_qianfan_runtime_v2_fallback_models(self) -> List[str]:
+        config = get_config()
+        provider_cfg = (config.llm.get("providers") or {}).get("qianfan") or {}
+        models = []
+        for item in provider_cfg.get("runtime_v2_fallback_models") or []:
+            model = str(item).strip()
+            if model:
+                models.append(model)
+        return models
+
     def _resolve_runtime_v2_client_specs(self) -> List[Tuple[str, str]]:
         primary_provider, primary_model = self._resolve_runtime_v2_primary_spec()
         specs: List[Tuple[str, str]] = [(primary_provider, primary_model)]
+        if primary_provider == "qianfan":
+            for model in self._resolve_qianfan_runtime_v2_fallback_models():
+                if model != primary_model:
+                    specs.append(("qianfan", model))
+            return specs
+
         config = get_config()
         fallback_cfg = config.llm.get("fallback") or {}
         if not fallback_cfg.get("enabled"):
@@ -373,11 +389,21 @@ class RuntimeV2DecisionEngine:
         status_code = getattr(response, "status_code", None)
         retryable = self._is_transient_decision_error(error)
         kind = "transient_decision_error" if retryable else "decision_error"
-        question = (
-            "Runtime v2 模型暂时不可用，我会继续自动重试。"
-            if retryable
-            else f"Runtime v2 当前模型决策不可用：{error}"
-        )
+        retry_after_seconds = 15
+        transient_kind = None
+        if retryable and status_code == 429:
+            transient_kind = "rate_limited"
+            retry_after_seconds = 45
+        elif retryable:
+            transient_kind = "timeout_or_server_busy"
+            retry_after_seconds = 20
+
+        if retryable and status_code == 429:
+            question = "当前模型繁忙，我会延后自动重试。"
+        elif retryable:
+            question = "Runtime v2 模型暂时不可用，我会继续自动重试。"
+        else:
+            question = f"Runtime v2 当前模型决策不可用：{error}"
         raw = {
             "type": "ask",
             "kind": kind,
@@ -387,6 +413,9 @@ class RuntimeV2DecisionEngine:
         }
         if status_code is not None:
             raw["status_code"] = status_code
+        if transient_kind:
+            raw["transient_kind"] = transient_kind
+            raw["retry_after_seconds"] = retry_after_seconds
         return RuntimeV2Action(
             type="ask",
             question=question,

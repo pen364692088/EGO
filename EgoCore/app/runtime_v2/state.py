@@ -18,6 +18,73 @@ MAX_GOAL_LENGTH = 200  # 目标截断
 WINDOWS_PATH_RE = re.compile(r"^[A-Za-z]:[\\/]")
 
 
+def _compact_record_content(content: Dict[str, Any]) -> Dict[str, Any]:
+    if not isinstance(content, dict):
+        return {"preview": str(content)[:200]}
+
+    compact: Dict[str, Any] = {}
+    for key in ("text", "summary", "type", "tool", "success", "status", "question", "message"):
+        value = content.get(key)
+        if value in (None, "", [], {}):
+            continue
+        if isinstance(value, str):
+            compact[key] = value[:200]
+        else:
+            compact[key] = value
+    return compact
+
+
+def _summarize_ingress_context(ingress_context: Optional[Dict[str, Any]]) -> Optional[Dict[str, Any]]:
+    if not ingress_context:
+        return None
+
+    target = ingress_context.get("resolved_target") or {}
+    requested_output = ingress_context.get("requested_output") or {}
+    summary: Dict[str, Any] = {
+        "runtime_action": ingress_context.get("runtime_action"),
+        "request_mode": ingress_context.get("request_mode"),
+    }
+    if target:
+        summary["resolved_target"] = {
+            "source": target.get("source"),
+            "path": target.get("path"),
+            "filename": target.get("filename"),
+            "artifact_id": target.get("artifact_id") or target.get("artifact_ref"),
+        }
+    if requested_output:
+        summary["requested_output"] = {
+            "format": requested_output.get("format"),
+            "effective_path": requested_output.get("effective_path"),
+        }
+    if ingress_context.get("risk_level"):
+        summary["risk_level"] = ingress_context.get("risk_level")
+    if ingress_context.get("rule_enforcement"):
+        summary["rule_enforcement"] = ingress_context.get("rule_enforcement")
+    return summary
+
+
+def _summarize_task_contract(task_contract: Optional[Dict[str, Any]]) -> Optional[Dict[str, Any]]:
+    if not task_contract:
+        return None
+    summary: Dict[str, Any] = {}
+    for key in ("output_format", "target_path", "task_type", "risk_level", "approval_required", "write_requested"):
+        value = task_contract.get(key)
+        if value not in (None, "", [], {}):
+            summary[key] = value
+    return summary or None
+
+
+def _summarize_autonomy_context(autonomy_context: Optional[Dict[str, Any]]) -> Optional[Dict[str, Any]]:
+    if not autonomy_context:
+        return None
+    summary: Dict[str, Any] = {}
+    for key in ("run_id", "status", "executor_kind", "current_phase", "resume_count", "hard_blocker_reason", "finish_reason"):
+        value = autonomy_context.get(key)
+        if value not in (None, "", [], {}):
+            summary[key] = value
+    return summary or None
+
+
 def _truncate_tool_result(tool_result: Optional[Dict[str, Any]]) -> Optional[Dict[str, Any]]:
     """
     将 tool_result 压缩为摘要形式，不包含完整 stdout。
@@ -229,6 +296,51 @@ class RuntimeV2State:
             "need_relock": self.need_relock,
             "contract_phase": self.contract_phase,
             "autonomy_context": self.autonomy_context,
+        }
+
+    def to_decision_prompt_context(self) -> Dict[str, Any]:
+        compressed_history = [
+            {
+                "role": item.get("role"),
+                "content": _compact_record_content(item.get("content") or {}),
+            }
+            for item in self.history[-6:]
+        ]
+
+        last_uploaded = self.last_uploaded_artifact or {}
+        uploaded_summary = None
+        if last_uploaded:
+            uploaded_summary = {
+                "artifact_id": last_uploaded.get("artifact_id"),
+                "filename": last_uploaded.get("filename"),
+            }
+
+        return {
+            "session_id": self.session_id,
+            "task_id": self.task_id,
+            "task_status": self.task_status,
+            "active_turn_status": self.active_turn_status,
+            "current_goal": self.current_goal,
+            "current_step": self.current_step,
+            "waiting_for_user_input": self.waiting_for_user_input,
+            "last_user_turn": self.last_user_turn,
+            "last_tool_result_summary": _summarize_tool_result(self.last_tool_result),
+            "last_verification_result": self.last_verification_result,
+            "last_failure_notice_text": self.last_failure_notice_text,
+            "history": compressed_history,
+            "pending_artifacts_count": len(self.pending_artifacts),
+            "last_uploaded_artifact": uploaded_summary,
+            "last_explicit_target": self.last_explicit_target,
+            "last_inferred_action": self.last_inferred_action,
+            "last_inferred_target": self.last_inferred_target,
+            "pending_bundle_summary": self.pending_bundle_summary,
+            "last_delivery_type": self.last_delivery_type,
+            "ingress_context": _summarize_ingress_context(self.ingress_context),
+            "task_contract": _summarize_task_contract(self.task_contract),
+            "verification_history": list(self.verification_history[-2:]),
+            "need_relock": self.need_relock,
+            "contract_phase": self.contract_phase,
+            "autonomy_context": _summarize_autonomy_context(self.autonomy_context),
         }
 
     def add_pending_artifact(self, artifact_id: str, filename: Optional[str] = None,

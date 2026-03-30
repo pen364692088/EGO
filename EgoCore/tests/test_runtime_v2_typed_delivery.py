@@ -206,6 +206,63 @@ async def test_resume_telegram_autonomy_run_blocks_after_transient_retry_budget(
 
 
 @pytest.mark.asyncio
+async def test_resume_telegram_autonomy_run_uses_longer_backoff_for_rate_limited_runs(monkeypatch):
+    bot = TelegramBot(token="test-token", use_runtime_v2=True)
+    slept = []
+
+    async def fake_sleep(seconds):
+        slept.append(seconds)
+
+    async def fake_continue_runtime_v2_turn(session_key, state):
+        return TelegramTurnResult(
+            status="resumable_pause",
+            state=state,
+            reply=TelegramTurnReply(
+                reply_text="",
+                delivery_kind="progress",
+                status="resumable_pause",
+            ),
+            finish_reason="transient_decision_error",
+            checkpoint_payload={"slice": 2},
+        )
+
+    monkeypatch.setattr("app.telegram_bot.asyncio.sleep", fake_sleep)
+    bot._continue_runtime_v2_turn = fake_continue_runtime_v2_turn
+
+    state = bot._get_runtime_state("telegram:dm:rate-limit")
+    state.task_status = "resumable_pause"
+    state.last_model_action = {
+        "kind": "transient_decision_error",
+        "status_code": 429,
+        "retry_after_seconds": 45,
+        "transient_kind": "rate_limited",
+    }
+    state.autonomy_context = {"run_id": "autonomy_rate_limit", "status": "resumable_pause", "progress_delivery": {}}
+
+    run = AutonomyRun.create(
+        session_key="telegram:dm:rate-limit",
+        surface="telegram",
+        status=AutonomyRunStatus.RESUMABLE_PAUSE,
+        executor_kind=AutonomyExecutorKind.GENERIC_RUNTIME,
+        objective="长任务",
+        current_phase="planning_current_slice",
+    )
+    run.metadata = {"chat_id": 8420019401}
+    run.resume_count = 1
+    run.runtime_state_snapshot = state.to_snapshot()
+    run.last_result_summary = {
+        "status": "resumable_pause",
+        "finish_reason": "transient_decision_error",
+        "status_code": 429,
+    }
+
+    outcome = await bot._resume_telegram_autonomy_run(run, trigger_source="driver")
+
+    assert outcome.status == AutonomyRunStatus.RESUMABLE_PAUSE
+    assert slept == [60]
+
+
+@pytest.mark.asyncio
 async def test_manual_resume_resets_delivery_state_and_re_emits_progress():
     bot = TelegramBot(token="test-token", use_runtime_v2=True)
     sent = []

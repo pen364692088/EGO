@@ -69,6 +69,40 @@ def test_decision_engine_boosts_timeout_for_html_writes(monkeypatch):
     assert engine._decide_timeout_seconds(state) == 90
 
 
+def test_decision_engine_prefers_qianfan_only_model_rotation(monkeypatch):
+    engine = RuntimeV2DecisionEngine()
+
+    class DummyConfig:
+        llm = {
+            "default_provider": "qianfan",
+            "default_model": "glm-5",
+            "use_cases": {
+                "execution": {"provider": "qianfan", "model": "deepseek-v3.2"},
+            },
+            "providers": {
+                "qianfan": {
+                    "enabled": True,
+                    "runtime_v2_fallback_models": ["qianfan-code-latest", "glm-5"],
+                }
+            },
+            "fallback": {
+                "enabled": True,
+                "providers": ["openai", "anthropic", "deepseek"],
+            },
+        }
+
+        def get_llm_config_for_use_case(self, use_case):
+            return self.llm["use_cases"][use_case]
+
+    monkeypatch.setattr("app.runtime_v2.decision_engine.get_config", lambda: DummyConfig())
+
+    assert engine._resolve_runtime_v2_client_specs() == [
+        ("qianfan", "deepseek-v3.2"),
+        ("qianfan", "qianfan-code-latest"),
+        ("qianfan", "glm-5"),
+    ]
+
+
 def test_decision_engine_builds_restore_context_from_ingress_observation():
     engine = RuntimeV2DecisionEngine()
     context = engine.build_restore_context(
@@ -104,6 +138,28 @@ async def test_decision_engine_classifies_http_500_as_transient():
     assert action.raw["retryable"] is True
     assert action.raw["status_code"] == 500
     assert "自动重试" in (action.question or "")
+
+
+@pytest.mark.asyncio
+async def test_decision_engine_marks_http_429_with_longer_retry_hint():
+    engine = RuntimeV2DecisionEngine()
+    state = RuntimeV2State(session_id="decision:http-429")
+
+    class DummyClient:
+        def generate_with_messages(self, *_args, **_kwargs):
+            request = httpx.Request("POST", "https://qianfan.baidubce.com/v2/coding/chat/completions")
+            response = httpx.Response(429, request=request)
+            raise httpx.HTTPStatusError("rate limited", request=request, response=response)
+
+    engine.llm_client = DummyClient()
+    action = await engine.decide(state)
+
+    assert action.type == "ask"
+    assert action.raw["kind"] == "transient_decision_error"
+    assert action.raw["status_code"] == 429
+    assert action.raw["retry_after_seconds"] == 45
+    assert action.raw["transient_kind"] == "rate_limited"
+    assert "模型繁忙" in (action.question or "")
 
 
 @pytest.mark.asyncio

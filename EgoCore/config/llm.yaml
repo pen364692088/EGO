@@ -11,10 +11,21 @@ providers:
     base_url: "https://qianfan.baidubce.com/v2/coding"
     api_key_env: QIANFAN_API_KEY
     models:
-      - id: glm-5
-        name: Qianfan Code Latest
+      - id: deepseek-v3.2
+        name: DeepSeek V3.2
         max_tokens: 128000
         supports_vision: false
+      - id: qianfan-code-latest
+        name: Qianfan Code Latest Alias
+        max_tokens: 128000
+        supports_vision: false
+      - id: glm-5
+        name: GLM-5
+        max_tokens: 128000
+        supports_vision: false
+    runtime_v2_fallback_models:
+      - qianfan-code-latest
+      - glm-5
   
   openai:
     enabled: true

@@ -161,6 +161,7 @@ class TelegramBot:
         self._runtime_states: dict[str, RuntimeV2State] = {}
         self.autonomy_orchestrator = AutonomyOrchestrator() if use_runtime_v2 else None
         self.autonomy_transient_retry_limit = 3
+        self.autonomy_rate_limited_retry_limit = 5
         # Ingestion Manager
         self._ingestion_manager: Optional[IngestionManager] = None
         self._pending_restore_observation = pending_restore_observation
@@ -502,6 +503,25 @@ class TelegramBot:
         progress_delivery = self._get_progress_delivery_state(state)
         progress_delivery.clear()
 
+    def _get_transient_retry_limit(self, state: RuntimeV2State) -> int:
+        status_code = ((state.last_model_action or {}).get("status_code"))
+        if status_code == 429:
+            return self.autonomy_rate_limited_retry_limit
+        return self.autonomy_transient_retry_limit
+
+    def _get_transient_retry_backoff_seconds(self, state: RuntimeV2State, run: AutonomyRun) -> int:
+        raw = state.last_model_action or {}
+        status_code = raw.get("status_code")
+        suggested_retry_after = raw.get("retry_after_seconds")
+        try:
+            suggested_retry_after = int(suggested_retry_after) if suggested_retry_after is not None else 0
+        except (TypeError, ValueError):
+            suggested_retry_after = 0
+        attempt_index = max(run.resume_count + 1, 1)
+        if status_code == 429:
+            return max(suggested_retry_after, min(30 * attempt_index, 180))
+        return max(suggested_retry_after, min(15 * attempt_index, 60))
+
     def _build_autonomy_progress_text(self, phase_key: str, payload: Optional[dict] = None) -> Optional[str]:
         payload = dict(payload or {})
         resolved_target = payload.get("resolved_target") or {}
@@ -653,6 +673,9 @@ class TelegramBot:
                 "reply_text": result.reply_text,
                 "delivery_kind": result.delivery_kind,
                 "current_step": state.current_step,
+                "status_code": (state.last_model_action or {}).get("status_code"),
+                "retry_after_seconds": (state.last_model_action or {}).get("retry_after_seconds"),
+                "transient_kind": (state.last_model_action or {}).get("transient_kind"),
             },
             hard_blocker_reason=finish_reason if run_status == AutonomyRunStatus.BLOCKED else None,
         )
@@ -1911,42 +1934,47 @@ class TelegramBot:
             trigger_source == "driver"
             and run.executor_kind == AutonomyExecutorKind.GENERIC_RUNTIME
             and (run.last_result_summary or {}).get("finish_reason") == "transient_decision_error"
-            and run.resume_count >= self.autonomy_transient_retry_limit
         ):
-            blocked_text = self._build_transient_retry_exhausted_reply()
-            state.task_status = "blocked"
-            state.waiting_for_user_input = False
-            if isinstance(chat_id, int):
-                await self._publish_phase1_event(
-                    session_key=run.session_key,
-                    kind="telegram_delivery",
-                    trace_id=run.metadata.get("trace_id"),
-                    message_id=run.metadata.get("ingress_message_id"),
-                    payload={
-                        "text": blocked_text[:1000],
-                        "delivery_kind": "final",
-                        "status": "blocked",
-                    },
-                )
-                await self._send_chat_message(chat_id, blocked_text, finalize_evidence=True)
-                state.final_sent = True
-            blocked_result = TelegramTurnResult(
-                status="blocked",
-                state=state,
-                reply=TelegramTurnReply(
-                    reply_text=blocked_text,
-                    delivery_kind="final",
+            retry_limit = self._get_transient_retry_limit(state)
+            if run.resume_count >= retry_limit:
+                blocked_text = self._build_transient_retry_exhausted_reply()
+                state.task_status = "blocked"
+                state.waiting_for_user_input = False
+                if isinstance(chat_id, int):
+                    await self._publish_phase1_event(
+                        session_key=run.session_key,
+                        kind="telegram_delivery",
+                        trace_id=run.metadata.get("trace_id"),
+                        message_id=run.metadata.get("ingress_message_id"),
+                        payload={
+                            "text": blocked_text[:1000],
+                            "delivery_kind": "final",
+                            "status": "blocked",
+                        },
+                    )
+                    await self._send_chat_message(chat_id, blocked_text, finalize_evidence=True)
+                    state.final_sent = True
+                blocked_result = TelegramTurnResult(
                     status="blocked",
-                ),
-                finish_reason=AutonomyStopReason.TRANSIENT_RETRY_BUDGET_EXCEEDED.value,
-                checkpoint_payload=run.checkpoint_payload,
-            )
-            return self._build_autonomy_outcome(
-                run=run,
-                state=state,
-                result=blocked_result,
-                default_phase="blocked",
-            )
+                    state=state,
+                    reply=TelegramTurnReply(
+                        reply_text=blocked_text,
+                        delivery_kind="final",
+                        status="blocked",
+                    ),
+                    finish_reason=AutonomyStopReason.TRANSIENT_RETRY_BUDGET_EXCEEDED.value,
+                    checkpoint_payload=run.checkpoint_payload,
+                )
+                return self._build_autonomy_outcome(
+                    run=run,
+                    state=state,
+                    result=blocked_result,
+                    default_phase="blocked",
+                )
+            backoff_seconds = self._get_transient_retry_backoff_seconds(state, run)
+            if backoff_seconds > 0:
+                await asyncio.sleep(backoff_seconds)
+
         if run.executor_kind == AutonomyExecutorKind.CONTRACT_EXECUTE:
             result = await self._run_native_loop_turn(
                 update=None,
