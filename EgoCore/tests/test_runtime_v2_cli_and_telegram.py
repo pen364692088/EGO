@@ -233,12 +233,15 @@ async def test_telegram_bot_manual_resume_is_control_plane_with_immediate_ack(mo
 
     resumed = {}
 
-    async def fake_resume_run(run_id, *, trigger_source="manual"):
-        resumed["run_id"] = run_id
-        resumed["trigger_source"] = trigger_source
-        return run
+    async def fake_publish_phase1_event(**kwargs):
+        return None
 
-    monkeypatch.setattr(bot.autonomy_orchestrator, "resume_run", fake_resume_run)
+    def fake_spawn_manual_resume(run_id):
+        resumed["run_id"] = run_id
+        resumed["trigger_source"] = "manual"
+
+    monkeypatch.setattr(bot, "_publish_phase1_event", fake_publish_phase1_event)
+    monkeypatch.setattr(bot, "_spawn_manual_resume", fake_spawn_manual_resume)
 
     await bot.handle_message(DummyUpdate(), None)
 

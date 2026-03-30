@@ -243,6 +243,49 @@ def test_build_run_items_from_request_preserves_user_order_and_verify_target(tmp
     assert items[1].metadata["verify_source_item_id"] == items[0].item_id
 
 
+def test_begin_execute_task_resets_task_scoped_state(tmp_path):
+    state = RuntimeV2State(session_id="session:begin-execute")
+    state.task_status = "blocked"
+    state.current_goal = "旧的 bilibili 页面任务"
+    state.current_step = "tool:file"
+    state.waiting_for_user_input = True
+    state.last_model_action = {"type": "act"}
+    state.last_tool_result = {"metadata": {"path": str(tmp_path / "old.html")}}
+    state.last_verification_result = {"reason": "run_items_verified"}
+    state.task_contract = {"goal": "old"}
+    state.next_step_decision = {"action_type": "file"}
+    state.verification_history = [{"reason": "old"}]
+    state.current_step_number = 3
+    state.total_steps_planned = 5
+    state.pending_progress_events = ["stale-progress"]
+    state.pending_run_events = [{"event_type": "item_started", "text": "old"}]
+    state.active_item_id = "stale-item"
+    state.ingress_context = {
+        "runtime_action": "execute_task",
+        "requested_output": {"target_directory": str(tmp_path)},
+    }
+
+    run_items = build_run_items_from_request(
+        f"在 {tmp_path} 目录下创建 demo.txt。",
+        ingress_context=state.ingress_context,
+    )
+
+    state.begin_execute_task(
+        f"在 {tmp_path} 目录下创建 demo.txt。",
+        run_items,
+        state.ingress_context,
+    )
+
+    snapshot = state.to_snapshot()
+    assert snapshot["current_goal"] == f"在 {tmp_path} 目录下创建 demo.txt。"
+    assert snapshot["current_step"] is None
+    assert snapshot["last_verification_result"] is None
+    assert state.pending_progress_events == []
+    assert snapshot["pending_run_events"] == []
+    assert snapshot["active_item_id"] is None
+    assert snapshot["run_items"][0]["canonical_path"].endswith("demo.txt")
+
+
 @pytest.mark.asyncio
 async def test_runtime_v2_loop_emits_ordered_run_item_events_during_turn(monkeypatch, tmp_path):
     loop = RuntimeV2Loop()
@@ -378,7 +421,7 @@ def test_runtime_status_reply_prefers_run_items_and_pending_conflict_over_stale_
     assert "替换" in conflict_reply
 
 
-def test_verify_run_item_advances_without_requiring_new_file_delta(tmp_path):
+def test_verify_run_item_requires_observed_file_read(tmp_path):
     state = RuntimeV2State(session_id="session:verify-item")
     state.ingress_context = {
         "runtime_action": "execute_task",
@@ -401,10 +444,85 @@ def test_verify_run_item_advances_without_requiring_new_file_delta(tmp_path):
     assert verify_item.kind == "file_verify"
 
     observation = state.observe_active_run_item_progress()
+    assert observation["reason"] == "verify_read_pending"
+    assert state.get_active_run_item() is not None
+    assert state.get_active_run_item().status == "running"
 
-    assert observation["reason"] == "verify_item_ready"
+    observation = state.observe_active_run_item_progress(
+        tool_result={
+            "success": True,
+            "tool": "file",
+            "stdout": target.read_text(encoding="utf-8"),
+            "stderr": "",
+            "exit_code": 0,
+            "metadata": {"path": str(target)},
+        },
+        tool_name="file",
+        tool_input={"operation": "read", "path": str(target)},
+    )
+
+    assert observation["reason"] == "verify_read_observed"
     assert state.get_active_run_item() is not None
     assert state.get_active_run_item().status == "completed"
+
+
+@pytest.mark.asyncio
+async def test_runtime_v2_loop_blocks_when_tool_writes_non_frontier_path(monkeypatch, tmp_path):
+    loop = RuntimeV2Loop()
+    state = loop.get_state("session:frontier-authority")
+    prompt = (
+        f"在 {tmp_path} 目录下创建 demo.txt，写入 hello。"
+        "然后再创建一个参照youtube的html页面,只是看着像,不用做真正的功能."
+    )
+    state.ingress_context = {
+        "runtime_action": "execute_task",
+        "requested_output": {"target_directory": str(tmp_path)},
+    }
+    state.begin_execute_task(prompt, build_run_items_from_request(prompt, ingress_context=state.ingress_context), state.ingress_context)
+
+    actions = iter(
+        [
+            RuntimeV2Action.from_model_output(
+                json.dumps(
+                    {
+                        "type": "act",
+                        "tool": "file",
+                        "input": {
+                            "operation": "write",
+                            "path": str(tmp_path / "youtube_lookalike.html"),
+                            "content": "<html><body>youtube</body></html>",
+                        },
+                    },
+                    ensure_ascii=False,
+                )
+            ),
+        ]
+    )
+
+    async def fake_decide(_state):
+        return next(actions)
+
+    async def fake_execute(_tool, tool_input):
+        path = Path(tool_input["path"])
+        path.write_text(tool_input["content"], encoding="utf-8")
+        return {
+            "success": True,
+            "tool": "file",
+            "stdout": f"Successfully wrote to {path}",
+            "stderr": "",
+            "exit_code": 0,
+            "metadata": {"path": str(path)},
+        }
+
+    monkeypatch.setattr(loop, "_decide", fake_decide)
+    monkeypatch.setattr(loop.tool_broker, "execute", fake_execute)
+
+    result = await loop.run_turn_typed("session:frontier-authority", prompt, max_steps=1)
+
+    assert result.status == "blocked"
+    assert state.last_verification_result["reason"] == "blocked_unexpected_output_path"
+    assert state.last_verification_result["target"].endswith("demo.txt")
+    assert state.last_verification_result["evidence"]["actual_path"].endswith("youtube_lookalike.html")
 
 
 @pytest.mark.asyncio

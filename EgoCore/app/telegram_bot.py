@@ -172,6 +172,7 @@ class TelegramBot:
         self._session_log_manager = SessionLogManager()
         self._phase1_bus_ready = False
         self._runtime_states: dict[str, RuntimeV2State] = {}
+        self._manual_resume_tasks: dict[str, asyncio.Task] = {}
         self.autonomy_orchestrator = AutonomyOrchestrator() if use_runtime_v2 else None
         self.autonomy_transient_retry_limit = 3
         self.autonomy_rate_limited_retry_limit = 5
@@ -425,12 +426,38 @@ class TelegramBot:
             target = active_item.description
         return f"继续处理 {target}。"
 
+    def _build_manual_resume_event(self, run: AutonomyRun) -> RunEvent:
+        snapshot = run.runtime_state_snapshot or {}
+        snapshot_state = RuntimeV2State.from_snapshot(snapshot) if snapshot else None
+        active_item = snapshot_state.get_active_run_item() if snapshot_state else None
+        if active_item is None and snapshot_state is not None:
+            active_item = snapshot_state.get_next_pending_run_item()
+        return RunEvent(
+            event_type="run_resumed",
+            text=self._build_manual_resume_ack_text(run),
+            item_id=active_item.item_id if active_item else None,
+            item_label=active_item.description if active_item else None,
+        )
+
+    def _spawn_manual_resume(self, run_id: str) -> None:
+        existing = self._manual_resume_tasks.get(run_id)
+        if existing is not None and not existing.done():
+            return
+
+        async def _runner() -> None:
+            try:
+                await self.autonomy_orchestrator.resume_run(run_id, trigger_source="manual")
+            except Exception:
+                logger.exception("telegram.manual_resume.failed run_id=%s", run_id)
+            finally:
+                self._manual_resume_tasks.pop(run_id, None)
+
+        task = asyncio.create_task(_runner())
+        self._manual_resume_tasks[run_id] = task
+
     def _prepare_run_items_for_new_task(self, text: str, state: RuntimeV2State) -> list[RunItem]:
         run_items = self._build_run_items_for_request(text, state)
-        if run_items:
-            state.set_run_items(run_items)
-        else:
-            state.set_run_items([])
+        state.begin_execute_task(text, run_items, state.ingress_context)
         return run_items
 
     async def _maybe_handle_pending_task_conflict(
@@ -2140,12 +2167,20 @@ class TelegramBot:
                     "hard_blocker_reason": active_run.hard_blocker_reason,
                 },
             )
-            await self._send_reply(
-                update,
-                self._build_manual_resume_ack_text(active_run),
-                finalize_evidence=False,
+            resume_snapshot = active_run.runtime_state_snapshot or state.to_snapshot()
+            resume_state = RuntimeV2State.from_snapshot(resume_snapshot)
+            progress_delivery = self._get_progress_delivery_state(resume_state)
+            progress_delivery.pop("last_run_event_signature", None)
+            await self._emit_run_event_message(
+                state=resume_state,
+                session_key=session_key,
+                event=self._build_manual_resume_event(active_run),
+                update=update,
+                chat_id=None,
+                trace_id=trace_id,
+                ingress_message_id=ingress_message_id,
             )
-            await self.autonomy_orchestrator.resume_run(active_run.id, trigger_source="manual")
+            self._spawn_manual_resume(active_run.id)
             return
 
         # 记录 ingress 信息

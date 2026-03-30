@@ -7,7 +7,7 @@ from typing import Any, Dict, List, Optional
 from .action_protocol import RuntimeV2Action
 from .progress_events import ProgressEvent, ProgressEventType, build_progress_event
 from .runtime_reply import RuntimeV2Reply, RuntimeV2TurnResult
-from .run_items import CompletionGateResult, verify_run_item
+from .run_items import CompletionGateResult, path_matches_canonical, verify_run_item
 from .state import RuntimeV2State
 from .tool_broker import RuntimeV2ToolBroker
 from .verifier import RuntimeV2Verifier
@@ -271,6 +271,24 @@ def _build_host_completion_summary(state: RuntimeV2State, fallback_summary: Opti
     return "\n".join(lines)
 
 
+def _build_host_blocked_summary(state: RuntimeV2State, verification: Optional[Dict[str, Any]]) -> str:
+    summary = state.get_run_item_status_summary() if hasattr(state, "get_run_item_status_summary") else {}
+    completed = list(summary.get("completed") or [])
+    active = summary.get("active")
+    pending = list(summary.get("pending") or [])
+    reason = str((verification or {}).get("reason") or "").strip()
+    lines = ["当前任务无法继续推进。"]
+    if completed:
+        lines.append(f"已完成：{', '.join(completed)}。")
+    if active:
+        lines.append(f"当前卡住：{active}。")
+    if pending:
+        lines.append(f"还未开始：{', '.join(pending)}。")
+    if reason:
+        lines.append(f"失败原因：{reason}。")
+    return "\n".join(lines)
+
+
 class RuntimeV2TransitionEngine:
     def __init__(self, tool_broker: RuntimeV2ToolBroker, verifier: RuntimeV2Verifier) -> None:
         self.tool_broker = tool_broker
@@ -339,7 +357,35 @@ class RuntimeV2TransitionEngine:
             # P3: history 记录也要截断
             state.record("tool", truncated_result)
             if self._has_host_owned_run_items(state):
-                state.observe_active_run_item_progress()
+                authority_failure = self._enforce_active_run_item_authority(
+                    state=state,
+                    action=action,
+                    tool_result=truncated_result,
+                )
+                if authority_failure is not None:
+                    state.last_verification_result = authority_failure
+                    state.record("system", {"run_item_authority_failed": authority_failure})
+                    state.mark_active_run_item_blocked(authority_failure)
+                    state.task_status = "blocked"
+                    state.waiting_for_user_input = False
+                    state.last_delivery_type = "blocked"
+                    return {
+                        "done": True,
+                        "result": RuntimeV2TurnResult(
+                            status="blocked",
+                            state=state,
+                            reply=RuntimeV2Reply(
+                                reply_text=_build_host_blocked_summary(state, authority_failure),
+                                delivery_kind="final",
+                                status="blocked",
+                            ),
+                        ),
+                    }
+                state.observe_active_run_item_progress(
+                    tool_result=truncated_result,
+                    tool_name=action.tool,
+                    tool_input=action.input,
+                )
             return {"done": False}
 
         if action.type == "complete":
@@ -418,3 +464,47 @@ class RuntimeV2TransitionEngine:
 
     def _has_host_owned_run_items(self, state: RuntimeV2State) -> bool:
         return bool(state.get_run_items())
+
+    def _enforce_active_run_item_authority(
+        self,
+        *,
+        state: RuntimeV2State,
+        action: RuntimeV2Action,
+        tool_result: Dict[str, Any],
+    ) -> Optional[Dict[str, Any]]:
+        active_item = state.get_active_run_item()
+        if active_item is None or not active_item.canonical_path:
+            return None
+
+        metadata = dict(tool_result.get("metadata") or {})
+        actual_path = metadata.get("path") or (action.input or {}).get("path")
+        if active_item.kind == "file_verify":
+            if action.tool != "file" or str((action.input or {}).get("operation") or "") != "read":
+                return {
+                    "passed": False,
+                    "reason": "blocked_unexpected_item_action",
+                    "verifier": "run_items",
+                    "target": active_item.canonical_path,
+                    "evidence": {
+                        "active_item": active_item.description,
+                        "expected_tool": "file.read",
+                        "actual_tool": action.tool,
+                        "actual_input": dict(action.input or {}),
+                    },
+                    "warnings": [],
+                }
+        if actual_path and not path_matches_canonical(active_item.canonical_path, str(actual_path)):
+            return {
+                "passed": False,
+                "reason": "blocked_unexpected_output_path",
+                "verifier": "run_items",
+                "target": active_item.canonical_path,
+                "evidence": {
+                    "active_item": active_item.description,
+                    "expected_path": active_item.canonical_path,
+                    "actual_path": str(actual_path),
+                    "tool": action.tool,
+                },
+                "warnings": [],
+            }
+        return None

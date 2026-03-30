@@ -16,6 +16,7 @@ from .run_items import (
     build_output_obligations,
     build_run_item_started_text,
     build_run_item_verified_text,
+    path_matches_canonical,
     path_changed_from_baseline,
 )
 
@@ -384,6 +385,43 @@ class RuntimeV2State:
             "pending_run_events_count": len(self.pending_run_events),
         }
 
+    def to_execute_task_prompt_context(self) -> Dict[str, Any]:
+        items = self.get_run_items()
+        active_item = self.get_active_run_item()
+        return {
+            "session_id": self.session_id,
+            "task_id": self.task_id,
+            "task_status": self.task_status,
+            "current_goal": self.current_goal,
+            "current_step": self.current_step,
+            "last_user_turn": self.last_user_turn,
+            "last_tool_result_summary": _summarize_tool_result(self.last_tool_result),
+            "last_verification_result": self.last_verification_result,
+            "ingress_context": _summarize_ingress_context(self.ingress_context),
+            "active_item": active_item.to_dict() if active_item else None,
+            "verified_items": [
+                {
+                    "item_id": item.item_id,
+                    "description": item.description,
+                    "canonical_path": item.canonical_path,
+                    "kind": item.kind,
+                }
+                for item in items
+                if item.status == "verified"
+            ],
+            "pending_items": [
+                {
+                    "item_id": item.item_id,
+                    "description": item.description,
+                    "canonical_path": item.canonical_path,
+                    "kind": item.kind,
+                    "status": item.status,
+                }
+                for item in items
+                if item.status != "verified"
+            ],
+        }
+
     def add_pending_artifact(self, artifact_id: str, filename: Optional[str] = None,
                               artifact_ref: Optional[str] = None) -> None:
         """
@@ -492,6 +530,43 @@ class RuntimeV2State:
         self.pending_task_conflict = None
         self.active_item_id = None
         self.pending_run_events = []
+
+    def begin_execute_task(
+        self,
+        objective: str,
+        run_items: List[RunItem],
+        ingress_context: Optional[Dict[str, Any]] = None,
+    ) -> None:
+        self.task_status = "idle"
+        self.current_goal = objective[:MAX_GOAL_LENGTH] if len(objective) > MAX_GOAL_LENGTH else objective
+        self.current_step = None
+        self.waiting_for_user_input = False
+        self.last_model_action = None
+        self.last_tool_result = None
+        self.last_verification_result = None
+        self.last_task_started_at = None
+        self.last_task_completed_at = None
+        self.last_busy_notice_at = None
+        self.last_failure_notice_at = None
+        self.last_failure_notice_text = None
+        self.task_contract = None
+        self.next_step_decision = None
+        self.verification_history = []
+        self.need_relock = False
+        self.contract_phase = "pending"
+        self.current_step_number = 0
+        self.total_steps_planned = None
+        self.pending_progress_events = []
+        self.pending_run_events = []
+        self.pending_task_conflict = None
+        self.active_item_id = None
+        self.active_turn_id = None
+        self.active_turn_status = "idle"
+        self.final_sent = False
+        self.autonomy_context = None
+        if ingress_context is not None:
+            self.ingress_context = ingress_context
+        self.set_run_items(run_items)
 
     def set_task_contract(self, contract: Optional[Dict[str, Any]]) -> None:
         self.task_contract = contract
@@ -812,7 +887,13 @@ class RuntimeV2State:
             marker["baseline_snapshot"] = item.baseline_snapshot.to_dict() if item.baseline_snapshot else None
         return marker
 
-    def observe_active_run_item_progress(self) -> Optional[Dict[str, Any]]:
+    def observe_active_run_item_progress(
+        self,
+        *,
+        tool_result: Optional[Dict[str, Any]] = None,
+        tool_name: Optional[str] = None,
+        tool_input: Optional[Dict[str, Any]] = None,
+    ) -> Optional[Dict[str, Any]]:
         item = self.get_active_run_item()
         if item is None:
             return None
@@ -828,19 +909,67 @@ class RuntimeV2State:
                 "reason": "missing_canonical_path",
                 "item_id": item.item_id,
             }
+        actual_path = None
+        metadata = dict((tool_result or {}).get("metadata") or {})
+        if metadata.get("path"):
+            actual_path = str(metadata.get("path"))
+        elif isinstance(tool_input, dict) and tool_input.get("path"):
+            actual_path = str(tool_input.get("path"))
         if item.kind == "file_verify":
-            observation = {
-                "progressed": True,
-                "reason": "verify_item_ready",
+            if tool_result is None:
+                return {
+                    "progressed": False,
+                    "reason": "verify_read_pending",
+                    "item_id": item.item_id,
+                    "canonical_path": item.canonical_path,
+                }
+            if tool_name != "file" or str((tool_input or {}).get("operation") or "") != "read":
+                return {
+                    "progressed": False,
+                    "reason": "blocked_unexpected_item_action",
+                    "item_id": item.item_id,
+                    "canonical_path": item.canonical_path,
+                    "actual_tool": tool_name,
+                }
+            if actual_path and not path_matches_canonical(item.canonical_path, actual_path):
+                return {
+                    "progressed": False,
+                    "reason": "blocked_unexpected_output_path",
+                    "item_id": item.item_id,
+                    "canonical_path": item.canonical_path,
+                    "actual_path": actual_path,
+                }
+            if bool(tool_result.get("success")):
+                observation = {
+                    "progressed": True,
+                    "reason": "verify_read_observed",
+                    "item_id": item.item_id,
+                    "canonical_path": item.canonical_path,
+                    "actual_path": actual_path,
+                }
+                if item.status == "running":
+                    self.mark_active_run_item_completed(observation)
+                return observation
+            return {
+                "progressed": False,
+                "reason": "verify_read_failed",
                 "item_id": item.item_id,
                 "canonical_path": item.canonical_path,
+                "actual_path": actual_path,
             }
-            if item.status == "running":
-                self.mark_active_run_item_completed(observation)
-            return observation
         path = PureWindowsPath(item.canonical_path) if WINDOWS_PATH_RE.match(item.canonical_path or "") else PurePosixPath(item.canonical_path)
         baseline = item.baseline_snapshot
         current = VerificationBaseline.capture(str(path))
+        if actual_path and not path_matches_canonical(item.canonical_path, actual_path):
+            return {
+                "progressed": False,
+                "reason": "blocked_unexpected_output_path",
+                "item_id": item.item_id,
+                "canonical_path": item.canonical_path,
+                "actual_path": actual_path,
+                "baseline_snapshot": baseline.to_dict() if baseline else None,
+                "current_observation": current.to_dict(),
+            }
         changed = path_changed_from_baseline(Path(str(path)), baseline)
         observation = {
             "progressed": changed,
