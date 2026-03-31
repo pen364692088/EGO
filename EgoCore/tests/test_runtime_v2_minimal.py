@@ -5,9 +5,17 @@ import pytest
 
 from app.runtime_v2.action_protocol import RuntimeV2Action
 from app.runtime_v2.loop import RuntimeV2Loop
-from app.runtime_v2.run_items import RunConflictState, build_run_items_from_request, current_date_string
+from app.runtime_v2.run_items import (
+    RunConflictState,
+    RunItem,
+    build_run_item_summary_text,
+    build_run_item_verified_text,
+    build_run_items_from_request,
+    current_date_string,
+)
 from app.runtime_v2.semantic_parser import build_runtime_status_reply
 from app.runtime_v2.state import RuntimeV2State
+from app.runtime_v2.transition import _build_host_completion_summary
 from app.runtime_v2.verifier import RuntimeV2Verifier
 
 
@@ -402,7 +410,7 @@ async def test_runtime_v2_loop_emits_ordered_run_item_events_during_turn(monkeyp
     assert result.status == "completed_verified"
     assert run_events == [
         ("item_started", "开始处理 demo.txt。"),
-        ("item_verified", "已验证 demo.txt。"),
+        ("item_verified", "已写入 demo.txt。"),
         ("item_started", "开始处理 print hello world.py。"),
         ("item_verified", "已验证 print hello world.py。"),
     ]
@@ -628,13 +636,63 @@ async def test_runtime_v2_loop_promotes_frontier_after_write_without_model_compl
     assert state.active_item_id == active_item.item_id
     assert run_events == [
         ("item_started", "开始处理 demo.txt。"),
-        ("item_verified", "已验证 demo.txt。"),
+        ("item_verified", "已写入 demo.txt。"),
         ("item_started", "开始验证 demo.txt。"),
-        ("item_verified", "已验证 demo.txt。"),
+        ("item_verified", "已确认 demo.txt 内容。"),
         ("item_started", "开始处理 youtube_lookalike.html。"),
         ("item_verified", "已验证 youtube_lookalike.html。"),
         ("item_started", "开始处理 print hello world.py。"),
     ]
+
+
+def test_run_item_rendering_distinguishes_write_and_verify():
+    write_item = RunItem(
+        item_id="item_write",
+        order_index=1,
+        kind="file_write",
+        description="创建 demo.txt",
+        canonical_path=r"D:\Project\AIProject\MyProject\Test2\demo.txt",
+    )
+    verify_item = RunItem(
+        item_id="item_verify",
+        order_index=2,
+        kind="file_verify",
+        description="验证 demo.txt",
+        canonical_path=r"D:\Project\AIProject\MyProject\Test2\demo.txt",
+    )
+
+    assert build_run_item_summary_text(write_item) == "已写入 demo.txt"
+    assert build_run_item_verified_text(write_item) == "已写入 demo.txt。"
+    assert build_run_item_summary_text(verify_item) == "已确认 demo.txt 内容"
+    assert build_run_item_verified_text(verify_item) == "已确认 demo.txt 内容。"
+
+
+def test_host_completion_summary_uses_item_semantics(tmp_path):
+    state = RuntimeV2State(session_id="session:completion-summary")
+    prompt = (
+        f"在 {tmp_path} 目录下创建 demo.txt，写入三行内容：第一行是 hello，第二行是当前日期，第三行是 autonomous chain test。"
+        "然后读取这个文件确认内容。然后再创建一个参照youtube的html页面,只是看着像,不用做真正的功能."
+        "最后做一个print hello world.py文件"
+    )
+    state.ingress_context = {
+        "runtime_action": "execute_task",
+        "requested_output": {"target_directory": str(tmp_path)},
+    }
+    state.begin_execute_task(prompt, build_run_items_from_request(prompt, ingress_context=state.ingress_context), state.ingress_context)
+    items = state.get_run_items()
+    for item in items:
+        item.status = "verified"
+    state.set_run_items(items)
+
+    assert _build_host_completion_summary(state, None) == "\n".join(
+        [
+            "已完成这些任务：",
+            "1. 已写入 demo.txt",
+            "2. 已确认 demo.txt 内容",
+            "3. 已验证 youtube_lookalike.html",
+            "4. 已验证 print hello world.py",
+        ]
+    )
 
 
 def test_host_deterministic_verify_reuses_frozen_current_date(monkeypatch, tmp_path):

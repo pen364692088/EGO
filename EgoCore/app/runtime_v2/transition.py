@@ -7,7 +7,7 @@ from typing import Any, Dict, List, Optional
 from .action_protocol import RuntimeV2Action
 from .progress_events import ProgressEvent, ProgressEventType, build_progress_event
 from .runtime_reply import RuntimeV2Reply, RuntimeV2TurnResult
-from .run_items import CompletionGateResult, path_matches_canonical, verify_run_item
+from .run_items import CompletionGateResult, build_run_item_summary_text, path_matches_canonical, verify_run_item
 from .state import RuntimeV2State
 from .tool_broker import RuntimeV2ToolBroker
 from .verifier import RuntimeV2Verifier
@@ -266,8 +266,7 @@ def _build_host_completion_summary(state: RuntimeV2State, fallback_summary: Opti
         return fallback_summary or "已完成。"
     lines = ["已完成这些任务："]
     for index, item in enumerate(verified_items, start=1):
-        target = Path(item.canonical_path).name if item.canonical_path else item.description
-        lines.append(f"{index}. 已验证 {target}")
+        lines.append(f"{index}. {build_run_item_summary_text(item)}")
     return "\n".join(lines)
 
 

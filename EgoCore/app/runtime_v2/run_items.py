@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 from datetime import date
-from pathlib import Path
+from pathlib import Path, PureWindowsPath
 import hashlib
 import re
 import time
@@ -16,6 +16,7 @@ VERIFY_PREVIOUS_FILE_RE = re.compile(r"读取(?:这个|该)?文件确认内容")
 FIRST_LINE_RE = re.compile(r"第一行是\s*([^\n，。,]+)")
 SECOND_LINE_RE = re.compile(r"第二行是\s*([^\n，。,]+)")
 THIRD_LINE_RE = re.compile(r"第三行是\s*([^\n，。,]+)")
+WINDOWS_PATH_RE = re.compile(r"^[A-Za-z]:[\\/]")
 
 
 def _normalize_slug(text: str) -> str:
@@ -214,16 +215,32 @@ class CompletionGateResult:
         }
 
 
+def _display_path_name(path_value: Optional[str], fallback: str) -> str:
+    if not path_value:
+        return fallback
+    if WINDOWS_PATH_RE.match(path_value):
+        return PureWindowsPath(path_value).name or path_value
+    return Path(path_value).name or path_value
+
+
 def build_run_item_started_text(item: RunItem) -> str:
-    path_name = Path(item.canonical_path).name if item.canonical_path else item.description
+    path_name = _display_path_name(item.canonical_path, item.description)
     if item.kind == "file_verify":
         return f"开始验证 {path_name}。"
     return f"开始处理 {path_name}。"
 
 
 def build_run_item_verified_text(item: RunItem) -> str:
-    path_name = Path(item.canonical_path).name if item.canonical_path else item.description
-    return f"已验证 {path_name}。"
+    return f"{build_run_item_summary_text(item)}。"
+
+
+def build_run_item_summary_text(item: RunItem) -> str:
+    path_name = _display_path_name(item.canonical_path, item.description)
+    if item.kind == "file_write":
+        return f"已写入 {path_name}"
+    if item.kind == "file_verify":
+        return f"已确认 {path_name} 内容"
+    return f"已验证 {path_name}"
 
 
 def infer_target_directory(*, text: str, ingress_context: Optional[Dict[str, Any]] = None, last_explicit_target: Optional[str] = None) -> Optional[Path]:
