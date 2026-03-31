@@ -310,9 +310,11 @@ class TelegramBot:
                 reply_text=getattr(verdict, "reply_text", getattr(plan, "reply_text", "")),
                 extra={
                     "authority_source": metadata.get("authority_source", getattr(plan, "authority_source", "host_pre_runtime")),
+                    "reply_authority": getattr(plan, "reply_authority", metadata.get("reply_authority", "host_degraded_fallback")),
                     "matched_rule_ids": metadata.get("matched_rule_ids") or [],
                     "rule_enforcement": metadata.get("enforcement"),
                     "output_check_reason": getattr(verdict, "reason", None),
+                    "applied_authority": getattr(verdict, "applied_authority", None),
                     "used_host_fallback": getattr(verdict, "used_host_fallback", False),
                 },
             )
@@ -326,6 +328,7 @@ class TelegramBot:
             kind=metadata.get("status", "pre_runtime"),
             delivery_kind=metadata.get("delivery_kind", "final"),
             authority_source=metadata.get("authority_source", "host_pre_runtime"),
+            reply_authority=metadata.get("reply_authority", "host_degraded_fallback"),
             metadata=metadata,
         )
 
@@ -360,6 +363,7 @@ class TelegramBot:
         reply_text: str,
         delivery_kind: Optional[str],
         source: str,
+        applied_authority: Optional[str] = None,
         fidelity_mode: Optional[str] = None,
         fidelity_gap: Optional[bool] = None,
         trace_id: Optional[str] = None,
@@ -370,6 +374,7 @@ class TelegramBot:
             reply_text=reply_text,
             delivery_kind=delivery_kind,
             source=source,
+            applied_authority=applied_authority,
             fidelity_mode=fidelity_mode,
             fidelity_gap=fidelity_gap,
         )
@@ -405,14 +410,21 @@ class TelegramBot:
             else:
                 result.reply.reply_text = output_verdict.reply_text
                 result.reply.delivery_kind = output_verdict.delivery_kind
-        if output_verdict.evidence_snapshot:
-            state.set_last_evidence_read_result(output_verdict.evidence_snapshot)
+        if (
+            output_verdict.evidence_snapshot
+            and output_verdict.fidelity_mode == "verbatim"
+            and output_verdict.fidelity_gap is False
+        ):
+            state.set_last_delivered_evidence_context(output_verdict.evidence_snapshot)
+        else:
+            state.clear_last_delivered_evidence_context()
         await self._publish_tool_delivery_bridge_event(
             session_key=session_key,
             tool_result=state.last_tool_result,
             reply_text=result.reply_text,
             delivery_kind=result.delivery_kind,
             source=source,
+            applied_authority=output_verdict.applied_authority,
             fidelity_mode=output_verdict.fidelity_mode,
             fidelity_gap=output_verdict.fidelity_gap,
             trace_id=trace_id,
@@ -982,11 +994,11 @@ class TelegramBot:
             logger.warning(f"[E4-EVIDENCE] Failed to capture direct outbox_record: {e}")
 
     def _build_recent_read_followup_reply(self, state: RuntimeV2State, text: str) -> Optional[str]:
-        snapshot = getattr(state, "last_evidence_read_result", None)
+        snapshot = getattr(state, "last_delivered_evidence_context", None) or getattr(state, "last_evidence_read_result", None)
         if not isinstance(snapshot, dict):
             return None
-        observed_at = float(snapshot.get("observed_at") or 0.0)
-        if observed_at and (time.time() - observed_at) > RECENT_EVIDENCE_RESULT_TTL_SECONDS:
+        delivered_at = float(snapshot.get("delivered_at") or snapshot.get("observed_at") or 0.0)
+        if delivered_at and (time.time() - delivered_at) > RECENT_EVIDENCE_RESULT_TTL_SECONDS:
             return None
 
         normalized = normalize_user_turn(text)
@@ -1463,8 +1475,10 @@ class TelegramBot:
         state.last_inferred_target = None
         state.pending_bundle_summary = None
         state.last_tool_result = None
+        state.last_tool_result_turn_id = None
         state.last_verification_result = None
         state.ingress_context = None
+        state.clear_last_delivered_evidence_context()
         state.proto_self_version_override = None
         state.proto_self_subject_profile_override = None
         state.proto_self_context = None
@@ -2418,10 +2432,31 @@ class TelegramBot:
             self._spawn_manual_resume(active_run.id)
             return
 
+        normalized_turn = normalize_user_turn(text)
         followup_reply = self._build_recent_read_followup_reply(state, text)
         if followup_reply is not None:
-            await self._send_reply(update, followup_reply)
+            snapshot = getattr(state, "last_delivered_evidence_context", None) or getattr(state, "last_evidence_read_result", None)
+            plan = build_direct_response_plan(
+                followup_reply,
+                kind="evidence_followup",
+                delivery_kind="final",
+                authority_source="response_contract.response_plan",
+                reply_authority="host_evidence",
+                metadata={
+                    "status": "evidence_followup",
+                    "conversation_act": "evidence_followup",
+                    "evidence_payload": dict(snapshot or {}),
+                    "evidence_binding_source_turn": (snapshot or {}).get("source_turn_id"),
+                },
+            )
+            verdict = apply_output_check(plan, state)
+            if verdict.passed:
+                self._capture_pre_runtime_response_plan(plan, verdict)
+                await self._send_reply(update, verdict.reply_text)
+            state.clear_last_delivered_evidence_context()
             return
+        if normalized_turn.probe_key not in READ_LIST_FOLLOWUP_PROBE_KEYS:
+            state.clear_last_delivered_evidence_context()
 
         # 记录 ingress 信息
         if ingress_message_id is not None:
@@ -3339,7 +3374,7 @@ class TelegramBot:
                             "artifact_id": ((state.ingress_context or {}).get("resolved_target") or {}).get("artifact_id"),
                         },
                     )
-                state.last_tool_result = {
+                state.set_last_tool_result_payload({
                     "success": tool_result.get("success"),
                     "tool": tool_entry.get("tool_name"),
                     "stdout": str(tool_result.get("output") or ""),
@@ -3347,7 +3382,7 @@ class TelegramBot:
                     "exit_code": 0 if tool_result.get("success") else 1,
                     "metadata": tool_result.get("metadata") or {},
                     "raw": tool_result,
-                }
+                })
                 state.current_step = f"tool:{tool_entry.get('tool_name')}"
                 state.task_status = "running"
                 if native_hooks and native_hooks.enabled:
@@ -3603,12 +3638,18 @@ class TelegramBot:
                     "text": delivery.text[:1000],
                     "delivery_kind": getattr(result, "delivery_kind", "final"),
                     "status": result.status,
+                    "reply_authority": getattr(output_verdict, "applied_authority", None),
                 },
             )
             send_result = await self._send_reply(update, delivery.text)
-            if getattr(output_verdict, "evidence_snapshot", None):
-                state.update_last_evidence_read_delivery(
-                    delivery_was_chunked=bool((send_result or {}).get("was_chunked"))
+            if (
+                getattr(output_verdict, "evidence_snapshot", None)
+                and getattr(output_verdict, "fidelity_mode", None) == "verbatim"
+                and getattr(output_verdict, "fidelity_gap", None) is False
+            ):
+                state.update_last_delivered_evidence_context(
+                    delivery_was_chunked=bool((send_result or {}).get("was_chunked")),
+                    source_assistant_message_id=(send_result or {}).get("last_message_id"),
                 )
             if getattr(result, "delivery_kind", "final") == "final" or result.status in {
                 "completed_verified",
@@ -3771,6 +3812,7 @@ class TelegramBot:
         """
         chunks = self._chunk_telegram_text(text)
         sent_count = 0
+        last_message_id = None
 
         for index, chunk in enumerate(chunks):
             sent_message = None
@@ -3791,13 +3833,18 @@ class TelegramBot:
                     continue
 
             sent_count += 1
+            last_message_id = getattr(sent_message, "message_id", None)
             self._capture_telegram_outbox_record(
                 sent_message,
                 text_length=len(chunk),
                 finalize_evidence=finalize_evidence and index == len(chunks) - 1,
             )
 
-        return {"sent_count": sent_count, "was_chunked": len(chunks) > 1}
+        return {
+            "sent_count": sent_count,
+            "was_chunked": len(chunks) > 1,
+            "last_message_id": last_message_id,
+        }
 
     async def _send_result(self, update: Update, result: CommandResult) -> None:
         """Send CommandResult as Telegram message.

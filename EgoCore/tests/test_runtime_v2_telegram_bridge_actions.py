@@ -8,7 +8,7 @@ def test_telegram_bridge_plans_pre_runtime_no_busy_notice():
     state = RuntimeV2State(session_id="telegram:dm:1")
     state.task_status = "running"
     state.current_goal = "修改 hello.html 配色"
-    decision = bridge.inspect_ingress("还在吗", state)
+    decision = bridge.inspect_ingress("好了吗", state)
     action = bridge.plan_pre_runtime(decision, state)
     assert decision.absorb_as_busy_notice is False
     assert action.should_return_early is True

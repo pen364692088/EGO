@@ -26,8 +26,6 @@ from app.interaction.normalize_user_turn import normalize_user_turn
 logger = logging.getLogger(__name__)
 
 SHORT_STATUS_PATTERNS = {
-    "还在吗",
-    "还在不",
     "到哪了",
     "进度呢",
     "怎么样了",
@@ -40,6 +38,8 @@ SHORT_STATUS_PATTERNS = {
 SHORT_CHAT_PING_PATTERNS = {
     "在吗",
     "在不在",
+    "还在吗",
+    "还在不",
 }
 
 SHORT_CORRECTION_PATTERNS = {
@@ -175,8 +175,6 @@ def parse_session_control_intent(text: str) -> SessionControlIntent:
     normalized_turn = normalize_user_turn(text)
     normalized = normalized_turn.probe_key
     control_key = normalized_turn.control_key
-    if normalized in SHORT_CHAT_PING_PATTERNS:
-        return SessionControlIntent(kind="chat_ping")
     if normalized in SHORT_STATUS_PATTERNS or control_key in {"status", "进度", "如何了"}:
         return SessionControlIntent(kind="status_probe")
     if control_key in {"继续", "continue", "继续执行", "继续这个任务", "resume"}:
@@ -188,6 +186,11 @@ def parse_session_control_intent(text: str) -> SessionControlIntent:
     if control_key in {"取消", "cancel"}:
         return SessionControlIntent(kind="task_conflict_resolution", resolution="cancel")
     return SessionControlIntent(kind="execute_task")
+
+
+def is_presence_probe_text(text: str) -> bool:
+    normalized_turn = normalize_user_turn(text)
+    return normalized_turn.probe_key in SHORT_CHAT_PING_PATTERNS
 
 
 # =============================================================================
@@ -220,7 +223,7 @@ SEGMENTATION_PROMPT = """你是语义解析器。把用户输入拆成多个语�
 1. 每个语义块只能有一个 kind
 2. 长消息必须拆成多块
 3. 混合输入必须分别识别
-4. 状态查询（还在吗/到哪了/怎么了）必须标记为 status_query
+4. 状态查询（好了吗/到哪了/怎么了）必须标记为 status_query
 5. 纠错/反驳（不是这个意思/我说的不是）必须标记为 correction
 6. 路径/附件/材料默认可作为 reference_material
 7. 你只负责理解，不负责执行或判断真实状态

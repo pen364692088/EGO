@@ -32,7 +32,7 @@ def test_telegram_bridge_short_probe_is_programmatic_status_query():
     state.task_status = "running"
     state.current_goal = "修改 hello.html 配色"
 
-    decision = bridge.inspect_ingress("还在吗", state)
+    decision = bridge.inspect_ingress("好了吗", state)
     assert decision.is_short_probe is True
     assert decision._runtime_action == "return_runtime_status"
     assert decision._parsed_intent_graph.primary_intent == "status_query"
@@ -42,6 +42,19 @@ def test_telegram_bridge_presence_probe_when_idle_falls_back_to_chat():
     bridge = RuntimeV2TelegramBridge()
     state = RuntimeV2State(session_id="telegram:dm:1")
     decision = bridge.inspect_ingress("在吗", state)
+    assert decision.is_short_probe is False
+    assert decision._runtime_action == "chat"
+    assert decision._parsed_intent_graph.primary_intent == "chat"
+
+
+def test_telegram_bridge_presence_probe_even_if_busy_stays_chat() -> None:
+    bridge = RuntimeV2TelegramBridge()
+    state = RuntimeV2State(session_id="telegram:dm:1")
+    state.task_status = "running"
+    state.current_goal = "修改 hello.html 配色"
+
+    decision = bridge.inspect_ingress("还在吗", state)
+
     assert decision.is_short_probe is False
     assert decision._runtime_action == "chat"
     assert decision._parsed_intent_graph.primary_intent == "chat"

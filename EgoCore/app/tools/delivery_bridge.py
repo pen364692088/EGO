@@ -8,6 +8,7 @@ from typing import Any, Dict, Optional, Sequence
 class ToolDeliveryBridgeDecision:
     authority_source: str
     source: str
+    applied_authority: Optional[str]
     tool_name: str
     success: bool
     target_path: Optional[str]
@@ -31,6 +32,7 @@ def build_tool_delivery_bridge_decision(
     reply_text: str = "",
     delivery_kind: Optional[str] = None,
     source: str,
+    applied_authority: Optional[str] = None,
     fidelity_mode: Optional[str] = None,
     fidelity_gap: Optional[bool] = None,
 ) -> Optional[ToolDeliveryBridgeDecision]:
@@ -75,6 +77,7 @@ def build_tool_delivery_bridge_decision(
     return ToolDeliveryBridgeDecision(
         authority_source="tools.delivery_bridge",
         source=source,
+        applied_authority=applied_authority,
         tool_name=tool_name,
         success=success,
         target_path=target_path,

@@ -19,6 +19,7 @@ from app.runtime_v2.semantic_parser import (
     build_runtime_status_reply,
     decide_runtime_action,
     heuristic_parse,
+    is_presence_probe_text,
     parse_session_control_intent,
 )
 from app.runtime_v2.state import RuntimeV2State
@@ -230,7 +231,6 @@ class TelegramDeliveryAction:
 
 
 class TelegramRuntimeBridge:
-    AMBIGUOUS_PRESENCE_PROBES = {"在吗", "还在吗", "还在不", "在不在"}
     CONFIRM_EXECUTION_PATTERNS = {
         "执行",
         "执行吧",
@@ -393,20 +393,6 @@ class TelegramRuntimeBridge:
         graph: ParsedIntentGraph,
         state: RuntimeV2State,
     ) -> ParsedIntentGraph:
-        normalized = normalize_user_turn(text).probe_key
-        if normalized not in self.AMBIGUOUS_PRESENCE_PROBES:
-            return graph
-        if hasattr(state, "is_busy") and state.is_busy():
-            return graph
-
-        graph.has_status_query = False
-        graph.primary_intent = "chat"
-        graph.secondary_intents = []
-        graph.requires_clarification = False
-        if graph.segments:
-            graph.segments[0].kind = "small_talk"
-            graph.segments[0].request_mode = None
-        graph.parser_source = "heuristic_parser"
         return graph
 
     def _looks_like_execution_confirmation(self, text: str, state: RuntimeV2State) -> bool:
@@ -670,9 +656,11 @@ class TelegramRuntimeBridge:
             resolved_target=resolved_target,
             request_mode=request_mode,
         )
+        conversation_act = "presence_check" if is_presence_probe_text(decision.source_text) else None
         return {
             "normalized_user_turn": normalized_turn.to_dict() if normalized_turn is not None else None,
             "interaction_kind": decision.interaction_kind,
+            "conversation_act": conversation_act,
             "parser_source": graph.parser_source if graph else "chat_default",
             "primary_intent": graph.primary_intent if graph else "chat",
             "secondary_intents": graph.secondary_intents if graph else [],
@@ -903,6 +891,7 @@ class TelegramRuntimeBridge:
                     "status": "profile_rule_unsupported",
                     "delivery_kind": "final",
                     "authority_source": "profile_memory",
+                    "reply_authority": "host_degraded_fallback",
                 },
             )
 
@@ -919,6 +908,7 @@ class TelegramRuntimeBridge:
                     "status": "profile_rule_registered",
                     "delivery_kind": "final",
                     "authority_source": "profile_memory",
+                    "reply_authority": "host_degraded_fallback",
                     "matched_rule_ids": [decision.registered_profile_rule.get("rule_id")],
                 },
             )
@@ -932,6 +922,7 @@ class TelegramRuntimeBridge:
                     "status": "profile_rule_enforced",
                     "delivery_kind": "final",
                     "authority_source": "profile_memory",
+                    "reply_authority": "host_degraded_fallback",
                     "matched_rule_ids": decision.rule_enforcement.get("matched_rule_ids") or [],
                     "enforcement": decision.rule_enforcement,
                 },
@@ -946,6 +937,7 @@ class TelegramRuntimeBridge:
                     "status": "profile_rule_enforced",
                     "delivery_kind": "waiting_input",
                     "authority_source": "profile_memory",
+                    "reply_authority": "host_degraded_fallback",
                     "matched_rule_ids": decision.rule_enforcement.get("matched_rule_ids") or [],
                     "enforcement": decision.rule_enforcement,
                 },
@@ -979,6 +971,7 @@ class TelegramRuntimeBridge:
                     "status": "waiting_input",
                     "delivery_kind": "waiting_input",
                     "authority_source": "host_pre_runtime",
+                    "reply_authority": "host_degraded_fallback",
                 },
             )
 
@@ -991,6 +984,8 @@ class TelegramRuntimeBridge:
                     "status": "return_runtime_status",
                     "delivery_kind": "final",
                     "authority_source": "host_pre_runtime",
+                    "reply_authority": "host_status",
+                    "conversation_act": "status_probe",
                 },
             )
 

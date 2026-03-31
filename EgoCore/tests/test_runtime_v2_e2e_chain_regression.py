@@ -45,7 +45,7 @@ class DummyUpdate:
 
 @pytest.mark.asyncio
 async def test_runtime_v2_task_probe_challenge_chain_stays_consistent(monkeypatch):
-    """任务、短探针、挑战追问链保持一致性 - 不再发送 generic ACK/Busy"""
+    """任务、presence chat、挑战追问链保持一致性 - 不再发送 generic ACK/Busy"""
     bot = TelegramBot(token="test-token", use_runtime_v2=True)
     bot.app = type("A", (), {"bot": DummyBot()})()
     monkeypatch.setattr(bot, "_get_conflicted_active_run", lambda _session_key: None)
@@ -98,7 +98,7 @@ async def test_runtime_v2_task_probe_challenge_chain_stays_consistent(monkeypatc
     update1 = DummyUpdate("/home/moonlight/Project/Github/MyProject/TestProject/hello.html 配色不太好看,你换成复古风格", 301)
     await bot.handle_message(update1, None)
 
-    update2 = DummyUpdate("还在吗", 302)
+    update2 = DummyUpdate("在吗", 302)
     await bot.handle_message(update2, None)
 
     update3 = DummyUpdate("你没改啊", 303)
@@ -106,7 +106,7 @@ async def test_runtime_v2_task_probe_challenge_chain_stays_consistent(monkeypatc
 
     # 不再发送 generic ACK，直接发送结果
     assert update1.message.sent == ["已经改好了，背景换成了复古风格。"]
-    # 短探针进入 runtime，得到正常回复
+    # presence probe 走 chat 主链，得到正常回复
     assert update2.message.sent == ["我继续检查刚才那个文件。"] or bot.app.bot.sent[-1] == (123, "我继续检查刚才那个文件。")
     # 挑战轮次进入 runtime，得到正常回复
     assert update3.message.sent == ["我继续检查刚才那个文件。"] or bot.app.bot.sent[-1] == (123, "我继续检查刚才那个文件。")

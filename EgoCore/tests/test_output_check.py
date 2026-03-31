@@ -74,21 +74,21 @@ def test_output_check_preserves_non_empty_direct_reply() -> None:
 
 def test_output_check_rewrites_directory_listing_to_verbatim_output() -> None:
     state = RuntimeV2State(session_id="s")
-    state.last_tool_result = {
-        "success": True,
-        "tool": "shell",
-        "stdout": " Directory of D:\\Project\\AIProject\\MyProject\\Test2\n03/31/2026  04:18 PM               12 demo.txt",
-        "metadata": {
-            "command": r"dir D:\Project\AIProject\MyProject\Test2",
-            "working_directory": r"D:\Project\AIProject\MyProject\Test2",
-            "truncated": False,
-        },
-    }
     plan = build_direct_response_plan(
         "已列出 D:\\Project\\AIProject\\MyProject\\Test2 目录下的文件。",
         kind="completed_verified",
         delivery_kind="final",
         authority_source="test",
+        reply_authority="host_evidence",
+        metadata={
+            "evidence_payload": {
+                "request_kind": "directory_listing",
+                "body": " Directory of D:\\Project\\AIProject\\MyProject\\Test2\n03/31/2026  04:18 PM               12 demo.txt",
+                "truncated": False,
+                "delivery_was_chunked": False,
+                "source_turn_id": "turn_1234",
+            },
+        },
     )
 
     verdict = apply_output_check(plan, state)
@@ -100,3 +100,30 @@ def test_output_check_rewrites_directory_listing_to_verbatim_output() -> None:
     assert verdict.fidelity_gap is False
     assert verdict.reply_text.startswith("目录内容如下：\n")
     assert "demo.txt" in verdict.reply_text
+
+
+def test_output_check_does_not_rewrite_model_chat_from_stale_evidence() -> None:
+    state = RuntimeV2State(session_id="s")
+    state.last_tool_result = {
+        "success": True,
+        "tool": "shell",
+        "stdout": "demo.txt",
+        "metadata": {
+            "command": r"dir D:\Project\AIProject\MyProject\Test2",
+            "working_directory": r"D:\Project\AIProject\MyProject\Test2",
+        },
+    }
+    plan = build_direct_response_plan(
+        "在的，请说。",
+        kind="chat",
+        delivery_kind="chat",
+        authority_source="test",
+        reply_authority="model_chat",
+    )
+
+    verdict = apply_output_check(plan, state)
+
+    assert verdict.passed is True
+    assert verdict.applied_authority == "model_chat"
+    assert verdict.is_evidence_bearing is False
+    assert verdict.reply_text == "在的，请说。"

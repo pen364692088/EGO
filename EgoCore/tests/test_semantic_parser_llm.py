@@ -439,7 +439,7 @@ class TestDesignContractSamples:
 
     def test_sample_2_status_query(self):
         """样例2：短探针命中 heuristic status_query；是否早返回取决于 runtime context。"""
-        graph = heuristic_parse("还在吗")
+        graph = heuristic_parse("好了吗")
         assert graph.primary_intent == "status_query"
 
     def test_sample_3_task_with_path(self):

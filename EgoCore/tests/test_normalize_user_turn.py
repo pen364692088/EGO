@@ -1,5 +1,5 @@
 from app.interaction.normalize_user_turn import normalize_user_turn
-from app.runtime_v2.semantic_parser import parse_session_control_intent
+from app.runtime_v2.semantic_parser import is_presence_probe_text, parse_session_control_intent
 
 
 def test_normalize_user_turn_compacts_control_probe_and_extracts_path() -> None:
@@ -27,9 +27,12 @@ def test_parse_session_control_intent_uses_normalized_turn() -> None:
     assert replace_intent.resolution == "replace"
 
 
-def test_parse_session_control_intent_treats_zai_ma_as_chat_ping() -> None:
+def test_parse_session_control_intent_presence_probes_do_not_enter_control_plane() -> None:
     chat_intent = parse_session_control_intent("在吗")
-    assert chat_intent.kind == "chat_ping"
+    assert chat_intent.kind == "execute_task"
 
-    status_intent = parse_session_control_intent("还在吗")
-    assert status_intent.kind == "status_probe"
+    chat_intent_2 = parse_session_control_intent("还在吗")
+    assert chat_intent_2.kind == "execute_task"
+
+    assert is_presence_probe_text("在吗") is True
+    assert is_presence_probe_text("还在吗") is True

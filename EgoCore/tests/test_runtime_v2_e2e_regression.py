@@ -102,7 +102,7 @@ async def test_runtime_v2_task_then_challenge_followup_stays_coherent(monkeypatc
 
 @pytest.mark.asyncio
 async def test_runtime_v2_short_probe_no_longer_sends_busy_notice(monkeypatch):
-    """短探针直接返回程序化状态，不再静默吸收或走 LLM。"""
+    """明确进度词直接返回 host status，不再静默吸收或走 LLM。"""
     bot = TelegramBot(token="test-token", use_runtime_v2=True)
     bot.app = type("A", (), {"bot": DummyBot()})()
     monkeypatch.setattr(bot, "_get_conflicted_active_run", lambda _session_key: None)
@@ -112,6 +112,12 @@ async def test_runtime_v2_short_probe_no_longer_sends_busy_notice(monkeypatch):
     bot._sync_state_into_runtime_v2_loop(session_id, state)
     state.task_status = "running"
     state.current_goal = "修改 hello.html 配色"
+    state.current_step = "修改 hello.html 配色"
+
+    class ActiveRun:
+        runtime_state_snapshot = state.to_snapshot()
+
+    monkeypatch.setattr(bot, "_get_active_run", lambda _session_key: ActiveRun())
 
     async def fake_run_turn_typed(session_id, user_input):
         from app.runtime_v2.runtime_reply import RuntimeV2Reply, RuntimeV2TurnResult
@@ -128,10 +134,10 @@ async def test_runtime_v2_short_probe_no_longer_sends_busy_notice(monkeypatch):
 
     monkeypatch.setattr(runtime_loop, "run_turn_typed", fake_run_turn_typed)
 
-    update1 = DummyUpdate("还在吗", 201)
+    update1 = DummyUpdate("好了吗", 201)
     await bot.handle_message(update1, None)
-    update2 = DummyUpdate("还在吗", 202)
+    update2 = DummyUpdate("好了吗", 202)
     await bot.handle_message(update2, None)
 
-    assert update1.message.sent == ["正在处理：修改 hello.html 配色"]
-    assert update2.message.sent == ["正在处理：修改 hello.html 配色"]
+    assert update1.message.sent == ["正在处理：修改 hello.html 配色，当前步骤：修改 hello.html 配色"]
+    assert update2.message.sent == ["正在处理：修改 hello.html 配色，当前步骤：修改 hello.html 配色"]

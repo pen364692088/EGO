@@ -116,8 +116,8 @@ async def test_telegram_bot_runtime_v2_busy_short_probe_enters_runtime(monkeypat
 
 
 @pytest.mark.asyncio
-async def test_telegram_bot_runtime_v2_recent_completion_short_probe_enters_runtime(monkeypatch):
-    """短探针现在先走 control-plane，不再进入 execute/runtime 路径"""
+async def test_telegram_bot_runtime_v2_explicit_status_probe_uses_control_plane(monkeypatch):
+    """明确进度词仍走 status control-plane。"""
     bot = TelegramBot(token="test-token", use_runtime_v2=True)
 
     class DummyBot:
@@ -125,7 +125,7 @@ async def test_telegram_bot_runtime_v2_recent_completion_short_probe_enters_runt
             return None
 
     class DummyMessage:
-        text = "还在吗"
+        text = "好了吗"
         message_id = 3
         reply_to_message = None
         last_text = None
@@ -170,7 +170,7 @@ async def test_telegram_bot_runtime_v2_recent_completion_short_probe_enters_runt
     monkeypatch.setattr(runtime_loop, 'run_turn_typed', fake_run_turn_typed)
     await bot.handle_message(DummyUpdate(), None)
     await bot.handle_message(DummyUpdate(), None)
-    # 短探针现在由 control-plane 直接响应
+    # 明确状态查询由 control-plane 直接响应
     assert DummyUpdate.message.last_text == '当前没有运行中的任务。'
     assert DummyUpdate.message.call_count == 2
 
@@ -411,6 +411,7 @@ async def test_telegram_bot_runtime_delivery_uses_verbatim_directory_output(monk
     monkeypatch.setattr(bot, "_publish_phase1_event", fake_publish_phase1_event)
 
     state = bot._get_runtime_state("telegram:dm:456")
+    state.start_turn()
     state.last_tool_result = {
         "success": True,
         "tool": "shell",
@@ -421,6 +422,7 @@ async def test_telegram_bot_runtime_delivery_uses_verbatim_directory_output(monk
             "truncated": False,
         },
     }
+    state.last_tool_result_turn_id = state.active_turn_id
 
     result = TelegramTurnResult(
         status="completed_verified",
@@ -443,24 +445,26 @@ async def test_telegram_bot_runtime_delivery_uses_verbatim_directory_output(monk
 
     assert any(text.startswith("目录内容如下：\n") for text in DummyUpdate.message.texts)
     assert any("demo.txt" in text for text in DummyUpdate.message.texts)
-    assert state.last_evidence_read_result is not None
-    assert state.last_evidence_read_result["delivery_was_chunked"] is False
+    assert state.last_delivered_evidence_context is not None
+    assert state.last_delivered_evidence_context["delivery_was_chunked"] is False
     bridge_events = [event for event in events if event["kind"] == "tool_delivery_bridge"]
     assert bridge_events
     assert bridge_events[-1]["payload"]["fidelity_mode"] == "verbatim"
     assert bridge_events[-1]["payload"]["fidelity_gap"] is False
+    assert bridge_events[-1]["payload"]["applied_authority"] == "host_evidence"
 
 
 def test_telegram_bot_recent_directory_followup_uses_host_grounded_reply():
     bot = TelegramBot(token="test-token", use_runtime_v2=True)
     state = bot._get_runtime_state("telegram:dm:456")
-    state.set_last_evidence_read_result(
+    state.set_last_delivered_evidence_context(
         {
             "request_kind": "directory_listing",
             "body": " Directory of D:\\Project\\AIProject\\MyProject\\Test2\n03/31/2026  04:18 PM               12 demo.txt",
             "truncated": False,
             "delivery_was_chunked": False,
-            "observed_at": time.time(),
+            "delivered_at": time.time(),
+            "source_turn_id": "turn_test",
         }
     )
 
@@ -470,6 +474,71 @@ def test_telegram_bot_recent_directory_followup_uses_host_grounded_reply():
     assert reply.startswith("不是空的。目录内容如下：\n")
     assert "demo.txt" in reply
     assert "截断" not in reply
+
+
+@pytest.mark.asyncio
+async def test_telegram_bot_presence_probe_after_evidence_stays_model_chat(monkeypatch):
+    bot = TelegramBot(token="test-token", use_runtime_v2=True)
+
+    class DummyBot:
+        async def send_chat_action(self, chat_id, action):
+            return None
+
+    class DummyMessage:
+        text = "在吗"
+        message_id = 10
+        reply_to_message = None
+        last_text = None
+
+        async def reply_text(self, text, parse_mode=None):
+            self.last_text = text
+
+    class DummyChat:
+        id = 123
+        type = "private"
+
+    class DummyUser:
+        id = 456
+        username = "moonlight"
+
+    class DummyUpdate:
+        message = DummyMessage()
+        effective_chat = DummyChat()
+        effective_user = DummyUser()
+
+    bot.app = type('A', (), {'bot': DummyBot()})()
+    runtime_loop = bot._get_runtime_v2_loop()
+    state = bot._get_runtime_state('telegram:dm:456')
+    state.set_last_delivered_evidence_context(
+        {
+            "request_kind": "directory_listing",
+            "body": " Directory of D:\\Project\\AIProject\\MyProject\\Test2\n03/31/2026  04:18 PM               12 demo.txt",
+            "truncated": False,
+            "delivery_was_chunked": False,
+            "delivered_at": time.time(),
+            "source_turn_id": "turn_prev",
+        }
+    )
+
+    async def fake_run_turn_typed(session_id, user_input):
+        from app.runtime_v2.runtime_reply import RuntimeV2Reply, RuntimeV2TurnResult
+        state.start_turn()
+        return RuntimeV2TurnResult(
+            status="chat",
+            state=state,
+            reply=RuntimeV2Reply(
+                reply_text="在的，请说。",
+                delivery_kind="chat",
+                status="chat",
+            ),
+        )
+
+    monkeypatch.setattr(runtime_loop, "run_turn_typed", fake_run_turn_typed)
+
+    await bot.handle_message(DummyUpdate(), None)
+
+    assert DummyUpdate.message.last_text == "在的，请说。"
+    assert state.last_delivered_evidence_context is None
 
 
 @pytest.mark.asyncio

@@ -222,6 +222,7 @@ class RuntimeV2State:
     last_user_turn: Optional[str] = None
     last_model_action: Optional[Dict[str, Any]] = None
     last_tool_result: Optional[Dict[str, Any]] = None
+    last_tool_result_turn_id: Optional[str] = None
     last_verification_result: Optional[Dict[str, Any]] = None
     last_task_started_at: Optional[float] = None
     last_task_completed_at: Optional[float] = None
@@ -271,6 +272,7 @@ class RuntimeV2State:
     pending_task_conflict: Optional[Dict[str, Any]] = None
     active_item_id: Optional[str] = None
     pending_run_events: List[Dict[str, Any]] = field(default_factory=list)
+    last_delivered_evidence_context: Optional[Dict[str, Any]] = None
     last_evidence_read_result: Optional[Dict[str, Any]] = None
 
     def to_prompt_context(self) -> Dict[str, Any]:
@@ -518,6 +520,7 @@ class RuntimeV2State:
         self.waiting_for_user_input = False
         self.last_model_action = None
         self.last_tool_result = None
+        self.last_tool_result_turn_id = None
         self.last_verification_result = None
         self.task_contract = None
         self.next_step_decision = None
@@ -535,6 +538,7 @@ class RuntimeV2State:
         self.pending_task_conflict = None
         self.active_item_id = None
         self.pending_run_events = []
+        self.last_delivered_evidence_context = None
         self.last_evidence_read_result = None
 
     def begin_execute_task(
@@ -549,6 +553,7 @@ class RuntimeV2State:
         self.waiting_for_user_input = False
         self.last_model_action = None
         self.last_tool_result = None
+        self.last_tool_result_turn_id = None
         self.last_verification_result = None
         self.last_task_started_at = None
         self.last_task_completed_at = None
@@ -570,6 +575,7 @@ class RuntimeV2State:
         self.active_turn_status = "idle"
         self.final_sent = False
         self.autonomy_context = None
+        self.last_delivered_evidence_context = None
         self.last_evidence_read_result = None
         if ingress_context is not None:
             self.ingress_context = ingress_context
@@ -610,6 +616,9 @@ class RuntimeV2State:
         self.current_goal = None
         self.current_step = None
         self.waiting_for_user_input = False
+        self.last_tool_result = None
+        self.last_tool_result_turn_id = None
+        self.last_verification_result = None
         self.ingress_context = None
         self.proto_self_context = None
         self.proto_self_version_override = None
@@ -628,6 +637,7 @@ class RuntimeV2State:
         self.pending_task_conflict = None
         self.active_item_id = None
         self.pending_run_events = []
+        self.last_delivered_evidence_context = None
         self.last_evidence_read_result = None
         # 保留 pending_artifacts，因为用户可能在 reset 后继续用同一批文件
         return self.generation_id
@@ -873,7 +883,7 @@ class RuntimeV2State:
                 path.parent.mkdir(parents=True, exist_ok=True)
                 content = build_deterministic_file_content(item.resolved_expected_lines)
                 path.write_text(content, encoding="utf-8")
-                self.last_tool_result = {
+                self.set_last_tool_result_payload({
                     "success": True,
                     "tool": "file",
                     "stdout": f"Successfully wrote to {path}",
@@ -884,7 +894,7 @@ class RuntimeV2State:
                         "operation": "write",
                         "host_deterministic": True,
                     },
-                }
+                })
                 self.record("tool", self.last_tool_result)
                 observation = {
                     "progressed": True,
@@ -903,7 +913,7 @@ class RuntimeV2State:
 
             if item.kind == "file_verify":
                 content = path.read_text(encoding="utf-8")
-                self.last_tool_result = {
+                self.set_last_tool_result_payload({
                     "success": True,
                     "tool": "file",
                     "stdout": content,
@@ -914,7 +924,7 @@ class RuntimeV2State:
                         "operation": "read",
                         "host_deterministic": True,
                     },
-                }
+                })
                 self.record("tool", self.last_tool_result)
                 observation = {
                     "progressed": True,
@@ -1227,13 +1237,38 @@ class RuntimeV2State:
             "blocked": blocked,
         }
 
+    def set_last_tool_result_payload(self, payload: Optional[Dict[str, Any]]) -> None:
+        self.last_tool_result = dict(payload or {}) if payload else None
+        self.last_tool_result_turn_id = self.active_turn_id if payload else None
+
+    def clear_last_delivered_evidence_context(self) -> None:
+        self.last_delivered_evidence_context = None
+        self.last_evidence_read_result = None
+
+    def set_last_delivered_evidence_context(self, snapshot: Optional[Dict[str, Any]]) -> None:
+        payload = dict(snapshot or {}) if snapshot else None
+        self.last_delivered_evidence_context = payload
+        self.last_evidence_read_result = dict(payload or {}) if payload else None
+
+    def update_last_delivered_evidence_context(
+        self,
+        *,
+        delivery_was_chunked: bool,
+        source_assistant_message_id: Optional[int] = None,
+    ) -> None:
+        if not isinstance(self.last_delivered_evidence_context, dict):
+            return
+        self.last_delivered_evidence_context["delivery_was_chunked"] = bool(delivery_was_chunked)
+        self.last_delivered_evidence_context["delivered_at"] = time.time()
+        if source_assistant_message_id is not None:
+            self.last_delivered_evidence_context["source_assistant_message_id"] = int(source_assistant_message_id)
+        self.last_evidence_read_result = dict(self.last_delivered_evidence_context)
+
     def set_last_evidence_read_result(self, snapshot: Optional[Dict[str, Any]]) -> None:
-        self.last_evidence_read_result = dict(snapshot or {}) if snapshot else None
+        self.set_last_delivered_evidence_context(snapshot)
 
     def update_last_evidence_read_delivery(self, *, delivery_was_chunked: bool) -> None:
-        if not isinstance(self.last_evidence_read_result, dict):
-            return
-        self.last_evidence_read_result["delivery_was_chunked"] = bool(delivery_was_chunked)
+        self.update_last_delivered_evidence_context(delivery_was_chunked=delivery_was_chunked)
 
     def to_snapshot(self) -> Dict[str, Any]:
         return {
@@ -1250,6 +1285,7 @@ class RuntimeV2State:
             "last_user_turn": self.last_user_turn,
             "last_model_action": self.last_model_action,
             "last_tool_result": self.last_tool_result,
+            "last_tool_result_turn_id": self.last_tool_result_turn_id,
             "last_verification_result": self.last_verification_result,
             "last_task_started_at": self.last_task_started_at,
             "last_task_completed_at": self.last_task_completed_at,
@@ -1287,6 +1323,7 @@ class RuntimeV2State:
             "pending_task_conflict": self.pending_task_conflict,
             "active_item_id": self.active_item_id,
             "pending_run_events": list(self.pending_run_events),
+            "last_delivered_evidence_context": self.last_delivered_evidence_context,
             "last_evidence_read_result": self.last_evidence_read_result,
         }
 
@@ -1305,6 +1342,7 @@ class RuntimeV2State:
         state.last_user_turn = snapshot.get("last_user_turn")
         state.last_model_action = snapshot.get("last_model_action")
         state.last_tool_result = snapshot.get("last_tool_result")
+        state.last_tool_result_turn_id = snapshot.get("last_tool_result_turn_id")
         state.last_verification_result = snapshot.get("last_verification_result")
         state.last_task_started_at = snapshot.get("last_task_started_at")
         state.last_task_completed_at = snapshot.get("last_task_completed_at")
@@ -1346,7 +1384,11 @@ class RuntimeV2State:
         state.pending_task_conflict = snapshot.get("pending_task_conflict")
         state.active_item_id = snapshot.get("active_item_id")
         state.pending_run_events = list(snapshot.get("pending_run_events") or [])
-        state.last_evidence_read_result = snapshot.get("last_evidence_read_result")
+        state.last_delivered_evidence_context = (
+            snapshot.get("last_delivered_evidence_context")
+            or snapshot.get("last_evidence_read_result")
+        )
+        state.last_evidence_read_result = state.last_delivered_evidence_context
         return state
 
     # ==================== WS-2: Target Binding ====================
