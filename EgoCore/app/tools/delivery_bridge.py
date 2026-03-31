@@ -16,6 +16,8 @@ class ToolDeliveryBridgeDecision:
     requires_user_delivery: bool
     delivery_ready: bool
     delivery_gap: bool
+    fidelity_mode: str
+    fidelity_gap: bool
     delivery_kind: Optional[str]
     reply_preview: str
 
@@ -29,6 +31,8 @@ def build_tool_delivery_bridge_decision(
     reply_text: str = "",
     delivery_kind: Optional[str] = None,
     source: str,
+    fidelity_mode: Optional[str] = None,
+    fidelity_gap: Optional[bool] = None,
 ) -> Optional[ToolDeliveryBridgeDecision]:
     payload = dict(tool_result or {})
     tool_name = str(payload.get("tool") or payload.get("tool_name") or "").strip()
@@ -56,6 +60,17 @@ def build_tool_delivery_bridge_decision(
     reply_preview = str(reply_text or "").strip()[:300]
     delivery_ready = requires_user_delivery and bool(reply_preview)
     delivery_gap = requires_user_delivery and not delivery_ready
+    computed_fidelity_mode = fidelity_mode or _infer_fidelity_mode(
+        delivery_channel=delivery_channel,
+        reply_text=reply_text,
+        inline_output=inline_output,
+        delivery_ready=delivery_ready,
+    )
+    computed_fidelity_gap = (
+        bool(fidelity_gap)
+        if fidelity_gap is not None
+        else requires_user_delivery and delivery_channel == "inline_output" and computed_fidelity_mode != "verbatim"
+    )
 
     return ToolDeliveryBridgeDecision(
         authority_source="tools.delivery_bridge",
@@ -68,6 +83,8 @@ def build_tool_delivery_bridge_decision(
         requires_user_delivery=requires_user_delivery,
         delivery_ready=delivery_ready,
         delivery_gap=delivery_gap,
+        fidelity_mode=computed_fidelity_mode,
+        fidelity_gap=computed_fidelity_gap,
         delivery_kind=delivery_kind,
         reply_preview=reply_preview,
     )
@@ -88,3 +105,21 @@ def _first_non_empty(*values: Any) -> Optional[str]:
         if isinstance(value, str) and value.strip():
             return value.strip()
     return None
+
+
+def _infer_fidelity_mode(
+    *,
+    delivery_channel: str,
+    reply_text: str,
+    inline_output: str,
+    delivery_ready: bool,
+) -> str:
+    reply = str(reply_text or "").strip()
+    body = str(inline_output or "").strip()
+    if not delivery_ready:
+        return "fallback"
+    if delivery_channel != "inline_output":
+        return "summary"
+    if body and body in reply:
+        return "verbatim"
+    return "summary"

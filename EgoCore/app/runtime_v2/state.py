@@ -271,6 +271,7 @@ class RuntimeV2State:
     pending_task_conflict: Optional[Dict[str, Any]] = None
     active_item_id: Optional[str] = None
     pending_run_events: List[Dict[str, Any]] = field(default_factory=list)
+    last_evidence_read_result: Optional[Dict[str, Any]] = None
 
     def to_prompt_context(self) -> Dict[str, Any]:
         """
@@ -534,6 +535,7 @@ class RuntimeV2State:
         self.pending_task_conflict = None
         self.active_item_id = None
         self.pending_run_events = []
+        self.last_evidence_read_result = None
 
     def begin_execute_task(
         self,
@@ -568,6 +570,7 @@ class RuntimeV2State:
         self.active_turn_status = "idle"
         self.final_sent = False
         self.autonomy_context = None
+        self.last_evidence_read_result = None
         if ingress_context is not None:
             self.ingress_context = ingress_context
         self.set_run_items(run_items)
@@ -625,6 +628,7 @@ class RuntimeV2State:
         self.pending_task_conflict = None
         self.active_item_id = None
         self.pending_run_events = []
+        self.last_evidence_read_result = None
         # 保留 pending_artifacts，因为用户可能在 reset 后继续用同一批文件
         return self.generation_id
 
@@ -1223,6 +1227,14 @@ class RuntimeV2State:
             "blocked": blocked,
         }
 
+    def set_last_evidence_read_result(self, snapshot: Optional[Dict[str, Any]]) -> None:
+        self.last_evidence_read_result = dict(snapshot or {}) if snapshot else None
+
+    def update_last_evidence_read_delivery(self, *, delivery_was_chunked: bool) -> None:
+        if not isinstance(self.last_evidence_read_result, dict):
+            return
+        self.last_evidence_read_result["delivery_was_chunked"] = bool(delivery_was_chunked)
+
     def to_snapshot(self) -> Dict[str, Any]:
         return {
             "session_id": self.session_id,
@@ -1275,6 +1287,7 @@ class RuntimeV2State:
             "pending_task_conflict": self.pending_task_conflict,
             "active_item_id": self.active_item_id,
             "pending_run_events": list(self.pending_run_events),
+            "last_evidence_read_result": self.last_evidence_read_result,
         }
 
     @classmethod
@@ -1333,6 +1346,7 @@ class RuntimeV2State:
         state.pending_task_conflict = snapshot.get("pending_task_conflict")
         state.active_item_id = snapshot.get("active_item_id")
         state.pending_run_events = list(snapshot.get("pending_run_events") or [])
+        state.last_evidence_read_result = snapshot.get("last_evidence_read_result")
         return state
 
     # ==================== WS-2: Target Binding ====================

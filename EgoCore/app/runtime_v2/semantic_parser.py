@@ -28,7 +28,6 @@ logger = logging.getLogger(__name__)
 SHORT_STATUS_PATTERNS = {
     "还在吗",
     "还在不",
-    "在吗",
     "到哪了",
     "进度呢",
     "怎么样了",
@@ -36,6 +35,11 @@ SHORT_STATUS_PATTERNS = {
     "好了吗",
     "完成了吗",
     "处理到哪了",
+}
+
+SHORT_CHAT_PING_PATTERNS = {
+    "在吗",
+    "在不在",
 }
 
 SHORT_CORRECTION_PATTERNS = {
@@ -171,6 +175,8 @@ def parse_session_control_intent(text: str) -> SessionControlIntent:
     normalized_turn = normalize_user_turn(text)
     normalized = normalized_turn.probe_key
     control_key = normalized_turn.control_key
+    if normalized in SHORT_CHAT_PING_PATTERNS:
+        return SessionControlIntent(kind="chat_ping")
     if normalized in SHORT_STATUS_PATTERNS or control_key in {"status", "进度", "如何了"}:
         return SessionControlIntent(kind="status_probe")
     if control_key in {"继续", "continue", "继续执行", "继续这个任务", "resume"}:

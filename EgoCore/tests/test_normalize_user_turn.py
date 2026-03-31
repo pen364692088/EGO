@@ -25,3 +25,11 @@ def test_parse_session_control_intent_uses_normalized_turn() -> None:
     replace_intent = parse_session_control_intent("  替 换 。")
     assert replace_intent.kind == "task_conflict_resolution"
     assert replace_intent.resolution == "replace"
+
+
+def test_parse_session_control_intent_treats_zai_ma_as_chat_ping() -> None:
+    chat_intent = parse_session_control_intent("在吗")
+    assert chat_intent.kind == "chat_ping"
+
+    status_intent = parse_session_control_intent("还在吗")
+    assert status_intent.kind == "status_probe"

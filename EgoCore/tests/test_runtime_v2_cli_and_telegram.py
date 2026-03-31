@@ -1,3 +1,5 @@
+import time
+
 import pytest
 
 from app.autonomy import AutonomyExecutorKind, AutonomyRun, AutonomyRunStatus, AutonomyStopReason
@@ -373,6 +375,127 @@ async def test_telegram_bot_manual_resume_never_stays_silent_when_no_new_milesto
     assert sent_texts
     assert "这次继续后仍没有新的可验证进展" in sent_texts[-1]
     assert "创建 demo.txt" in sent_texts[-1]
+
+
+@pytest.mark.asyncio
+async def test_telegram_bot_runtime_delivery_uses_verbatim_directory_output(monkeypatch):
+    bot = TelegramBot(token="test-token", use_runtime_v2=True)
+    events = []
+
+    class DummyMessage:
+        message_id = 9
+
+        def __init__(self):
+            self.texts = []
+
+        async def reply_text(self, text, parse_mode=None):
+            self.texts.append(text)
+            return None
+
+    class DummyChat:
+        id = 123
+        type = "private"
+
+    class DummyUser:
+        id = 456
+        username = "moonlight"
+
+    class DummyUpdate:
+        message = DummyMessage()
+        effective_chat = DummyChat()
+        effective_user = DummyUser()
+
+    async def fake_publish_phase1_event(**kwargs):
+        events.append(kwargs)
+
+    monkeypatch.setattr(bot, "_publish_phase1_event", fake_publish_phase1_event)
+
+    state = bot._get_runtime_state("telegram:dm:456")
+    state.last_tool_result = {
+        "success": True,
+        "tool": "shell",
+        "stdout": " Directory of D:\\Project\\AIProject\\MyProject\\Test2\n03/31/2026  04:18 PM               12 demo.txt",
+        "metadata": {
+            "command": r"dir D:\Project\AIProject\MyProject\Test2",
+            "working_directory": r"D:\Project\AIProject\MyProject\Test2",
+            "truncated": False,
+        },
+    }
+
+    result = TelegramTurnResult(
+        status="completed_verified",
+        state=state,
+        reply=TelegramTurnReply(
+            reply_text="已列出 D:\\Project\\AIProject\\MyProject\\Test2 目录下的文件。",
+            delivery_kind="final",
+            status="completed_verified",
+        ),
+    )
+
+    await bot._deliver_runtime_v2_result(
+        DummyUpdate(),
+        state,
+        result,
+        is_challenge_turn=False,
+        ingress_message_id=9,
+        trace_id="trace-read-list",
+    )
+
+    assert any(text.startswith("目录内容如下：\n") for text in DummyUpdate.message.texts)
+    assert any("demo.txt" in text for text in DummyUpdate.message.texts)
+    assert state.last_evidence_read_result is not None
+    assert state.last_evidence_read_result["delivery_was_chunked"] is False
+    bridge_events = [event for event in events if event["kind"] == "tool_delivery_bridge"]
+    assert bridge_events
+    assert bridge_events[-1]["payload"]["fidelity_mode"] == "verbatim"
+    assert bridge_events[-1]["payload"]["fidelity_gap"] is False
+
+
+def test_telegram_bot_recent_directory_followup_uses_host_grounded_reply():
+    bot = TelegramBot(token="test-token", use_runtime_v2=True)
+    state = bot._get_runtime_state("telegram:dm:456")
+    state.set_last_evidence_read_result(
+        {
+            "request_kind": "directory_listing",
+            "body": " Directory of D:\\Project\\AIProject\\MyProject\\Test2\n03/31/2026  04:18 PM               12 demo.txt",
+            "truncated": False,
+            "delivery_was_chunked": False,
+            "observed_at": time.time(),
+        }
+    )
+
+    reply = bot._build_recent_read_followup_reply(state, "什么意思 空的吗")
+
+    assert reply is not None
+    assert reply.startswith("不是空的。目录内容如下：\n")
+    assert "demo.txt" in reply
+    assert "截断" not in reply
+
+
+@pytest.mark.asyncio
+async def test_telegram_bot_send_reply_chunks_long_output():
+    bot = TelegramBot(token="test-token", use_runtime_v2=True)
+
+    class DummyMessage:
+        def __init__(self):
+            self.texts = []
+
+        async def reply_text(self, text, parse_mode=None):
+            self.texts.append(text)
+            return None
+
+    class DummyUpdate:
+        message = DummyMessage()
+
+    text = ("A" * 3400) + "\n" + ("B" * 3400) + "\n" + ("C" * 400)
+
+    result = await bot._send_reply(DummyUpdate(), text)
+
+    assert result["was_chunked"] is True
+    assert len(DummyUpdate.message.texts) >= 2
+    assert all(len(chunk) <= 3500 for chunk in DummyUpdate.message.texts)
+    assert "... (已截断)" not in "".join(DummyUpdate.message.texts)
+    assert "".join(DummyUpdate.message.texts).replace("\n", "") == text.replace("\n", "")
 
 
 @pytest.mark.asyncio

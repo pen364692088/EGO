@@ -70,3 +70,33 @@ def test_output_check_preserves_non_empty_direct_reply() -> None:
     assert verdict.passed is True
     assert verdict.used_host_fallback is False
     assert verdict.reply_text == "当前没有运行中的任务。"
+
+
+def test_output_check_rewrites_directory_listing_to_verbatim_output() -> None:
+    state = RuntimeV2State(session_id="s")
+    state.last_tool_result = {
+        "success": True,
+        "tool": "shell",
+        "stdout": " Directory of D:\\Project\\AIProject\\MyProject\\Test2\n03/31/2026  04:18 PM               12 demo.txt",
+        "metadata": {
+            "command": r"dir D:\Project\AIProject\MyProject\Test2",
+            "working_directory": r"D:\Project\AIProject\MyProject\Test2",
+            "truncated": False,
+        },
+    }
+    plan = build_direct_response_plan(
+        "已列出 D:\\Project\\AIProject\\MyProject\\Test2 目录下的文件。",
+        kind="completed_verified",
+        delivery_kind="final",
+        authority_source="test",
+    )
+
+    verdict = apply_output_check(plan, state)
+
+    assert verdict.passed is True
+    assert verdict.is_evidence_bearing is True
+    assert verdict.used_host_verbatim is True
+    assert verdict.fidelity_mode == "verbatim"
+    assert verdict.fidelity_gap is False
+    assert verdict.reply_text.startswith("目录内容如下：\n")
+    assert "demo.txt" in verdict.reply_text

@@ -18,7 +18,7 @@ import os
 import re
 import socket
 import uuid
-from typing import Optional
+from typing import Any, Optional
 import json
 import time
 from contextlib import asynccontextmanager
@@ -121,6 +121,49 @@ except ImportError:
 
 logger = logging.getLogger(__name__)
 EXPLICIT_OUTPUT_FILENAME_RE = re.compile(r"(?<![A-Za-z0-9_.\\/\\-])([A-Za-z0-9][A-Za-z0-9 _.-]{0,120}\.[A-Za-z0-9]{1,8})")
+TELEGRAM_TEXT_CHUNK_LIMIT = 3500
+RECENT_EVIDENCE_RESULT_TTL_SECONDS = 600
+READ_LIST_FOLLOWUP_PROBE_KEYS = {
+    "什么意思",
+    "空的吗",
+    "什么意思空的吗",
+    "没看到",
+    "你没列出来",
+}
+
+
+def _extract_directory_listing_entries(body: str) -> list[str]:
+    entries: list[str] = []
+    for raw_line in str(body or "").splitlines():
+        line = raw_line.strip()
+        if not line:
+            continue
+        lower = line.lower()
+        if lower.startswith("volume in drive"):
+            continue
+        if lower.startswith("volume serial number"):
+            continue
+        if lower.startswith("directory of"):
+            continue
+        if lower.startswith("total files listed"):
+            continue
+        if " file(s) " in lower and " bytes" in lower:
+            continue
+        if " dir(s) " in lower and " bytes free" in lower:
+            continue
+        if "<dir>" in lower:
+            name = line.split("<DIR>")[-1].strip()
+            if name and name not in {".", ".."}:
+                entries.append(name)
+            continue
+        parts = [part for part in re.split(r"\s{2,}", line) if part]
+        if len(parts) >= 2:
+            candidate = parts[-1].strip()
+            if candidate:
+                entries.append(candidate)
+            continue
+        entries.append(line)
+    return entries
 
 
 class TelegramBot:
@@ -317,6 +360,8 @@ class TelegramBot:
         reply_text: str,
         delivery_kind: Optional[str],
         source: str,
+        fidelity_mode: Optional[str] = None,
+        fidelity_gap: Optional[bool] = None,
         trace_id: Optional[str] = None,
         ingress_message_id: Optional[int] = None,
     ) -> None:
@@ -325,6 +370,8 @@ class TelegramBot:
             reply_text=reply_text,
             delivery_kind=delivery_kind,
             source=source,
+            fidelity_mode=fidelity_mode,
+            fidelity_gap=fidelity_gap,
         )
         if decision is None:
             return
@@ -345,7 +392,7 @@ class TelegramBot:
         source: str,
         trace_id: Optional[str] = None,
         ingress_message_id: Optional[int] = None,
-    ) -> None:
+    ):
         response_plan = build_runtime_result_response_plan(result, state)
         output_verdict = apply_output_check(response_plan, state)
         if output_verdict.passed:
@@ -358,15 +405,20 @@ class TelegramBot:
             else:
                 result.reply.reply_text = output_verdict.reply_text
                 result.reply.delivery_kind = output_verdict.delivery_kind
+        if output_verdict.evidence_snapshot:
+            state.set_last_evidence_read_result(output_verdict.evidence_snapshot)
         await self._publish_tool_delivery_bridge_event(
             session_key=session_key,
             tool_result=state.last_tool_result,
             reply_text=result.reply_text,
             delivery_kind=result.delivery_kind,
             source=source,
+            fidelity_mode=output_verdict.fidelity_mode,
+            fidelity_gap=output_verdict.fidelity_gap,
             trace_id=trace_id,
             ingress_message_id=ingress_message_id,
         )
+        return output_verdict
 
     async def _build_profile_rule_preflight_reply(self, state: RuntimeV2State, rule_enforcement: dict) -> str:
         target = (state.ingress_context or {}).get("resolved_target") or {}
@@ -880,45 +932,107 @@ class TelegramBot:
             runtime_loop._states[session_key] = state
         return state
 
-    async def _send_chat_message(self, chat_id: int, text: str, *, finalize_evidence: bool = True) -> None:
-        if not self.app or not getattr(self.app, "bot", None):
+    def _chunk_telegram_text(self, text: str, *, limit: int = TELEGRAM_TEXT_CHUNK_LIMIT) -> list[str]:
+        body = str(text or "")
+        if len(body) <= limit:
+            return [body]
+
+        chunks: list[str] = []
+        remaining = body
+        while remaining:
+            if len(remaining) <= limit:
+                chunks.append(remaining)
+                break
+            split_at = remaining.rfind("\n", 0, limit)
+            if split_at < max(1, limit // 2):
+                split_at = limit
+            chunk = remaining[:split_at].rstrip()
+            if not chunk:
+                chunk = remaining[:limit]
+                split_at = len(chunk)
+            chunks.append(chunk)
+            remaining = remaining[split_at:].lstrip("\n")
+        return chunks
+
+    def _capture_telegram_outbox_record(self, sent_message: Any, *, text_length: int, finalize_evidence: bool) -> None:
+        if not sent_message or not _EVIDENCE_COLLECTOR_AVAILABLE:
             return
-
-        sent_message = None
         try:
-            sent_message = await self.app.bot.send_message(chat_id=chat_id, text=text)
+            collector = get_evidence_collector()
+            collector.capture_outbox_record(
+                {
+                    "chat_id": sent_message.chat.id if sent_message.chat else None,
+                    "message_id": sent_message.message_id,
+                    "date": sent_message.date.isoformat() if sent_message.date else None,
+                    "text_length": text_length,
+                    "success": True,
+                }
+            )
+            if finalize_evidence:
+                sample = collector.finalize_sample()
+                if sample and _DEVELOPMENTAL_WRITEBACK_AVAILABLE:
+                    try:
+                        record_developmental_projection_from_finalized_sample(
+                            sample=sample,
+                            sample_artifacts_dir=collector.artifacts_dir,
+                        )
+                    except Exception as e:
+                        logger.warning(f"[MVP16-DEVELOPMENTAL] Failed to sync finalized direct sample: {e}")
         except Exception as e:
-            logger.warning("telegram.direct_send.failed chat_id=%s err=%s", chat_id, e)
-            if len(text) > 4000:
-                try:
-                    sent_message = await self.app.bot.send_message(chat_id=chat_id, text=text[:4000] + "\n... (已截断)")
-                except Exception as e2:
-                    logger.error("telegram.direct_send.truncated_failed chat_id=%s err=%s", chat_id, e2)
+            logger.warning(f"[E4-EVIDENCE] Failed to capture direct outbox_record: {e}")
 
-        if sent_message and _EVIDENCE_COLLECTOR_AVAILABLE:
+    def _build_recent_read_followup_reply(self, state: RuntimeV2State, text: str) -> Optional[str]:
+        snapshot = getattr(state, "last_evidence_read_result", None)
+        if not isinstance(snapshot, dict):
+            return None
+        observed_at = float(snapshot.get("observed_at") or 0.0)
+        if observed_at and (time.time() - observed_at) > RECENT_EVIDENCE_RESULT_TTL_SECONDS:
+            return None
+
+        normalized = normalize_user_turn(text)
+        if normalized.probe_key not in READ_LIST_FOLLOWUP_PROBE_KEYS:
+            return None
+
+        request_kind = str(snapshot.get("request_kind") or "")
+        body = str(snapshot.get("body") or "").strip()
+        if not body:
+            return None
+
+        if request_kind == "directory_listing":
+            entries = _extract_directory_listing_entries(body)
+            if not entries:
+                return "目录是空的。"
+            if snapshot.get("truncated") or snapshot.get("delivery_was_chunked"):
+                return f"不是空的，内容较长，已分段发送。目录内容如下：\n{body}"
+            return f"不是空的。目录内容如下：\n{body}"
+
+        prefix = "上条结果如下："
+        if snapshot.get("truncated") or snapshot.get("delivery_was_chunked"):
+            prefix = "上条结果内容较长，已分段发送。结果如下："
+        return f"{prefix}\n{body}"
+
+    async def _send_chat_message(self, chat_id: int, text: str, *, finalize_evidence: bool = True):
+        if not self.app or not getattr(self.app, "bot", None):
+            return {"sent_count": 0, "was_chunked": False}
+
+        chunks = self._chunk_telegram_text(text)
+        sent_count = 0
+        for index, chunk in enumerate(chunks):
+            sent_message = None
             try:
-                collector = get_evidence_collector()
-                collector.capture_outbox_record(
-                    {
-                        "chat_id": sent_message.chat.id if sent_message.chat else None,
-                        "message_id": sent_message.message_id,
-                        "date": sent_message.date.isoformat() if sent_message.date else None,
-                        "text_length": len(text),
-                        "success": True,
-                    }
-                )
-                if finalize_evidence:
-                    sample = collector.finalize_sample()
-                    if sample and _DEVELOPMENTAL_WRITEBACK_AVAILABLE:
-                        try:
-                            record_developmental_projection_from_finalized_sample(
-                                sample=sample,
-                                sample_artifacts_dir=collector.artifacts_dir,
-                            )
-                        except Exception as e:
-                            logger.warning(f"[MVP16-DEVELOPMENTAL] Failed to sync finalized direct sample: {e}")
+                sent_message = await self.app.bot.send_message(chat_id=chat_id, text=chunk)
             except Exception as e:
-                logger.warning(f"[E4-EVIDENCE] Failed to capture direct outbox_record: {e}")
+                logger.warning("telegram.direct_send.failed chat_id=%s err=%s", chat_id, e)
+                continue
+
+            sent_count += 1
+            self._capture_telegram_outbox_record(
+                sent_message,
+                text_length=len(chunk),
+                finalize_evidence=finalize_evidence and index == len(chunks) - 1,
+            )
+
+        return {"sent_count": sent_count, "was_chunked": len(chunks) > 1}
 
     def _select_autonomy_executor_kind(self, ingress, state) -> AutonomyExecutorKind:
         return (
@@ -2304,6 +2418,11 @@ class TelegramBot:
             self._spawn_manual_resume(active_run.id)
             return
 
+        followup_reply = self._build_recent_read_followup_reply(state, text)
+        if followup_reply is not None:
+            await self._send_reply(update, followup_reply)
+            return
+
         # 记录 ingress 信息
         if ingress_message_id is not None:
             prev = self._latest_message_id_by_session.get(session_key)
@@ -2925,7 +3044,7 @@ class TelegramBot:
                         await self._send_chat_message(chat_id, result.reply_text, finalize_evidence=True)
                         state.final_sent = True
                 else:
-                    await self._finalize_runtime_delivery_contract(
+                    output_verdict = await self._finalize_runtime_delivery_contract(
                         session_key=run.session_key,
                         state=state,
                         result=result,
@@ -2935,7 +3054,11 @@ class TelegramBot:
                     )
                     delivery = self.telegram_runtime_bridge.plan_delivery(result, state, False)
                     if delivery.should_send and delivery.text:
-                        await self._send_chat_message(chat_id, delivery.text, finalize_evidence=True)
+                        send_result = await self._send_chat_message(chat_id, delivery.text, finalize_evidence=True)
+                        if getattr(output_verdict, "evidence_snapshot", None):
+                            state.update_last_evidence_read_delivery(
+                                delivery_was_chunked=bool((send_result or {}).get("was_chunked"))
+                            )
                         if getattr(result, "delivery_kind", "final") == "final" or result.status in {
                             "completed_verified",
                             "completed",
@@ -3439,7 +3562,7 @@ class TelegramBot:
                 ingress_message_id=ingress_message_id,
             )
 
-        await self._finalize_runtime_delivery_contract(
+        output_verdict = await self._finalize_runtime_delivery_contract(
             session_key=session_key,
             state=state,
             result=result,
@@ -3482,7 +3605,11 @@ class TelegramBot:
                     "status": result.status,
                 },
             )
-            await self._send_reply(update, delivery.text)
+            send_result = await self._send_reply(update, delivery.text)
+            if getattr(output_verdict, "evidence_snapshot", None):
+                state.update_last_evidence_read_delivery(
+                    delivery_was_chunked=bool((send_result or {}).get("was_chunked"))
+                )
             if getattr(result, "delivery_kind", "final") == "final" or result.status in {
                 "completed_verified",
                 "completed",
@@ -3634,7 +3761,7 @@ class TelegramBot:
             except Exception:
                 pass
 
-    async def _send_reply(self, update: Update, text: str, use_markdown: bool = False, finalize_evidence: bool = True) -> None:
+    async def _send_reply(self, update: Update, text: str, use_markdown: bool = False, finalize_evidence: bool = True):
         """发送回复
 
         Args:
@@ -3642,57 +3769,35 @@ class TelegramBot:
             text: 消息文本
             use_markdown: 是否使用 Markdown 格式（仅用于代码生成的可控消息）
         """
-        sent_message = None
-        try:
-            if use_markdown:
-                # 对 Markdown 特殊字符进行转义
-                from telegram.helpers import escape_markdown
-                escaped_text = escape_markdown(text, version=1)
-                sent_message = await update.message.reply_text(escaped_text, parse_mode="Markdown")
-            else:
-                sent_message = await update.message.reply_text(text)
-        except Exception as e:
-            logger.warning(f"Send failed (markdown={use_markdown}): {e}")
-            # Fallback to plain text
-            try:
-                sent_message = await update.message.reply_text(text)
-            except Exception as e2:
-                logger.error(f"Failed to send plain text: {e2}")
-                # 最后尝试截断
-                if len(text) > 4000:
-                    try:
-                        sent_message = await update.message.reply_text(text[:4000] + "\n... (已截断)")
-                    except Exception as e3:
-                        logger.error(f"Failed to send truncated: {e3}")
+        chunks = self._chunk_telegram_text(text)
+        sent_count = 0
 
-        # E4 Evidence: Capture outbox_record
-        if sent_message and _EVIDENCE_COLLECTOR_AVAILABLE:
+        for index, chunk in enumerate(chunks):
+            sent_message = None
             try:
-                collector = get_evidence_collector()
-                outbox_record = {
-                    "chat_id": sent_message.chat.id if sent_message.chat else None,
-                    "message_id": sent_message.message_id,
-                    "date": sent_message.date.isoformat() if sent_message.date else None,
-                    "text_length": len(text),
-                    "success": True,
-                }
-                collector.capture_outbox_record(outbox_record)
-                logger.info(f"[E4-EVIDENCE] outbox_record captured: chat_id={outbox_record['chat_id']} msg_id={outbox_record['message_id']}")
+                if use_markdown:
+                    from telegram.helpers import escape_markdown
 
-                if finalize_evidence:
-                    sample = collector.finalize_sample()
-                    if sample:
-                        if _DEVELOPMENTAL_WRITEBACK_AVAILABLE:
-                            try:
-                                record_developmental_projection_from_finalized_sample(
-                                    sample=sample,
-                                    sample_artifacts_dir=collector.artifacts_dir,
-                                )
-                            except Exception as e:
-                                logger.warning(f"[MVP16-DEVELOPMENTAL] Failed to sync finalized reply sample: {e}")
-                        logger.info(f"[E4-EVIDENCE] Sample finalized: {sample.sample_id} complete={sample.is_complete()}")
+                    escaped_text = escape_markdown(chunk, version=1)
+                    sent_message = await update.message.reply_text(escaped_text, parse_mode="Markdown")
+                else:
+                    sent_message = await update.message.reply_text(chunk)
             except Exception as e:
-                logger.warning(f"[E4-EVIDENCE] Failed to capture outbox_record: {e}")
+                logger.warning(f"Send failed (markdown={use_markdown}): {e}")
+                try:
+                    sent_message = await update.message.reply_text(chunk)
+                except Exception as e2:
+                    logger.error(f"Failed to send plain text chunk: {e2}")
+                    continue
+
+            sent_count += 1
+            self._capture_telegram_outbox_record(
+                sent_message,
+                text_length=len(chunk),
+                finalize_evidence=finalize_evidence and index == len(chunks) - 1,
+            )
+
+        return {"sent_count": sent_count, "was_chunked": len(chunks) > 1}
 
     async def _send_result(self, update: Update, result: CommandResult) -> None:
         """Send CommandResult as Telegram message.

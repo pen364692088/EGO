@@ -38,3 +38,25 @@ def test_tool_delivery_bridge_detects_delivery_gap_for_success_without_reply() -
     assert decision.requires_user_delivery is True
     assert decision.delivery_ready is False
     assert decision.delivery_gap is True
+
+
+def test_tool_delivery_bridge_marks_verbatim_inline_output_without_fidelity_gap() -> None:
+    decision = build_tool_delivery_bridge_decision(
+        {
+            "success": True,
+            "tool": "shell",
+            "stdout": "demo.txt\nyoutube_lookalike.html",
+            "metadata": {
+                "command": r"dir D:\Project\AIProject\MyProject\Test2",
+                "working_directory": r"D:\Project\AIProject\MyProject\Test2",
+            },
+        },
+        reply_text="目录内容如下：\ndemo.txt\nyoutube_lookalike.html",
+        delivery_kind="final",
+        source="runtime_v2",
+    )
+
+    assert decision is not None
+    assert decision.delivery_channel == "inline_output"
+    assert decision.fidelity_mode == "verbatim"
+    assert decision.fidelity_gap is False

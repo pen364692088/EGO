@@ -57,6 +57,12 @@ def classify_interaction(
             reason="session_control.status_probe",
         )
 
+    if intent_kind == "chat_ping":
+        return InteractionClassification(
+            kind=InteractionKind.CHAT,
+            reason="session_control.chat_ping",
+        )
+
     if getattr(state, "waiting_for_user_input", False):
         return InteractionClassification(
             kind=InteractionKind.ASK,
