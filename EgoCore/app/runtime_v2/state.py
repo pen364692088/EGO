@@ -545,6 +545,41 @@ class RuntimeV2State:
         self.last_delivered_evidence_context = None
         self.last_evidence_read_result = None
 
+    def clear_terminal_execution_residue(self, *, preserve_evidence_context: bool = False) -> None:
+        evidence_context = (
+            dict(self.last_delivered_evidence_context or {})
+            if preserve_evidence_context and isinstance(self.last_delivered_evidence_context, dict)
+            else None
+        )
+        evidence_compat = (
+            dict(self.last_evidence_read_result or {})
+            if preserve_evidence_context and isinstance(self.last_evidence_read_result, dict)
+            else evidence_context
+        )
+
+        self.task_status = "idle"
+        self.current_goal = None
+        self.current_step = None
+        self.waiting_for_user_input = False
+        self.last_model_action = None
+        self.last_tool_result = None
+        self.last_tool_result_turn_id = None
+        self.last_verification_result = None
+        self.task_contract = None
+        self.next_step_decision = None
+        self.verification_history = []
+        self.need_relock = False
+        self.contract_phase = "pending"
+        self.current_step_number = 0
+        self.total_steps_planned = None
+        self.active_turn_status = "idle"
+        self.final_sent = False
+        self.pending_progress_events = []
+        self.autonomy_context = None
+
+        self.last_delivered_evidence_context = evidence_context
+        self.last_evidence_read_result = evidence_compat
+
     def begin_execute_task(
         self,
         objective: str,

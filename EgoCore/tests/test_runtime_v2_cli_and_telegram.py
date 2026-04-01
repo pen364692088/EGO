@@ -412,6 +412,10 @@ async def test_telegram_bot_runtime_delivery_uses_verbatim_directory_output(monk
 
     state = bot._get_runtime_state("telegram:dm:456")
     state.start_turn()
+    state.task_status = "running"
+    state.current_goal = "列目录"
+    state.current_step = "tool:shell"
+    state.last_verification_result = {"passed": True, "reason": "verified"}
     state.last_tool_result = {
         "success": True,
         "tool": "shell",
@@ -447,6 +451,11 @@ async def test_telegram_bot_runtime_delivery_uses_verbatim_directory_output(monk
     assert any("demo.txt" in text for text in DummyUpdate.message.texts)
     assert state.last_delivered_evidence_context is not None
     assert state.last_delivered_evidence_context["delivery_was_chunked"] is False
+    assert state.task_status == "idle"
+    assert state.current_goal is None
+    assert state.current_step is None
+    assert state.last_tool_result is None
+    assert state.last_verification_result is None
     bridge_events = [event for event in events if event["kind"] == "tool_delivery_bridge"]
     assert bridge_events
     assert bridge_events[-1]["payload"]["fidelity_mode"] == "verbatim"

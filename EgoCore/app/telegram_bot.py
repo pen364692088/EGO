@@ -3659,6 +3659,20 @@ class TelegramBot:
             }:
                 state.final_sent = True
 
+            if (
+                result.status in {"completed_verified", "completed", "blocked", "failed"}
+                and runtime_action != "execute_task"
+                and not state.get_run_items()
+            ):
+                preserve_evidence_context = bool(
+                    getattr(output_verdict, "evidence_snapshot", None)
+                    and getattr(output_verdict, "fidelity_mode", None) == "verbatim"
+                    and getattr(output_verdict, "fidelity_gap", None) is False
+                )
+                state.clear_terminal_execution_residue(
+                    preserve_evidence_context=preserve_evidence_context,
+                )
+
     async def _handle_with_new_runtime(
         self,
         update: Update,
