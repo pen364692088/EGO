@@ -311,6 +311,15 @@ class TelegramBot:
                 extra={
                     "authority_source": metadata.get("authority_source", getattr(plan, "authority_source", "host_pre_runtime")),
                     "reply_authority": getattr(plan, "reply_authority", metadata.get("reply_authority", "host_degraded_fallback")),
+                    "speaker_mode": getattr(plan, "speaker_mode", None),
+                    "epistemic_status": getattr(plan, "epistemic_status", None),
+                    "commitment_level": getattr(plan, "commitment_level", None),
+                    "must_include": list(getattr(plan, "must_include", ()) or ()),
+                    "must_not_upgrade": dict(getattr(plan, "must_not_upgrade", {}) or {}),
+                    "tone_bounds": dict(getattr(plan, "tone_bounds", {}) or {}),
+                    "memory_claim_reason": metadata.get("memory_claim_reason"),
+                    "memory_claim_allowed": metadata.get("memory_claim_allowed"),
+                    "memory_claim_detected": metadata.get("memory_claim_detected"),
                     "matched_rule_ids": metadata.get("matched_rule_ids") or [],
                     "rule_enforcement": metadata.get("enforcement"),
                     "output_check_reason": getattr(verdict, "reason", None),
@@ -321,7 +330,7 @@ class TelegramBot:
         except Exception as e:
             logger.warning(f"[E4-EVIDENCE] Failed to capture pre-runtime response_plan: {e}")
 
-    def _build_pre_runtime_response_plan(self, reply_text: str, pre_runtime):
+    def _build_pre_runtime_response_plan(self, reply_text: str, pre_runtime, state: RuntimeV2State):
         metadata = getattr(pre_runtime, "response_plan_metadata", None) or {}
         return build_direct_response_plan(
             reply_text,
@@ -330,6 +339,7 @@ class TelegramBot:
             authority_source=metadata.get("authority_source", "host_pre_runtime"),
             reply_authority=metadata.get("reply_authority", "host_degraded_fallback"),
             metadata=metadata,
+            state=state,
         )
 
     def _activate_pending_restore_observation(self, state: RuntimeV2State) -> Optional[dict]:
@@ -400,6 +410,32 @@ class TelegramBot:
     ):
         response_plan = build_runtime_result_response_plan(result, state)
         output_verdict = apply_output_check(response_plan, state)
+        if _EVIDENCE_COLLECTOR_AVAILABLE:
+            try:
+                collector = get_evidence_collector()
+                collector.capture_host_response_plan(
+                    status=result.status,
+                    delivery_kind=output_verdict.delivery_kind,
+                    reply_text=output_verdict.reply_text,
+                    extra={
+                        "authority_source": response_plan.authority_source,
+                        "reply_authority": response_plan.reply_authority,
+                        "reply_origin": output_verdict.reply_origin,
+                        "speaker_mode": response_plan.speaker_mode,
+                        "epistemic_status": response_plan.epistemic_status,
+                        "commitment_level": response_plan.commitment_level,
+                        "must_include": list(response_plan.must_include),
+                        "must_not_upgrade": dict(response_plan.must_not_upgrade or {}),
+                        "tone_bounds": dict(response_plan.tone_bounds or {}),
+                        "memory_claim_reason": (response_plan.memory_claim_verdict.reason if response_plan.memory_claim_verdict else None),
+                        "memory_claim_allowed": (response_plan.memory_claim_verdict.allowed if response_plan.memory_claim_verdict else None),
+                        "memory_claim_detected": (response_plan.memory_claim_verdict.claim_detected if response_plan.memory_claim_verdict else False),
+                        "output_check_reason": output_verdict.reason,
+                        "applied_authority": output_verdict.applied_authority,
+                    },
+                )
+            except Exception as e:
+                logger.warning(f"[E4-EVIDENCE] Failed to capture runtime response_plan: {e}")
         if output_verdict.passed:
             if result.reply is None:
                 result.reply = TelegramTurnReply(
@@ -2448,6 +2484,7 @@ class TelegramBot:
                     "evidence_payload": dict(snapshot or {}),
                     "evidence_binding_source_turn": (snapshot or {}).get("source_turn_id"),
                 },
+                state=state,
             )
             verdict = apply_output_check(plan, state)
             if verdict.passed:
@@ -2605,7 +2642,7 @@ class TelegramBot:
             state.task_status = "waiting_input"
             state.waiting_for_user_input = True
             waiting_text = getattr(pre_runtime, 'waiting_input_text', '收到文件，请告诉我你要做什么。')
-            plan = self._build_pre_runtime_response_plan(waiting_text, pre_runtime)
+            plan = self._build_pre_runtime_response_plan(waiting_text, pre_runtime, state)
             verdict = apply_output_check(plan, state)
             if verdict.passed:
                 self._capture_pre_runtime_response_plan(plan, verdict)
@@ -2613,7 +2650,7 @@ class TelegramBot:
             return True
 
         if getattr(pre_runtime, "direct_reply_text", None):
-            plan = self._build_pre_runtime_response_plan(pre_runtime.direct_reply_text, pre_runtime)
+            plan = self._build_pre_runtime_response_plan(pre_runtime.direct_reply_text, pre_runtime, state)
             verdict = apply_output_check(plan, state)
             if verdict.passed:
                 self._capture_pre_runtime_response_plan(plan, verdict)

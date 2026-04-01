@@ -72,7 +72,7 @@
 
 ## 已证实但仍不完整
 
-### 5. `ResponsePlan` 已经是宿主表达合同骨架，但还不是 `WP1` 完整合同
+### 5. `ResponsePlan` 已经从宿主表达合同骨架升级到 `WP1` 主合同候选
 - 当前已有字段:
   - `kind`
   - `reply_text`
@@ -81,30 +81,27 @@
   - `reply_authority`
   - `memory_claim_verdict`
   - `metadata`
-- 当前缺口:
-  - `speaker_mode`
-  - `epistemic_status`
-  - `commitment_level`
-  - `must_include`
-  - `must_not_upgrade`
-  - `tone_bounds`
+- 当前状态:
+  - 上述字段已并入 `ResponsePlan`
+  - 现阶段缺口已从“字段未落地”收敛为“约束是否足以覆盖 SRAP / self_report_contract 目标”
 - 判定:
   - 方向正确
   - 不需要重写主线
-  - 需要在现有 `ResponsePlan` 上继续收口，而不是再造 `response_contract_v2`
+  - 继续在现有 `ResponsePlan` 上收口，而不是再造 `response_contract_v2`
 
-### 6. `memory_claim_gate` 已存在，但接线深度不足
+### 6. `memory_claim_gate` 已进入正式宿主表达主链，但仍缺真实样本级证据
 - 证据:
   - [memory_claim_gate.py](/mnt/d/Project/AIProject/MyProject/Ego/EgoCore/app/response_contract/memory_claim_gate.py)
   - [response_plan.py](/mnt/d/Project/AIProject/MyProject/Ego/EgoCore/app/response_contract/response_plan.py)
   - [telegram_bot.py](/mnt/d/Project/AIProject/MyProject/Ego/EgoCore/app/telegram_bot.py:563)
 - 当前状态:
   - gate 已实现
-  - `build_status_response_plan()` 已调用
-  - 测试覆盖了 `evaluate_memory_claim()` 与 status plan
+  - 已接入 `build_direct_response_plan()`
+  - 已接入 `build_runtime_result_response_plan()`
+  - 已接入 `build_status_response_plan()`
+  - focused tests 已覆盖
 - 缺口:
-  - 还没有证据表明它已进入全部宿主表达主链
-  - 目前更像 status-path 接线，不是完整 `WP1` 收口
+  - 还没有 E4 真实样本证明它在 Telegram 主链上拦住了错误 memory claim
 
 ## 风险与未证实项
 
@@ -132,8 +129,8 @@
   - `chat_mainline` 已不再复用 task JSON 决策器
   - `ResponsePlan` 已经成为唯一可继续扩展的宿主表达合同
 - 当前真正缺口:
-  - `ResponsePlan` 字段尚未扩到 `WP1` 目标
-  - `memory_claim_gate` 尚未完成主链接线
+  - `self_report_contract / SRAP` 剩余约束尚未完全映射到 `ResponsePlan`
+  - `memory_claim_gate` 尚未拿到 E4 真实样本
   - readiness 口径尚未复算，`numeric_leak = 0` 未证实
 
 ## 唯一最高优先级下一步
@@ -141,5 +138,5 @@
 在现有主路径上继续，不重写:
 
 1. 把 `speaker_mode / epistemic_status / commitment_level / must_include / must_not_upgrade / tone_bounds` 并入 `ResponsePlan`
-2. 把 `memory_claim_gate` 从 status path 扩到正式宿主表达主链
+2. 对 `self_report_contract / SRAP` 剩余约束做映射清单
 3. 跑一轮 `WP1 readiness` 复算，明确 `numeric_leak` 与 SRAP Shadow 当前结论

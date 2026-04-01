@@ -36,7 +36,7 @@ scope: "WP0/WP1 execution package"
 - [x] 每个条目都写明归属、权威源、主链接入状态、替代物或删除条件
 - [x] `WP0` 的 task-scoped 边界与契约文档已落地
 - [x] `WP1` 方向复核完成
-- [ ] `memory_claim_gate` 纳入宿主主链
+- [x] `memory_claim_gate` 已纳入宿主表达主链
 - [x] readiness report 已形成并区分 E4 / E2-E3
 
 ## 当前层级与主链状态
@@ -75,6 +75,6 @@ trigger_evidence:
 
 ## 下一步最小闭环动作
 
-1. 把 `speaker_mode / epistemic_status / commitment_level / must_include / must_not_upgrade / tone_bounds` 并入 `ResponsePlan`
-2. 把 `memory_claim_gate` 从 status path 扩到正式宿主表达主链
-3. 对 `numeric_leak` 与 SRAP Shadow 跑一轮新的 readiness 复算
+1. 对 `numeric_leak` 与 SRAP Shadow 跑一轮新的 readiness 复算
+2. 明确 `self_report_contract / SRAP` 当前还有哪些约束未真正落进 `ResponsePlan`
+3. 用新的 readiness 结果决定是否可以开始 `WP2` 方向审计
