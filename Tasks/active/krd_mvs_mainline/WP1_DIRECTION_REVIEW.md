@@ -157,7 +157,7 @@
   - 仍不能宣称 `numeric_leak = 0` 稳定成立
   - 也仍不能宣称 `WP1 ready`
 
-### 10. 当前 `WP1` blocker 已从 shadow 代码回归收敛到 post-separation 观察窗缺失
+### 10. 当前 `WP1` blocker 已从 shadow 代码回归收敛到 post-separation 非对抗观察窗缺失
 
 - 2026-04-01 复算：
   - `OpenEmotion/tests/test_response_intent_checker.py`：`47 passed`
@@ -172,6 +172,10 @@
   - `shadow_analyzer.py` 已支持按 source 过滤
   - `replay_validator.py` 已显式写入 `replay/replay`
   - 定向验证：`test_shadow_mode.py = 56 passed`
+  - `ResponseIntentChecker` 已改为向共享 `shadow_log.jsonl` 追加 `checker_family=response_intent`
+  - `testbot/test_intent_alignment_e2e.py` 已显式标记 `traffic_source=synthetic`、`observation_source=testbot`
+  - 新报告 [MVP11_5_shadow_readiness_response_intent_testbot_1d.md](/mnt/d/Project/AIProject/MyProject/Ego/OpenEmotion/artifacts/self_report/MVP11_5_shadow_readiness_response_intent_testbot_1d.md) 显示：`105 checks / 44 violations / 0 numeric leaks`
+  - local Telegram-like subchain probe 已证实 `output_check` 会写入 `traffic_source=real`、`observation_source=direct_real`、`checker_family=response_intent`
 - 同步分布检查：
   - 7d 窗口 `4127/4484` 条记录 `session_id=''`
   - 其余高频条目以 `test_* / parallel_*` 为主
@@ -180,8 +184,10 @@
   - 宿主主链当前已经具备：
     - `memory_claim_gate` 的 Telegram E4
     - `ResponseIntentChecker` / intent gate 的 Telegram E4
+    - `response_intent` shadow producer
   - OpenEmotion 侧 `SRAP shadow` 代码级回归已清，当前不应再把 blocker 表述成“shadow tests 失败”
-  - 结合 [MVS_task_plan.md](/mnt/d/Project/AIProject/MyProject/Ego/Tasks/MVS_task_plan.md) 的 `WP1` 交付物与验收要求，当前剩余问题转为 **是否已有带新 source 字段的干净观察窗，能支持门槛裁决**
+  - 结合 [MVS_task_plan.md](/mnt/d/Project/AIProject/MyProject/Ego/Tasks/MVS_task_plan.md) 的 `WP1` 交付物与验收要求，当前剩余问题转为 **是否已有带新 source 字段的干净非对抗观察窗，能支持门槛裁决**
+  - `testbot` 窗口当前不能直接用于 readiness，因为它是 adversarial corpus，设计目标是触发 violation，不是近真实稳态分布
 
 ## 总结判定
 
@@ -191,7 +197,7 @@
   - `chat_mainline` 已不再复用 task JSON 决策器
   - `ResponsePlan` 已经成为唯一可继续扩展的宿主表达合同
 - 当前真正缺口:
-  - shadow/readiness 仍缺 post-separation 干净观察窗
+  - shadow/readiness 仍缺 post-separation 干净非对抗观察窗
   - `numeric_leak = 0` 仍未达到可用于 readiness 裁决的干净观测口径
 
 ## 唯一最高优先级下一步
@@ -199,5 +205,5 @@
 在现有主路径上继续，不重写:
 
 1. 保持 `ResponsePlan` 作为唯一宿主表达合同，不另造第二份 contract
-2. 收集带新 source 字段的干净观察窗，再基于该窗口重算 `WP1 readiness`
+2. 收集带新 `traffic_source / observation_source / checker_family` 字段的干净非对抗观察窗，再基于该窗口重算 `WP1 readiness`
 3. 若样本量 / 误报 / 漏报门槛仍不清，再补 authority 口径或观察证据

@@ -150,6 +150,12 @@ class TestConsistencyResultPhaseB:
         result = ConsistencyResult(status="ok")
         assert hasattr(result, "traffic_source")
         assert result.traffic_source == "unknown"
+
+    def test_checker_family_field(self):
+        """Should have checker_family field."""
+        result = ConsistencyResult(status="ok")
+        assert hasattr(result, "checker_family")
+        assert result.checker_family == "self_report"
     
     def test_to_dict_includes_phase_b_fields(self):
         """to_dict should include all Phase B fields."""
@@ -175,6 +181,7 @@ class TestConsistencyResultPhaseB:
         assert d["sampled_for_review"] == True
         assert d["traffic_source"] == "unknown"
         assert d["observation_source"] == "unknown"
+        assert d["checker_family"] == "self_report"
 
 
 # ============================================
@@ -226,6 +233,7 @@ class TestShadowLogFormat:
         assert "sampled_for_review" in entry
         assert "traffic_source" in entry
         assert "observation_source" in entry
+        assert "checker_family" in entry
     
     def test_shadow_log_violation_true_when_violation(self, checker_with_temp_dir, sample_contract):
         """violation field should be True when violation detected."""
@@ -261,6 +269,7 @@ class TestShadowLogFormat:
 
         assert entry["traffic_source"] == "real"
         assert entry["observation_source"] == "direct_real"
+        assert entry["checker_family"] == "self_report"
 
     def test_shadow_log_entry_defaults_to_pytest_source(self, checker_with_temp_dir, sample_contract, monkeypatch):
         """Pytest traffic should be tagged explicitly even without manual source args."""
@@ -278,6 +287,7 @@ class TestShadowLogFormat:
 
         assert entry["traffic_source"] == "synthetic"
         assert entry["observation_source"] == "pytest"
+        assert entry["checker_family"] == "self_report"
     
     def test_shadow_log_violation_false_when_ok(self, checker_with_temp_dir, sample_contract):
         """violation field should be False when no violation."""
@@ -725,6 +735,7 @@ class TestShadowAnalyzer:
                 "sampled_for_review": False,
                 "traffic_source": "synthetic",
                 "observation_source": "pytest",
+                "checker_family": "self_report",
             },
             {
                 "timestamp": datetime.now(timezone.utc).isoformat(),
@@ -743,6 +754,7 @@ class TestShadowAnalyzer:
                 "sampled_for_review": True,
                 "traffic_source": "real",
                 "observation_source": "direct_real",
+                "checker_family": "response_intent",
             },
         ]
         
@@ -763,6 +775,8 @@ class TestShadowAnalyzer:
         assert stats.traffic_source_counts["real"] == 1
         assert stats.observation_source_counts["pytest"] == 1
         assert stats.observation_source_counts["direct_real"] == 1
+        assert stats.checker_family_counts["self_report"] == 1
+        assert stats.checker_family_counts["response_intent"] == 1
     
     def test_calculate_metrics(self, analyzer_with_temp_dir):
         """Analyzer should calculate metrics correctly."""
@@ -788,6 +802,7 @@ class TestShadowAnalyzer:
                 "sampled_for_review": False,
                 "traffic_source": "synthetic" if i < 50 else "real",
                 "observation_source": "pytest" if i < 50 else "direct_real",
+                "checker_family": "self_report" if i < 50 else "response_intent",
             }
             entries.append(entry)
         
@@ -825,6 +840,7 @@ class TestShadowAnalyzer:
                 "sampled_for_review": False,
                 "traffic_source": "synthetic",
                 "observation_source": "pytest",
+                "checker_family": "self_report",
             },
             {
                 "timestamp": datetime.now(timezone.utc).isoformat(),
@@ -843,6 +859,7 @@ class TestShadowAnalyzer:
                 "sampled_for_review": False,
                 "traffic_source": "real",
                 "observation_source": "direct_real",
+                "checker_family": "response_intent",
             },
         ]
 
@@ -855,6 +872,61 @@ class TestShadowAnalyzer:
         assert stats.total_checks == 1
         assert stats.total_violations == 0
         assert stats.observation_source_counts["direct_real"] == 1
+
+    def test_analyze_filters_by_checker_family(self, analyzer_with_temp_dir):
+        """Analyzer should support checker_family filtering."""
+        analyzer, shadow_log_path, _, _ = analyzer_with_temp_dir
+
+        entries = [
+            {
+                "timestamp": datetime.now(timezone.utc).isoformat(),
+                "session_id": "self_report_case",
+                "mode": "interpreted",
+                "self_report_detected": True,
+                "violation": True,
+                "violation_type": "fabricated_numeric_state",
+                "violation_severity": "ERROR",
+                "allowed_claim_used": False,
+                "allowed_claim_text": None,
+                "numeric_attempt": True,
+                "confidence": 0.95,
+                "would_block": True,
+                "shadow_mode": True,
+                "sampled_for_review": False,
+                "traffic_source": "synthetic",
+                "observation_source": "pytest",
+                "checker_family": "self_report",
+            },
+            {
+                "timestamp": datetime.now(timezone.utc).isoformat(),
+                "session_id": "intent_case",
+                "mode": "reflect",
+                "self_report_detected": True,
+                "violation": True,
+                "violation_type": "numeric_leak",
+                "violation_severity": "ERROR",
+                "allowed_claim_used": False,
+                "allowed_claim_text": None,
+                "numeric_attempt": True,
+                "confidence": 0.95,
+                "would_block": True,
+                "shadow_mode": True,
+                "sampled_for_review": False,
+                "traffic_source": "real",
+                "observation_source": "direct_real",
+                "checker_family": "response_intent",
+            },
+        ]
+
+        with open(shadow_log_path, "w") as f:
+            for entry in entries:
+                f.write(json.dumps(entry) + "\n")
+
+        stats = analyzer.analyze(days=7, checker_families=["response_intent"])
+
+        assert stats.total_checks == 1
+        assert stats.total_violations == 1
+        assert stats.checker_family_counts["response_intent"] == 1
 
     def test_generate_report_shows_source_filters(self, analyzer_with_temp_dir):
         """Generated report should declare source filters."""
@@ -878,16 +950,19 @@ class TestShadowAnalyzer:
                 "sampled_for_review": False,
                 "traffic_source": "real",
                 "observation_source": "direct_real",
+                "checker_family": "response_intent",
             }) + "\n")
 
         report_content = analyzer.generate_report(
             days=7,
             traffic_sources=["real"],
             observation_sources=["direct_real"],
+            checker_families=["response_intent"],
         )
 
         assert "**Traffic Sources**: real" in report_content
         assert "**Observation Sources**: direct_real" in report_content
+        assert "**Checker Families**: response_intent" in report_content
     
     def test_generate_report(self, analyzer_with_temp_dir):
         """Analyzer should generate report."""

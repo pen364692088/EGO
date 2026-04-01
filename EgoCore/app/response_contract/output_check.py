@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+import os
 from typing import Any, Dict, List, Optional
 
 from app.runtime_v2.run_items import build_run_item_summary_text
@@ -237,7 +238,10 @@ def _apply_intent_gate(
     ):
         return result
 
-    checker = _get_intent_checker()
+    traffic_source, observation_source = _resolve_intent_shadow_sources(state)
+    checker = _get_intent_checker(
+        enable_shadow_logging=observation_source in {"direct_real", "testbot", "replay"}
+    )
     if checker is None:
         result["status"] = "checker_unavailable"
         result["reason"] = "checker_unavailable"
@@ -249,6 +253,8 @@ def _apply_intent_gate(
             reply_text,
             contract,
             session_id=str(getattr(state, "session_id", "") or ""),
+            traffic_source=traffic_source,
+            observation_source=observation_source,
         )
     except Exception as exc:
         result["status"] = "checker_error"
@@ -358,9 +364,36 @@ def _build_intent_gate_fallback(plan: ResponsePlan) -> str:
     return "我换个更稳妥的说法。"
 
 
-def _get_intent_checker():
+def _resolve_intent_shadow_sources(state: Any) -> tuple[str, str]:
+    session_id = str(getattr(state, "session_id", "") or "").strip()
+    ingress_context = dict(getattr(state, "ingress_context", None) or {})
+    observation_source = str(ingress_context.get("observation_source") or "").strip()
+    traffic_source = str(ingress_context.get("traffic_source") or "").strip()
+
+    if not observation_source:
+        if session_id.startswith("telegram:"):
+            observation_source = "direct_real"
+        elif os.environ.get("PYTEST_CURRENT_TEST"):
+            observation_source = "pytest"
+        else:
+            observation_source = "unknown"
+
+    if not traffic_source:
+        if observation_source == "direct_real":
+            traffic_source = "real"
+        elif observation_source in {"pytest", "testbot"}:
+            traffic_source = "synthetic"
+        elif observation_source == "replay":
+            traffic_source = "replay"
+        else:
+            traffic_source = "unknown"
+
+    return traffic_source, observation_source
+
+
+def _get_intent_checker(*, enable_shadow_logging: bool = False):
     try:
         from emotiond.response_intent_checker import ResponseIntentChecker
     except Exception:
         return None
-    return ResponseIntentChecker(enable_shadow_logging=False)
+    return ResponseIntentChecker(enable_shadow_logging=enable_shadow_logging)

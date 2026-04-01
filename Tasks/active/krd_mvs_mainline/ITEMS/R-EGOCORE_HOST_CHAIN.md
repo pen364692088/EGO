@@ -45,6 +45,8 @@
 - `memory_claim_gate` 已接入 `build_direct_response_plan / build_runtime_result_response_plan / build_status_response_plan`
 - `ResponsePlan -> ResponseIntentChecker` 最小 host-side intent gate 已接到 `output_check`
 - `ResponsePlan -> ResponseIntentChecker` 最小 host-side intent gate 已拿到 Telegram E4：模型原始数值输出会被宿主改写
+- `ResponseIntentChecker` 现已向共享 `shadow_log.jsonl` 追加 `checker_family=response_intent` 观察记录
+- `output_check` 的 Telegram-like subchain probe 已证实会写入 `traffic_source=real`、`observation_source=direct_real`
 - `WP1` readiness 复算已经得到决定性负证据：当前不是“gate 未接”，也不再是“source 未形成 / 无 E4”，而是“最小 gate 已到 E4，但 readiness 未稳”
 - session/task runtime 仍有继续拆层空间
 - `memory_claim_gate` 已拿到 Telegram E4，且聊天已从固定 fallback 升级为自然规避错误 claim
@@ -53,6 +55,7 @@
 - chat 主链在更长窗口、更多 persona 形态下是否能稳定维持非机械回复而不回退到任务导向
 - 最小 host-side intent gate 拿到 E4 后，`numeric_leak = 0` 是否成立
 - `self_report_contract / SRAP` 当前还有哪些约束未真正并入并 enforce 到 `ResponsePlan`
+- 当前还缺非对抗的 post-separation observation window；现有 `testbot` 窗口是 adversarial corpus，不能直接当 readiness 窗口
 
 ### 六问门禁
 1. 归属是谁：EgoCore
@@ -72,8 +75,8 @@
 ### 本轮最小闭环动作
 - 第一实现轮中，`InteractionKind`、最小 `ResponsePlan`、`output_check`、`chat_mainline` 已落地并拿到 E4
 - 当前不再需要从零重写方向；最小 `ResponsePlan -> ResponseIntentChecker` 与 intent contract source 都已接入，下一最小闭环动作改为：
-  - 重跑 `numeric_leak / SRAP Shadow / self_report_contract` readiness
-  - 明确 shadow 失败是否仍阻塞 `WP1`
+  - 收集带 `traffic_source / observation_source / checker_family` 的非对抗 post-separation observation window
+  - 再重跑 `numeric_leak / SRAP Shadow / self_report_contract` readiness
 
 ### 完成定义
 - `chat/task/admin/ask/wait/resume` 有唯一 authority

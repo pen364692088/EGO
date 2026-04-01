@@ -31,12 +31,12 @@
 | `ResponsePlan` 为唯一宿主表达主合同 | 已接入且有真实样本 | E4 | 核心字段已并入，且最小 host-side intent gate 已在 Telegram 真链路触发 |
 | `memory_claim_gate` | 已接入且有真实样本 | E4 | Telegram 真实样本已证明：无 restore authority 时不会对外声称“已恢复/记得你”，且聊天不再退化成固定 fallback |
 | `self_report_contract / SRAP` 约束并入 `ResponsePlan` | 部分完成 | E4 | 已形成 [WP1_SRAP_MAPPING.md](/mnt/d/Project/AIProject/MyProject/Ego/Tasks/active/krd_mvs_mainline/WP1_SRAP_MAPPING.md)，且最小 host-side gate 与 intent source 都已拿到 Telegram E4 |
-| `numeric_leak = 0` | 未成立 | E3/E4 混合 | fresh 7d/1d shadow 报告分别给出 `16.06%` / `24.55%`；但同一观测窗被大量 synthetic/test 流量污染，当前结论只能用于证明“readiness 证据源不干净”，不能直接外推真实主线稳定性 |
+| `numeric_leak = 0` | 未成立 | E3/E4 混合 | fresh 7d/1d shadow 报告分别给出 `16.06%` / `24.55%`；`response_intent` 新 producer 已接好，`testbot` 过滤窗显示 `0 numeric leaks`，但该窗口是 adversarial corpus，不能直接外推 readiness |
 
 ## 当前 blocker
 
 ### Blocker 1
-当前已不再是 shadow 代码回归问题，也不再是缺少 source 分离实现；现在的 blocker 是 **需要一个 post-separation 干净观察窗，才能有效重判 readiness 门槛**。
+当前已不再是 shadow 代码回归问题，也不再是缺少 source 分离实现；现在的 blocker 是 **需要一个 post-separation 干净非对抗观察窗，才能有效重判 readiness 门槛**。
 
 - 2026-04-01 复算：
   - `OpenEmotion/tests/test_response_intent_checker.py`：`47 passed`
@@ -60,7 +60,14 @@
   - `SelfReportConsistencyChecker -> ShadowLogger -> shadow_analyzer` 已补上显式 `traffic_source / observation_source`
   - `replay_validator` 已显式写入 `traffic_source=replay`、`observation_source=replay`
   - 定向验证：`test_shadow_mode.py = 56 passed`、`test_response_intent_checker.py -k numeric = 5 passed`
+  - `ResponseIntentChecker` 已改为把 `checker_family=response_intent` 追加写入共享 `shadow_log.jsonl`
+  - `testbot/test_intent_alignment_e2e.py` 已显式写入 `traffic_source=synthetic`、`observation_source=testbot`
+  - 新过滤报告：
+    - [MVP11_5_shadow_readiness_response_intent_testbot_1d.md](/mnt/d/Project/AIProject/MyProject/Ego/OpenEmotion/artifacts/self_report/MVP11_5_shadow_readiness_response_intent_testbot_1d.md)
+    - `105 checks / 44 violations / 0 numeric leaks`
+  - local subchain probe 已证实 `output_check` 的 Telegram-like path 会写入 `traffic_source=real`、`observation_source=direct_real`、`checker_family=response_intent`
 - 这说明当前 blocker 已不再是“宿主 gate 未接 / 无 E4”，也不再是“shadow tests 失败”，更不再是“还没做 source 分离”；真正 blocker 已收敛为 **历史污染日志不会自动回填，当前需要新的干净观察窗**
+ - 同时也说明 blocker 已不再是“没有 producer”；现在 producer 已有，但 `testbot` 窗口是 adversarial test corpus，不能直接当 readiness 窗口
 
 ## 不应误报的事项
 
@@ -72,7 +79,7 @@
 ## 进入下一阶段前需要满足的条件
 
 最小条件:
-1. 收集带新 source 字段的真实/近真实窗口
+1. 收集带新 `traffic_source / observation_source / checker_family` 字段的真实或近真实非对抗窗口
 2. 基于该干净窗口重跑 readiness 复算，并给出新的 `numeric_leak` 与 SRAP Shadow 结论
 3. 明确样本量、误报、漏报门槛是否已满足；若未满足，补观察证据而不是回退代码结论
 

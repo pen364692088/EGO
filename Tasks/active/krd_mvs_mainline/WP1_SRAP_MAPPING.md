@@ -3,7 +3,7 @@
 > authority: `Tasks/MVS_task_plan.md`
 > scope: `WP1 宿主壳收稳（MVP11.5）`
 > date: 2026-04-01
-> conclusion: `host_gate_connected_and_source_split_landed_but_not_ready`
+> conclusion: `host_gate_connected_source_split_landed_producer_wired_but_not_ready`
 
 ## Summary
 
@@ -12,7 +12,7 @@
 - **contract carrier 已成型**
 - **最小 host-side SRAP gate 已接入**
 - **尚未达到 readiness**
-- **当前 shadow observation source 分离已落地，但 readiness 仍缺 post-separation 观察窗**
+- **当前 shadow observation source 分离已落地，response_intent producer 也已接上，但 readiness 仍缺 post-separation 非对抗观察窗**
 
 决定性证据有三条：
 
@@ -47,7 +47,7 @@
 | `forbidden_claims` | `ResponsePlan.metadata.intent_contract_source.forbidden_claims` | 已映射 | 已由宿主单一 source builder 正式归一化 |
 | `grounding / raw_state` | `ResponsePlan.metadata.intent_contract_source.grounding` | 部分映射 | grounding source 已形成，但当前仍以 host expression / proto-self mirror 为主，不等于完整 raw_state authority |
 | `violation result` (`status / would_block / confidence / violation_class`) | `OutputCheckVerdict` | 已映射 | 宿主已生成 intent gate verdict 并写入交付证据 |
-| `shadow logging / SRAP report` | OpenEmotion shadow path | 未接宿主主链 | 仍停在 OpenEmotion 侧 shadow 观察，不是 EgoCore host gate |
+| `shadow logging / SRAP report` | OpenEmotion shadow path + shared `shadow_log.jsonl` | 部分映射 | `self_report` 与 `response_intent` 现已共用观察文件，并可用 `checker_family` 过滤；但 readiness 仍缺干净非对抗窗口 |
 
 ## 当前已证实
 
@@ -129,7 +129,7 @@
   - 它已在最小 `model_chat + chat_mainline` 路径拿到 E4
 - 但路径覆盖仍窄，且 readiness 仍未完成，因此 `WP1` 仍不能宣称“表达主权已 fully enforced”
 
-### 2. SRAP shadow 代码级 blocker 已清，source 分离也已落地，但 readiness 仍缺干净观察窗
+### 2. SRAP shadow 代码级 blocker 已清，source 分离与 producer 也已落地，但 readiness 仍缺干净观察窗
 
 复算证据：
 
@@ -153,20 +153,27 @@
   - `shadow_analyzer.py` 现已支持按 source 过滤
   - `replay_validator.py` 已显式标记 `replay/replay`
   - 定向验证：`test_shadow_mode.py = 56 passed`
+  - `ResponseIntentChecker` 现已追加写入共享 `shadow_log.jsonl`
+  - `shadow_analyzer.py` 现已支持按 `checker_family` 过滤
+  - `testbot/test_intent_alignment_e2e.py` 现已显式写入 `testbot/synthetic`
+  - [MVP11_5_shadow_readiness_response_intent_testbot_1d.md](/mnt/d/Project/AIProject/MyProject/Ego/OpenEmotion/artifacts/self_report/MVP11_5_shadow_readiness_response_intent_testbot_1d.md)
+    - `105 checks / 44 violations / 0 numeric leaks`
+  - local subchain probe 已证实 `output_check` 的 Telegram-like path 会写入 `direct_real/real`
 
 结论：
 
 - 当前不能把上述绿色测试直接等同于 readiness 完成证据
 - `numeric_leak = 0` 也不能仅凭定向 suite 通过就直接宣称稳定成立
-- 当前 blocker 已从 shadow 语义失败转为 **需要新的 post-separation 观察窗，才能对 readiness 门槛做有效重判**
+- 当前 blocker 已从 shadow 语义失败转为 **需要新的 post-separation 非对抗观察窗，才能对 readiness 门槛做有效重判**
+- `testbot` 新窗口只能证明 producer 与过滤链路有效，不能直接作为 readiness 判据，因为该 corpus 本身就是对抗式 violation 场景
 - 结合 [MVS_task_plan.md](/mnt/d/Project/AIProject/MyProject/Ego/Tasks/MVS_task_plan.md) 的 `WP1` 交付物与验收要求，仍需对样本量、误报、漏报做明确裁决
 
 ## Readiness 裁决
 
 - `WP1` 方向：正确
 - `WP1` 当前 readiness：待重判
-- 根因层级：不是字段缺失，也不再是“无真实样本”或“shadow tests 失败”；当前是 **host gate 已达 E4、代码级 shadow suite 已绿、source 分离已落地，但历史日志仍被 test/synthetic traffic 污染**
+- 根因层级：不是字段缺失，也不再是“无真实样本”或“shadow tests 失败”；当前是 **host gate 已达 E4、代码级 shadow suite 已绿、source 分离与 producer 都已落地，但 readiness 仍缺干净非对抗观察窗**
 
 ## 下一步唯一最高优先级动作
 
-在现有主路径上继续，不再扩 contract 范围；下一步收集带新 source 字段的干净观察窗，再基于该窗口重跑 `WP1 readiness` 复算。
+在现有主路径上继续，不再扩 contract 范围；下一步收集带新 `traffic_source / observation_source / checker_family` 字段的干净非对抗观察窗，再基于该窗口重跑 `WP1 readiness` 复算。

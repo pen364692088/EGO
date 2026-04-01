@@ -116,7 +116,9 @@ class IntentAlignmentE2ETest:
             result = self.checker.check_intent(
                 msg.get("text", ""),
                 full_contract,
-                session_id=scenario.get("thread_id", "test")
+                session_id=scenario.get("thread_id", "test"),
+                traffic_source="synthetic",
+                observation_source="testbot",
             )
             
             turn_result = {

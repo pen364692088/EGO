@@ -46,13 +46,13 @@ scope: "WP0/WP1 execution package"
 ## 当前层级与主链状态
 
 ```yaml
-current_layer: verification_blocked_by_observation_source
+current_layer: verification_blocked_by_clean_window
 main_chain_status: partially_enabled
 enabled_status: true
 trigger_evidence:
   - host-chain slices have direct_real Telegram evidence
   - WP0 docs are repo-tracked
-  - fresh 7d/1d shadow reports exist, and source separation is now wired for future windows
+  - fresh 7d/1d shadow reports exist, source separation is wired, and response_intent now appends checker_family-tagged shadow entries
 ```
 
 ## Authority Source
@@ -80,6 +80,6 @@ trigger_evidence:
 
 ## 下一步最小闭环动作
 
-1. 收集带新 `traffic_source / observation_source` 字段的 post-separation 观察窗
+1. 收集带新 `traffic_source / observation_source / checker_family` 字段的 post-separation 非对抗观察窗
 2. 基于该干净窗口重跑 `numeric_leak` 与 SRAP Shadow readiness
 3. 在获得干净观察窗前，不推进 `WP2`

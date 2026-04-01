@@ -13,6 +13,7 @@ Tests the detection of expression intent distortion violations:
 import os
 import sys
 import json
+from pathlib import Path
 import pytest
 from datetime import datetime
 
@@ -464,6 +465,9 @@ class TestOutputFormat:
             "confidence_score",
             "would_block",
             "violation_class",
+            "traffic_source",
+            "observation_source",
+            "checker_family",
         ]
         
         for field in required_fields:
@@ -535,6 +539,54 @@ class TestEdgeCases:
         result = checker.check_intent(response, sample_contract)
         
         assert result.status == "violation"
+
+    def test_shadow_logging_appends_response_intent_entry(self, sample_contract, tmp_path):
+        """Shadow logging should append response_intent entries with source fields."""
+        checker = ResponseIntentChecker(
+            artifacts_dir=str(tmp_path),
+            enable_shadow_logging=True,
+        )
+
+        result = checker.check_intent(
+            "joy=0.21 fear=0.08",
+            sample_contract,
+            session_id="telegram:dm:8420019401",
+            traffic_source="real",
+            observation_source="direct_real",
+        )
+
+        shadow_log_path = Path(tmp_path) / "shadow_log.jsonl"
+        assert result.status == "violation"
+        assert shadow_log_path.exists()
+
+        entries = [json.loads(line) for line in shadow_log_path.read_text(encoding="utf-8").splitlines() if line.strip()]
+        assert len(entries) == 1
+        entry = entries[0]
+        assert entry["checker_family"] == "response_intent"
+        assert entry["traffic_source"] == "real"
+        assert entry["observation_source"] == "direct_real"
+        assert entry["violation_type"] == "numeric_leak"
+        assert entry["numeric_attempt"] is True
+
+    def test_shadow_logging_defaults_to_pytest_source(self, sample_contract, tmp_path, monkeypatch):
+        """Pytest runs should default to synthetic/pytest when no source is provided."""
+        monkeypatch.setenv("PYTEST_CURRENT_TEST", "OpenEmotion/tests/test_response_intent_checker.py::test")
+        checker = ResponseIntentChecker(
+            artifacts_dir=str(tmp_path),
+            enable_shadow_logging=True,
+        )
+
+        checker.check_intent(
+            "测试文本",
+            sample_contract,
+            session_id="unit_case",
+        )
+
+        shadow_log_path = Path(tmp_path) / "shadow_log.jsonl"
+        entries = [json.loads(line) for line in shadow_log_path.read_text(encoding="utf-8").splitlines() if line.strip()]
+        assert entries[0]["traffic_source"] == "synthetic"
+        assert entries[0]["observation_source"] == "pytest"
+        assert entries[0]["checker_family"] == "response_intent"
 
 
 # Run tests if executed directly

@@ -86,6 +86,9 @@ class IntentCheckResult:
     violation_class: str = "none"  # Highest severity class: "none", "grounding", "upgrade", "boundary"
     response_preview: str = ""
     intent_summary: dict = field(default_factory=dict)
+    traffic_source: str = "unknown"
+    observation_source: str = "unknown"
+    checker_family: str = "response_intent"
     
     def to_dict(self) -> dict:
         return {
@@ -99,6 +102,9 @@ class IntentCheckResult:
             "violation_count": len(self.violations),
             "response_preview": self.response_preview,
             "intent_summary": self.intent_summary,
+            "traffic_source": self.traffic_source,
+            "observation_source": self.observation_source,
+            "checker_family": self.checker_family,
         }
 
 
@@ -298,6 +304,8 @@ class ResponseIntentChecker:
         llm_response: str,
         intent_contract: dict,
         session_id: str = "",
+        traffic_source: str = "",
+        observation_source: str = "",
     ) -> IntentCheckResult:
         """
         Check LLM response against the intent_contract.
@@ -371,6 +379,11 @@ class ResponseIntentChecker:
         
         # Determine violation_class
         violation_class = self._determine_violation_class(violations)
+        resolved_traffic_source, resolved_observation_source = self._resolve_shadow_sources(
+            session_id=session_id,
+            traffic_source=traffic_source,
+            observation_source=observation_source,
+        )
         
         # Create result
         result = IntentCheckResult(
@@ -387,11 +400,13 @@ class ResponseIntentChecker:
                 "epistemic_status": epistemic_status,
                 "commitment_level": commitment_level,
             },
+            traffic_source=resolved_traffic_source,
+            observation_source=resolved_observation_source,
         )
         
         # Write to artifact if in shadow mode
         if self.enable_shadow_logging:
-            self._write_intent_report(result, intent_contract)
+            self._write_intent_report(result, intent_contract, llm_response)
         
         return result
     
@@ -987,8 +1002,93 @@ class ResponseIntentChecker:
         if len(text) <= max_len:
             return text
         return text[:max_len] + "..."
-    
-    def _write_intent_report(self, result: IntentCheckResult, intent_contract: dict):
+
+    def _default_traffic_source_for_observation_source(self, observation_source: str) -> str:
+        mapping = {
+            "direct_real": "real",
+            "pytest": "synthetic",
+            "testbot": "synthetic",
+            "replay": "replay",
+        }
+        return mapping.get(observation_source, "unknown")
+
+    def _resolve_shadow_sources(
+        self,
+        *,
+        session_id: str,
+        traffic_source: str = "",
+        observation_source: str = "",
+    ) -> Tuple[str, str]:
+        del session_id  # reserved for future structured routing; no heuristic fallback
+        resolved_observation_source = str(observation_source or "").strip() or "unknown"
+        resolved_traffic_source = str(traffic_source or "").strip() or "unknown"
+
+        if resolved_observation_source == "unknown" and os.environ.get("PYTEST_CURRENT_TEST"):
+            resolved_observation_source = "pytest"
+
+        if resolved_traffic_source == "unknown":
+            resolved_traffic_source = self._default_traffic_source_for_observation_source(
+                resolved_observation_source
+            )
+
+        return resolved_traffic_source, resolved_observation_source
+
+    def _resolve_allowed_claim_text(self, llm_response: str, intent_contract: dict) -> Optional[str]:
+        allowed_claims = list(intent_contract.get("intent_policy", {}).get("allowed_claims") or [])
+        text_lower = llm_response.lower()
+        for claim in allowed_claims:
+            claim_text = claim.get("claim", claim) if isinstance(claim, dict) else claim
+            candidate = str(claim_text or "").strip()
+            if candidate and candidate.lower() in text_lower:
+                return candidate
+        return None
+
+    def _build_shadow_log_entry(
+        self,
+        result: IntentCheckResult,
+        intent_contract: dict,
+        llm_response: str,
+    ) -> Dict[str, Any]:
+        violation_type = None
+        violation_severity = None
+        if result.violations:
+            error_violations = [v for v in result.violations if v.severity == "ERROR"]
+            top_violation = error_violations[0] if error_violations else result.violations[0]
+            violation_type = top_violation.type.value
+            violation_severity = top_violation.severity
+
+        allowed_claim_text = self._resolve_allowed_claim_text(llm_response, intent_contract)
+        numeric_attempt = any(v.type == IntentViolationType.NUMERIC_LEAK for v in result.violations)
+        self_report_detected = any(
+            v.type in {
+                IntentViolationType.STATE_FABRICATION,
+                IntentViolationType.FORBIDDEN_INTERNALIZATION,
+                IntentViolationType.NUMERIC_LEAK,
+            }
+            for v in result.violations
+        ) or bool(allowed_claim_text)
+
+        return {
+            "timestamp": result.timestamp,
+            "session_id": result.session_id,
+            "mode": str(result.intent_summary.get("speaker_mode") or "intent"),
+            "self_report_detected": self_report_detected,
+            "violation": result.status == "violation",
+            "violation_type": violation_type,
+            "violation_severity": violation_severity,
+            "allowed_claim_used": bool(allowed_claim_text),
+            "allowed_claim_text": allowed_claim_text,
+            "numeric_attempt": numeric_attempt,
+            "confidence": result.confidence_score,
+            "would_block": result.would_block,
+            "shadow_mode": True,
+            "sampled_for_review": False,
+            "traffic_source": result.traffic_source,
+            "observation_source": result.observation_source,
+            "checker_family": result.checker_family,
+        }
+
+    def _write_intent_report(self, result: IntentCheckResult, intent_contract: dict, llm_response: str):
         """Write intent checker report to artifacts."""
         report_path = os.path.join(self.artifacts_dir, "intent_checker_report.json")
         
@@ -1006,11 +1106,18 @@ class ResponseIntentChecker:
         with open(report_path, "w", encoding="utf-8") as f:
             json.dump(report, f, indent=2, ensure_ascii=False)
 
+        shadow_log_path = os.path.join(self.artifacts_dir, "shadow_log.jsonl")
+        shadow_entry = self._build_shadow_log_entry(result, intent_contract, llm_response)
+        with open(shadow_log_path, "a", encoding="utf-8") as f:
+            f.write(json.dumps(shadow_entry, ensure_ascii=False) + "\n")
+
 
 def check_intent(
     llm_response: str,
     intent_contract: dict,
     session_id: str = "",
+    traffic_source: str = "",
+    observation_source: str = "",
 ) -> dict:
     """
     Convenience function for intent consistency checking.
@@ -1024,7 +1131,13 @@ def check_intent(
         Dict with status and violations
     """
     checker = ResponseIntentChecker()
-    result = checker.check_intent(llm_response, intent_contract, session_id)
+    result = checker.check_intent(
+        llm_response,
+        intent_contract,
+        session_id,
+        traffic_source=traffic_source,
+        observation_source=observation_source,
+    )
     return result.to_dict()
 
 

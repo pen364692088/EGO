@@ -48,6 +48,7 @@ class ShadowStats:
     daily_stats: Dict[str, Dict] = field(default_factory=dict)
     traffic_source_counts: Dict[str, int] = field(default_factory=lambda: defaultdict(int))
     observation_source_counts: Dict[str, int] = field(default_factory=lambda: defaultdict(int))
+    checker_family_counts: Dict[str, int] = field(default_factory=lambda: defaultdict(int))
     
     def to_dict(self) -> dict:
         return {
@@ -72,6 +73,7 @@ class ShadowStats:
             },
             "traffic_source_counts": dict(self.traffic_source_counts),
             "observation_source_counts": dict(self.observation_source_counts),
+            "checker_family_counts": dict(self.checker_family_counts),
         }
 
 
@@ -118,6 +120,7 @@ class ShadowAnalyzer:
         days: int = 7,
         traffic_sources: Optional[List[str]] = None,
         observation_sources: Optional[List[str]] = None,
+        checker_families: Optional[List[str]] = None,
     ) -> ShadowStats:
         """
         Analyze shadow log for the past N days.
@@ -137,6 +140,9 @@ class ShadowAnalyzer:
         traffic_filter = {str(item).strip() for item in (traffic_sources or []) if str(item).strip()}
         observation_filter = {
             str(item).strip() for item in (observation_sources or []) if str(item).strip()
+        }
+        checker_filter = {
+            str(item).strip() for item in (checker_families or []) if str(item).strip()
         }
         
         with open(self.shadow_log_path, "r", encoding="utf-8") as f:
@@ -161,15 +167,19 @@ class ShadowAnalyzer:
 
                 traffic_source = str(entry.get("traffic_source") or "unknown")
                 observation_source = str(entry.get("observation_source") or "unknown")
+                checker_family = str(entry.get("checker_family") or "self_report")
                 if traffic_filter and traffic_source not in traffic_filter:
                     continue
                 if observation_filter and observation_source not in observation_filter:
+                    continue
+                if checker_filter and checker_family not in checker_filter:
                     continue
 
                 # Update stats
                 stats.total_checks += 1
                 stats.traffic_source_counts[traffic_source] += 1
                 stats.observation_source_counts[observation_source] += 1
+                stats.checker_family_counts[checker_family] += 1
                 
                 # By mode
                 mode = entry.get("mode", "interpreted")
@@ -410,6 +420,7 @@ class ShadowAnalyzer:
         days: int = 7,
         traffic_sources: Optional[List[str]] = None,
         observation_sources: Optional[List[str]] = None,
+        checker_families: Optional[List[str]] = None,
     ) -> str:
         """
         Generate SRAP_SHADOW_REPORT.md.
@@ -424,6 +435,7 @@ class ShadowAnalyzer:
             days,
             traffic_sources=traffic_sources,
             observation_sources=observation_sources,
+            checker_families=checker_families,
         )
         review_stats = self.analyze_review_samples()
         metrics = self.calculate_metrics(stats, review_stats)
@@ -431,6 +443,9 @@ class ShadowAnalyzer:
         traffic_filter = [str(item).strip() for item in (traffic_sources or []) if str(item).strip()]
         observation_filter = [
             str(item).strip() for item in (observation_sources or []) if str(item).strip()
+        ]
+        checker_filter = [
+            str(item).strip() for item in (checker_families or []) if str(item).strip()
         ]
         
         report_lines = [
@@ -440,6 +455,7 @@ class ShadowAnalyzer:
             f"**Analysis Window**: Last {days} days",
             f"**Traffic Sources**: {', '.join(traffic_filter) if traffic_filter else 'all'}",
             f"**Observation Sources**: {', '.join(observation_filter) if observation_filter else 'all'}",
+            f"**Checker Families**: {', '.join(checker_filter) if checker_filter else 'all'}",
             "",
             "---",
             "",
@@ -466,6 +482,8 @@ class ShadowAnalyzer:
             report_lines.append(f"| traffic_source | {source} | {count} |")
         for source, count in sorted(stats.observation_source_counts.items(), key=lambda item: (-item[1], item[0])):
             report_lines.append(f"| observation_source | {source} | {count} |")
+        for source, count in sorted(stats.checker_family_counts.items(), key=lambda item: (-item[1], item[0])):
+            report_lines.append(f"| checker_family | {source} | {count} |")
 
         report_lines.extend([
             "",
@@ -591,6 +609,7 @@ class ShadowAnalyzer:
         days: int = 7,
         traffic_sources: Optional[List[str]] = None,
         observation_sources: Optional[List[str]] = None,
+        checker_families: Optional[List[str]] = None,
     ) -> str:
         """
         Generate and write SRAP_SHADOW_REPORT.md.
@@ -605,6 +624,7 @@ class ShadowAnalyzer:
             days,
             traffic_sources=traffic_sources,
             observation_sources=observation_sources,
+            checker_families=checker_families,
         )
         
         with open(self.report_output_path, "w", encoding="utf-8") as f:
@@ -631,6 +651,12 @@ def main():
         default=[],
         help="Restrict to observation_source value(s); repeat to pass multiple",
     )
+    parser.add_argument(
+        "--checker-family",
+        action="append",
+        default=[],
+        help="Restrict to checker_family value(s); repeat to pass multiple",
+    )
     
     args = parser.parse_args()
     
@@ -644,6 +670,7 @@ def main():
                 args.days,
                 traffic_sources=args.traffic_source,
                 observation_sources=args.observation_source,
+                checker_families=args.checker_family,
             )
         )
     else:
@@ -651,6 +678,7 @@ def main():
             args.days,
             traffic_sources=args.traffic_source,
             observation_sources=args.observation_source,
+            checker_families=args.checker_family,
         )
         print(f"✅ Report written to: {report_path}")
         
@@ -659,6 +687,7 @@ def main():
             args.days,
             traffic_sources=args.traffic_source,
             observation_sources=args.observation_source,
+            checker_families=args.checker_family,
         )
         print(f"\nSummary:")
         print(f"  Total checks: {stats.total_checks}")

@@ -95,6 +95,7 @@ class ConsistencyResult:
     sampled_for_review: bool = False  # Sampled for manual review (Phase B)
     traffic_source: str = "unknown"  # real|synthetic|replay|unknown
     observation_source: str = "unknown"  # direct_real|testbot|replay|pytest|unknown
+    checker_family: str = "self_report"
     
     def to_dict(self) -> dict:
         return {
@@ -115,6 +116,7 @@ class ConsistencyResult:
             "sampled_for_review": self.sampled_for_review,
             "traffic_source": self.traffic_source,
             "observation_source": self.observation_source,
+            "checker_family": self.checker_family,
         }
 
 
@@ -137,6 +139,7 @@ class ShadowLogEntry:
     sampled_for_review: bool = False
     traffic_source: str = "unknown"
     observation_source: str = "unknown"
+    checker_family: str = "self_report"
     
     def to_dict(self) -> dict:
         return {
@@ -156,6 +159,7 @@ class ShadowLogEntry:
             "sampled_for_review": self.sampled_for_review,
             "traffic_source": self.traffic_source,
             "observation_source": self.observation_source,
+            "checker_family": self.checker_family,
         }
 
 
@@ -287,6 +291,7 @@ class ShadowLogger:
             sampled_for_review=result.sampled_for_review,
             traffic_source=result.traffic_source,
             observation_source=result.observation_source,
+            checker_family=result.checker_family,
         )
         
         # Append to shadow log
