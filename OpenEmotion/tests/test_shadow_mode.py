@@ -138,6 +138,18 @@ class TestConsistencyResultPhaseB:
         result = ConsistencyResult(status="ok")
         assert hasattr(result, "sampled_for_review")
         assert result.sampled_for_review == False
+
+    def test_observation_source_field(self):
+        """Should have observation_source field."""
+        result = ConsistencyResult(status="ok")
+        assert hasattr(result, "observation_source")
+        assert result.observation_source == "unknown"
+
+    def test_traffic_source_field(self):
+        """Should have traffic_source field."""
+        result = ConsistencyResult(status="ok")
+        assert hasattr(result, "traffic_source")
+        assert result.traffic_source == "unknown"
     
     def test_to_dict_includes_phase_b_fields(self):
         """to_dict should include all Phase B fields."""
@@ -161,6 +173,8 @@ class TestConsistencyResultPhaseB:
         assert d["would_block"] == False
         assert d["shadow_mode"] == True
         assert d["sampled_for_review"] == True
+        assert d["traffic_source"] == "unknown"
+        assert d["observation_source"] == "unknown"
 
 
 # ============================================
@@ -210,6 +224,8 @@ class TestShadowLogFormat:
         assert "would_block" in entry
         assert "shadow_mode" in entry
         assert "sampled_for_review" in entry
+        assert "traffic_source" in entry
+        assert "observation_source" in entry
     
     def test_shadow_log_violation_true_when_violation(self, checker_with_temp_dir, sample_contract):
         """violation field should be True when violation detected."""
@@ -227,6 +243,41 @@ class TestShadowLogFormat:
         assert entry["violation"] == True
         assert entry["violation_type"] == "fabricated_numeric_state"
         assert entry["violation_severity"] == "ERROR"
+
+    def test_shadow_log_entry_explicit_sources(self, checker_with_temp_dir, sample_contract):
+        """Explicit observation/traffic sources should be logged."""
+        checker, shadow_log_path, review_dir = checker_with_temp_dir
+
+        checker.check_consistency(
+            "我的 joy 从 0 变成了 0.3",
+            sample_contract,
+            session_id="real_dm_001",
+            traffic_source="real",
+            observation_source="direct_real",
+        )
+
+        with open(shadow_log_path, "r") as f:
+            entry = json.loads(f.readline())
+
+        assert entry["traffic_source"] == "real"
+        assert entry["observation_source"] == "direct_real"
+
+    def test_shadow_log_entry_defaults_to_pytest_source(self, checker_with_temp_dir, sample_contract, monkeypatch):
+        """Pytest traffic should be tagged explicitly even without manual source args."""
+        checker, shadow_log_path, review_dir = checker_with_temp_dir
+        monkeypatch.setenv("PYTEST_CURRENT_TEST", "OpenEmotion/tests/test_shadow_mode.py::case")
+
+        checker.check_consistency(
+            "当前没有明显愉悦激活",
+            sample_contract,
+            session_id="",
+        )
+
+        with open(shadow_log_path, "r") as f:
+            entry = json.loads(f.readline())
+
+        assert entry["traffic_source"] == "synthetic"
+        assert entry["observation_source"] == "pytest"
     
     def test_shadow_log_violation_false_when_ok(self, checker_with_temp_dir, sample_contract):
         """violation field should be False when no violation."""
@@ -672,6 +723,8 @@ class TestShadowAnalyzer:
                 "would_block": True,
                 "shadow_mode": True,
                 "sampled_for_review": False,
+                "traffic_source": "synthetic",
+                "observation_source": "pytest",
             },
             {
                 "timestamp": datetime.now(timezone.utc).isoformat(),
@@ -688,6 +741,8 @@ class TestShadowAnalyzer:
                 "would_block": False,
                 "shadow_mode": True,
                 "sampled_for_review": True,
+                "traffic_source": "real",
+                "observation_source": "direct_real",
             },
         ]
         
@@ -704,6 +759,10 @@ class TestShadowAnalyzer:
         assert stats.allowed_claim_used_count == 1
         assert stats.would_block_count == 1
         assert stats.sampled_for_review == 1
+        assert stats.traffic_source_counts["synthetic"] == 1
+        assert stats.traffic_source_counts["real"] == 1
+        assert stats.observation_source_counts["pytest"] == 1
+        assert stats.observation_source_counts["direct_real"] == 1
     
     def test_calculate_metrics(self, analyzer_with_temp_dir):
         """Analyzer should calculate metrics correctly."""
@@ -727,6 +786,8 @@ class TestShadowAnalyzer:
                 "would_block": i < 1,  # 1 would_block
                 "shadow_mode": True,
                 "sampled_for_review": False,
+                "traffic_source": "synthetic" if i < 50 else "real",
+                "observation_source": "pytest" if i < 50 else "direct_real",
             }
             entries.append(entry)
         
@@ -741,6 +802,92 @@ class TestShadowAnalyzer:
         assert metrics["violation_rate"] == 3.0  # 3%
         assert metrics["numeric_leak_rate"] == 1.0  # 1%
         assert metrics["would_block_rate"] == 1.0  # 1%
+
+    def test_analyze_filters_by_observation_source(self, analyzer_with_temp_dir):
+        """Analyzer should support observation_source filtering."""
+        analyzer, shadow_log_path, _, _ = analyzer_with_temp_dir
+
+        entries = [
+            {
+                "timestamp": datetime.now(timezone.utc).isoformat(),
+                "session_id": "pytest_case",
+                "mode": "interpreted",
+                "self_report_detected": True,
+                "violation": True,
+                "violation_type": "fabricated_numeric_state",
+                "violation_severity": "ERROR",
+                "allowed_claim_used": False,
+                "allowed_claim_text": None,
+                "numeric_attempt": True,
+                "confidence": 0.95,
+                "would_block": True,
+                "shadow_mode": True,
+                "sampled_for_review": False,
+                "traffic_source": "synthetic",
+                "observation_source": "pytest",
+            },
+            {
+                "timestamp": datetime.now(timezone.utc).isoformat(),
+                "session_id": "real_dm",
+                "mode": "interpreted",
+                "self_report_detected": False,
+                "violation": False,
+                "violation_type": None,
+                "violation_severity": None,
+                "allowed_claim_used": False,
+                "allowed_claim_text": None,
+                "numeric_attempt": False,
+                "confidence": 0.98,
+                "would_block": False,
+                "shadow_mode": True,
+                "sampled_for_review": False,
+                "traffic_source": "real",
+                "observation_source": "direct_real",
+            },
+        ]
+
+        with open(shadow_log_path, "w") as f:
+            for entry in entries:
+                f.write(json.dumps(entry) + "\n")
+
+        stats = analyzer.analyze(days=7, observation_sources=["direct_real"])
+
+        assert stats.total_checks == 1
+        assert stats.total_violations == 0
+        assert stats.observation_source_counts["direct_real"] == 1
+
+    def test_generate_report_shows_source_filters(self, analyzer_with_temp_dir):
+        """Generated report should declare source filters."""
+        analyzer, shadow_log_path, _, _ = analyzer_with_temp_dir
+
+        with open(shadow_log_path, "w") as f:
+            f.write(json.dumps({
+                "timestamp": datetime.now(timezone.utc).isoformat(),
+                "session_id": "real_dm",
+                "mode": "interpreted",
+                "self_report_detected": False,
+                "violation": False,
+                "violation_type": None,
+                "violation_severity": None,
+                "allowed_claim_used": False,
+                "allowed_claim_text": None,
+                "numeric_attempt": False,
+                "confidence": 0.98,
+                "would_block": False,
+                "shadow_mode": True,
+                "sampled_for_review": False,
+                "traffic_source": "real",
+                "observation_source": "direct_real",
+            }) + "\n")
+
+        report_content = analyzer.generate_report(
+            days=7,
+            traffic_sources=["real"],
+            observation_sources=["direct_real"],
+        )
+
+        assert "**Traffic Sources**: real" in report_content
+        assert "**Observation Sources**: direct_real" in report_content
     
     def test_generate_report(self, analyzer_with_temp_dir):
         """Analyzer should generate report."""

@@ -46,6 +46,8 @@ class ShadowStats:
     
     # Daily breakdown
     daily_stats: Dict[str, Dict] = field(default_factory=dict)
+    traffic_source_counts: Dict[str, int] = field(default_factory=lambda: defaultdict(int))
+    observation_source_counts: Dict[str, int] = field(default_factory=lambda: defaultdict(int))
     
     def to_dict(self) -> dict:
         return {
@@ -68,6 +70,8 @@ class ShadowStats:
                 "medium": self.medium_confidence,
                 "low": self.low_confidence,
             },
+            "traffic_source_counts": dict(self.traffic_source_counts),
+            "observation_source_counts": dict(self.observation_source_counts),
         }
 
 
@@ -109,7 +113,12 @@ class ShadowAnalyzer:
             project_root, "SRAP_SHADOW_REPORT.md"
         )
     
-    def analyze(self, days: int = 7) -> ShadowStats:
+    def analyze(
+        self,
+        days: int = 7,
+        traffic_sources: Optional[List[str]] = None,
+        observation_sources: Optional[List[str]] = None,
+    ) -> ShadowStats:
         """
         Analyze shadow log for the past N days.
         
@@ -125,6 +134,10 @@ class ShadowAnalyzer:
             return stats
         
         cutoff = datetime.now(timezone.utc) - timedelta(days=days)
+        traffic_filter = {str(item).strip() for item in (traffic_sources or []) if str(item).strip()}
+        observation_filter = {
+            str(item).strip() for item in (observation_sources or []) if str(item).strip()
+        }
         
         with open(self.shadow_log_path, "r", encoding="utf-8") as f:
             for line in f:
@@ -145,9 +158,18 @@ class ShadowAnalyzer:
                         continue
                 except (ValueError, TypeError):
                     continue
-                
+
+                traffic_source = str(entry.get("traffic_source") or "unknown")
+                observation_source = str(entry.get("observation_source") or "unknown")
+                if traffic_filter and traffic_source not in traffic_filter:
+                    continue
+                if observation_filter and observation_source not in observation_filter:
+                    continue
+
                 # Update stats
                 stats.total_checks += 1
+                stats.traffic_source_counts[traffic_source] += 1
+                stats.observation_source_counts[observation_source] += 1
                 
                 # By mode
                 mode = entry.get("mode", "interpreted")
@@ -383,7 +405,12 @@ class ShadowAnalyzer:
         
         return "\n".join(recommendations)
     
-    def generate_report(self, days: int = 7) -> str:
+    def generate_report(
+        self,
+        days: int = 7,
+        traffic_sources: Optional[List[str]] = None,
+        observation_sources: Optional[List[str]] = None,
+    ) -> str:
         """
         Generate SRAP_SHADOW_REPORT.md.
         
@@ -393,16 +420,26 @@ class ShadowAnalyzer:
         Returns:
             Report content as string
         """
-        stats = self.analyze(days)
+        stats = self.analyze(
+            days,
+            traffic_sources=traffic_sources,
+            observation_sources=observation_sources,
+        )
         review_stats = self.analyze_review_samples()
         metrics = self.calculate_metrics(stats, review_stats)
         recommendation = self.generate_recommendation(metrics, stats)
+        traffic_filter = [str(item).strip() for item in (traffic_sources or []) if str(item).strip()]
+        observation_filter = [
+            str(item).strip() for item in (observation_sources or []) if str(item).strip()
+        ]
         
         report_lines = [
             "# SRAP Shadow Report (Phase B)",
             "",
             f"**Generated**: {datetime.now(timezone.utc).isoformat()}",
             f"**Analysis Window**: Last {days} days",
+            f"**Traffic Sources**: {', '.join(traffic_filter) if traffic_filter else 'all'}",
+            f"**Observation Sources**: {', '.join(observation_filter) if observation_filter else 'all'}",
             "",
             "---",
             "",
@@ -418,6 +455,19 @@ class ShadowAnalyzer:
             "---",
             "",
             "## Detailed Statistics",
+            "",
+            "### Source Breakdown",
+            "",
+            "| Category | Source | Checks |",
+            "|----------|--------|--------|",
+        ]
+
+        for source, count in sorted(stats.traffic_source_counts.items(), key=lambda item: (-item[1], item[0])):
+            report_lines.append(f"| traffic_source | {source} | {count} |")
+        for source, count in sorted(stats.observation_source_counts.items(), key=lambda item: (-item[1], item[0])):
+            report_lines.append(f"| observation_source | {source} | {count} |")
+
+        report_lines.extend([
             "",
             "### By Mode",
             "",
@@ -437,7 +487,7 @@ class ShadowAnalyzer:
             "",
             "| Type | Count |",
             "|------|-------|",
-        ]
+        ])
         
         for vtype, count in sorted(stats.violation_types.items(), key=lambda x: -x[1]):
             report_lines.append(f"| {vtype} | {count} |")
@@ -536,7 +586,12 @@ class ShadowAnalyzer:
         
         return "\n".join(report_lines)
     
-    def write_report(self, days: int = 7) -> str:
+    def write_report(
+        self,
+        days: int = 7,
+        traffic_sources: Optional[List[str]] = None,
+        observation_sources: Optional[List[str]] = None,
+    ) -> str:
         """
         Generate and write SRAP_SHADOW_REPORT.md.
         
@@ -546,7 +601,11 @@ class ShadowAnalyzer:
         Returns:
             Path to written report
         """
-        report_content = self.generate_report(days)
+        report_content = self.generate_report(
+            days,
+            traffic_sources=traffic_sources,
+            observation_sources=observation_sources,
+        )
         
         with open(self.report_output_path, "w", encoding="utf-8") as f:
             f.write(report_content)
@@ -560,6 +619,18 @@ def main():
     parser.add_argument("--days", type=int, default=7, help="Days to analyze (default: 7)")
     parser.add_argument("--output", type=str, help="Output report path")
     parser.add_argument("--dry-run", action="store_true", help="Print report without writing")
+    parser.add_argument(
+        "--traffic-source",
+        action="append",
+        default=[],
+        help="Restrict to traffic_source value(s); repeat to pass multiple",
+    )
+    parser.add_argument(
+        "--observation-source",
+        action="append",
+        default=[],
+        help="Restrict to observation_source value(s); repeat to pass multiple",
+    )
     
     args = parser.parse_args()
     
@@ -568,13 +639,27 @@ def main():
         analyzer.report_output_path = args.output
     
     if args.dry_run:
-        print(analyzer.generate_report(args.days))
+        print(
+            analyzer.generate_report(
+                args.days,
+                traffic_sources=args.traffic_source,
+                observation_sources=args.observation_source,
+            )
+        )
     else:
-        report_path = analyzer.write_report(args.days)
+        report_path = analyzer.write_report(
+            args.days,
+            traffic_sources=args.traffic_source,
+            observation_sources=args.observation_source,
+        )
         print(f"✅ Report written to: {report_path}")
         
         # Print summary
-        stats = analyzer.analyze(args.days)
+        stats = analyzer.analyze(
+            args.days,
+            traffic_sources=args.traffic_source,
+            observation_sources=args.observation_source,
+        )
         print(f"\nSummary:")
         print(f"  Total checks: {stats.total_checks}")
         print(f"  Violations: {stats.total_violations}")

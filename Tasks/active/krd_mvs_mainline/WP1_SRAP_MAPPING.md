@@ -3,7 +3,7 @@
 > authority: `Tasks/MVS_task_plan.md`
 > scope: `WP1 宿主壳收稳（MVP11.5）`
 > date: 2026-04-01
-> conclusion: `host_gate_connected_but_shadow_observation_contaminated`
+> conclusion: `host_gate_connected_and_source_split_landed_but_not_ready`
 
 ## Summary
 
@@ -12,7 +12,7 @@
 - **contract carrier 已成型**
 - **最小 host-side SRAP gate 已接入**
 - **尚未达到 readiness**
-- **当前 shadow observation source 仍被 synthetic/test traffic 污染**
+- **当前 shadow observation source 分离已落地，但 readiness 仍缺 post-separation 观察窗**
 
 决定性证据有三条：
 
@@ -129,7 +129,7 @@
   - 它已在最小 `model_chat + chat_mainline` 路径拿到 E4
 - 但路径覆盖仍窄，且 readiness 仍未完成，因此 `WP1` 仍不能宣称“表达主权已 fully enforced”
 
-### 2. SRAP shadow 代码级 blocker 已清，但 readiness 观测源仍待分离
+### 2. SRAP shadow 代码级 blocker 已清，source 分离也已落地，但 readiness 仍缺干净观察窗
 
 复算证据：
 
@@ -148,20 +148,25 @@
 - 分布检查：
   - 7d 窗口 `4127/4484` 条记录 `session_id=''`
   - 其余高频以 `test_* / parallel_*` 为主
+- source 分离实现：
+  - `SelfReportConsistencyChecker` / `ShadowLogger` 现已记录 `traffic_source / observation_source`
+  - `shadow_analyzer.py` 现已支持按 source 过滤
+  - `replay_validator.py` 已显式标记 `replay/replay`
+  - 定向验证：`test_shadow_mode.py = 56 passed`
 
 结论：
 
 - 当前不能把上述绿色测试直接等同于 readiness 完成证据
 - `numeric_leak = 0` 也不能仅凭定向 suite 通过就直接宣称稳定成立
-- 当前 blocker 已从 shadow 语义失败转为 **shadow 观察源未分离，导致 readiness 门槛无法有效重判**
+- 当前 blocker 已从 shadow 语义失败转为 **需要新的 post-separation 观察窗，才能对 readiness 门槛做有效重判**
 - 结合 [MVS_task_plan.md](/mnt/d/Project/AIProject/MyProject/Ego/Tasks/MVS_task_plan.md) 的 `WP1` 交付物与验收要求，仍需对样本量、误报、漏报做明确裁决
 
 ## Readiness 裁决
 
 - `WP1` 方向：正确
 - `WP1` 当前 readiness：待重判
-- 根因层级：不是字段缺失，也不再是“无真实样本”或“shadow tests 失败”，而是 **host gate 已达 E4、代码级 shadow suite 已绿，但 readiness 观察窗被 test/synthetic traffic 污染**
+- 根因层级：不是字段缺失，也不再是“无真实样本”或“shadow tests 失败”；当前是 **host gate 已达 E4、代码级 shadow suite 已绿、source 分离已落地，但历史日志仍被 test/synthetic traffic 污染**
 
 ## 下一步唯一最高优先级动作
 
-在现有主路径上继续，不再扩 contract 范围；下一步先补 shadow `traffic_source / observation_source` 分离，再基于干净窗口重跑 `WP1 readiness` 复算。
+在现有主路径上继续，不再扩 contract 范围；下一步收集带新 source 字段的干净观察窗，再基于该窗口重跑 `WP1 readiness` 复算。

@@ -36,7 +36,7 @@
 ## 当前 blocker
 
 ### Blocker 1
-当前已不再是 shadow 代码回归问题，而是 **shadow 观察源未分离，导致 readiness 门槛无法被有效重判**。
+当前已不再是 shadow 代码回归问题，也不再是缺少 source 分离实现；现在的 blocker 是 **需要一个 post-separation 干净观察窗，才能有效重判 readiness 门槛**。
 
 - 2026-04-01 复算：
   - `OpenEmotion/tests/test_response_intent_checker.py`：`47 passed`
@@ -56,7 +56,11 @@
   - 7d 窗口 `4127/4484` 条记录 `session_id=''`
   - 其余高频条目主要是 `test_* / parallel_*`
   - 记录在 `2026-03-29` 与 `2026-04-01` 呈单秒级突发
-- 这说明当前 blocker 已不再是“宿主 gate 未接 / 无 E4”，也不再是“shadow tests 失败”；真正 blocker 是 **test / synthetic traffic 与 readiness 观察窗混写，导致当前 shadow report 不能直接代表真实主线稳定性**
+- 2026-04-01 新进展：
+  - `SelfReportConsistencyChecker -> ShadowLogger -> shadow_analyzer` 已补上显式 `traffic_source / observation_source`
+  - `replay_validator` 已显式写入 `traffic_source=replay`、`observation_source=replay`
+  - 定向验证：`test_shadow_mode.py = 56 passed`、`test_response_intent_checker.py -k numeric = 5 passed`
+- 这说明当前 blocker 已不再是“宿主 gate 未接 / 无 E4”，也不再是“shadow tests 失败”，更不再是“还没做 source 分离”；真正 blocker 已收敛为 **历史污染日志不会自动回填，当前需要新的干净观察窗**
 
 ## 不应误报的事项
 
@@ -68,10 +72,10 @@
 ## 进入下一阶段前需要满足的条件
 
 最小条件:
-1. 给 shadow 日志补正式 `traffic_source` / `observation_source`，把 pytest / testbot / replay / direct_real 分开
-2. 基于分离后的真实/近真实窗口重跑 readiness 复算，并给出新的 `numeric_leak` 与 SRAP Shadow 结论
+1. 收集带新 source 字段的真实/近真实窗口
+2. 基于该干净窗口重跑 readiness 复算，并给出新的 `numeric_leak` 与 SRAP Shadow 结论
 3. 明确样本量、误报、漏报门槛是否已满足；若未满足，补观察证据而不是回退代码结论
 
 ## 下一步唯一最高优先级动作
 
-先给 shadow 观察链补正式 `traffic_source / observation_source` 分离，再基于干净窗口重跑 `WP1 readiness`；在这件事完成前，当前仍不应直接推进到 `WP2`。
+先收集带新 source 字段的 post-separation 观察窗，再基于干净窗口重跑 `WP1 readiness`；在这件事完成前，当前仍不应直接推进到 `WP2`。

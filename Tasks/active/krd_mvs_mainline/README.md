@@ -52,7 +52,7 @@ enabled_status: true
 trigger_evidence:
   - host-chain slices have direct_real Telegram evidence
   - WP0 docs are repo-tracked
-  - fresh 7d/1d shadow reports exist, but observation window is contaminated by synthetic traffic
+  - fresh 7d/1d shadow reports exist, and source separation is now wired for future windows
 ```
 
 ## Authority Source
@@ -80,6 +80,6 @@ trigger_evidence:
 
 ## 下一步最小闭环动作
 
-1. 给 shadow 观察链补正式 `traffic_source` / `observation_source` 分离，避免 testbot / pytest / real traffic 混写到同一 readiness 窗口
-2. 基于分离后的真实/近真实窗口重跑 `numeric_leak` 与 SRAP Shadow readiness
+1. 收集带新 `traffic_source / observation_source` 字段的 post-separation 观察窗
+2. 基于该干净窗口重跑 `numeric_leak` 与 SRAP Shadow readiness
 3. 在获得干净观察窗前，不推进 `WP2`

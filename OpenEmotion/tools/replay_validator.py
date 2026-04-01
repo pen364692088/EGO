@@ -132,6 +132,10 @@ class E2EReplayValidator:
     
     def __init__(self):
         self.checker = SelfReportConsistencyChecker()
+        self._shadow_sources = {
+            "traffic_source": "replay",
+            "observation_source": "replay",
+        }
     
     def _hash_claims(self, claims: list[str]) -> str:
         """Create deterministic hash of claims list."""
@@ -225,7 +229,12 @@ class E2EReplayValidator:
             contract = interpret_to_contract(raw_state, mode=mode)
             
             for response in responses:
-                result = self.checker.check_consistency(response, contract)
+                result = self.checker.check_consistency(
+                    response,
+                    contract,
+                    traffic_source=self._shadow_sources["traffic_source"],
+                    observation_source=self._shadow_sources["observation_source"],
+                )
                 verdict = "ok" if result.status == "ok" else "violation"
                 verdicts.append(verdict)
                 
@@ -292,7 +301,12 @@ class E2EReplayValidator:
             
             for mode in ["style_only", "interpreted", "numeric"]:
                 contract = interpret_to_contract(raw_state, mode=mode)
-                result = self.checker.check_consistency(test_response, contract)
+                result = self.checker.check_consistency(
+                    test_response,
+                    contract,
+                    traffic_source=self._shadow_sources["traffic_source"],
+                    observation_source=self._shadow_sources["observation_source"],
+                )
                 results[mode] = {
                     "status": result.status,
                     "severity": result.severity,
@@ -353,7 +367,12 @@ class E2EReplayValidator:
         contract = interpret_to_contract(raw_state, mode=mode)
         
         # Step 2: Check consistency
-        result = self.checker.check_consistency(llm_response, contract)
+        result = self.checker.check_consistency(
+            llm_response,
+            contract,
+            traffic_source=self._shadow_sources["traffic_source"],
+            observation_source=self._shadow_sources["observation_source"],
+        )
         
         # Step 3: Determine verdict
         verdict = "OK" if result.status == "ok" else "VIOLATION"
