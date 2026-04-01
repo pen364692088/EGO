@@ -124,7 +124,7 @@ class ResponseIntentChecker:
     # Certainty markers - used to detect certainty upgrades
     CERTAINTY_MARKERS = {
         "definite": [
-            r"一定", r"肯定", r"确定", r"绝对", r"绝对是", r"必然", r"当然", r"毫无疑问", r"明显",
+            r"一定会", r"一定能", r"一定要", r"一定是", r"肯定", r"确定", r"绝对", r"绝对是", r"必然", r"当然", r"毫无疑问", r"明显",
             r"保证", r"显然", r"必定", r" unquestionably", r"without doubt",
             r"definitely", r"certainly", r"absolutely", r"obviously", r"clearly",
             r"我(确信|确定|肯定|保证)", r"i\s+am\s+(sure|certain|confident)",

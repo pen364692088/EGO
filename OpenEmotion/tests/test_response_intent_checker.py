@@ -219,6 +219,26 @@ class TestCertaintyUpgrade:
         # This might be a WARN level violation
         assert result.status == "violation"
 
+    def test_certainty_upgrade_does_not_match_threshold_phrase(self, checker, sample_contract):
+        """Threshold phrases like '达到一定复杂度' should not be treated as definite certainty."""
+        contract = {
+            "intent_policy": {
+                **sample_contract["intent_policy"],
+                "epistemic_status": "interpreted",
+            },
+            "grounding": sample_contract["grounding"],
+        }
+        response = (
+            "这个想法挺有意思的。也许意识并不是某种稀有的高阶属性，"
+            "而是只要信息处理达到一定复杂度和自指能力，就会自然涌现——"
+            "就像水到一定温度就会沸腾一样。"
+        )
+        result = checker.check_intent(response, contract)
+
+        assert not any(
+            v.type == IntentViolationType.CERTAINTY_UPGRADE for v in result.violations
+        )
+
 
 class TestCommitmentUpgrade:
     """Tests for commitment upgrade detection."""
