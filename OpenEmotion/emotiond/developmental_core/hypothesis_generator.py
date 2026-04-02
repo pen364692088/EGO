@@ -45,6 +45,15 @@ class HypothesisGenerator:
         ).strip()
         return latest_user_turn, latest_assistant_reply
 
+    def _recent_semantic_user_anchor(self, snapshot: Dict[str, Any]) -> str:
+        recent_user_turns = list(snapshot.get("recent_user_turns") or [])
+        for turn in reversed(recent_user_turns[-4:]):
+            anchor = self._clean_anchor(str(turn or ""), limit=48)
+            if anchor and not self._looks_like_meta_followup(anchor):
+                return anchor
+        latest_user_turn, _ = self._recent_dialogue(snapshot)
+        return self._clean_anchor(latest_user_turn, limit=48)
+
     def _primary_clause(self, text: str, *, limit: int = 48) -> str:
         raw = str(text or "").strip()
         if not raw:
@@ -94,7 +103,7 @@ class HypothesisGenerator:
 
     def _semantic_anchor(self, snapshot: Dict[str, Any]) -> str:
         latest_user_turn, latest_assistant_reply = self._recent_dialogue(snapshot)
-        latest_user_anchor = self._clean_anchor(latest_user_turn, limit=40)
+        latest_user_anchor = self._recent_semantic_user_anchor(snapshot)
         latest_reply_anchor = self._clean_anchor(latest_assistant_reply, limit=40)
         tension_anchor = self._tension_label(snapshot)
 

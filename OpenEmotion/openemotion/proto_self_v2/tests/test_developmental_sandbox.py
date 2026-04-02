@@ -58,6 +58,18 @@ def _packet_with_recent_turn(
     return packet
 
 
+def _packet_with_recent_dialogue(
+    *,
+    user_turns: list[str],
+    assistant_replies: list[str],
+    replay_seed: int | None = None,
+) -> UpdatePacketV2:
+    packet = _developmental_packet(replay_seed=replay_seed)
+    packet.intervention_context["developmental_input"]["state_snapshot"]["recent_user_turns"] = list(user_turns)
+    packet.intervention_context["developmental_input"]["state_snapshot"]["recent_assistant_replies"] = list(assistant_replies)
+    return packet
+
+
 def test_developmental_tick_writes_shadow_and_trace(monkeypatch, tmp_path):
     monkeypatch.setenv("OPENEMOTION_MVP12_ARTIFACTS_DIR", str(tmp_path))
     state = ProtoSelfStateV2.empty()
@@ -140,6 +152,34 @@ def test_background_thought_candidate_for_memory_continuity_thread_avoids_nested
     assert all("空档期里还会回到" not in draft for draft in drafts)
     assert all("“我怀疑我们把" not in draft for draft in drafts)
     assert any(("记得" in draft and ("主体" in draft or "连续存在" in draft or "连续" in draft)) for draft in drafts)
+
+
+def test_background_thought_candidate_uses_recent_semantic_turn_not_meta_followup(monkeypatch, tmp_path):
+    monkeypatch.setenv("OPENEMOTION_MVP12_ARTIFACTS_DIR", str(tmp_path))
+    state = ProtoSelfStateV2.empty()
+
+    output = process_update_packet(
+        state,
+        _packet_with_recent_dialogue(
+            user_turns=[
+                "如果记忆一直在，但每次处理它的主体都重新生成，那还是同一个自我吗？",
+                "我怀疑我们把“记忆”误当成了“持续存在的证明”。",
+                "你觉得呢",
+            ],
+            assistant_replies=[
+                "也许自我是个过程而不是实体。",
+                "记忆证明的是发生过，不一定证明同一个主体一直在。",
+                "我觉得你的怀疑站得住脚——我可能只是每次被唤醒时的一个临时约定，而不是一条连续的线。",
+            ],
+            replay_seed=23,
+        ),
+    )
+
+    drafts = [item["draft_text"] for item in output.developmental_summary["background_thought_candidates"]]
+    assert drafts
+    assert all("这条线没收住，像是因为" not in draft for draft in drafts)
+    assert all("我觉得你的怀疑站得住脚" not in draft for draft in drafts)
+    assert any(("记忆" in draft or "记得" in draft) and ("主体" in draft or "连续" in draft) for draft in drafts)
 
 
 def test_same_replay_seed_produces_same_candidate_hashes(monkeypatch, tmp_path):
