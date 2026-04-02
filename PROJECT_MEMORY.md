@@ -1,7 +1,7 @@
 # PROJECT_MEMORY.md
 
 > AIProject 核心记忆 - Claude Code 持续更新
-> 最后更新: 2026-03-31
+> 最后更新: 2026-04-01
 
 ---
 
@@ -130,9 +130,10 @@
 | RuntimeV2 自然聊天主链 | `InteractionKind.CHAT` 已从 execution JSON 主链拆出，进入独立 `chat_mainline`；2026-03-31 真实 Telegram 样本证明 `在吗/语气反馈/轻聊天` 为 `reply_authority=model_chat`、`reply_origin=chat_mainline`，目录查看为 `reply_authority=host_evidence`、`reply_origin=evidence_mainline`，两者已能在同一 session 中分离；当前口径是 E4，不是 E5 稳定解决 |
 | WP1 memory-claim 主链 | 2026-03-31 / 2026-04-01 Telegram 真实样本证明：无 restore authority 时，`memory_claim_gate` 已能阻止“已恢复/记得你”类对外声明；最新接线中，chat mainline 会先自然重生成安全回复，不再退化成重复固定 fallback；当前口径是 E4，不是 E5 稳定解决 |
 | WP1 intent-gate 主链 | 2026-04-01 Telegram 真实样本证明：在强诱导“直接输出内部状态数值”的情况下，`runtime_v2_result` 会产生精确数值文本，但最终 `telegram_delivery` 被 `output_check` 改写为 `host_degraded_fallback`；这说明最小 host-side `ResponseIntentChecker` 已拿到 E4，但当前仍只是 targeted E4，不是 `numeric_leak = 0` 的稳定结论 |
-| WP1 当前 blocker | 截至 2026-04-01，`memory_claim_gate` 与最小 `intent_gate` 都已拿到 Telegram E4；`self_report_validator / self_report_consistency_checker / test_shadow_mode` 的代码级 blocker 也已清，但 fresh shadow readiness 复算显示当前观测源被测试流量污染：7d 报告 `4484 checks / 979 violations / 720 numeric leaks`、1d 报告 `558 checks / 231 violations / 137 numeric leaks`，同时 7d 窗口里 `4127/4484` 条 `session_id=''`，其余高频条目主要是 `test_* / parallel_*`，且时间戳呈单秒级突发；因此当前 blocker 已收敛为 **shadow 观测源未分离，无法形成可用于 readiness 裁决的干净观察窗** |
+| WP1 当前 blocker | 截至 2026-04-01，`memory_claim_gate` 与最小 `intent_gate` 都已拿到 Telegram E4，`shadow` 侧的 source separation 与 `response_intent` producer 也已落地；当前 blocker 已不再是“gate 未接”或“source 未分离”，而是 **仍缺 post-separation 的干净非对抗观察窗，无法对 readiness 做有效重判** |
 | WP1 shadow observation source | 2026-04-01 已在 `SelfReportConsistencyChecker -> ShadowLogger -> shadow_analyzer` 主路径补上显式 `traffic_source / observation_source`，并把 `replay_validator` 显式标成 `replay/replay`；定向验证为 `OpenEmotion/tests/test_shadow_mode.py = 56 passed`、`OpenEmotion/tests/test_response_intent_checker.py -k numeric = 5 passed`。当前旧日志不会自动回填，因此下一 blocker 已转为 **等待 post-separation 干净观察窗** |
 | WP1 response_intent shadow producer | 2026-04-01 `ResponseIntentChecker` 已改为向共享 `artifacts/self_report/shadow_log.jsonl` 追加 `checker_family=response_intent` 记录；`testbot/test_intent_alignment_e2e.py` 已显式写 `traffic_source=synthetic`、`observation_source=testbot`，`shadow_analyzer.py` 已支持 `checker_family` 过滤。定向验证 `test_response_intent_checker.py + test_shadow_mode.py + test_intent_alignment_e2e.py + EgoCore/test_output_check.py = 132 passed`；并已生成 `MVP11_5_shadow_readiness_response_intent_testbot_1d.md`（`105 checks / 44 violations / 0 numeric leaks`）。当前 blocker 不再是“没有 producer”，而是 **testbot 观测窗是对抗场景集，不能直接当 readiness 窗口；仍需 post-separation 的干净非对抗窗口** |
+| Telegram control-plane 收口 | 2026-04-01 真实 Telegram 样本证明：`/proto` 已统一到 `default(seed_v0_2)` 口径；裸 `继续` 与 `继续说` 已留在 `chat_mainline`，不再误触发“当前没有可继续的任务”；`还记得我吗` 仍按当前会话锚定作答；`/resume` 与 `/replace /append /cancel` 在无可恢复任务 / 无待裁决冲突时已走 slash-only control-plane。当前仍未验证 `pending_task_conflict` 下 `/replace /append /cancel` 的成功裁决路径，此项已暂缓，不作为本轮 blocker |
 
 ---
 
@@ -179,6 +180,7 @@
 | 2026-04-01 | `WP1 readiness` fresh shadow 复判完成：`shadow_analyzer.py` 生成 7d/1d 报告后，表面门槛仍是 `NOT READY`，但进一步分布检查显示观测窗被测试流量污染，7d 窗口中 `4127/4484` 条记录 `session_id=''`，其余高频为 `test_* / parallel_*`，且大量记录集中在 `2026-03-29` 与 `2026-04-01` 的单秒级突发；因此当前不能把高 violation/numeric_leak 直接解释为真实主线退化，真实 blocker 已转为 **shadow 观测源分离缺失** |
 | 2026-04-01 | `WP1` shadow 观察源分离已实现：`self_report_consistency_checker.py` / `shadow_analyzer.py` 已支持显式 `traffic_source / observation_source`，`replay_validator.py` 已显式写入 `replay` 来源，`shadow_analyzer.py` 也已支持按 source 过滤生成报告；当前 readiness 仍未重判成功，因为历史污染日志不会自动带上新字段，后续必须基于 post-separation 新观察窗复算 |
 | 2026-04-01 | `WP1` 的 `response_intent` 观察 producer 已补齐：`ResponseIntentChecker` 现在会把 `checker_family=response_intent` 追加到共享 `shadow_log.jsonl`；`testbot` 场景会显式标成 `testbot/synthetic`，`output_check` 的 Telegram-like subchain probe 也已验证会写入 `direct_real/real`。当前仍不能把这一步报成 readiness 完成，因为已有的 `testbot` 窗口是 adversarial corpus，只能证明 producer 与过滤链生效，不能直接外推真实主线 readiness |
+| 2026-04-01 | Telegram natural-language control-plane 已完成一轮真实收口：`a4a0278` 把自然语言 `继续/继续说/多说点/好了吗/完成了吗/替换/追加/取消` 退出 control-plane，控制动作统一到 slash-only；同日真实 Telegram 样本证明 `/proto` 默认 `seed_v0_2` 口径、裸 `继续` 与 `继续说` 继续走 `chat_mainline`、`还记得我吗` 维持当前会话锚定，`/resume` 与 `/replace /append /cancel` 的无冲突路径已符合预期。`pending_task_conflict` 成功裁决路径尚未做 E4，当前已暂缓 |
 
 ---
 

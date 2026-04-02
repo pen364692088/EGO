@@ -10,7 +10,9 @@
 - 部分启用，`chat_mainline` 已启用
 
 ### 真实触发证据
-- evidence_id: Telegram real samples at 2026-03-31 19:47-19:50
+- evidence_id:
+  - Telegram real samples at 2026-03-31 19:47-19:50
+  - Telegram real samples at 2026-04-01 19:48-20:13
 - source_type: direct_real
 - artifact_path:
   - `EgoCore/data/session_logs/telegram_dm_8420019401.jsonl`
@@ -28,6 +30,10 @@
   - 宿主已能真实驱动 Telegram 主链、run/item、tool delivery
   - response_plan / delivery / blocked / final 已有 E4 正证据
   - 普通聊天已能从 execution JSON 主链中拆出，进入 `model_chat + chat_mainline`
+  - `/proto` 默认口径已统一到 `default(seed_v0_2)`
+  - 裸 `继续` 与 `继续说` 已留在 `chat_mainline`，不再误触发“当前没有可继续的任务”
+  - `还记得我吗` 已能按当前会话锚定作答
+  - `/resume` 与 `/replace /append /cancel` 的无冲突路径已走 slash-only control-plane
   - `reply_authority` 与 `reply_origin` 已在真实 Telegram 样本中对齐：
     - `在吗 / 能不能不要重复 / 活法是什么哈哈哈` -> `model_chat + chat_mainline`
     - `看一下目录...` -> `host_evidence + evidence_mainline`
@@ -35,6 +41,7 @@
   - interaction control-plane 已有单一 authority
   - response contract 已从 renderer 中完全剥离
   - 自然聊天已达到 V5 稳定解决
+  - `pending_task_conflict` 下 `/replace /append /cancel` 的成功裁决路径已达 E4
 
 ### 当前确定项
 - `InteractionKind`、`normalize_user_turn`、`ResponsePlan`、`output_check`、`tools.delivery_bridge` 已完成第一轮宿主 authority 收口
@@ -50,12 +57,15 @@
 - `WP1` readiness 复算已经得到决定性负证据：当前不是“gate 未接”，也不再是“source 未形成 / 无 E4”，而是“最小 gate 已到 E4，但 readiness 未稳”
 - session/task runtime 仍有继续拆层空间
 - `memory_claim_gate` 已拿到 Telegram E4，且聊天已从固定 fallback 升级为自然规避错误 claim
+- Telegram 自然语言 control-plane 已完成一轮真实收口：自然语言 `继续/继续说/多说点/好了吗/完成了吗/替换/追加/取消` 已退出 control-plane，slash-only 控制入口已启用
+- `/proto` 默认 `seed_v0_2` 口径、裸 `继续` 聊天延续、`继续说` 线程延续、当前会话 recall 都已拿到 direct_real 证据
 
 ### 关键未知
 - chat 主链在更长窗口、更多 persona 形态下是否能稳定维持非机械回复而不回退到任务导向
 - 最小 host-side intent gate 拿到 E4 后，`numeric_leak = 0` 是否成立
 - `self_report_contract / SRAP` 当前还有哪些约束未真正并入并 enforce 到 `ResponsePlan`
 - 当前还缺非对抗的 post-separation observation window；现有 `testbot` 窗口是 adversarial corpus，不能直接当 readiness 窗口
+- `pending_task_conflict` 真实存在时，`/replace /append /cancel` 的成功裁决路径是否完全符合当前 slash-only 设计
 
 ### 六问门禁
 1. 归属是谁：EgoCore
@@ -77,6 +87,7 @@
 - 当前不再需要从零重写方向；最小 `ResponsePlan -> ResponseIntentChecker` 与 intent contract source 都已接入，下一最小闭环动作改为：
   - 收集带 `traffic_source / observation_source / checker_family` 的非对抗 post-separation observation window
   - 再重跑 `numeric_leak / SRAP Shadow / self_report_contract` readiness
+  - `pending_task_conflict` 的 slash success-path 当前已暂缓，不作为本轮最高优先级
 
 ### 完成定义
 - `chat/task/admin/ask/wait/resume` 有唯一 authority

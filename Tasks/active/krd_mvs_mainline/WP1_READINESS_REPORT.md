@@ -12,6 +12,7 @@
 - 可以确认的:
   - host-chain 若干关键切片已到 E4
   - `chat_mainline` / `evidence_mainline` / `status_mainline` 已开始分离
+  - Telegram 自然语言 control-plane 已收缩到 slash-only，`继续/继续说` 已有 direct_real 聊天延续证据
   - `ResponsePlan` 已成为正式宿主表达合同骨架
   - `memory_claim_gate` 已拿到 Telegram 真实样本级证据
   - 最小 host-side intent gate 已拿到 Telegram 真实样本级证据
@@ -27,6 +28,7 @@
 | `InteractionKind` / `normalize_user_turn` 作为宿主入口 authority | 已接入 | E3 | 已有代码与回归，但本报告不把它单独升级为 E4 |
 | `reply_authority / reply_origin` 正式分层 | 已接入且有真实样本 | E4 | Telegram 真实样本已证明 `model_chat` 与 `host_evidence` 可在同一 session 分离 |
 | `chat_mainline` 脱离 execution JSON 主链 | 已接入且有真实样本 | E4 | 普通聊天已由 `llm.use_cases.chat` 驱动 |
+| `thread_continue` / slash-only 自然语言 control-plane 收口 | 已接入且有真实样本 | E4 | 2026-04-01 真实 Telegram 样本已证明：裸 `继续` 与 `继续说` 留在 `chat_mainline`，`/proto` 默认 `seed_v0_2` 口径正确，`/resume` 与 `/replace /append /cancel` 的无冲突路径走 slash-only control-plane |
 | `tools.delivery_bridge` | 已接入且有真实样本 | E4 | evidence delivery 已可审计 |
 | `ResponsePlan` 为唯一宿主表达主合同 | 已接入且有真实样本 | E4 | 核心字段已并入，且最小 host-side intent gate 已在 Telegram 真链路触发 |
 | `memory_claim_gate` | 已接入且有真实样本 | E4 | Telegram 真实样本已证明：无 restore authority 时不会对外声称“已恢复/记得你”，且聊天不再退化成固定 fallback |
@@ -68,6 +70,12 @@
   - local subchain probe 已证实 `output_check` 的 Telegram-like path 会写入 `traffic_source=real`、`observation_source=direct_real`、`checker_family=response_intent`
 - 这说明当前 blocker 已不再是“宿主 gate 未接 / 无 E4”，也不再是“shadow tests 失败”，更不再是“还没做 source 分离”；真正 blocker 已收敛为 **历史污染日志不会自动回填，当前需要新的干净观察窗**
  - 同时也说明 blocker 已不再是“没有 producer”；现在 producer 已有，但 `testbot` 窗口是 adversarial test corpus，不能直接当 readiness 窗口
+- 2026-04-01 同日新增 direct_real 证据：
+  - `/proto` 已默认 `seed_v0_2`
+  - 裸 `继续` 与 `继续说` 已不再误入任务/状态控制面
+  - `还记得我吗` 仍按当前会话锚定作答
+  - `/resume` 与 `/replace /append /cancel` 的无冲突路径已符合 slash-only 设计
+- 这些新增证据强化了 host-chain 方向，但**不改变**当前 readiness blocker；`pending_task_conflict` 的 slash success-path 仍未验证，且当前已暂缓，不作为本轮 blocker
 
 ## 不应误报的事项
 

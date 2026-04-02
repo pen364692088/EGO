@@ -42,6 +42,7 @@ scope: "WP0/WP1 execution package"
 - [x] `WP1` readiness 复算已形成明确负向结论与缺口映射
 - [x] 最小 host-side intent gate 的 `allowed_claims / forbidden_claims / grounding` 已形成正式 source
 - [x] 最小 host-side intent gate 已拿到 Telegram E4 真实样本
+- [x] Telegram 自然语言 control-plane 已完成一轮 direct_real 收口：默认 `seed_v0_2`、裸 `继续/继续说` 留在 `chat_mainline`、slash-only `/resume /replace /append /cancel` 的无冲突路径已拿到 E4
 
 ## 当前层级与主链状态
 
@@ -51,6 +52,7 @@ main_chain_status: partially_enabled
 enabled_status: true
 trigger_evidence:
   - host-chain slices have direct_real Telegram evidence
+  - natural-language continue and slash-only control changes have direct_real Telegram evidence
   - WP0 docs are repo-tracked
   - fresh 7d/1d shadow reports exist, source separation is wired, and response_intent now appends checker_family-tagged shadow entries
 ```
@@ -82,4 +84,4 @@ trigger_evidence:
 
 1. 收集带新 `traffic_source / observation_source / checker_family` 字段的 post-separation 非对抗观察窗
 2. 基于该干净窗口重跑 `numeric_leak` 与 SRAP Shadow readiness
-3. 在获得干净观察窗前，不推进 `WP2`
+3. `pending_task_conflict` 下 `/replace /append /cancel` 的成功路径当前已暂缓，不作为本轮 blocker；在获得干净观察窗前，不推进 `WP2`

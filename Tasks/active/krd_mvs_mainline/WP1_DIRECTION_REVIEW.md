@@ -69,6 +69,10 @@
   - 目录列出等 evidence turn 已能走 `host_evidence`
   - 后续普通聊天可以回到 `model_chat`
   - 方向上没有把 evidence host shortcut 偷渡成普通聊天主链
+  - 2026-04-01 真实 Telegram 样本进一步证明：
+    - `/proto` 默认口径已统一到 `default(seed_v0_2)`
+    - 裸 `继续` 与 `继续说` 已留在 `chat_mainline`
+    - `/resume` 与 `/replace /append /cancel` 已退出自然语言 control-plane，仅保留 slash-only 入口
 
 ## 已证实但仍不完整
 
@@ -136,6 +140,18 @@
   - 目前未见它们重新主导 `chat_mainline` 的正证据
   - 但仍是回流风险
   - 应继续留在 `WP1` 方向复核范围，不应误报为“已完全剥离”
+
+### 8a. slash-only control-plane 的 pending conflict 成功路径仍未做 E4
+- 证据:
+  - [telegram_bot.py](/mnt/d/Project/AIProject/MyProject/Ego/EgoCore/app/telegram_bot.py)
+  - 2026-04-01 Telegram 真实样本
+- 判定:
+  - 目前已证实的只有：
+    - `/resume` 无可恢复任务时的短错路径
+    - `/replace /append /cancel` 无待裁决冲突时的短错路径
+  - 尚未证实：
+    - `pending_task_conflict` 真实存在时，三条 slash 命令的成功裁决路径
+  - 该缺口当前已明确暂缓，不作为 `WP1` readiness blocker
 
 ### 9. `numeric_leak = 0` 当前已有 E4，但仍缺稳定性结论
 - `MVS_task_plan.md` 把它列为 `WP1` 验收条件之一
