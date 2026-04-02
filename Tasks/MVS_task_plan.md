@@ -287,8 +287,9 @@
   - `pending_proactive_followup`
   - `controlled_proactive_delivery_lane`
   - `host_proactive_outbox_lane`
+  - `controlled_outbox_drain`
   - `ResponsePlan / output_check`
-  - controlled proactive draft / delivery / outbox artifact
+  - controlled proactive draft / delivery / outbox / simulated-send artifact
 - 不拥有最终说话权
 - 不拥有最终执行权
 - 不直接生成 `response_plan`
@@ -309,6 +310,7 @@
 - controlled proactive delivery runner
 - host proactive outbox runner
 - `pending_proactive_outbox_events` state contract
+- controlled outbox drain runner
 - `artifacts/mvp12/` 下的 cycle / pool / shadow / replay / gate artifacts
 - 观察报告
 
@@ -318,6 +320,7 @@
 - 可在 controlled idle 窗口里生成 `pending_proactive_followup`，但不得直接发送
 - 可由宿主侧 controlled lane 将 `pending_proactive_followup` 消费成 `artifact_emitted` 的 delivery record，但不得直接走 transport
 - 可由宿主侧 outbox lane 将 `artifact_emitted` 的 delivery record 挂入 `host_proactive_outbox` queue，但不得自动发送到 Telegram
+- 可由 controlled drain 将 `host_proactive_outbox` queue 消费成 `simulated_outbox_record`，但不得冒充真实 outbox_record
 - 不破坏当前主链 determinism / gate / safety
 - 真实动作仍归 EgoCore 与 Governor 链
 - runtime harness 样本可进入 `direct_real` 主证据路径

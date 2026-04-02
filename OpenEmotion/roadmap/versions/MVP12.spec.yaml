@@ -42,6 +42,7 @@ in_scope:
   - pending_proactive_followup_state
   - controlled_proactive_delivery_lane
   - host_proactive_outbox_lane
+  - controlled_outbox_drain
   - developmental_trace_capture
   - replay_consistency
   - sandbox_governance
@@ -76,6 +77,8 @@ required_artifacts:
   - artifacts/mvp12/controlled_proactive_delivery_current.md
   - artifacts/mvp12/proactive_outbox_current.json
   - artifacts/mvp12/proactive_outbox_current.md
+  - artifacts/mvp12/proactive_outbox_drain_current.json
+  - artifacts/mvp12/proactive_outbox_drain_current.md
 required_tests:
   - pytest -q openemotion/proto_self_v2/tests/test_developmental_sandbox.py
   - pytest -q EgoCore/tests/test_runtime_v2_proto_self_runtime.py -k developmental
@@ -89,6 +92,8 @@ required_tests:
   - pytest -q EgoCore/tests/test_run_mvp12_controlled_delivery.py
   - pytest -q EgoCore/tests/test_proactive_outbox.py
   - pytest -q EgoCore/tests/test_run_mvp12_proactive_outbox.py
+  - pytest -q EgoCore/tests/test_proactive_outbox_drain.py
+  - pytest -q EgoCore/tests/test_run_mvp12_proactive_outbox_drain.py
   - python scripts/run_runtime_mainline_observation.py
   - python OpenEmotion/tools/run_mvp12_controlled_evidence.py
   - python OpenEmotion/tools/aggregate_mvp12_observations.py
@@ -96,6 +101,7 @@ required_tests:
   - python EgoCore/tools/run_mvp12_idle_scheduler.py
   - python EgoCore/tools/run_mvp12_controlled_delivery.py
   - python EgoCore/tools/run_mvp12_proactive_outbox.py
+  - python EgoCore/tools/run_mvp12_proactive_outbox_drain.py
 required_gates:
   - sandbox_no_authority_bypass
   - shadow_only_writeback
@@ -104,6 +110,7 @@ required_gates:
   - pending_proactive_followup_not_sent_directly
   - controlled_delivery_artifact_host_governed
   - proactive_outbox_queued_without_transport_send
+  - simulated_outbox_record_not_claimed_as_real_send
   - replay_consistency_ge_threshold
 promotion_criteria:
   - developmental_trace_present

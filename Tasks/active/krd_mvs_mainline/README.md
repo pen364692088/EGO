@@ -152,6 +152,13 @@ trigger_evidence:
   - 当前 smoke 结果：`outbox_result.status = queued`、`outbox_lane = host_proactive_outbox`、`pending_proactive_followup = null`
   - 当前验证结果：`15 passed`
   - 当前口径必须保持：**queued only**，不是 Telegram 自动发送，不是 live proactive speaking
+- 2026-04-02 `MVP12-A` 已再补 `controlled outbox drain`：
+  - `EgoCore/app/runtime_v2/proactive_outbox_drain.py` 会把 `host_proactive_outbox` 中的 queue 事件消费成 `simulated_outbox_record`
+  - 新 runner：`EgoCore/tools/run_mvp12_proactive_outbox_drain.py`
+  - 新 artifact：`OpenEmotion/artifacts/mvp12/proactive_outbox_drain_current.json` / `.md`
+  - 当前 smoke 结果：`drain_result.status = drained`、`transport_source = simulated_outbox_drain`、`pending_proactive_outbox_events = []`
+  - 当前验证结果：`10 passed`
+  - 当前口径必须保持：**simulated send only**，不是 Telegram 真发送，不是 live unsolicited delivery
 - 这不改变本执行包当前 scope 仍以 `WP0 / WP1` 为主。
 - 当前口径必须保持：
   - `WP7` 还未正式启动

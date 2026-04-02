@@ -40,6 +40,20 @@ EGO 是 AI Agent 项目的总仓，负责集成 EgoCore（宿主）和 OpenEmoti
 
 ## 最近更新
 
+### 2026-04-02: MVP12-A controlled outbox drain 已生成 simulated send record
+- `MVP12-A` 现在不止能挂 queue，还能把 `host_proactive_outbox` 中的事件消费成 `simulated_outbox_record`
+- 新增：
+  - `EgoCore/app/runtime_v2/proactive_outbox_drain.py`
+  - `EgoCore/tools/run_mvp12_proactive_outbox_drain.py`
+- 当前受控 artifact：
+  - `OpenEmotion/artifacts/mvp12/proactive_outbox_drain_current.json`
+  - `OpenEmotion/artifacts/mvp12/proactive_outbox_drain_current.md`
+- 当前验证口径：
+  - 定向测试 `10 passed`
+  - controlled smoke 已产出 `drain_result.status = drained`
+  - `pending_proactive_outbox_events = []`
+  - 仍未允许 Telegram 真发送
+
 ### 2026-04-02: MVP12-A host proactive outbox lane 已挂到宿主 queue
 - `MVP12-A` 现在不止能生成 draft、pending state、delivery artifact，还能把主动消息挂到宿主侧 `host_proactive_outbox` queue
 - 新增：

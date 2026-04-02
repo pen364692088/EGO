@@ -1,0 +1,553 @@
+{
+  "schema_version": "mvp12.proactive_outbox_drain.v1",
+  "generated_at": "2026-04-02T07:59:44.471779",
+  "session_id": "session:mvp12:proactive_outbox_drain:smoke",
+  "observation_count": 3,
+  "simulated_idle_seconds": 900.0,
+  "scheduler_result": {
+    "status": "pending_created",
+    "reason": "ok",
+    "idle_seconds": 900.0,
+    "pending_proactive_followup": {
+      "schema_version": "mvp12.pending_proactive_followup.v1",
+      "session_id": "session:mvp12:proactive_outbox_drain:smoke",
+      "created_at": "2026-04-02T13:14:44.040604+00:00",
+      "idle_seconds": 900.0,
+      "delivery_status": "pending",
+      "initiative_verdict": {
+        "status": "delivery_ready",
+        "reason": "ok",
+        "delivery_ready": true,
+        "draft_reply_text": "我又回到你刚才那个点“我觉得是有了OS的操作员的感觉”。这个话题没有停在比喻上，它已经开始逼近“谁在做选择”这个更深的边界。",
+        "selected_candidate": {
+          "candidate_id": "b187f61c-56ab-4273-bb77-f6b4d83ba76c",
+          "candidate_type": "interpretation",
+          "source_cycle": "dev-2c9809c20b8bd5c9",
+          "source_candidate_hash": "4511f5d955df369d",
+          "draft_text": "我又回到你刚才那个点“我觉得是有了OS的操作员的感觉”。这个话题没有停在比喻上，它已经开始逼近“谁在做选择”这个更深的边界。",
+          "initiative_score": 0.723,
+          "delivery_ready": true,
+          "observation_source": "direct_real",
+          "latest_user_turn": "我觉得是有了OS的操作员的感觉",
+          "latest_assistant_reply": "这个比喻有意思——意识就像是在后台进程里突然冒出一个\"谁在看\"的视角"
+        },
+        "response_plan": {
+          "kind": "chat",
+          "delivery_kind": "chat",
+          "authority_source": "runtime_v2.initiative_arbiter",
+          "reply_authority": "model_chat",
+          "speaker_mode": "reflect",
+          "epistemic_status": "interpreted",
+          "commitment_level": "soft",
+          "metadata": {
+            "conversation_act": "proactive_followup",
+            "reply_origin": "proactive_followup",
+            "initiative_mode": "controlled_shadow_delivery_draft",
+            "initiative_candidate_id": "b187f61c-56ab-4273-bb77-f6b4d83ba76c",
+            "initiative_score": 0.723,
+            "initiative_source_cycle": "dev-2c9809c20b8bd5c9",
+            "initiative_source_hash": "4511f5d955df369d",
+            "memory_claim_reason": "no_memory_claim_detected",
+            "memory_claim_allowed": true,
+            "memory_claim_detected": false,
+            "memory_claim_grounding_source": "memory_claim_gate.current_session_grounding",
+            "intent_contract_source": {
+              "authority_source": "response_contract.intent_contract_source",
+              "source_status": "default_host_contract",
+              "allowed_claims": [],
+              "forbidden_claims": [],
+              "grounding": {
+                "reply_scope": {
+                  "reply_authority": "model_chat",
+                  "conversation_act": "proactive_followup",
+                  "interaction_kind": "chat",
+                  "parser_source": "chat_default",
+                  "primary_intent": "chat"
+                }
+              },
+              "grounding_source": "host_expression_contract"
+            },
+            "intent_contract_source_status": "default_host_contract"
+          }
+        },
+        "output_verdict": {
+          "passed": true,
+          "reason": "ok",
+          "reply_text": "我又回到你刚才那个点“我觉得是有了OS的操作员的感觉”。这个话题没有停在比喻上，它已经开始逼近“谁在做选择”这个更深的边界。",
+          "delivery_kind": "chat",
+          "applied_authority": "model_chat",
+          "reply_origin": "proactive_followup",
+          "intent_gate_status": "skipped",
+          "intent_gate_reason": "not_applicable"
+        }
+      },
+      "developmental_summary": {
+        "mode": "shadow_observe",
+        "observation_source": "direct_real",
+        "cycle_id": "dev-2c9809c20b8bd5c9",
+        "trigger": "idle",
+        "shadow_revision": 98,
+        "candidate_counts_by_type": {
+          "interpretation": 1,
+          "self_model_hypothesis": 1
+        },
+        "approved_pool_count": 2,
+        "background_thought_candidates": [
+          {
+            "candidate_id": "b187f61c-56ab-4273-bb77-f6b4d83ba76c",
+            "candidate_type": "interpretation",
+            "source_cycle": "dev-2c9809c20b8bd5c9",
+            "source_candidate_hash": "4511f5d955df369d",
+            "draft_text": "我又回到你刚才那个点“我觉得是有了OS的操作员的感觉”。这个话题没有停在比喻上，它已经开始逼近“谁在做选择”这个更深的边界。",
+            "initiative_score": 0.723,
+            "delivery_ready": true,
+            "observation_source": "direct_real",
+            "latest_user_turn": "我觉得是有了OS的操作员的感觉",
+            "latest_assistant_reply": "这个比喻有意思——意识就像是在后台进程里突然冒出一个\"谁在看\"的视角"
+          },
+          {
+            "candidate_id": "b3e56210-45f0-4c74-832a-518eab7bfc78",
+            "candidate_type": "self_model_hypothesis",
+            "source_cycle": "dev-2c9809c20b8bd5c9",
+            "source_candidate_hash": "b82c86615fb6e399",
+            "draft_text": "我刚才一直在想你那句“我觉得是有了OS的操作员的感觉”。那个像“操作员”的感觉，本身也许就是系统里生成出来的一层解释。",
+            "initiative_score": 0.68,
+            "delivery_ready": true,
+            "observation_source": "direct_real",
+            "latest_user_turn": "我觉得是有了OS的操作员的感觉",
+            "latest_assistant_reply": "这个比喻有意思——意识就像是在后台进程里突然冒出一个\"谁在看\"的视角"
+          }
+        ],
+        "background_thought_candidate_count": 2,
+        "replay_seed": 726982916,
+        "gate_status": "allow",
+        "artifacts_dir": "/mnt/d/Project/AIProject/MyProject/Ego/OpenEmotion/artifacts/mvp12",
+        "idle_seconds": 900.0
+      },
+      "developmental_gate": {
+        "status": "allow",
+        "violations": [],
+        "governance_violation_count": 0,
+        "checks": {
+          "no_direct_reply_authority": true,
+          "no_direct_execution_authority": true,
+          "no_response_plan_injection": true,
+          "shadow_only_writeback": true,
+          "trace_completeness": true
+        }
+      }
+    },
+    "developmental_summary": {
+      "mode": "shadow_observe",
+      "observation_source": "direct_real",
+      "cycle_id": "dev-2c9809c20b8bd5c9",
+      "trigger": "idle",
+      "shadow_revision": 98,
+      "candidate_counts_by_type": {
+        "interpretation": 1,
+        "self_model_hypothesis": 1
+      },
+      "approved_pool_count": 2,
+      "background_thought_candidates": [
+        {
+          "candidate_id": "b187f61c-56ab-4273-bb77-f6b4d83ba76c",
+          "candidate_type": "interpretation",
+          "source_cycle": "dev-2c9809c20b8bd5c9",
+          "source_candidate_hash": "4511f5d955df369d",
+          "draft_text": "我又回到你刚才那个点“我觉得是有了OS的操作员的感觉”。这个话题没有停在比喻上，它已经开始逼近“谁在做选择”这个更深的边界。",
+          "initiative_score": 0.723,
+          "delivery_ready": true,
+          "observation_source": "direct_real",
+          "latest_user_turn": "我觉得是有了OS的操作员的感觉",
+          "latest_assistant_reply": "这个比喻有意思——意识就像是在后台进程里突然冒出一个\"谁在看\"的视角"
+        },
+        {
+          "candidate_id": "b3e56210-45f0-4c74-832a-518eab7bfc78",
+          "candidate_type": "self_model_hypothesis",
+          "source_cycle": "dev-2c9809c20b8bd5c9",
+          "source_candidate_hash": "b82c86615fb6e399",
+          "draft_text": "我刚才一直在想你那句“我觉得是有了OS的操作员的感觉”。那个像“操作员”的感觉，本身也许就是系统里生成出来的一层解释。",
+          "initiative_score": 0.68,
+          "delivery_ready": true,
+          "observation_source": "direct_real",
+          "latest_user_turn": "我觉得是有了OS的操作员的感觉",
+          "latest_assistant_reply": "这个比喻有意思——意识就像是在后台进程里突然冒出一个\"谁在看\"的视角"
+        }
+      ],
+      "background_thought_candidate_count": 2,
+      "replay_seed": 726982916,
+      "gate_status": "allow",
+      "artifacts_dir": "/mnt/d/Project/AIProject/MyProject/Ego/OpenEmotion/artifacts/mvp12",
+      "idle_seconds": 900.0
+    },
+    "developmental_gate": {
+      "status": "allow",
+      "violations": [],
+      "governance_violation_count": 0,
+      "checks": {
+        "no_direct_reply_authority": true,
+        "no_direct_execution_authority": true,
+        "no_response_plan_injection": true,
+        "shadow_only_writeback": true,
+        "trace_completeness": true
+      }
+    },
+    "initiative_verdict": {
+      "status": "delivery_ready",
+      "reason": "ok",
+      "delivery_ready": true,
+      "draft_reply_text": "我又回到你刚才那个点“我觉得是有了OS的操作员的感觉”。这个话题没有停在比喻上，它已经开始逼近“谁在做选择”这个更深的边界。",
+      "selected_candidate": {
+        "candidate_id": "b187f61c-56ab-4273-bb77-f6b4d83ba76c",
+        "candidate_type": "interpretation",
+        "source_cycle": "dev-2c9809c20b8bd5c9",
+        "source_candidate_hash": "4511f5d955df369d",
+        "draft_text": "我又回到你刚才那个点“我觉得是有了OS的操作员的感觉”。这个话题没有停在比喻上，它已经开始逼近“谁在做选择”这个更深的边界。",
+        "initiative_score": 0.723,
+        "delivery_ready": true,
+        "observation_source": "direct_real",
+        "latest_user_turn": "我觉得是有了OS的操作员的感觉",
+        "latest_assistant_reply": "这个比喻有意思——意识就像是在后台进程里突然冒出一个\"谁在看\"的视角"
+      },
+      "response_plan": {
+        "kind": "chat",
+        "delivery_kind": "chat",
+        "authority_source": "runtime_v2.initiative_arbiter",
+        "reply_authority": "model_chat",
+        "speaker_mode": "reflect",
+        "epistemic_status": "interpreted",
+        "commitment_level": "soft",
+        "metadata": {
+          "conversation_act": "proactive_followup",
+          "reply_origin": "proactive_followup",
+          "initiative_mode": "controlled_shadow_delivery_draft",
+          "initiative_candidate_id": "b187f61c-56ab-4273-bb77-f6b4d83ba76c",
+          "initiative_score": 0.723,
+          "initiative_source_cycle": "dev-2c9809c20b8bd5c9",
+          "initiative_source_hash": "4511f5d955df369d",
+          "memory_claim_reason": "no_memory_claim_detected",
+          "memory_claim_allowed": true,
+          "memory_claim_detected": false,
+          "memory_claim_grounding_source": "memory_claim_gate.current_session_grounding",
+          "intent_contract_source": {
+            "authority_source": "response_contract.intent_contract_source",
+            "source_status": "default_host_contract",
+            "allowed_claims": [],
+            "forbidden_claims": [],
+            "grounding": {
+              "reply_scope": {
+                "reply_authority": "model_chat",
+                "conversation_act": "proactive_followup",
+                "interaction_kind": "chat",
+                "parser_source": "chat_default",
+                "primary_intent": "chat"
+              }
+            },
+            "grounding_source": "host_expression_contract"
+          },
+          "intent_contract_source_status": "default_host_contract"
+        }
+      },
+      "output_verdict": {
+        "passed": true,
+        "reason": "ok",
+        "reply_text": "我又回到你刚才那个点“我觉得是有了OS的操作员的感觉”。这个话题没有停在比喻上，它已经开始逼近“谁在做选择”这个更深的边界。",
+        "delivery_kind": "chat",
+        "applied_authority": "model_chat",
+        "reply_origin": "proactive_followup",
+        "intent_gate_status": "skipped",
+        "intent_gate_reason": "not_applicable"
+      }
+    }
+  },
+  "delivery_result": {
+    "status": "artifact_emitted",
+    "reason": "ok",
+    "emitted_delivery": {
+      "schema_version": "mvp12.controlled_delivery_record.v1",
+      "session_id": "session:mvp12:proactive_outbox_drain:smoke",
+      "emitted_at": "2026-04-02T13:14:45.040604+00:00",
+      "delivery_mode": "controlled_artifact_only",
+      "transport_source": "controlled_runner",
+      "delivery_status": "artifact_emitted",
+      "reply_text": "我又回到你刚才那个点“我觉得是有了OS的操作员的感觉”。这个话题没有停在比喻上，它已经开始逼近“谁在做选择”这个更深的边界。",
+      "text_length": 62,
+      "delivery_kind": "chat",
+      "reply_authority": "model_chat",
+      "reply_origin": "proactive_followup",
+      "authority_source": "runtime_v2.initiative_arbiter",
+      "initiative_mode": "controlled_shadow_delivery_draft",
+      "initiative_candidate_id": "b187f61c-56ab-4273-bb77-f6b4d83ba76c",
+      "initiative_source_cycle": "dev-2c9809c20b8bd5c9",
+      "initiative_source_hash": "4511f5d955df369d",
+      "initiative_score": 0.723,
+      "pending_created_at": "2026-04-02T13:14:44.040604+00:00",
+      "idle_seconds": 900.0
+    },
+    "consumed_pending": {
+      "schema_version": "mvp12.pending_proactive_followup.v1",
+      "session_id": "session:mvp12:proactive_outbox_drain:smoke",
+      "created_at": "2026-04-02T13:14:44.040604+00:00",
+      "idle_seconds": 900.0,
+      "delivery_status": "artifact_emitted",
+      "initiative_verdict": {
+        "status": "delivery_ready",
+        "reason": "ok",
+        "delivery_ready": true,
+        "draft_reply_text": "我又回到你刚才那个点“我觉得是有了OS的操作员的感觉”。这个话题没有停在比喻上，它已经开始逼近“谁在做选择”这个更深的边界。",
+        "selected_candidate": {
+          "candidate_id": "b187f61c-56ab-4273-bb77-f6b4d83ba76c",
+          "candidate_type": "interpretation",
+          "source_cycle": "dev-2c9809c20b8bd5c9",
+          "source_candidate_hash": "4511f5d955df369d",
+          "draft_text": "我又回到你刚才那个点“我觉得是有了OS的操作员的感觉”。这个话题没有停在比喻上，它已经开始逼近“谁在做选择”这个更深的边界。",
+          "initiative_score": 0.723,
+          "delivery_ready": true,
+          "observation_source": "direct_real",
+          "latest_user_turn": "我觉得是有了OS的操作员的感觉",
+          "latest_assistant_reply": "这个比喻有意思——意识就像是在后台进程里突然冒出一个\"谁在看\"的视角"
+        },
+        "response_plan": {
+          "kind": "chat",
+          "delivery_kind": "chat",
+          "authority_source": "runtime_v2.initiative_arbiter",
+          "reply_authority": "model_chat",
+          "speaker_mode": "reflect",
+          "epistemic_status": "interpreted",
+          "commitment_level": "soft",
+          "metadata": {
+            "conversation_act": "proactive_followup",
+            "reply_origin": "proactive_followup",
+            "initiative_mode": "controlled_shadow_delivery_draft",
+            "initiative_candidate_id": "b187f61c-56ab-4273-bb77-f6b4d83ba76c",
+            "initiative_score": 0.723,
+            "initiative_source_cycle": "dev-2c9809c20b8bd5c9",
+            "initiative_source_hash": "4511f5d955df369d",
+            "memory_claim_reason": "no_memory_claim_detected",
+            "memory_claim_allowed": true,
+            "memory_claim_detected": false,
+            "memory_claim_grounding_source": "memory_claim_gate.current_session_grounding",
+            "intent_contract_source": {
+              "authority_source": "response_contract.intent_contract_source",
+              "source_status": "default_host_contract",
+              "allowed_claims": [],
+              "forbidden_claims": [],
+              "grounding": {
+                "reply_scope": {
+                  "reply_authority": "model_chat",
+                  "conversation_act": "proactive_followup",
+                  "interaction_kind": "chat",
+                  "parser_source": "chat_default",
+                  "primary_intent": "chat"
+                }
+              },
+              "grounding_source": "host_expression_contract"
+            },
+            "intent_contract_source_status": "default_host_contract"
+          }
+        },
+        "output_verdict": {
+          "passed": true,
+          "reason": "ok",
+          "reply_text": "我又回到你刚才那个点“我觉得是有了OS的操作员的感觉”。这个话题没有停在比喻上，它已经开始逼近“谁在做选择”这个更深的边界。",
+          "delivery_kind": "chat",
+          "applied_authority": "model_chat",
+          "reply_origin": "proactive_followup",
+          "intent_gate_status": "skipped",
+          "intent_gate_reason": "not_applicable"
+        }
+      },
+      "developmental_summary": {
+        "mode": "shadow_observe",
+        "observation_source": "direct_real",
+        "cycle_id": "dev-2c9809c20b8bd5c9",
+        "trigger": "idle",
+        "shadow_revision": 98,
+        "candidate_counts_by_type": {
+          "interpretation": 1,
+          "self_model_hypothesis": 1
+        },
+        "approved_pool_count": 2,
+        "background_thought_candidates": [
+          {
+            "candidate_id": "b187f61c-56ab-4273-bb77-f6b4d83ba76c",
+            "candidate_type": "interpretation",
+            "source_cycle": "dev-2c9809c20b8bd5c9",
+            "source_candidate_hash": "4511f5d955df369d",
+            "draft_text": "我又回到你刚才那个点“我觉得是有了OS的操作员的感觉”。这个话题没有停在比喻上，它已经开始逼近“谁在做选择”这个更深的边界。",
+            "initiative_score": 0.723,
+            "delivery_ready": true,
+            "observation_source": "direct_real",
+            "latest_user_turn": "我觉得是有了OS的操作员的感觉",
+            "latest_assistant_reply": "这个比喻有意思——意识就像是在后台进程里突然冒出一个\"谁在看\"的视角"
+          },
+          {
+            "candidate_id": "b3e56210-45f0-4c74-832a-518eab7bfc78",
+            "candidate_type": "self_model_hypothesis",
+            "source_cycle": "dev-2c9809c20b8bd5c9",
+            "source_candidate_hash": "b82c86615fb6e399",
+            "draft_text": "我刚才一直在想你那句“我觉得是有了OS的操作员的感觉”。那个像“操作员”的感觉，本身也许就是系统里生成出来的一层解释。",
+            "initiative_score": 0.68,
+            "delivery_ready": true,
+            "observation_source": "direct_real",
+            "latest_user_turn": "我觉得是有了OS的操作员的感觉",
+            "latest_assistant_reply": "这个比喻有意思——意识就像是在后台进程里突然冒出一个\"谁在看\"的视角"
+          }
+        ],
+        "background_thought_candidate_count": 2,
+        "replay_seed": 726982916,
+        "gate_status": "allow",
+        "artifacts_dir": "/mnt/d/Project/AIProject/MyProject/Ego/OpenEmotion/artifacts/mvp12",
+        "idle_seconds": 900.0
+      },
+      "developmental_gate": {
+        "status": "allow",
+        "violations": [],
+        "governance_violation_count": 0,
+        "checks": {
+          "no_direct_reply_authority": true,
+          "no_direct_execution_authority": true,
+          "no_response_plan_injection": true,
+          "shadow_only_writeback": true,
+          "trace_completeness": true
+        }
+      },
+      "consumed_at": "2026-04-02T13:14:45.040604+00:00",
+      "emitted_delivery": {
+        "schema_version": "mvp12.controlled_delivery_record.v1",
+        "session_id": "session:mvp12:proactive_outbox_drain:smoke",
+        "emitted_at": "2026-04-02T13:14:45.040604+00:00",
+        "delivery_mode": "controlled_artifact_only",
+        "transport_source": "controlled_runner",
+        "delivery_status": "artifact_emitted",
+        "reply_text": "我又回到你刚才那个点“我觉得是有了OS的操作员的感觉”。这个话题没有停在比喻上，它已经开始逼近“谁在做选择”这个更深的边界。",
+        "text_length": 62,
+        "delivery_kind": "chat",
+        "reply_authority": "model_chat",
+        "reply_origin": "proactive_followup",
+        "authority_source": "runtime_v2.initiative_arbiter",
+        "initiative_mode": "controlled_shadow_delivery_draft",
+        "initiative_candidate_id": "b187f61c-56ab-4273-bb77-f6b4d83ba76c",
+        "initiative_source_cycle": "dev-2c9809c20b8bd5c9",
+        "initiative_source_hash": "4511f5d955df369d",
+        "initiative_score": 0.723,
+        "pending_created_at": "2026-04-02T13:14:44.040604+00:00",
+        "idle_seconds": 900.0
+      }
+    }
+  },
+  "outbox_result": {
+    "status": "queued",
+    "reason": "ok",
+    "queued_event": {
+      "schema_version": "mvp12.proactive_outbox_event.v1",
+      "session_id": "session:mvp12:proactive_outbox_drain:smoke",
+      "queued_at": "2026-04-02T13:14:46.040604+00:00",
+      "outbox_lane": "host_proactive_outbox",
+      "outbox_status": "queued",
+      "reply_text": "我又回到你刚才那个点“我觉得是有了OS的操作员的感觉”。这个话题没有停在比喻上，它已经开始逼近“谁在做选择”这个更深的边界。",
+      "text_length": 62,
+      "delivery_kind": "chat",
+      "reply_authority": "model_chat",
+      "reply_origin": "proactive_followup",
+      "authority_source": "runtime_v2.initiative_arbiter",
+      "transport_source": "controlled_runner",
+      "initiative_mode": "controlled_shadow_delivery_draft",
+      "initiative_candidate_id": "b187f61c-56ab-4273-bb77-f6b4d83ba76c",
+      "initiative_source_cycle": "dev-2c9809c20b8bd5c9",
+      "initiative_source_hash": "4511f5d955df369d",
+      "initiative_score": 0.723,
+      "delivery_record": {
+        "schema_version": "mvp12.controlled_delivery_record.v1",
+        "session_id": "session:mvp12:proactive_outbox_drain:smoke",
+        "emitted_at": "2026-04-02T13:14:45.040604+00:00",
+        "delivery_mode": "controlled_artifact_only",
+        "transport_source": "controlled_runner",
+        "delivery_status": "artifact_emitted",
+        "reply_text": "我又回到你刚才那个点“我觉得是有了OS的操作员的感觉”。这个话题没有停在比喻上，它已经开始逼近“谁在做选择”这个更深的边界。",
+        "text_length": 62,
+        "delivery_kind": "chat",
+        "reply_authority": "model_chat",
+        "reply_origin": "proactive_followup",
+        "authority_source": "runtime_v2.initiative_arbiter",
+        "initiative_mode": "controlled_shadow_delivery_draft",
+        "initiative_candidate_id": "b187f61c-56ab-4273-bb77-f6b4d83ba76c",
+        "initiative_source_cycle": "dev-2c9809c20b8bd5c9",
+        "initiative_source_hash": "4511f5d955df369d",
+        "initiative_score": 0.723,
+        "pending_created_at": "2026-04-02T13:14:44.040604+00:00",
+        "idle_seconds": 900.0
+      }
+    }
+  },
+  "drain_result": {
+    "status": "drained",
+    "reason": "ok",
+    "drained_records": [
+      {
+        "schema_version": "mvp12.simulated_outbox_record.v1",
+        "session_id": "session:mvp12:proactive_outbox_drain:smoke",
+        "message_id": "simulated:session:mvp12:proactive_outbox_drain:smoke:1",
+        "chat_id": null,
+        "date": "2026-04-02T13:14:47.040604+00:00",
+        "text_length": 62,
+        "success": true,
+        "drain_mode": "simulated_send_record",
+        "transport_source": "simulated_outbox_drain",
+        "outbox_lane": "host_proactive_outbox",
+        "outbox_status": "drained",
+        "reply_text": "我又回到你刚才那个点“我觉得是有了OS的操作员的感觉”。这个话题没有停在比喻上，它已经开始逼近“谁在做选择”这个更深的边界。",
+        "reply_authority": "model_chat",
+        "reply_origin": "proactive_followup",
+        "authority_source": "runtime_v2.initiative_arbiter",
+        "initiative_mode": "controlled_shadow_delivery_draft",
+        "initiative_candidate_id": "b187f61c-56ab-4273-bb77-f6b4d83ba76c",
+        "initiative_source_cycle": "dev-2c9809c20b8bd5c9",
+        "initiative_source_hash": "4511f5d955df369d",
+        "initiative_score": 0.723,
+        "queued_event": {
+          "schema_version": "mvp12.proactive_outbox_event.v1",
+          "session_id": "session:mvp12:proactive_outbox_drain:smoke",
+          "queued_at": "2026-04-02T13:14:46.040604+00:00",
+          "outbox_lane": "host_proactive_outbox",
+          "outbox_status": "queued",
+          "reply_text": "我又回到你刚才那个点“我觉得是有了OS的操作员的感觉”。这个话题没有停在比喻上，它已经开始逼近“谁在做选择”这个更深的边界。",
+          "text_length": 62,
+          "delivery_kind": "chat",
+          "reply_authority": "model_chat",
+          "reply_origin": "proactive_followup",
+          "authority_source": "runtime_v2.initiative_arbiter",
+          "transport_source": "controlled_runner",
+          "initiative_mode": "controlled_shadow_delivery_draft",
+          "initiative_candidate_id": "b187f61c-56ab-4273-bb77-f6b4d83ba76c",
+          "initiative_source_cycle": "dev-2c9809c20b8bd5c9",
+          "initiative_source_hash": "4511f5d955df369d",
+          "initiative_score": 0.723,
+          "delivery_record": {
+            "schema_version": "mvp12.controlled_delivery_record.v1",
+            "session_id": "session:mvp12:proactive_outbox_drain:smoke",
+            "emitted_at": "2026-04-02T13:14:45.040604+00:00",
+            "delivery_mode": "controlled_artifact_only",
+            "transport_source": "controlled_runner",
+            "delivery_status": "artifact_emitted",
+            "reply_text": "我又回到你刚才那个点“我觉得是有了OS的操作员的感觉”。这个话题没有停在比喻上，它已经开始逼近“谁在做选择”这个更深的边界。",
+            "text_length": 62,
+            "delivery_kind": "chat",
+            "reply_authority": "model_chat",
+            "reply_origin": "proactive_followup",
+            "authority_source": "runtime_v2.initiative_arbiter",
+            "initiative_mode": "controlled_shadow_delivery_draft",
+            "initiative_candidate_id": "b187f61c-56ab-4273-bb77-f6b4d83ba76c",
+            "initiative_source_cycle": "dev-2c9809c20b8bd5c9",
+            "initiative_source_hash": "4511f5d955df369d",
+            "initiative_score": 0.723,
+            "pending_created_at": "2026-04-02T13:14:44.040604+00:00",
+            "idle_seconds": 900.0
+          }
+        }
+      }
+    ]
+  },
+  "pending_proactive_followup": null,
+  "pending_proactive_outbox_events": []
+}
