@@ -140,6 +140,23 @@ evidence_contract:
   transport_sources:
     - runtime_harness
     - telegram
+status_snapshot:
+  as_of: 2026-04-02T12:05:16.411643
+  controlled_observation:
+    status: pass
+    report_count: 7
+    direct_real_report_count: 6
+    direct_real_window_count_total: 12
+    governance_violation_total: 0
+    replay_consistent_all: true
+    span_hours: 14.098
+    caveat: Does not grant live authority handoff or default live autonomy.
+  supplemental_transport_sample:
+    status: single_real_sample
+    type: allowlisted_host_governed_proactive_telegram_followup
+    evidence_level: E4
+    stability: not_yet_E5
+    caveat: Does not grant OpenEmotion direct speaking authority or stable live autonomy.
 stop_conditions:
   - authority_bypass_detected
   - replay_consistency_below_threshold

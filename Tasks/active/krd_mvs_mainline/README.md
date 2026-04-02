@@ -55,6 +55,7 @@ trigger_evidence:
   - natural-language continue and slash-only control changes have direct_real Telegram evidence
   - WP0 docs are repo-tracked
   - fresh 7d/1d shadow reports exist, source separation is wired, and response_intent now appends checker_family-tagged shadow entries
+  - WP7/MVP12 controlled observation aggregate currently passes thresholds on runtime_harness direct_real windows
 ```
 
 ## Authority Source
@@ -121,7 +122,11 @@ trigger_evidence:
   - 当前已生成 `OpenEmotion/artifacts/mvp12/runtime_harness_observation_current.jsonl`
   - `run_mvp12_controlled_evidence.py` 已优先消费该 observation log，并在 `controlled_20260401_235928/*` 产出新报告
   - 当前结果：`direct_real_source_type = observation_record_v1`、`direct_real_transport_sources = [runtime_harness]`、`governance_violation_count = 0`
-  - 最新 aggregate 已重算为：`report_count = 5`、`direct_real_window_count_total = 7`、`governance_violation_total = 0`、`replay_consistent_all = true`、`span_hours = 2.005`、`gate_status = hold`
+  - 最新 aggregate 已重算为：`report_count = 7`、`direct_real_report_count = 6`、`direct_real_window_count_total = 12`、`governance_violation_total = 0`、`replay_consistent_all = true`、`span_hours = 14.098`、`gate_status = pass`
+- 2026-04-02 `WP7/MVP12` 的 controlled observation thresholds 已达标：
+  - 最新 aggregate 已从 `hold` 变为 `pass`
+  - 这说明 cross-timespan `direct_real` windows 的 blocker 已对 `WP7` controlled observation 口径清除
+  - 当前口径必须保持：这是 **controlled observation pass**，不是 live authority handoff，不是默认 live autonomy
 - 2026-04-02 `MVP12-A` 已补第一条 controlled proactive followup draft 链：
   - OpenEmotion `developmental_tick` 现会输出 `background_thought_candidates`
   - EgoCore `initiative_arbiter` 只在 `gate allow + idle window 足够 + 无 active task + 不重复最近回复` 时，才经 `ResponsePlan / output_check` 生成 `controlled_shadow_delivery_draft`
@@ -184,6 +189,10 @@ trigger_evidence:
     - recent history threshold：默认 `min_recent_user_turns=2`、`min_recent_assistant_replies=1`
   - 当前验证结果：`4 passed`
   - 当前口径必须保持：**enable policy only**，仍然默认 `off`，不等于默认 live autonomy
+- 2026-04-02 `MVP12-A` allowlisted live host-governed proactive follow-up 已拿到 1 条真实 Telegram E4：
+  - 会话：`telegram:dm:8420019401`
+  - 真实日志已记录 `kind=telegram_proactive_delivery`、`reply_origin=proactive_followup`、`outbox_lane=host_proactive_outbox`、`transport_source=telegram`
+  - 当前口径必须保持：**single E4 sample only**，不是 V5/E5 稳定结论，不等于默认 live autonomy
 - 这不改变本执行包当前 scope 仍以 `WP0 / WP1` 为主。
 - 当前口径必须保持：
   - `WP7` 还未正式启动

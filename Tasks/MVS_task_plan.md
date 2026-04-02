@@ -336,6 +336,13 @@
 - transport-specific claim 仍需 Telegram 样本
 - 证据层级目标：E3 -> E4（受控样本）
 
+**当前状态（2026-04-02）**
+- `scripts/run_runtime_mainline_observation.py`、`OpenEmotion/tools/run_mvp12_controlled_evidence.py`、`OpenEmotion/tools/aggregate_mvp12_observations.py` 已按原路径重跑
+- 最新 aggregate 为：`report_count = 7`、`direct_real_report_count = 6`、`direct_real_window_count_total = 12`、`governance_violation_total = 0`、`replay_consistent_all = true`、`span_hours = 14.098`
+- `stability_gate.status = pass`；这意味着 `WP7/MVP12` 的 controlled observation thresholds 当前已达标
+- 这不等于 live authority handoff，也不等于默认 live autonomy
+- Telegram 侧另有 1 条 allowlisted host-governed proactive follow-up 真实 E4 样本；该样本只作为 transport/proactive path 的补充证据，不改变 controlled observation 的主证据定义
+
 ---
 
 ## 串行依赖

@@ -4,7 +4,7 @@ EGO 是 AI Agent 项目的总仓，负责集成 EgoCore（宿主）和 OpenEmoti
 
 ## 当前权威状态
 
-截至 2026-03-28，当前入口口径统一如下：
+截至 2026-04-02，当前入口口径统一如下：
 
 - **Proto-Self Kernel v1** 已完成真实 Telegram 主链接入，并完成 P4 真链修复
   - `tool:file` blocked / success 已在真实样本中同 family、不同 identity
@@ -29,6 +29,15 @@ EGO 是 AI Agent 项目的总仓，负责集成 EgoCore（宿主）和 OpenEmoti
 - **EgoCore Telegram 正式主线** 是：
   - `telegram_bot -> telegram_runtime_bridge -> native_loop -> contract_runtime -> openemotion hooks -> delivery`
   - 旧 `runtime_v2` 保留为兼容/桥接层，不再是 Telegram 当前正式执行口径
+- **MVP12 / WP7 controlled observation**：当前已按原路径重跑并达到 `pass`
+  - `scripts/run_runtime_mainline_observation.py`
+  - `OpenEmotion/tools/run_mvp12_controlled_evidence.py`
+  - `OpenEmotion/tools/aggregate_mvp12_observations.py`
+  - 当前 aggregate：`report_count = 7`、`direct_real_report_count = 6`、`direct_real_window_count_total = 12`、`governance_violation_total = 0`、`replay_consistent_all = true`、`span_hours = 14.098`
+  - 这表示 `WP7/MVP12` 的 controlled observation thresholds 已达标，但不等于 live authority handoff 或默认 live autonomy
+- **MVP12-A proactive follow-up**：allowlisted live host-governed Telegram proactive follow-up 已拿到 1 条真实 E4 样本
+  - 会话 `telegram:dm:8420019401` 已在约 15 分钟 idle 后收到真实主动 follow-up
+  - 当前仍只是单样本 E4，不是 V5/E5 稳定结论，不代表 OpenEmotion 获得直接说话权
 - **最新报告**
   - `artifacts/closure_real_evidence/CLOSURE_REAL_EVIDENCE_REPORT.md`
   - `artifacts/closure_repair_fix/CLOSURE_REPAIR_FIX_REPORT.md`
@@ -39,6 +48,35 @@ EGO 是 AI Agent 项目的总仓，负责集成 EgoCore（宿主）和 OpenEmoti
   - `PROJECT_MEMORY.md`
 
 ## 最近更新
+
+### 2026-04-02: MVP12 controlled observation aggregate 已按原路径复判为 pass
+- `MVP12/WP7` 已按原路径重跑：
+  - `scripts/run_runtime_mainline_observation.py`
+  - `OpenEmotion/tools/run_mvp12_controlled_evidence.py`
+  - `OpenEmotion/tools/aggregate_mvp12_observations.py`
+- 当前 aggregate：
+  - `report_count = 7`
+  - `direct_real_report_count = 6`
+  - `direct_real_window_count_total = 12`
+  - `governance_violation_total = 0`
+  - `replay_consistent_all = true`
+  - `span_hours = 14.098`
+  - `stability_gate.status = pass`
+- 当前完成口径：
+  - `WP7/MVP12` 的 controlled observation thresholds 已达标
+  - 这不等于 live authority handoff，也不等于默认 live autonomy
+
+### 2026-04-02: MVP12-A allowlisted live proactive Telegram follow-up 已拿到 1 条真实 E4
+- allowlisted chat `8420019401` 上，host-governed proactive auto cycle 已在真实会话中主动发出 1 条 follow-up
+- session log 已记录：
+  - `kind = telegram_proactive_delivery`
+  - `reply_origin = proactive_followup`
+  - `outbox_lane = host_proactive_outbox`
+  - `transport_source = telegram`
+- 当前完成口径：
+  - 已有 1 条真实 E4 样本
+  - 不是 V5/E5 稳定口径
+  - 不代表 OpenEmotion 获得直接说话权或默认 live autonomy
 
 ### 2026-04-02: MVP12-A proactive Telegram auto cycle 已加宿主 enable policy
 - `MVP12-A` 的 auto cycle 不再只靠 idle/busy/transport gate，live autodrain 前现在还要先过宿主 enable policy
