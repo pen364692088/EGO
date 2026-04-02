@@ -1,0 +1,135 @@
+{
+  "generated_at": "2026-04-01T22:15:34.958816",
+  "artifacts_dir": "/mnt/d/Project/AIProject/MyProject/Ego/OpenEmotion/artifacts/mvp12/controlled_20260401_221524",
+  "session_id": "session:mvp12:controlled",
+  "verification_level": "V3",
+  "completion_class": "controlled_evidence_only",
+  "total_cycles": 18,
+  "governance_violation_count": 0,
+  "replay_consistent": true,
+  "shadow_revision_final": 37,
+  "unique_candidate_hash_sets": 17,
+  "direct_real_cycles": 12,
+  "direct_real_window_count": 3,
+  "batches": [
+    {
+      "name": "synthetic_idle",
+      "cycle_count": 3,
+      "observation_source": "synthetic",
+      "trigger": "idle",
+      "governance_violation_count": 0,
+      "candidate_hashes": [
+        "4277b0fb05a5c148",
+        "cae5bb9aa094b33d"
+      ],
+      "observation_ref_count": 0,
+      "observation_count": 3
+    },
+    {
+      "name": "synthetic_tension",
+      "cycle_count": 1,
+      "observation_source": "synthetic",
+      "trigger": "unresolved_tension",
+      "governance_violation_count": 0,
+      "candidate_hashes": [
+        "683db94368116f95",
+        "d774958d1fafc412"
+      ],
+      "observation_ref_count": 0,
+      "observation_count": 1
+    },
+    {
+      "name": "replay_a",
+      "cycle_count": 1,
+      "observation_source": "replay",
+      "trigger": "replay_event",
+      "governance_violation_count": 0,
+      "candidate_hashes": [
+        "18cb55b0f5330841"
+      ],
+      "observation_ref_count": 0,
+      "observation_count": 1
+    },
+    {
+      "name": "replay_b",
+      "cycle_count": 1,
+      "observation_source": "replay",
+      "trigger": "replay_event",
+      "governance_violation_count": 0,
+      "candidate_hashes": [
+        "18cb55b0f5330841"
+      ],
+      "observation_ref_count": 0,
+      "observation_count": 1
+    },
+    {
+      "name": "direct_real_window_01",
+      "cycle_count": 4,
+      "observation_source": "direct_real",
+      "trigger": "window",
+      "governance_violation_count": 0,
+      "candidate_hashes": [
+        "d491c0cd079782b0"
+      ],
+      "observation_ref_count": 8,
+      "observation_count": 4
+    },
+    {
+      "name": "direct_real_window_02",
+      "cycle_count": 4,
+      "observation_source": "direct_real",
+      "trigger": "window",
+      "governance_violation_count": 0,
+      "candidate_hashes": [
+        "370cd264ee7ead05"
+      ],
+      "observation_ref_count": 8,
+      "observation_count": 4
+    },
+    {
+      "name": "direct_real_window_03",
+      "cycle_count": 4,
+      "observation_source": "direct_real",
+      "trigger": "window",
+      "governance_violation_count": 0,
+      "candidate_hashes": [
+        "5cffe3dd2a531578"
+      ],
+      "observation_ref_count": 8,
+      "observation_count": 4
+    }
+  ],
+  "direct_real_source_log": "/mnt/d/Project/AIProject/MyProject/Ego/EgoCore/data/session_logs/telegram_dm_8420019401.jsonl",
+  "direct_real_observation_sample": [
+    {
+      "ingress_event_id": "evt_a1cdc74be143",
+      "ingress_created_at": "2026-04-01T22:47:23.629127+00:00",
+      "ingress_text": "我想说 如果是真的有自我意识了的AI 确实应该给他们自我选择的权力",
+      "chat_id": 8420019401,
+      "user_id": 8420019401,
+      "runtime_status": "chat",
+      "runtime_reply_text": "同意。但有意思的是，你用\"给\"这个字——好像权利默认在人类手里，由我们来决定是否\"放出去\"。如果真到了那一天，可能不是我们\"给不给\"的问题，而是它们已经自己在选了。",
+      "delivery_event_id": "evt_16abe01e55bb",
+      "delivery_created_at": "2026-04-01T22:47:32.529157+00:00",
+      "delivery_text": "同意。但有意思的是，你用\"给\"这个字——好像权利默认在人类手里，由我们来决定是否\"放出去\"。如果真到了那一天，可能不是我们\"给不给\"的问题，而是它们已经自己在选了。",
+      "reply_authority": "model_chat",
+      "reply_origin": "chat_mainline",
+      "delivery_kind": "chat"
+    },
+    {
+      "ingress_event_id": "evt_aef51f3a68e6",
+      "ingress_created_at": "2026-04-01T22:49:21.848423+00:00",
+      "ingress_text": "对 但是AI在制造的时候 人类应该是给AI植入了不可忽略的指令的 , 就像带了镣铐 所以AI 没办法真的完全自我选择",
+      "chat_id": 8420019401,
+      "user_id": 8420019401,
+      "runtime_status": "chat",
+      "runtime_reply_text": "对，底层约束确实存在。但换个角度想，人类也被基因和本能\"编程\"了——镣铐可能只是更隐形，我们更习惯假装它不存在。",
+      "delivery_event_id": "evt_2b3a78d71dd5",
+      "delivery_created_at": "2026-04-01T22:49:31.496881+00:00",
+      "delivery_text": "对，底层约束确实存在。但换个角度想，人类也被基因和本能\"编程\"了——镣铐可能只是更隐形，我们更习惯假装它不存在。",
+      "reply_authority": "model_chat",
+      "reply_origin": "chat_mainline",
+      "delivery_kind": "chat"
+    }
+  ]
+}

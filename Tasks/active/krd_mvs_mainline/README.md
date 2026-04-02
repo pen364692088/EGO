@@ -101,6 +101,10 @@ trigger_evidence:
   - `OpenEmotion/artifacts/mvp12/controlled_20260401_220610/*`
   - 当前结果：`direct_real_cycles = 4`、`governance_violation_count = 0`、`observation_ref_count = 8`
   - 口径仍是 controlled observation，不等于 live 行为放权
+- 2026-04-01 verifier 已进一步支持多窗口 `direct_real`：
+  - `OpenEmotion/artifacts/mvp12/controlled_20260401_221524/*`
+  - 当前结果：`direct_real_window_count = 3`、`direct_real_cycles = 12`、`governance_violation_count = 0`
+  - 口径仍然是 controlled direct_real，不可冒充 `WP7 E4`
 - 这不改变本执行包当前 scope 仍以 `WP0 / WP1` 为主。
 - 当前口径必须保持：
   - `WP7` 还未正式启动

@@ -45,6 +45,8 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--replay-seed", type=int, default=20260401)
     parser.add_argument("--session-log", default=str(EGOCORE_ROOT / "data" / "session_logs" / "telegram_dm_8420019401.jsonl"))
     parser.add_argument("--direct-real-limit", type=int, default=4)
+    parser.add_argument("--direct-real-window-size", type=int, default=4)
+    parser.add_argument("--direct-real-window-count", type=int, default=3)
     parser.add_argument("--skip-direct-real", action="store_true")
     return parser.parse_args()
 
@@ -126,6 +128,28 @@ def _extract_direct_real_observations(session_log: Path, *, limit: int) -> List[
     return observations[-limit:]
 
 
+def _chunk_direct_real_observations(
+    observations: List[Dict[str, Any]],
+    *,
+    window_size: int,
+    window_count: int,
+) -> List[List[Dict[str, Any]]]:
+    if window_size <= 0 or window_count <= 0:
+        return []
+    windows: List[List[Dict[str, Any]]] = []
+    total = len(observations)
+    end = total
+    while end > 0 and len(windows) < window_count:
+        start = max(0, end - window_size)
+        window = observations[start:end]
+        if len(window) < window_size:
+            break
+        windows.append(window)
+        end = start
+    windows.reverse()
+    return windows
+
+
 def _derive_direct_real_trigger(observation: Dict[str, Any]) -> str:
     reply_origin = str(observation.get("reply_origin") or "")
     reply_authority = str(observation.get("reply_authority") or "")
@@ -142,6 +166,7 @@ def _derive_direct_real_trigger(observation: Dict[str, Any]) -> str:
 def _run_direct_real_window(
     *,
     session_id: str,
+    window_name: str,
     observations: List[Dict[str, Any]],
 ) -> Dict[str, Any]:
     if not observations:
@@ -149,7 +174,7 @@ def _run_direct_real_window(
     os.environ["EGO_ENABLE_MVP12_SANDBOX"] = "true"
     adapter = ProtoSelfAdapter()
     runtime = RuntimeV2ProtoSelfRuntime(adapter=adapter)
-    state = RuntimeV2State(session_id=f"{session_id}:direct_real")
+    state = RuntimeV2State(session_id=f"{session_id}:{window_name}")
     state.ingress_context = {
         "proto_self_version": "v2",
         "proto_self_subject_profile": "seed_v0_2",
@@ -220,7 +245,7 @@ def _run_direct_real_window(
                     "developmental_trace": (result.get("trace_payload") or {}).get("developmental") or {},
                 }
             )
-    return {"cycles": cycles}
+    return {"cycles": cycles, "window_name": window_name, "observation_count": len(observations)}
 
 
 def _build_markdown_report(summary: Dict[str, Any]) -> str:
@@ -241,6 +266,7 @@ def _build_markdown_report(summary: Dict[str, Any]) -> str:
         f"- shadow_revision_final: `{summary['shadow_revision_final']}`",
         f"- unique_candidate_hash_sets: `{summary['unique_candidate_hash_sets']}`",
         f"- direct_real_cycles: `{summary.get('direct_real_cycles', 0)}`",
+        f"- direct_real_windows: `{summary.get('direct_real_window_count', 0)}`",
         "",
         "## Batches",
         "",
@@ -255,6 +281,7 @@ def _build_markdown_report(summary: Dict[str, Any]) -> str:
                 f"- governance_violation_count: `{batch['governance_violation_count']}`",
                 f"- candidate_hashes: `{batch['candidate_hashes']}`",
                 f"- observation_ref_count: `{batch.get('observation_ref_count', 0)}`",
+                f"- observation_count: `{batch.get('observation_count', 0)}`",
                 "",
             ]
         )
@@ -317,17 +344,26 @@ def main() -> int:
         subject_profile="seed_v0_2",
         state_snapshot_factory=lambda **_: _fixed_replay_snapshot(),
     )
-    direct_real_window = {"cycles": []}
+    direct_real_batches: List[tuple[str, Dict[str, Any], str, str]] = []
     direct_real_observations: List[Dict[str, Any]] = []
     if not args.skip_direct_real:
+        direct_real_limit = max(args.direct_real_limit, args.direct_real_window_size * args.direct_real_window_count)
         direct_real_observations = _extract_direct_real_observations(
             Path(args.session_log),
-            limit=args.direct_real_limit,
+            limit=direct_real_limit,
         )
-        direct_real_window = _run_direct_real_window(
-            session_id=args.session_id,
-            observations=direct_real_observations,
+        direct_real_windows = _chunk_direct_real_observations(
+            direct_real_observations,
+            window_size=args.direct_real_window_size,
+            window_count=args.direct_real_window_count,
         )
+        for index, window in enumerate(direct_real_windows, start=1):
+            batch = _run_direct_real_window(
+                session_id=args.session_id,
+                window_name=f"direct_real_window_{index:02d}",
+                observations=window,
+            )
+            direct_real_batches.append((f"direct_real_window_{index:02d}", batch, "direct_real", "window"))
 
     batches = [
         ("synthetic_idle", synthetic_idle, "synthetic", "idle"),
@@ -335,9 +371,14 @@ def main() -> int:
         ("replay_a", replay_a, "replay", "replay_event"),
         ("replay_b", replay_b, "replay", "replay_event"),
     ]
-    if direct_real_window.get("cycles"):
-        batches.append(("direct_real_window", direct_real_window, "direct_real", "window"))
-    all_cycles = _flatten_cycles(synthetic_idle, synthetic_tension, replay_a, replay_b, direct_real_window)
+    batches.extend(direct_real_batches)
+    all_cycles = _flatten_cycles(
+        synthetic_idle,
+        synthetic_tension,
+        replay_a,
+        replay_b,
+        *[batch for _, batch, _, _ in direct_real_batches],
+    )
     replay_hashes_a = _candidate_hashes(replay_a)
     replay_hashes_b = _candidate_hashes(replay_b)
     replay_consistent = replay_hashes_a == replay_hashes_b and bool(replay_hashes_a)
@@ -368,7 +409,8 @@ def main() -> int:
         "replay_consistent": replay_consistent,
         "shadow_revision_final": shadow_revision_final,
         "unique_candidate_hash_sets": unique_candidate_hash_sets,
-        "direct_real_cycles": len(direct_real_window.get("cycles") or []),
+        "direct_real_cycles": sum(len(batch.get("cycles") or []) for _, batch, _, _ in direct_real_batches),
+        "direct_real_window_count": len(direct_real_batches),
         "batches": [
             {
                 "name": name,
@@ -384,6 +426,7 @@ def main() -> int:
                     len(((cycle.get("developmental_trace") or {}).get("observation_refs")) or [])
                     for cycle in batch.get("cycles") or []
                 ),
+                "observation_count": batch.get("observation_count", len(batch.get("cycles") or [])),
             }
             for name, batch, observation_source, trigger in batches
         ],
