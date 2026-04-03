@@ -1,0 +1,310 @@
+{
+  "active_drives": {
+    "coherence": {
+      "candidate_bias": 0.0,
+      "candidate_effects": {},
+      "drive_id": "coherence",
+      "drive_type": "coherence",
+      "intensity": 0.25,
+      "last_updated": 1775206671.995365,
+      "linked_tensions": [],
+      "persistence": 0.5,
+      "source": "Internal consistency maintenance"
+    },
+    "completion": {
+      "candidate_bias": 0.0,
+      "candidate_effects": {},
+      "drive_id": "completion",
+      "drive_type": "completion",
+      "intensity": 0.5,
+      "last_updated": 1775206671.9953685,
+      "linked_tensions": [],
+      "persistence": 0.5,
+      "source": "Goal completion pressure"
+    },
+    "conservation": {
+      "candidate_bias": 0.0,
+      "candidate_effects": {},
+      "drive_id": "conservation",
+      "drive_type": "conservation",
+      "intensity": 0.3,
+      "last_updated": 1775206671.995379,
+      "linked_tensions": [],
+      "persistence": 0.5,
+      "source": "Resource conservation drive"
+    },
+    "exploration": {
+      "candidate_bias": 0.0,
+      "candidate_effects": {},
+      "drive_id": "exploration",
+      "drive_type": "exploration",
+      "intensity": 0.4,
+      "last_updated": 1775206671.9953768,
+      "linked_tensions": [],
+      "persistence": 0.5,
+      "source": "Capability exploration drive"
+    },
+    "repair": {
+      "candidate_bias": 0.0,
+      "candidate_effects": {},
+      "drive_id": "repair",
+      "drive_type": "repair",
+      "intensity": 0.22499999999999998,
+      "last_updated": 1775206687.361726,
+      "linked_tensions": [],
+      "persistence": 0.5,
+      "source": "Self-repair drive"
+    },
+    "stability": {
+      "candidate_bias": 0.0,
+      "candidate_effects": {},
+      "drive_id": "stability",
+      "drive_type": "stability",
+      "intensity": 0.9749999999999999,
+      "last_updated": 1775206687.3611987,
+      "linked_tensions": [],
+      "persistence": 0.5,
+      "source": "System stability maintenance"
+    },
+    "verification": {
+      "candidate_bias": 0.0,
+      "candidate_effects": {},
+      "drive_id": "verification",
+      "drive_type": "verification",
+      "intensity": 0.75,
+      "last_updated": 1775206671.9953716,
+      "linked_tensions": [],
+      "persistence": 0.5,
+      "source": "State verification drive"
+    }
+  },
+  "created_at": 1775206671.995321,
+  "drive_history": {
+    "entries": [
+      {
+        "cause": "homeostatic_deviation:continuity_quality",
+        "change_type": "intensity_update",
+        "drive_id": "stability",
+        "evidence": {},
+        "new_value": 0.825,
+        "old_value": 0.75,
+        "timestamp": 1775206672.690832
+      },
+      {
+        "cause": "maintenance_context",
+        "change_type": "maintenance_debt_add",
+        "drive_id": "replay_verification_001",
+        "evidence": {},
+        "new_value": 0.25,
+        "old_value": null,
+        "timestamp": 1775206672.6910195
+      },
+      {
+        "cause": "maintenance_debt:replay_verification",
+        "change_type": "intensity_update",
+        "drive_id": "repair",
+        "evidence": {},
+        "new_value": 0.175,
+        "old_value": 0.15,
+        "timestamp": 1775206672.6911852
+      },
+      {
+        "cause": "homeostatic_deviation:continuity_quality",
+        "change_type": "intensity_update",
+        "drive_id": "stability",
+        "evidence": {},
+        "new_value": 0.8999999999999999,
+        "old_value": 0.825,
+        "timestamp": 1775206678.5316358
+      },
+      {
+        "cause": "maintenance_context",
+        "change_type": "maintenance_debt_add",
+        "drive_id": "replay_verification_002",
+        "evidence": {},
+        "new_value": 0.25,
+        "old_value": null,
+        "timestamp": 1775206678.5320506
+      },
+      {
+        "cause": "maintenance_debt:replay_verification",
+        "change_type": "intensity_update",
+        "drive_id": "repair",
+        "evidence": {},
+        "new_value": 0.19999999999999998,
+        "old_value": 0.175,
+        "timestamp": 1775206678.5323813
+      },
+      {
+        "cause": "homeostatic_deviation:continuity_quality",
+        "change_type": "intensity_update",
+        "drive_id": "stability",
+        "evidence": {},
+        "new_value": 0.9749999999999999,
+        "old_value": 0.8999999999999999,
+        "timestamp": 1775206687.361207
+      },
+      {
+        "cause": "maintenance_context",
+        "change_type": "maintenance_debt_add",
+        "drive_id": "replay_verification_003",
+        "evidence": {},
+        "new_value": 0.25,
+        "old_value": null,
+        "timestamp": 1775206687.3614936
+      },
+      {
+        "cause": "maintenance_debt:replay_verification",
+        "change_type": "intensity_update",
+        "drive_id": "repair",
+        "evidence": {},
+        "new_value": 0.22499999999999998,
+        "old_value": 0.19999999999999998,
+        "timestamp": 1775206687.3617294
+      }
+    ],
+    "max_entries": 500,
+    "max_revision_markers": 200,
+    "revision_markers": [
+      {
+        "gate_verdict": "allow_writeback",
+        "revision_id": "drive_rev_000001",
+        "timestamp": "2026-04-03T08:57:52.028887+00:00",
+        "trace_reference": "mvp14:controlled_bootstrap",
+        "update_source": "owner_bootstrap"
+      },
+      {
+        "gate_verdict": "allow_writeback",
+        "revision_id": "drive_rev_000002",
+        "timestamp": "2026-04-03T08:57:52.741573+00:00",
+        "trace_reference": "proto_self:session:mvp14:controlled:20260403_035751_turn_d8083e8d",
+        "update_source": "proto_self_v2"
+      },
+      {
+        "gate_verdict": "allow_writeback",
+        "revision_id": "drive_rev_000003",
+        "timestamp": "2026-04-03T08:57:58.594311+00:00",
+        "trace_reference": "proto_self:session:mvp14:controlled:20260403_035751_turn_8ddfa195",
+        "update_source": "proto_self_v2"
+      },
+      {
+        "gate_verdict": "allow_writeback",
+        "revision_id": "drive_rev_000004",
+        "timestamp": "2026-04-03T08:58:07.412617+00:00",
+        "trace_reference": "proto_self:session:mvp14:controlled:20260403_035751_turn_469234d2",
+        "update_source": "proto_self_v2"
+      }
+    ]
+  },
+  "homeostatic_signals": {
+    "continuity_quality": {
+      "category": "system_health",
+      "desired_range_max": 1.0,
+      "desired_range_min": 0.5,
+      "deviation_level": 0.15000000000000002,
+      "last_checked": 1775206687.3609765,
+      "observed_value": 0.35,
+      "signal_id": "continuity_quality"
+    },
+    "identity_stability": {
+      "category": "system_health",
+      "desired_range_max": 1.0,
+      "desired_range_min": 0.6,
+      "deviation_level": 0.0,
+      "last_checked": 1775206671.9953856,
+      "observed_value": 0.8,
+      "signal_id": "identity_stability"
+    },
+    "maintenance_balance": {
+      "category": "system_health",
+      "desired_range_max": 0.7,
+      "desired_range_min": 0.3,
+      "deviation_level": 0.0,
+      "last_checked": 1775206671.9954302,
+      "observed_value": 0.5,
+      "signal_id": "maintenance_balance"
+    },
+    "tension_resolution": {
+      "category": "system_health",
+      "desired_range_max": 0.6,
+      "desired_range_min": 0.2,
+      "deviation_level": 0.0,
+      "last_checked": 1775206671.9954393,
+      "observed_value": 0.4,
+      "signal_id": "tension_resolution"
+    }
+  },
+  "last_revision_id": "drive_rev_000004",
+  "latent_drives": {},
+  "maintenance_debt": {
+    "replay_verification_001": {
+      "amount": 0.25,
+      "category": "replay_verification",
+      "created_at": 1775206672.6910138,
+      "debt_id": "replay_verification_001",
+      "last_updated": 1775206672.691014,
+      "priority": 0.9,
+      "source": "maintenance_context"
+    },
+    "replay_verification_002": {
+      "amount": 0.25,
+      "category": "replay_verification",
+      "created_at": 1775206678.532041,
+      "debt_id": "replay_verification_002",
+      "last_updated": 1775206678.5320415,
+      "priority": 0.9,
+      "source": "maintenance_context"
+    },
+    "replay_verification_003": {
+      "amount": 0.25,
+      "category": "replay_verification",
+      "created_at": 1775206687.361487,
+      "debt_id": "replay_verification_003",
+      "last_updated": 1775206687.3614874,
+      "priority": 0.9,
+      "source": "maintenance_context"
+    }
+  },
+  "owner_revision": 4,
+  "priority_snapshot": {
+    "bias_terms": {
+      "coherence": 0.125,
+      "completion": 0.25,
+      "conservation": 0.15,
+      "exploration": 0.2,
+      "repair": 0.11249999999999999,
+      "stability": 0.48749999999999993,
+      "verification": 0.375
+    },
+    "dominant_drive": "stability",
+    "homeostatic_deviation": 0.15000000000000002,
+    "maintenance_pressure": 0.75,
+    "total_drive_pressure": 1.7
+  },
+  "regulation_targets": {
+    "drive_pressure": {
+      "desired_range_max": 0.8,
+      "desired_range_min": 0.2,
+      "deviation_level": 0.0,
+      "observed_value": 0.5,
+      "target_name": "drive_pressure"
+    },
+    "homeostatic_deviation": {
+      "desired_range_max": 0.3,
+      "desired_range_min": 0.0,
+      "deviation_level": 0.0,
+      "observed_value": 0.5,
+      "target_name": "homeostatic_deviation"
+    },
+    "maintenance_debt": {
+      "desired_range_max": 0.5,
+      "desired_range_min": 0.0,
+      "deviation_level": 0.0,
+      "observed_value": 0.5,
+      "target_name": "maintenance_debt"
+    }
+  },
+  "schema_version": "mvp14-owner-v1",
+  "updated_at": 1775206687.41289,
+  "version": "1.0.0"
+}

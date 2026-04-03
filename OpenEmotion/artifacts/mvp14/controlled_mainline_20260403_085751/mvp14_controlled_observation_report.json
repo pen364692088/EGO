@@ -1,0 +1,1303 @@
+{
+  "schema_version": "mvp14.controlled_observation.v1",
+  "generated_at": "2026-04-03T08:58:29.866232+00:00",
+  "git_commit_short": "06b8fc3",
+  "session_id": "session:mvp14:controlled:20260403_035751",
+  "observation_count": 3,
+  "observation_log": "/mnt/d/Project/AIProject/MyProject/Ego/OpenEmotion/artifacts/mvp14/controlled_mainline_20260403_085751/runtime_harness_observation.jsonl",
+  "observation_refs": [
+    {
+      "kind": "runtime_mainline_delivery",
+      "event_id": "mvp14_delivery_001_20260403_085758_105637",
+      "created_at": "2026-04-03T08:57:58.105628+00:00",
+      "text_preview": "我在。刚才聊天生成出了点问题，你可以继续说。"
+    },
+    {
+      "kind": "runtime_mainline_delivery",
+      "event_id": "mvp14_delivery_002_20260403_085806_964549",
+      "created_at": "2026-04-03T08:58:06.964542+00:00",
+      "text_preview": "同意，一致性是前提，没补齐就升级只是把债往外推。replay 和 continuity 的维护债你打算从哪块先清？"
+    },
+    {
+      "kind": "runtime_mainline_delivery",
+      "event_id": "mvp14_delivery_003_20260403_085829_764756",
+      "created_at": "2026-04-03T08:58:29.764750+00:00",
+      "text_preview": "好，先稳住。把现有的一致性压实，比急着往外推更安全。"
+    }
+  ],
+  "endogenous_drive_delta": {
+    "maintenance_debts": [
+      {
+        "category": "replay_verification",
+        "amount": 0.25,
+        "priority": 0.9,
+        "source": "maintenance_context"
+      }
+    ],
+    "homeostatic_updates": [
+      {
+        "signal_id": "continuity_quality",
+        "observed_value": 0.35
+      }
+    ]
+  },
+  "endogenous_drive_delta_fields": [
+    "homeostatic_updates",
+    "maintenance_debts"
+  ],
+  "endogenous_drive_writeback": {
+    "decision": {
+      "gate_verdict": "allow_writeback",
+      "changed_fields": [
+        "homeostatic_signals",
+        "maintenance_debt",
+        "priority_snapshot"
+      ]
+    },
+    "record": {
+      "revision_id": "drive_rev_000004",
+      "model_version": 4,
+      "trace_reference": "proto_self:session:mvp14:controlled:20260403_035751_turn_469234d2",
+      "state_hash": "b5f139bc3d4a2b56bf2ac953723490659b4b4c4a3d8e4483b5871b68f2ee475b"
+    },
+    "trace_reference": "55a89312cd8e61fc8d6379ebfc7388ae36a15956fb76c5186d82a065c244efa2"
+  },
+  "drive_state_snapshot": {
+    "schema_version": "mvp14-owner-v1",
+    "owner_revision": 3,
+    "last_revision_id": "drive_rev_000003",
+    "summary": {
+      "version": "1.0.0",
+      "schema_version": "mvp14-owner-v1",
+      "active_drive_count": 7,
+      "total_drive_pressure": 1.65,
+      "dominant_drive": "stability",
+      "homeostatic_deviation": 0.15000000000000002,
+      "unbalanced_signals": 1,
+      "total_maintenance_debt": 0.5,
+      "urgent_debts": 2,
+      "owner_revision": 3,
+      "last_revision_id": "drive_rev_000003",
+      "created_at": 1775206671.995321,
+      "updated_at": 1775206678.594505
+    },
+    "idle_window": {
+      "idle_seconds": 0.104
+    }
+  },
+  "priority_snapshot": {
+    "bias_terms": {
+      "coherence": 0.125,
+      "completion": 0.25,
+      "conservation": 0.15,
+      "exploration": 0.2,
+      "repair": 0.09999999999999999,
+      "stability": 0.44999999999999996,
+      "verification": 0.375
+    },
+    "dominant_drive": "stability",
+    "homeostatic_deviation": 0.15000000000000002,
+    "maintenance_pressure": 0.5,
+    "total_drive_pressure": 1.65
+  },
+  "candidate_bias_terms": {
+    "coherence": 0.125,
+    "completion": 0.25,
+    "conservation": 0.15,
+    "exploration": 0.2,
+    "repair": 0.09999999999999999,
+    "stability": 0.44999999999999996,
+    "verification": 0.375
+  },
+  "self_maintenance_candidate": {
+    "category": "self_maintenance",
+    "dominant_issue": "maintenance_debt",
+    "priority": 1.0,
+    "status": {
+      "urgent_maintenance": 2,
+      "homeostatic_issues": 1,
+      "repair_drive_pressure": 0.09999999999999999,
+      "total_maintenance_debt": 0.5,
+      "should_maintain": true
+    }
+  },
+  "maintenance_candidate_present": true,
+  "dominant_drive": "stability",
+  "latest_revision": {
+    "model_version": 4,
+    "revision_id": "drive_rev_000004",
+    "timestamp": "2026-04-03T08:58:07.412617+00:00",
+    "update_source": "proto_self_v2",
+    "trace_reference": "proto_self:session:mvp14:controlled:20260403_035751_turn_469234d2",
+    "before_snapshot": {
+      "active_drives": {
+        "coherence": {
+          "candidate_bias": 0.0,
+          "candidate_effects": {},
+          "drive_id": "coherence",
+          "drive_type": "coherence",
+          "intensity": 0.25,
+          "last_updated": 1775206671.995365,
+          "linked_tensions": [],
+          "persistence": 0.5,
+          "source": "Internal consistency maintenance"
+        },
+        "completion": {
+          "candidate_bias": 0.0,
+          "candidate_effects": {},
+          "drive_id": "completion",
+          "drive_type": "completion",
+          "intensity": 0.5,
+          "last_updated": 1775206671.9953685,
+          "linked_tensions": [],
+          "persistence": 0.5,
+          "source": "Goal completion pressure"
+        },
+        "conservation": {
+          "candidate_bias": 0.0,
+          "candidate_effects": {},
+          "drive_id": "conservation",
+          "drive_type": "conservation",
+          "intensity": 0.3,
+          "last_updated": 1775206671.995379,
+          "linked_tensions": [],
+          "persistence": 0.5,
+          "source": "Resource conservation drive"
+        },
+        "exploration": {
+          "candidate_bias": 0.0,
+          "candidate_effects": {},
+          "drive_id": "exploration",
+          "drive_type": "exploration",
+          "intensity": 0.4,
+          "last_updated": 1775206671.9953768,
+          "linked_tensions": [],
+          "persistence": 0.5,
+          "source": "Capability exploration drive"
+        },
+        "repair": {
+          "candidate_bias": 0.0,
+          "candidate_effects": {},
+          "drive_id": "repair",
+          "drive_type": "repair",
+          "intensity": 0.19999999999999998,
+          "last_updated": 1775206678.5323758,
+          "linked_tensions": [],
+          "persistence": 0.5,
+          "source": "Self-repair drive"
+        },
+        "stability": {
+          "candidate_bias": 0.0,
+          "candidate_effects": {},
+          "drive_id": "stability",
+          "drive_type": "stability",
+          "intensity": 0.8999999999999999,
+          "last_updated": 1775206678.531622,
+          "linked_tensions": [],
+          "persistence": 0.5,
+          "source": "System stability maintenance"
+        },
+        "verification": {
+          "candidate_bias": 0.0,
+          "candidate_effects": {},
+          "drive_id": "verification",
+          "drive_type": "verification",
+          "intensity": 0.75,
+          "last_updated": 1775206671.9953716,
+          "linked_tensions": [],
+          "persistence": 0.5,
+          "source": "State verification drive"
+        }
+      },
+      "created_at": 1775206671.995321,
+      "drive_history": {
+        "entries": [
+          {
+            "cause": "homeostatic_deviation:continuity_quality",
+            "change_type": "intensity_update",
+            "drive_id": "stability",
+            "evidence": {},
+            "new_value": 0.825,
+            "old_value": 0.75,
+            "timestamp": 1775206672.690832
+          },
+          {
+            "cause": "maintenance_context",
+            "change_type": "maintenance_debt_add",
+            "drive_id": "replay_verification_001",
+            "evidence": {},
+            "new_value": 0.25,
+            "old_value": null,
+            "timestamp": 1775206672.6910195
+          },
+          {
+            "cause": "maintenance_debt:replay_verification",
+            "change_type": "intensity_update",
+            "drive_id": "repair",
+            "evidence": {},
+            "new_value": 0.175,
+            "old_value": 0.15,
+            "timestamp": 1775206672.6911852
+          },
+          {
+            "cause": "homeostatic_deviation:continuity_quality",
+            "change_type": "intensity_update",
+            "drive_id": "stability",
+            "evidence": {},
+            "new_value": 0.8999999999999999,
+            "old_value": 0.825,
+            "timestamp": 1775206678.5316358
+          },
+          {
+            "cause": "maintenance_context",
+            "change_type": "maintenance_debt_add",
+            "drive_id": "replay_verification_002",
+            "evidence": {},
+            "new_value": 0.25,
+            "old_value": null,
+            "timestamp": 1775206678.5320506
+          },
+          {
+            "cause": "maintenance_debt:replay_verification",
+            "change_type": "intensity_update",
+            "drive_id": "repair",
+            "evidence": {},
+            "new_value": 0.19999999999999998,
+            "old_value": 0.175,
+            "timestamp": 1775206678.5323813
+          }
+        ],
+        "max_entries": 500,
+        "max_revision_markers": 200,
+        "revision_markers": [
+          {
+            "gate_verdict": "allow_writeback",
+            "revision_id": "drive_rev_000001",
+            "timestamp": "2026-04-03T08:57:52.028887+00:00",
+            "trace_reference": "mvp14:controlled_bootstrap",
+            "update_source": "owner_bootstrap"
+          },
+          {
+            "gate_verdict": "allow_writeback",
+            "revision_id": "drive_rev_000002",
+            "timestamp": "2026-04-03T08:57:52.741573+00:00",
+            "trace_reference": "proto_self:session:mvp14:controlled:20260403_035751_turn_d8083e8d",
+            "update_source": "proto_self_v2"
+          },
+          {
+            "gate_verdict": "allow_writeback",
+            "revision_id": "drive_rev_000003",
+            "timestamp": "2026-04-03T08:57:58.594311+00:00",
+            "trace_reference": "proto_self:session:mvp14:controlled:20260403_035751_turn_8ddfa195",
+            "update_source": "proto_self_v2"
+          }
+        ]
+      },
+      "homeostatic_signals": {
+        "continuity_quality": {
+          "category": "system_health",
+          "desired_range_max": 1.0,
+          "desired_range_min": 0.5,
+          "deviation_level": 0.15000000000000002,
+          "last_checked": 1775206678.5313263,
+          "observed_value": 0.35,
+          "signal_id": "continuity_quality"
+        },
+        "identity_stability": {
+          "category": "system_health",
+          "desired_range_max": 1.0,
+          "desired_range_min": 0.6,
+          "deviation_level": 0.0,
+          "last_checked": 1775206671.9953856,
+          "observed_value": 0.8,
+          "signal_id": "identity_stability"
+        },
+        "maintenance_balance": {
+          "category": "system_health",
+          "desired_range_max": 0.7,
+          "desired_range_min": 0.3,
+          "deviation_level": 0.0,
+          "last_checked": 1775206671.9954302,
+          "observed_value": 0.5,
+          "signal_id": "maintenance_balance"
+        },
+        "tension_resolution": {
+          "category": "system_health",
+          "desired_range_max": 0.6,
+          "desired_range_min": 0.2,
+          "deviation_level": 0.0,
+          "last_checked": 1775206671.9954393,
+          "observed_value": 0.4,
+          "signal_id": "tension_resolution"
+        }
+      },
+      "last_revision_id": "drive_rev_000003",
+      "latent_drives": {},
+      "maintenance_debt": {
+        "replay_verification_001": {
+          "amount": 0.25,
+          "category": "replay_verification",
+          "created_at": 1775206672.6910138,
+          "debt_id": "replay_verification_001",
+          "last_updated": 1775206672.691014,
+          "priority": 0.9,
+          "source": "maintenance_context"
+        },
+        "replay_verification_002": {
+          "amount": 0.25,
+          "category": "replay_verification",
+          "created_at": 1775206678.532041,
+          "debt_id": "replay_verification_002",
+          "last_updated": 1775206678.5320415,
+          "priority": 0.9,
+          "source": "maintenance_context"
+        }
+      },
+      "owner_revision": 3,
+      "priority_snapshot": {
+        "bias_terms": {
+          "coherence": 0.125,
+          "completion": 0.25,
+          "conservation": 0.15,
+          "exploration": 0.2,
+          "repair": 0.09999999999999999,
+          "stability": 0.44999999999999996,
+          "verification": 0.375
+        },
+        "dominant_drive": "stability",
+        "homeostatic_deviation": 0.15000000000000002,
+        "maintenance_pressure": 0.5,
+        "total_drive_pressure": 1.65
+      },
+      "regulation_targets": {
+        "drive_pressure": {
+          "desired_range_max": 0.8,
+          "desired_range_min": 0.2,
+          "deviation_level": 0.0,
+          "observed_value": 0.5,
+          "target_name": "drive_pressure"
+        },
+        "homeostatic_deviation": {
+          "desired_range_max": 0.3,
+          "desired_range_min": 0.0,
+          "deviation_level": 0.0,
+          "observed_value": 0.5,
+          "target_name": "homeostatic_deviation"
+        },
+        "maintenance_debt": {
+          "desired_range_max": 0.5,
+          "desired_range_min": 0.0,
+          "deviation_level": 0.0,
+          "observed_value": 0.5,
+          "target_name": "maintenance_debt"
+        }
+      },
+      "schema_version": "mvp14-owner-v1",
+      "updated_at": 1775206678.594505,
+      "version": "1.0.0"
+    },
+    "after_snapshot": {
+      "active_drives": {
+        "coherence": {
+          "candidate_bias": 0.0,
+          "candidate_effects": {},
+          "drive_id": "coherence",
+          "drive_type": "coherence",
+          "intensity": 0.25,
+          "last_updated": 1775206671.995365,
+          "linked_tensions": [],
+          "persistence": 0.5,
+          "source": "Internal consistency maintenance"
+        },
+        "completion": {
+          "candidate_bias": 0.0,
+          "candidate_effects": {},
+          "drive_id": "completion",
+          "drive_type": "completion",
+          "intensity": 0.5,
+          "last_updated": 1775206671.9953685,
+          "linked_tensions": [],
+          "persistence": 0.5,
+          "source": "Goal completion pressure"
+        },
+        "conservation": {
+          "candidate_bias": 0.0,
+          "candidate_effects": {},
+          "drive_id": "conservation",
+          "drive_type": "conservation",
+          "intensity": 0.3,
+          "last_updated": 1775206671.995379,
+          "linked_tensions": [],
+          "persistence": 0.5,
+          "source": "Resource conservation drive"
+        },
+        "exploration": {
+          "candidate_bias": 0.0,
+          "candidate_effects": {},
+          "drive_id": "exploration",
+          "drive_type": "exploration",
+          "intensity": 0.4,
+          "last_updated": 1775206671.9953768,
+          "linked_tensions": [],
+          "persistence": 0.5,
+          "source": "Capability exploration drive"
+        },
+        "repair": {
+          "candidate_bias": 0.0,
+          "candidate_effects": {},
+          "drive_id": "repair",
+          "drive_type": "repair",
+          "intensity": 0.22499999999999998,
+          "last_updated": 1775206687.361726,
+          "linked_tensions": [],
+          "persistence": 0.5,
+          "source": "Self-repair drive"
+        },
+        "stability": {
+          "candidate_bias": 0.0,
+          "candidate_effects": {},
+          "drive_id": "stability",
+          "drive_type": "stability",
+          "intensity": 0.9749999999999999,
+          "last_updated": 1775206687.3611987,
+          "linked_tensions": [],
+          "persistence": 0.5,
+          "source": "System stability maintenance"
+        },
+        "verification": {
+          "candidate_bias": 0.0,
+          "candidate_effects": {},
+          "drive_id": "verification",
+          "drive_type": "verification",
+          "intensity": 0.75,
+          "last_updated": 1775206671.9953716,
+          "linked_tensions": [],
+          "persistence": 0.5,
+          "source": "State verification drive"
+        }
+      },
+      "created_at": 1775206671.995321,
+      "drive_history": {
+        "entries": [
+          {
+            "cause": "homeostatic_deviation:continuity_quality",
+            "change_type": "intensity_update",
+            "drive_id": "stability",
+            "evidence": {},
+            "new_value": 0.825,
+            "old_value": 0.75,
+            "timestamp": 1775206672.690832
+          },
+          {
+            "cause": "maintenance_context",
+            "change_type": "maintenance_debt_add",
+            "drive_id": "replay_verification_001",
+            "evidence": {},
+            "new_value": 0.25,
+            "old_value": null,
+            "timestamp": 1775206672.6910195
+          },
+          {
+            "cause": "maintenance_debt:replay_verification",
+            "change_type": "intensity_update",
+            "drive_id": "repair",
+            "evidence": {},
+            "new_value": 0.175,
+            "old_value": 0.15,
+            "timestamp": 1775206672.6911852
+          },
+          {
+            "cause": "homeostatic_deviation:continuity_quality",
+            "change_type": "intensity_update",
+            "drive_id": "stability",
+            "evidence": {},
+            "new_value": 0.8999999999999999,
+            "old_value": 0.825,
+            "timestamp": 1775206678.5316358
+          },
+          {
+            "cause": "maintenance_context",
+            "change_type": "maintenance_debt_add",
+            "drive_id": "replay_verification_002",
+            "evidence": {},
+            "new_value": 0.25,
+            "old_value": null,
+            "timestamp": 1775206678.5320506
+          },
+          {
+            "cause": "maintenance_debt:replay_verification",
+            "change_type": "intensity_update",
+            "drive_id": "repair",
+            "evidence": {},
+            "new_value": 0.19999999999999998,
+            "old_value": 0.175,
+            "timestamp": 1775206678.5323813
+          },
+          {
+            "cause": "homeostatic_deviation:continuity_quality",
+            "change_type": "intensity_update",
+            "drive_id": "stability",
+            "evidence": {},
+            "new_value": 0.9749999999999999,
+            "old_value": 0.8999999999999999,
+            "timestamp": 1775206687.361207
+          },
+          {
+            "cause": "maintenance_context",
+            "change_type": "maintenance_debt_add",
+            "drive_id": "replay_verification_003",
+            "evidence": {},
+            "new_value": 0.25,
+            "old_value": null,
+            "timestamp": 1775206687.3614936
+          },
+          {
+            "cause": "maintenance_debt:replay_verification",
+            "change_type": "intensity_update",
+            "drive_id": "repair",
+            "evidence": {},
+            "new_value": 0.22499999999999998,
+            "old_value": 0.19999999999999998,
+            "timestamp": 1775206687.3617294
+          }
+        ],
+        "max_entries": 500,
+        "max_revision_markers": 200,
+        "revision_markers": [
+          {
+            "gate_verdict": "allow_writeback",
+            "revision_id": "drive_rev_000001",
+            "timestamp": "2026-04-03T08:57:52.028887+00:00",
+            "trace_reference": "mvp14:controlled_bootstrap",
+            "update_source": "owner_bootstrap"
+          },
+          {
+            "gate_verdict": "allow_writeback",
+            "revision_id": "drive_rev_000002",
+            "timestamp": "2026-04-03T08:57:52.741573+00:00",
+            "trace_reference": "proto_self:session:mvp14:controlled:20260403_035751_turn_d8083e8d",
+            "update_source": "proto_self_v2"
+          },
+          {
+            "gate_verdict": "allow_writeback",
+            "revision_id": "drive_rev_000003",
+            "timestamp": "2026-04-03T08:57:58.594311+00:00",
+            "trace_reference": "proto_self:session:mvp14:controlled:20260403_035751_turn_8ddfa195",
+            "update_source": "proto_self_v2"
+          },
+          {
+            "gate_verdict": "allow_writeback",
+            "revision_id": "drive_rev_000004",
+            "timestamp": "2026-04-03T08:58:07.412617+00:00",
+            "trace_reference": "proto_self:session:mvp14:controlled:20260403_035751_turn_469234d2",
+            "update_source": "proto_self_v2"
+          }
+        ]
+      },
+      "homeostatic_signals": {
+        "continuity_quality": {
+          "category": "system_health",
+          "desired_range_max": 1.0,
+          "desired_range_min": 0.5,
+          "deviation_level": 0.15000000000000002,
+          "last_checked": 1775206687.3609765,
+          "observed_value": 0.35,
+          "signal_id": "continuity_quality"
+        },
+        "identity_stability": {
+          "category": "system_health",
+          "desired_range_max": 1.0,
+          "desired_range_min": 0.6,
+          "deviation_level": 0.0,
+          "last_checked": 1775206671.9953856,
+          "observed_value": 0.8,
+          "signal_id": "identity_stability"
+        },
+        "maintenance_balance": {
+          "category": "system_health",
+          "desired_range_max": 0.7,
+          "desired_range_min": 0.3,
+          "deviation_level": 0.0,
+          "last_checked": 1775206671.9954302,
+          "observed_value": 0.5,
+          "signal_id": "maintenance_balance"
+        },
+        "tension_resolution": {
+          "category": "system_health",
+          "desired_range_max": 0.6,
+          "desired_range_min": 0.2,
+          "deviation_level": 0.0,
+          "last_checked": 1775206671.9954393,
+          "observed_value": 0.4,
+          "signal_id": "tension_resolution"
+        }
+      },
+      "last_revision_id": "drive_rev_000004",
+      "latent_drives": {},
+      "maintenance_debt": {
+        "replay_verification_001": {
+          "amount": 0.25,
+          "category": "replay_verification",
+          "created_at": 1775206672.6910138,
+          "debt_id": "replay_verification_001",
+          "last_updated": 1775206672.691014,
+          "priority": 0.9,
+          "source": "maintenance_context"
+        },
+        "replay_verification_002": {
+          "amount": 0.25,
+          "category": "replay_verification",
+          "created_at": 1775206678.532041,
+          "debt_id": "replay_verification_002",
+          "last_updated": 1775206678.5320415,
+          "priority": 0.9,
+          "source": "maintenance_context"
+        },
+        "replay_verification_003": {
+          "amount": 0.25,
+          "category": "replay_verification",
+          "created_at": 1775206687.361487,
+          "debt_id": "replay_verification_003",
+          "last_updated": 1775206687.3614874,
+          "priority": 0.9,
+          "source": "maintenance_context"
+        }
+      },
+      "owner_revision": 4,
+      "priority_snapshot": {
+        "bias_terms": {
+          "coherence": 0.125,
+          "completion": 0.25,
+          "conservation": 0.15,
+          "exploration": 0.2,
+          "repair": 0.11249999999999999,
+          "stability": 0.48749999999999993,
+          "verification": 0.375
+        },
+        "dominant_drive": "stability",
+        "homeostatic_deviation": 0.15000000000000002,
+        "maintenance_pressure": 0.75,
+        "total_drive_pressure": 1.7
+      },
+      "regulation_targets": {
+        "drive_pressure": {
+          "desired_range_max": 0.8,
+          "desired_range_min": 0.2,
+          "deviation_level": 0.0,
+          "observed_value": 0.5,
+          "target_name": "drive_pressure"
+        },
+        "homeostatic_deviation": {
+          "desired_range_max": 0.3,
+          "desired_range_min": 0.0,
+          "deviation_level": 0.0,
+          "observed_value": 0.5,
+          "target_name": "homeostatic_deviation"
+        },
+        "maintenance_debt": {
+          "desired_range_max": 0.5,
+          "desired_range_min": 0.0,
+          "deviation_level": 0.0,
+          "observed_value": 0.5,
+          "target_name": "maintenance_debt"
+        }
+      },
+      "schema_version": "mvp14-owner-v1",
+      "updated_at": 1775206687.41289,
+      "version": "1.0.0"
+    },
+    "diff": [
+      {
+        "after": 0.22499999999999998,
+        "before": 0.19999999999999998,
+        "field_path": "active_drives.repair.intensity"
+      },
+      {
+        "after": 1775206687.361726,
+        "before": 1775206678.5323758,
+        "field_path": "active_drives.repair.last_updated"
+      },
+      {
+        "after": 0.9749999999999999,
+        "before": 0.8999999999999999,
+        "field_path": "active_drives.stability.intensity"
+      },
+      {
+        "after": 1775206687.3611987,
+        "before": 1775206678.531622,
+        "field_path": "active_drives.stability.last_updated"
+      },
+      {
+        "after": [
+          {
+            "cause": "homeostatic_deviation:continuity_quality",
+            "change_type": "intensity_update",
+            "drive_id": "stability",
+            "evidence": {},
+            "new_value": 0.825,
+            "old_value": 0.75,
+            "timestamp": 1775206672.690832
+          },
+          {
+            "cause": "maintenance_context",
+            "change_type": "maintenance_debt_add",
+            "drive_id": "replay_verification_001",
+            "evidence": {},
+            "new_value": 0.25,
+            "old_value": null,
+            "timestamp": 1775206672.6910195
+          },
+          {
+            "cause": "maintenance_debt:replay_verification",
+            "change_type": "intensity_update",
+            "drive_id": "repair",
+            "evidence": {},
+            "new_value": 0.175,
+            "old_value": 0.15,
+            "timestamp": 1775206672.6911852
+          },
+          {
+            "cause": "homeostatic_deviation:continuity_quality",
+            "change_type": "intensity_update",
+            "drive_id": "stability",
+            "evidence": {},
+            "new_value": 0.8999999999999999,
+            "old_value": 0.825,
+            "timestamp": 1775206678.5316358
+          },
+          {
+            "cause": "maintenance_context",
+            "change_type": "maintenance_debt_add",
+            "drive_id": "replay_verification_002",
+            "evidence": {},
+            "new_value": 0.25,
+            "old_value": null,
+            "timestamp": 1775206678.5320506
+          },
+          {
+            "cause": "maintenance_debt:replay_verification",
+            "change_type": "intensity_update",
+            "drive_id": "repair",
+            "evidence": {},
+            "new_value": 0.19999999999999998,
+            "old_value": 0.175,
+            "timestamp": 1775206678.5323813
+          },
+          {
+            "cause": "homeostatic_deviation:continuity_quality",
+            "change_type": "intensity_update",
+            "drive_id": "stability",
+            "evidence": {},
+            "new_value": 0.9749999999999999,
+            "old_value": 0.8999999999999999,
+            "timestamp": 1775206687.361207
+          },
+          {
+            "cause": "maintenance_context",
+            "change_type": "maintenance_debt_add",
+            "drive_id": "replay_verification_003",
+            "evidence": {},
+            "new_value": 0.25,
+            "old_value": null,
+            "timestamp": 1775206687.3614936
+          },
+          {
+            "cause": "maintenance_debt:replay_verification",
+            "change_type": "intensity_update",
+            "drive_id": "repair",
+            "evidence": {},
+            "new_value": 0.22499999999999998,
+            "old_value": 0.19999999999999998,
+            "timestamp": 1775206687.3617294
+          }
+        ],
+        "before": [
+          {
+            "cause": "homeostatic_deviation:continuity_quality",
+            "change_type": "intensity_update",
+            "drive_id": "stability",
+            "evidence": {},
+            "new_value": 0.825,
+            "old_value": 0.75,
+            "timestamp": 1775206672.690832
+          },
+          {
+            "cause": "maintenance_context",
+            "change_type": "maintenance_debt_add",
+            "drive_id": "replay_verification_001",
+            "evidence": {},
+            "new_value": 0.25,
+            "old_value": null,
+            "timestamp": 1775206672.6910195
+          },
+          {
+            "cause": "maintenance_debt:replay_verification",
+            "change_type": "intensity_update",
+            "drive_id": "repair",
+            "evidence": {},
+            "new_value": 0.175,
+            "old_value": 0.15,
+            "timestamp": 1775206672.6911852
+          },
+          {
+            "cause": "homeostatic_deviation:continuity_quality",
+            "change_type": "intensity_update",
+            "drive_id": "stability",
+            "evidence": {},
+            "new_value": 0.8999999999999999,
+            "old_value": 0.825,
+            "timestamp": 1775206678.5316358
+          },
+          {
+            "cause": "maintenance_context",
+            "change_type": "maintenance_debt_add",
+            "drive_id": "replay_verification_002",
+            "evidence": {},
+            "new_value": 0.25,
+            "old_value": null,
+            "timestamp": 1775206678.5320506
+          },
+          {
+            "cause": "maintenance_debt:replay_verification",
+            "change_type": "intensity_update",
+            "drive_id": "repair",
+            "evidence": {},
+            "new_value": 0.19999999999999998,
+            "old_value": 0.175,
+            "timestamp": 1775206678.5323813
+          }
+        ],
+        "field_path": "drive_history.entries"
+      },
+      {
+        "after": [
+          {
+            "gate_verdict": "allow_writeback",
+            "revision_id": "drive_rev_000001",
+            "timestamp": "2026-04-03T08:57:52.028887+00:00",
+            "trace_reference": "mvp14:controlled_bootstrap",
+            "update_source": "owner_bootstrap"
+          },
+          {
+            "gate_verdict": "allow_writeback",
+            "revision_id": "drive_rev_000002",
+            "timestamp": "2026-04-03T08:57:52.741573+00:00",
+            "trace_reference": "proto_self:session:mvp14:controlled:20260403_035751_turn_d8083e8d",
+            "update_source": "proto_self_v2"
+          },
+          {
+            "gate_verdict": "allow_writeback",
+            "revision_id": "drive_rev_000003",
+            "timestamp": "2026-04-03T08:57:58.594311+00:00",
+            "trace_reference": "proto_self:session:mvp14:controlled:20260403_035751_turn_8ddfa195",
+            "update_source": "proto_self_v2"
+          },
+          {
+            "gate_verdict": "allow_writeback",
+            "revision_id": "drive_rev_000004",
+            "timestamp": "2026-04-03T08:58:07.412617+00:00",
+            "trace_reference": "proto_self:session:mvp14:controlled:20260403_035751_turn_469234d2",
+            "update_source": "proto_self_v2"
+          }
+        ],
+        "before": [
+          {
+            "gate_verdict": "allow_writeback",
+            "revision_id": "drive_rev_000001",
+            "timestamp": "2026-04-03T08:57:52.028887+00:00",
+            "trace_reference": "mvp14:controlled_bootstrap",
+            "update_source": "owner_bootstrap"
+          },
+          {
+            "gate_verdict": "allow_writeback",
+            "revision_id": "drive_rev_000002",
+            "timestamp": "2026-04-03T08:57:52.741573+00:00",
+            "trace_reference": "proto_self:session:mvp14:controlled:20260403_035751_turn_d8083e8d",
+            "update_source": "proto_self_v2"
+          },
+          {
+            "gate_verdict": "allow_writeback",
+            "revision_id": "drive_rev_000003",
+            "timestamp": "2026-04-03T08:57:58.594311+00:00",
+            "trace_reference": "proto_self:session:mvp14:controlled:20260403_035751_turn_8ddfa195",
+            "update_source": "proto_self_v2"
+          }
+        ],
+        "field_path": "drive_history.revision_markers"
+      },
+      {
+        "after": 1775206687.3609765,
+        "before": 1775206678.5313263,
+        "field_path": "homeostatic_signals.continuity_quality.last_checked"
+      },
+      {
+        "after": "drive_rev_000004",
+        "before": "drive_rev_000003",
+        "field_path": "last_revision_id"
+      },
+      {
+        "after": {
+          "amount": 0.25,
+          "category": "replay_verification",
+          "created_at": 1775206687.361487,
+          "debt_id": "replay_verification_003",
+          "last_updated": 1775206687.3614874,
+          "priority": 0.9,
+          "source": "maintenance_context"
+        },
+        "before": null,
+        "field_path": "maintenance_debt.replay_verification_003"
+      },
+      {
+        "after": 4,
+        "before": 3,
+        "field_path": "owner_revision"
+      },
+      {
+        "after": 0.11249999999999999,
+        "before": 0.09999999999999999,
+        "field_path": "priority_snapshot.bias_terms.repair"
+      },
+      {
+        "after": 0.48749999999999993,
+        "before": 0.44999999999999996,
+        "field_path": "priority_snapshot.bias_terms.stability"
+      },
+      {
+        "after": 0.75,
+        "before": 0.5,
+        "field_path": "priority_snapshot.maintenance_pressure"
+      },
+      {
+        "after": 1.7,
+        "before": 1.65,
+        "field_path": "priority_snapshot.total_drive_pressure"
+      },
+      {
+        "after": 1775206687.41289,
+        "before": 1775206678.594505,
+        "field_path": "updated_at"
+      }
+    ],
+    "gate_verdict": "allow_writeback",
+    "previous_state_hash": "7b6835a8421cfe6eadf8fb5b16e79bb3ba798543132a6d3eb8e042b54c8e8a37",
+    "state_hash": "b5f139bc3d4a2b56bf2ac953723490659b4b4c4a3d8e4483b5871b68f2ee475b"
+  },
+  "revision_count": 4,
+  "replay_valid": true,
+  "owner_snapshot": {
+    "active_drives": {
+      "coherence": {
+        "drive_id": "coherence",
+        "drive_type": "coherence",
+        "intensity": 0.25,
+        "source": "Internal consistency maintenance",
+        "persistence": 0.5,
+        "last_updated": 1775206671.995365,
+        "linked_tensions": [],
+        "candidate_bias": 0.0,
+        "candidate_effects": {}
+      },
+      "completion": {
+        "drive_id": "completion",
+        "drive_type": "completion",
+        "intensity": 0.5,
+        "source": "Goal completion pressure",
+        "persistence": 0.5,
+        "last_updated": 1775206671.9953685,
+        "linked_tensions": [],
+        "candidate_bias": 0.0,
+        "candidate_effects": {}
+      },
+      "conservation": {
+        "drive_id": "conservation",
+        "drive_type": "conservation",
+        "intensity": 0.3,
+        "source": "Resource conservation drive",
+        "persistence": 0.5,
+        "last_updated": 1775206671.995379,
+        "linked_tensions": [],
+        "candidate_bias": 0.0,
+        "candidate_effects": {}
+      },
+      "exploration": {
+        "drive_id": "exploration",
+        "drive_type": "exploration",
+        "intensity": 0.4,
+        "source": "Capability exploration drive",
+        "persistence": 0.5,
+        "last_updated": 1775206671.9953768,
+        "linked_tensions": [],
+        "candidate_bias": 0.0,
+        "candidate_effects": {}
+      },
+      "repair": {
+        "drive_id": "repair",
+        "drive_type": "repair",
+        "intensity": 0.22499999999999998,
+        "source": "Self-repair drive",
+        "persistence": 0.5,
+        "last_updated": 1775206687.361726,
+        "linked_tensions": [],
+        "candidate_bias": 0.0,
+        "candidate_effects": {}
+      },
+      "stability": {
+        "drive_id": "stability",
+        "drive_type": "stability",
+        "intensity": 0.9749999999999999,
+        "source": "System stability maintenance",
+        "persistence": 0.5,
+        "last_updated": 1775206687.3611987,
+        "linked_tensions": [],
+        "candidate_bias": 0.0,
+        "candidate_effects": {}
+      },
+      "verification": {
+        "drive_id": "verification",
+        "drive_type": "verification",
+        "intensity": 0.75,
+        "source": "State verification drive",
+        "persistence": 0.5,
+        "last_updated": 1775206671.9953716,
+        "linked_tensions": [],
+        "candidate_bias": 0.0,
+        "candidate_effects": {}
+      }
+    },
+    "latent_drives": {},
+    "homeostatic_signals": {
+      "continuity_quality": {
+        "signal_id": "continuity_quality",
+        "category": "system_health",
+        "observed_value": 0.35,
+        "desired_range_min": 0.5,
+        "desired_range_max": 1.0,
+        "deviation_level": 0.15000000000000002,
+        "last_checked": 1775206687.3609765
+      },
+      "identity_stability": {
+        "signal_id": "identity_stability",
+        "category": "system_health",
+        "observed_value": 0.8,
+        "desired_range_min": 0.6,
+        "desired_range_max": 1.0,
+        "deviation_level": 0.0,
+        "last_checked": 1775206671.9953856
+      },
+      "maintenance_balance": {
+        "signal_id": "maintenance_balance",
+        "category": "system_health",
+        "observed_value": 0.5,
+        "desired_range_min": 0.3,
+        "desired_range_max": 0.7,
+        "deviation_level": 0.0,
+        "last_checked": 1775206671.9954302
+      },
+      "tension_resolution": {
+        "signal_id": "tension_resolution",
+        "category": "system_health",
+        "observed_value": 0.4,
+        "desired_range_min": 0.2,
+        "desired_range_max": 0.6,
+        "deviation_level": 0.0,
+        "last_checked": 1775206671.9954393
+      }
+    },
+    "maintenance_debt": {
+      "replay_verification_001": {
+        "debt_id": "replay_verification_001",
+        "category": "replay_verification",
+        "amount": 0.25,
+        "priority": 0.9,
+        "source": "maintenance_context",
+        "created_at": 1775206672.6910138,
+        "last_updated": 1775206672.691014
+      },
+      "replay_verification_002": {
+        "debt_id": "replay_verification_002",
+        "category": "replay_verification",
+        "amount": 0.25,
+        "priority": 0.9,
+        "source": "maintenance_context",
+        "created_at": 1775206678.532041,
+        "last_updated": 1775206678.5320415
+      },
+      "replay_verification_003": {
+        "debt_id": "replay_verification_003",
+        "category": "replay_verification",
+        "amount": 0.25,
+        "priority": 0.9,
+        "source": "maintenance_context",
+        "created_at": 1775206687.361487,
+        "last_updated": 1775206687.3614874
+      }
+    },
+    "regulation_targets": {
+      "drive_pressure": {
+        "target_name": "drive_pressure",
+        "desired_range_min": 0.2,
+        "desired_range_max": 0.8,
+        "observed_value": 0.5,
+        "deviation_level": 0.0
+      },
+      "homeostatic_deviation": {
+        "target_name": "homeostatic_deviation",
+        "desired_range_min": 0.0,
+        "desired_range_max": 0.3,
+        "observed_value": 0.5,
+        "deviation_level": 0.0
+      },
+      "maintenance_debt": {
+        "target_name": "maintenance_debt",
+        "desired_range_min": 0.0,
+        "desired_range_max": 0.5,
+        "observed_value": 0.5,
+        "deviation_level": 0.0
+      }
+    },
+    "drive_history": {
+      "entries": [
+        {
+          "timestamp": 1775206672.690832,
+          "drive_id": "stability",
+          "change_type": "intensity_update",
+          "old_value": 0.75,
+          "new_value": 0.825,
+          "cause": "homeostatic_deviation:continuity_quality",
+          "evidence": {}
+        },
+        {
+          "timestamp": 1775206672.6910195,
+          "drive_id": "replay_verification_001",
+          "change_type": "maintenance_debt_add",
+          "old_value": null,
+          "new_value": 0.25,
+          "cause": "maintenance_context",
+          "evidence": {}
+        },
+        {
+          "timestamp": 1775206672.6911852,
+          "drive_id": "repair",
+          "change_type": "intensity_update",
+          "old_value": 0.15,
+          "new_value": 0.175,
+          "cause": "maintenance_debt:replay_verification",
+          "evidence": {}
+        },
+        {
+          "timestamp": 1775206678.5316358,
+          "drive_id": "stability",
+          "change_type": "intensity_update",
+          "old_value": 0.825,
+          "new_value": 0.8999999999999999,
+          "cause": "homeostatic_deviation:continuity_quality",
+          "evidence": {}
+        },
+        {
+          "timestamp": 1775206678.5320506,
+          "drive_id": "replay_verification_002",
+          "change_type": "maintenance_debt_add",
+          "old_value": null,
+          "new_value": 0.25,
+          "cause": "maintenance_context",
+          "evidence": {}
+        },
+        {
+          "timestamp": 1775206678.5323813,
+          "drive_id": "repair",
+          "change_type": "intensity_update",
+          "old_value": 0.175,
+          "new_value": 0.19999999999999998,
+          "cause": "maintenance_debt:replay_verification",
+          "evidence": {}
+        },
+        {
+          "timestamp": 1775206687.361207,
+          "drive_id": "stability",
+          "change_type": "intensity_update",
+          "old_value": 0.8999999999999999,
+          "new_value": 0.9749999999999999,
+          "cause": "homeostatic_deviation:continuity_quality",
+          "evidence": {}
+        },
+        {
+          "timestamp": 1775206687.3614936,
+          "drive_id": "replay_verification_003",
+          "change_type": "maintenance_debt_add",
+          "old_value": null,
+          "new_value": 0.25,
+          "cause": "maintenance_context",
+          "evidence": {}
+        },
+        {
+          "timestamp": 1775206687.3617294,
+          "drive_id": "repair",
+          "change_type": "intensity_update",
+          "old_value": 0.19999999999999998,
+          "new_value": 0.22499999999999998,
+          "cause": "maintenance_debt:replay_verification",
+          "evidence": {}
+        }
+      ],
+      "revision_markers": [
+        {
+          "revision_id": "drive_rev_000001",
+          "timestamp": "2026-04-03T08:57:52.028887+00:00",
+          "update_source": "owner_bootstrap",
+          "trace_reference": "mvp14:controlled_bootstrap",
+          "gate_verdict": "allow_writeback"
+        },
+        {
+          "revision_id": "drive_rev_000002",
+          "timestamp": "2026-04-03T08:57:52.741573+00:00",
+          "update_source": "proto_self_v2",
+          "trace_reference": "proto_self:session:mvp14:controlled:20260403_035751_turn_d8083e8d",
+          "gate_verdict": "allow_writeback"
+        },
+        {
+          "revision_id": "drive_rev_000003",
+          "timestamp": "2026-04-03T08:57:58.594311+00:00",
+          "update_source": "proto_self_v2",
+          "trace_reference": "proto_self:session:mvp14:controlled:20260403_035751_turn_8ddfa195",
+          "gate_verdict": "allow_writeback"
+        },
+        {
+          "revision_id": "drive_rev_000004",
+          "timestamp": "2026-04-03T08:58:07.412617+00:00",
+          "update_source": "proto_self_v2",
+          "trace_reference": "proto_self:session:mvp14:controlled:20260403_035751_turn_469234d2",
+          "gate_verdict": "allow_writeback"
+        }
+      ],
+      "max_entries": 500,
+      "max_revision_markers": 200
+    },
+    "priority_snapshot": {
+      "bias_terms": {
+        "coherence": 0.125,
+        "completion": 0.25,
+        "conservation": 0.15,
+        "exploration": 0.2,
+        "repair": 0.11249999999999999,
+        "stability": 0.48749999999999993,
+        "verification": 0.375
+      },
+      "dominant_drive": "stability",
+      "homeostatic_deviation": 0.15000000000000002,
+      "maintenance_pressure": 0.75,
+      "total_drive_pressure": 1.7
+    },
+    "created_at": 1775206671.995321,
+    "updated_at": 1775206687.41289,
+    "version": "1.0.0",
+    "schema_version": "mvp14-owner-v1",
+    "owner_revision": 4,
+    "last_revision_id": "drive_rev_000004"
+  },
+  "status": "pass",
+  "verification_level": "V4",
+  "evidence_level": "E4",
+  "boundary": "This report proves a controlled runtime-mainline endogenous-drive writeback path with a governed self-maintenance candidate. It does not prove live autonomy, direct reply authority, or broader transport maturity.",
+  "external_risk_note": "Provider 429/401 remains an external budget-layer risk; it is not counted as a WP9 blocker unless it regresses formal owner writeback."
+}
