@@ -21,6 +21,8 @@ from .model import (
     StandingCommitment,
     create_default_self_model,
 )
+from .replay import SelfModelReplay, SelfModelReplayResult
+from .store import SelfModelRevisionRecord, SelfModelStore
 
 __all__ = [
     "SelfModel",
@@ -37,5 +39,9 @@ __all__ = [
     "PHASE1_LEGACY_REFERENCE_ONLY_FIELDS",
     "RUNTIME_LOCAL_PROJECTION_FIELD",
     "RUNTIME_LOCAL_PROJECTION_SEMANTICS",
+    "SelfModelStore",
+    "SelfModelRevisionRecord",
+    "SelfModelReplay",
+    "SelfModelReplayResult",
     "create_default_self_model",
 ]
