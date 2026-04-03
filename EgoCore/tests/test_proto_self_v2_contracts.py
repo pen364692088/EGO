@@ -60,6 +60,47 @@ def test_adapter_handle_event_supports_v2_contract(tmp_path):
     assert result["trace_payload"]["update_packet_hash"]
 
 
+def test_adapter_handle_event_accepts_runtime_self_model_context(tmp_path):
+    adapter = ProtoSelfAdapter(mirror_dir=tmp_path / "mirror")
+    payload = {
+        "schema_version": "proto_self.v2",
+        "event_id": "evt_v2_ctx_001",
+        "timestamp": datetime.now().isoformat(),
+        "event": {
+            "actor": "user",
+            "source": "telegram",
+            "event_type": "user_message",
+            "user_intent": "continue discussion",
+            "raw_text": "继续",
+        },
+        "conversation_summary": {"session_id": "session:test", "thread_id": "session:test", "turn_id": "turn_001"},
+        "task_summary": {"pending_tasks": 0, "blocked_tasks": 0},
+        "runtime_summary": {
+            "runtime": "runtime_v2",
+            "state_scope": "agent_global",
+            "self_model_context": {
+                "schema_version": "1.0.0",
+                "identity_handle": "openemotion",
+                "capabilities": [{"capability_id": "cap_reasoning"}],
+                "limitations": [{"limitation_id": "lim_no_gui"}],
+                "active_goals": [{"goal_id": "goal_owner"}],
+                "standing_commitments": [{"commitment_id": "stay_governed", "binding_level": "hard"}],
+                "confidence_by_domain": {"reasoning": 0.9},
+                "known_unknowns": [],
+                "created_at": "2026-04-02T00:00:00Z",
+                "last_modified_at": "2026-04-02T00:00:00Z",
+                "modification_audit_trail": [],
+            },
+        },
+        "safety_context": {"risk_level": "low"},
+    }
+
+    result = adapter.handle_event(payload)
+
+    assert result["schema_version"] == "proto_self.output.v2"
+    assert result["trace_payload"]["constraint_summary"]["self_model_context"]["identity_handle"] == "openemotion"
+
+
 def test_adapter_handle_event_supports_seed_profile_contract(tmp_path):
     adapter = ProtoSelfAdapter(mirror_dir=tmp_path / "mirror")
     payload = {

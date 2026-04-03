@@ -1,4 +1,5 @@
 from pathlib import Path
+from types import SimpleNamespace
 
 from app.config import load_config
 from app.runtime_v2.proto_self_runtime import (
@@ -17,6 +18,8 @@ from app.runtime_v2.runtime_reply import RuntimeV2Reply, RuntimeV2TurnResult
 from app.runtime_v2.state import RuntimeV2State
 from app.telegram_evidence_collector import TelegramEvidenceCollector
 from openemotion.proto_self_v2.seed_schemas import SEED_SUBJECT_PROFILE
+from openemotion.self_model import Goal, GoalStatus, Priority, SelfModelStore, create_default_self_model
+from openemotion.self_model import SelfModelStore, create_default_self_model
 
 
 def test_assess_risk_level_keeps_existing_keywords():
@@ -81,6 +84,173 @@ def test_build_proto_self_ingress_event_supports_v2_shape():
     assert event["safety_context"]["risk_level"] == "low"
     assert event["prediction_snapshot_prev"]["expected_success"] is True
     assert event["external_outcome"] is None
+
+
+def test_v2_events_inject_formal_self_model_context(tmp_path):
+    store = SelfModelStore(base_dir=tmp_path)
+    baseline = create_default_self_model("openemotion")
+    store.save(
+        baseline,
+        update_source="owner_bootstrap",
+        trace_reference="trace:self_model_context",
+        confidence_class="high",
+    )
+
+    state = RuntimeV2State(session_id="session:test")
+    state.current_goal = "verify_self_model_bridge"
+    state.ingress_context = {"proto_self_version": "v2"}
+    result = RuntimeV2TurnResult(
+        status="completed_verified",
+        state=state,
+        reply=RuntimeV2Reply(
+            reply_text="已完成",
+            delivery_kind="final",
+            status="completed_verified",
+        ),
+    )
+
+    ingress_event = build_proto_self_ingress_event(
+        session_id="session:test",
+        turn_id="turn_ctx_ingress",
+        source="telegram",
+        user_input="帮我整理下 self-model 读链",
+        state=state,
+        self_model_store=store,
+    )
+    external_event = build_external_result_event(
+        session_id="session:test",
+        turn_id="turn_ctx_external",
+        step=0,
+        tool_result={"success": True, "tool": "shell", "exit_code": 0, "stderr": ""},
+        state=state,
+        self_model_store=store,
+    )
+    finalized_event = build_finalized_result_event(
+        session_id="session:test",
+        turn_id="turn_ctx_finalized",
+        result=result,
+        state=state,
+        self_model_store=store,
+    )
+
+    assert ingress_event["runtime_summary"]["self_model_context"]["identity_handle"] == "openemotion"
+    assert external_event["runtime_summary"]["self_model_context"]["identity_handle"] == "openemotion"
+    assert finalized_event is not None
+    assert finalized_event["runtime_summary"]["self_model_context"]["identity_handle"] == "openemotion"
+
+
+def test_process_ingress_applies_governed_self_model_writeback(tmp_path):
+    store = SelfModelStore(base_dir=tmp_path)
+    baseline = create_default_self_model("openemotion")
+    store.save(
+        baseline,
+        update_source="owner_bootstrap",
+        trace_reference="trace:init",
+        confidence_class="high",
+    )
+
+    class DummyAdapter:
+        def __init__(self):
+            self.last_event = None
+
+        def handle_event(self, event):
+            self.last_event = event
+            return {
+                "event_id": event["event_id"],
+                "subject_profile": event.get("subject_profile"),
+                "policy_hint": {},
+                "response_tendency": {},
+                "reflection_note": None,
+                "candidate_actions": [],
+                "self_model_delta": {
+                    "active_goals": [
+                        Goal(
+                            goal_id="goal_runtime_bridge",
+                            description="Bridge formal self-model writeback through runtime_v2",
+                            status=GoalStatus.IN_PROGRESS.value,
+                            priority=Priority.HIGH.value,
+                            progress=0.5,
+                        ).to_dict()
+                    ]
+                },
+                "confidence_meta": {
+                    "self_model_update_mode": "append_observation",
+                    "self_model_update_source": "proto_self_v2",
+                    "self_model_confidence_class": "high",
+                    "self_model_trace_reference": "trace:runtime_bridge",
+                },
+                "trace_payload": {"update_packet_hash": "hash_runtime_bridge"},
+            }
+
+    adapter = DummyAdapter()
+    runtime = RuntimeV2ProtoSelfRuntime(adapter=adapter, self_model_store=store)
+    state = RuntimeV2State(session_id="session:test")
+    state.ingress_context = {"proto_self_version": "v2"}
+
+    runtime.process_ingress(
+        session_id="session:test",
+        turn_id="turn_writeback",
+        source="telegram",
+        user_input="把 self-model 写回接上正式主链",
+        state=state,
+    )
+
+    saved = store.load("openemotion")
+
+    assert adapter.last_event["runtime_summary"]["self_model_context"]["identity_handle"] == "openemotion"
+    assert state.proto_self_context["self_model_writeback"]["decision"]["gate_verdict"] == "allow_writeback"
+    assert saved is not None
+    assert saved.active_goals[0].goal_id == "goal_runtime_bridge"
+    assert len(store.load_revision_log("openemotion")) == 2
+
+
+def test_process_ingress_rejects_legacy_self_model_writeback(tmp_path):
+    store = SelfModelStore(base_dir=tmp_path)
+    baseline = create_default_self_model("openemotion")
+    store.save(
+        baseline,
+        update_source="owner_bootstrap",
+        trace_reference="trace:init",
+        confidence_class="high",
+    )
+
+    class DummyAdapter:
+        def handle_event(self, event):
+            return {
+                "event_id": event["event_id"],
+                "subject_profile": event.get("subject_profile"),
+                "policy_hint": {},
+                "response_tendency": {},
+                "reflection_note": None,
+                "candidate_actions": [],
+                "self_model_delta": {"active_tensions": [{"tension_id": "legacy_only"}]},
+                "confidence_meta": {
+                    "self_model_update_mode": "append_observation",
+                    "self_model_update_source": "proto_self_v2",
+                    "self_model_confidence_class": "high",
+                    "self_model_trace_reference": "trace:legacy_reject",
+                },
+                "trace_payload": {"update_packet_hash": "hash_legacy_reject"},
+            }
+
+    runtime = RuntimeV2ProtoSelfRuntime(adapter=DummyAdapter(), self_model_store=store)
+    state = RuntimeV2State(session_id="session:test")
+    state.ingress_context = {"proto_self_version": "v2"}
+
+    runtime.process_ingress(
+        session_id="session:test",
+        turn_id="turn_legacy_reject",
+        source="telegram",
+        user_input="不要把 legacy field 写回 owner store",
+        state=state,
+    )
+
+    saved = store.load("openemotion")
+
+    assert state.proto_self_context["self_model_writeback"]["decision"]["gate_verdict"] == "reject"
+    assert saved is not None
+    assert "active_tensions" not in saved.to_dict()
+    assert len(store.load_revision_log("openemotion")) == 1
 
 
 def test_build_proto_self_ingress_event_supports_seed_profile_shape():
@@ -215,6 +385,64 @@ def test_build_developmental_tick_event_requires_explicit_enable(monkeypatch):
     assert event is not None
     assert event["event"]["event_type"] == "developmental_tick"
     assert event["runtime_summary"]["developmental_mode"] == "shadow_observe"
+
+
+def test_build_proto_self_ingress_event_injects_formal_self_model_context(tmp_path):
+    store = SelfModelStore(base_dir=tmp_path)
+    baseline = create_default_self_model("openemotion")
+    store.save(
+        baseline,
+        update_source="owner_bootstrap",
+        trace_reference="trace:init",
+        confidence_class="high",
+    )
+    state = RuntimeV2State(session_id="session:test")
+    state.ingress_context = {"proto_self_version": "v2"}
+
+    event = build_proto_self_ingress_event(
+        session_id="session:test",
+        turn_id="turn_ctx",
+        source="telegram",
+        user_input="继续",
+        state=state,
+        self_model_store=store,
+    )
+
+    assert event["runtime_summary"]["self_model_context"]["identity_handle"] == "openemotion"
+    assert event["runtime_summary"]["self_model_context"]["schema_version"] == "1.0.0"
+
+
+def test_build_finalized_result_event_injects_formal_self_model_context(tmp_path):
+    store = SelfModelStore(base_dir=tmp_path)
+    baseline = create_default_self_model("openemotion")
+    store.save(
+        baseline,
+        update_source="owner_bootstrap",
+        trace_reference="trace:init",
+        confidence_class="high",
+    )
+    state = RuntimeV2State(session_id="session:test")
+    state.ingress_context = {"proto_self_version": "v2"}
+    result = RuntimeV2TurnResult(
+        status="completed_verified",
+        state=state,
+        reply=RuntimeV2Reply(
+            reply_text="done",
+            delivery_kind="final",
+            status="completed_verified",
+        ),
+    )
+
+    event = build_finalized_result_event(
+        session_id="session:test",
+        turn_id="turn_ctx",
+        result=result,
+        state=state,
+        self_model_store=store,
+    )
+
+    assert event is not None
+    assert event["runtime_summary"]["self_model_context"]["identity_handle"] == "openemotion"
 
 
 def test_build_external_result_event_v1_fallback_does_not_steal_family_or_repair_semantics():
@@ -516,6 +744,59 @@ def test_process_finalized_result_and_idle_check_capture_seed_trace():
     assert "finalized_result_kernel_trace" in captured["stages"]
     assert "idle_check_kernel_trace" in captured["stages"]
     assert state.proto_self_context["last_exec_result"]["status"] == "success"
+
+
+def test_process_ingress_records_self_model_writeback_without_owner_promotion(tmp_path):
+    store = SelfModelStore(base_dir=tmp_path)
+    baseline = create_default_self_model("openemotion")
+    store.save(
+        baseline,
+        update_source="owner_bootstrap",
+        trace_reference="trace:init",
+        confidence_class="high",
+    )
+
+    class Adapter:
+        def handle_event(self, event):
+            return {
+                "schema_version": "proto_self.output.v2",
+                "event_id": event["event_id"],
+                "subject_profile": event.get("subject_profile"),
+                "self_model_delta": {"confidence_by_domain": {"reasoning": 0.97}},
+                "policy_hint": {"governor_hint": {"status": "approved"}},
+                "response_tendency": {"preferred_mode": "respond"},
+                "reflection_note": None,
+                "candidate_actions": [],
+                "confidence_meta": {
+                    "self_model_update_mode": "append_observation",
+                    "self_model_update_source": "proto_self_v2",
+                    "self_model_confidence_class": "high",
+                },
+                "trace_payload": {
+                    "schema_version": "proto_self.trace.v2",
+                    "event_id": event["event_id"],
+                    "update_packet_hash": "hash_001",
+                },
+            }
+
+    runtime = RuntimeV2ProtoSelfRuntime(adapter=Adapter(), self_model_store=store)
+    state = RuntimeV2State(session_id="session:test")
+    state.ingress_context = {"proto_self_version": "v2"}
+
+    runtime.process_ingress(
+        session_id="session:test",
+        turn_id="turn_001",
+        source="telegram",
+        user_input="继续",
+        state=state,
+    )
+
+    saved = store.load("openemotion")
+
+    assert saved is not None
+    assert saved.confidence_by_domain["reasoning"] == 0.97
+    assert state.proto_self_context["self_model_delta"] == {"confidence_by_domain": {"reasoning": 0.97}}
+    assert state.proto_self_context["self_model_writeback"]["decision"]["gate_verdict"] == "allow_writeback"
 
 
 def test_process_developmental_tick_updates_shadow_summary_and_trace():

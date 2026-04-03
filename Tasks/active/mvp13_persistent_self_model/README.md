@@ -7,7 +7,7 @@ owner: "Codex"
 layer: 3
 type: dual_repo
 repos: [EgoCore, OpenEmotion]
-status: planning_ready
+status: observation_ready
 parent_authority: "Tasks/MVS_task_plan.md"
 phase_authority: "Tasks/MVP13_task_plan.md"
 predecessor: "WP7/MVP12"
@@ -54,6 +54,22 @@ scope: "WP8 / MVP13 Persistent Self-Model"
 - proto-self read integration contract
 - governed writeback contract
 - bridge and evidence task split
+
+## 当前实现状态
+
+- `T10` formal owner contract 已收敛
+- `T20` persistence / audit / replay 已落 formal owner path
+- `T30` identity invariants / drift governance 已落 formal gate
+- `T40` proto-self read integration 已接 `runtime_summary.self_model_context`
+- `T50` governed writeback 已落 formal owner gate
+- `T60` EgoCore bridge 已把 formal owner context / writeback result 接回 runtime 主链
+- `T70` 本地证据包已生成：
+  - `OpenEmotion/artifacts/mvp13/mvp13_local_evidence_current.md`
+
+## 当前 blocker
+
+- 还没有真实 `E4` mainline-trigger self-model writeback 样本
+- 当前只能报 `E3 local proof`, 不能报 `E4` 或 `E5`
 
 ## 本轮不做
 

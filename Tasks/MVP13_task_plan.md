@@ -77,6 +77,12 @@
 8. `T70` Evidence / Acceptance
 9. `T80` Subagent Assignment
 
+## Current Phase Status
+- `T00/T10/T20/T30/T40/T50/T60/T70/T80` 当前已完成到本地 `E3` 证据
+- 当前层级：`evidence_ready_pre_observation`
+- 当前 blocker：缺真实 `E4` mainline-trigger self-model writeback 样本
+- 当前最小闭环动作：在真实主链上触发一次受治理 writeback，并验证 formal owner revision / audit / replay 对齐
+
 ## Success Criteria
 - 文档层：
   - 所有 authority / contract / gate / proof levers 冻结

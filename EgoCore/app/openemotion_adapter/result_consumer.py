@@ -32,6 +32,7 @@ class ConsumedResult:
 
     # 结构化消费字段
     self_model_delta: Optional[dict] = None
+    self_model_writeback: Optional[dict] = None
     memory_update: Optional[dict] = None
     policy_hint: Optional[dict] = None
     response_tendency: Optional[dict] = None
@@ -75,6 +76,7 @@ class ResultConsumer:
 
         # 提取结构字段
         self_model_delta = result_dict.get("self_model_delta")
+        self_model_writeback = result_dict.get("self_model_writeback")
         memory_update = result_dict.get("memory_update")
         policy_hint = result_dict.get("policy_hint")
         response_tendency = result_dict.get("response_tendency")
@@ -99,6 +101,7 @@ class ResultConsumer:
             event_id=event_id,
             success=result_type != "error",
             self_model_delta=self_model_delta,
+            self_model_writeback=self_model_writeback,
             memory_update=memory_update,
             policy_hint=policy_hint,
             response_tendency=response_tendency,

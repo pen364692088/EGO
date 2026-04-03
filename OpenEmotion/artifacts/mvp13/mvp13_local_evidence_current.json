@@ -1,0 +1,66 @@
+{
+  "generated_at": "2026-04-03T05:09:59.180214+00:00",
+  "git_commit_short": "5c8aa85",
+  "overall_status": "pass",
+  "verification_level": "V3",
+  "evidence_level": "E3",
+  "suites": [
+    {
+      "name": "owner_contract_and_governance",
+      "command": [
+        "/usr/bin/python3",
+        "-m",
+        "pytest",
+        "-q",
+        "-s",
+        "--noconftest",
+        "OpenEmotion/tests/mvp13/test_self_model_owner_contract.py",
+        "OpenEmotion/tests/mvp13/test_self_model_infra.py",
+        "OpenEmotion/tests/mvp13/test_self_model_persistence.py",
+        "OpenEmotion/tests/mvp13/test_self_model_replay.py",
+        "OpenEmotion/tests/mvp13/test_self_model_governance.py"
+      ],
+      "returncode": 0,
+      "passed": true,
+      "log_file": "/mnt/d/Project/AIProject/MyProject/Ego/OpenEmotion/artifacts/mvp13/formal_owner_evidence_20260403_050934/owner_contract_and_governance.log"
+    },
+    {
+      "name": "proto_self_read_integration",
+      "command": [
+        "/usr/bin/python3",
+        "-m",
+        "pytest",
+        "-q",
+        "-s",
+        "OpenEmotion/openemotion/proto_self_v2/tests/test_self_model_read_integration.py",
+        "OpenEmotion/openemotion/proto_self_v2/tests/test_kernel_contract.py"
+      ],
+      "returncode": 0,
+      "passed": true,
+      "log_file": "/mnt/d/Project/AIProject/MyProject/Ego/OpenEmotion/artifacts/mvp13/formal_owner_evidence_20260403_050934/proto_self_read_integration.log"
+    },
+    {
+      "name": "egocore_bridge",
+      "command": [
+        "/usr/bin/python3",
+        "-m",
+        "pytest",
+        "-q",
+        "-s",
+        "EgoCore/tests/test_runtime_v2_proto_self_runtime.py",
+        "EgoCore/tests/test_proto_self_v2_contracts.py"
+      ],
+      "returncode": 0,
+      "passed": true,
+      "log_file": "/mnt/d/Project/AIProject/MyProject/Ego/OpenEmotion/artifacts/mvp13/formal_owner_evidence_20260403_050934/egocore_bridge.log"
+    }
+  ],
+  "acceptance": {
+    "e3_local_proof_pack": true,
+    "e4_path_defined": true,
+    "e5_gate_defined": true
+  },
+  "e4_mainline_path": "runtime_v2 -> proto_self_runtime -> proto_self_adapter -> proto_self_v2 -> self_model_update_gate -> formal owner store revision log",
+  "e5_stability_gate": "Require repeated mainline-triggered writeback samples, zero hard invariant violations, no unstable drift spikes, and replay-consistent owner revisions across a real observation window.",
+  "current_boundary": "This report is local E3 proof only. It does not claim E4 mainline-trigger evidence or E5 stability."
+}

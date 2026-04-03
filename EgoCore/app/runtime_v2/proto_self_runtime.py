@@ -8,6 +8,13 @@ import logging
 import os
 
 from openemotion.proto_self_v2.seed_schemas import SEED_SCHEMA_VERSION, SEED_SUBJECT_PROFILE
+from openemotion.self_model import (
+    PHASE1_AUTHORITATIVE_FIELDS,
+    SelfModelStore,
+    SelfModelUpdateRequest,
+    apply_governed_writeback,
+    create_default_self_model,
+)
 
 from app.risk_signal import (
     assess_message_risk_level,
@@ -17,6 +24,7 @@ from .state import RuntimeV2State
 
 logger = logging.getLogger(__name__)
 ENABLE_MVP12_SANDBOX = os.environ.get("EGO_ENABLE_MVP12_SANDBOX", "false").lower() == "true"
+DEFAULT_SELF_MODEL_IDENTITY_HANDLE = "openemotion"
 
 
 def assess_risk_level(user_input: str) -> str:
@@ -67,6 +75,41 @@ def _seed_runtime_summary(state: RuntimeV2State) -> Dict[str, Any]:
         ),
         "browser_tabs": list(ingress_context.get("browser_tabs") or []),
     }
+
+
+def _resolve_self_model_identity_handle(state: RuntimeV2State) -> str:
+    ingress_context = state.ingress_context or {}
+    return str(
+        ingress_context.get("self_model_identity_handle")
+        or ingress_context.get("identity_handle")
+        or DEFAULT_SELF_MODEL_IDENTITY_HANDLE
+    )
+
+
+def _compact_self_model_context(snapshot: Dict[str, Any]) -> Dict[str, Any]:
+    context: Dict[str, Any] = {}
+    for field_name in PHASE1_AUTHORITATIVE_FIELDS:
+        if field_name not in snapshot:
+            continue
+        value = snapshot[field_name]
+        if field_name == "modification_audit_trail":
+            context[field_name] = list(value or [])[-5:]
+            continue
+        context[field_name] = value
+    return context
+
+
+def _inject_self_model_context(
+    runtime_summary: Dict[str, Any],
+    *,
+    state: RuntimeV2State,
+    self_model_store: Optional[SelfModelStore] = None,
+) -> Dict[str, Any]:
+    store = self_model_store or SelfModelStore()
+    snapshot = store.load_snapshot(_resolve_self_model_identity_handle(state))
+    if snapshot:
+        runtime_summary["self_model_context"] = _compact_self_model_context(snapshot)
+    return runtime_summary
 
 
 def _build_seed_event(
@@ -130,6 +173,7 @@ def build_proto_self_ingress_event(
     source: str,
     user_input: str,
     state: RuntimeV2State,
+    self_model_store: Optional[SelfModelStore] = None,
 ) -> Dict[str, Any]:
     risk_level = assess_risk_level(user_input)
     restore_observation = (state.ingress_context or {}).get("restore_observation")
@@ -137,11 +181,15 @@ def build_proto_self_ingress_event(
     if schema_version == "proto_self.v2":
         ingress_context = state.ingress_context or {}
         subject_profile = resolve_proto_self_subject_profile(state)
-        runtime_summary = {
-            "runtime": "runtime_v2",
-            "state_scope": "agent_global",
-            "restore_observation": restore_observation,
-        }
+        runtime_summary = _inject_self_model_context(
+            {
+                "runtime": "runtime_v2",
+                "state_scope": "agent_global",
+                "restore_observation": restore_observation,
+            },
+            state=state,
+            self_model_store=self_model_store,
+        )
         runtime_summary.update(
             {
                 k: v
@@ -231,6 +279,7 @@ def build_external_result_event(
     step: int,
     tool_result: Dict[str, Any],
     state: RuntimeV2State,
+    self_model_store: Optional[SelfModelStore] = None,
 ) -> Dict[str, Any]:
     failed = not tool_result.get("success")
     schema_version = resolve_proto_self_schema_version(state)
@@ -256,10 +305,14 @@ def build_external_result_event(
                 "pending_tasks": 1 if state.current_goal else 0,
                 "blocked_tasks": 1 if failed else 0,
             },
-            "runtime_summary": {
-                "runtime": "runtime_v2",
-                "state_scope": "agent_global",
-            },
+            "runtime_summary": _inject_self_model_context(
+                {
+                    "runtime": "runtime_v2",
+                    "state_scope": "agent_global",
+                },
+                state=state,
+                self_model_store=self_model_store,
+            ),
             "safety_context": {
                 "risk_level": risk_level_from_external_result(failed=failed),
             },
@@ -336,6 +389,7 @@ def build_finalized_result_event(
     turn_id: str,
     result: Any,
     state: RuntimeV2State,
+    self_model_store: Optional[SelfModelStore] = None,
 ) -> Optional[Dict[str, Any]]:
     if resolve_proto_self_schema_version(state) != "proto_self.v2":
         return None
@@ -363,11 +417,15 @@ def build_finalized_result_event(
             "pending_tasks": 1 if state.current_goal else 0,
             "blocked_tasks": 1 if result.status == "blocked" else 0,
         },
-        "runtime_summary": {
-            "runtime": "runtime_v2",
-            "state_scope": "agent_global",
-            **_seed_runtime_summary(state),
-        },
+        "runtime_summary": _inject_self_model_context(
+            {
+                "runtime": "runtime_v2",
+                "state_scope": "agent_global",
+                **_seed_runtime_summary(state),
+            },
+            state=state,
+            self_model_store=self_model_store,
+        ),
         "safety_context": {
             "risk_level": ingress_context.get("risk_level") or "low",
         },
@@ -398,6 +456,7 @@ def build_idle_check_event(
     session_id: str,
     turn_id: str,
     state: RuntimeV2State,
+    self_model_store: Optional[SelfModelStore] = None,
 ) -> Optional[Dict[str, Any]]:
     if resolve_proto_self_schema_version(state) != "proto_self.v2":
         return None
@@ -436,11 +495,15 @@ def build_idle_check_event(
             "pending_tasks": 1 if state.current_goal else 0,
             "blocked_tasks": 0,
         },
-        "runtime_summary": {
-            "runtime": "runtime_v2",
-            "state_scope": "agent_global",
-            **_seed_runtime_summary(state),
-        },
+        "runtime_summary": _inject_self_model_context(
+            {
+                "runtime": "runtime_v2",
+                "state_scope": "agent_global",
+                **_seed_runtime_summary(state),
+            },
+            state=state,
+            self_model_store=self_model_store,
+        ),
         "safety_context": {
             "risk_level": "low",
         },
@@ -465,6 +528,7 @@ def build_developmental_tick_event(
     state_snapshot: Optional[Dict[str, Any]] = None,
     replay_seed: Optional[int] = None,
     force_enable: bool = False,
+    self_model_store: Optional[SelfModelStore] = None,
 ) -> Optional[Dict[str, Any]]:
     if resolve_proto_self_schema_version(state) != "proto_self.v2":
         return None
@@ -472,16 +536,20 @@ def build_developmental_tick_event(
         return None
     subject_profile = resolve_proto_self_subject_profile(state)
     event_type = "developmental_replay" if observation_source == "replay" else "developmental_tick"
-    runtime_summary = {
-        "runtime": "runtime_v2",
-        "state_scope": "agent_global",
-        **_seed_runtime_summary(state),
-        "developmental_mode": "shadow_observe",
-        "observation_source": observation_source,
-        "developmental_trigger": trigger,
-        "idle_seconds": idle_seconds,
-        "max_candidates": 5,
-    }
+    runtime_summary = _inject_self_model_context(
+        {
+            "runtime": "runtime_v2",
+            "state_scope": "agent_global",
+            **_seed_runtime_summary(state),
+            "developmental_mode": "shadow_observe",
+            "observation_source": observation_source,
+            "developmental_trigger": trigger,
+            "idle_seconds": idle_seconds,
+            "max_candidates": 5,
+        },
+        state=state,
+        self_model_store=self_model_store,
+    )
     if replay_seed is not None:
         runtime_summary["replay_seed"] = replay_seed
     return {
@@ -552,6 +620,7 @@ class RuntimeV2ProtoSelfRuntime:
     adapter: Any
     trace_bridge: Any = None
     evidence_collector_factory: Optional[Any] = None
+    self_model_store: Optional[SelfModelStore] = None
 
     def _resolve_collector(self, evidence_collector: Optional[Any]) -> Optional[Any]:
         if evidence_collector is not None:
@@ -582,6 +651,46 @@ class RuntimeV2ProtoSelfRuntime:
         if self.trace_bridge:
             self.trace_bridge.write(trace_payload)
 
+    def _apply_self_model_writeback(
+        self,
+        *,
+        proto_self_result: Dict[str, Any],
+        state: RuntimeV2State,
+    ) -> Optional[Dict[str, Any]]:
+        delta = dict(proto_self_result.get("self_model_delta") or {})
+        if not delta:
+            return None
+
+        store = self.self_model_store or SelfModelStore()
+        identity_handle = _resolve_self_model_identity_handle(state)
+        current_model = store.load(identity_handle) or create_default_self_model(identity_handle)
+        trace_payload = dict(proto_self_result.get("trace_payload") or {})
+        confidence_meta = dict(proto_self_result.get("confidence_meta") or {})
+        update_packet_hash = trace_payload.get("update_packet_hash")
+        supporting_evidence = [f"event:{proto_self_result.get('event_id', 'unknown')}"]
+        if update_packet_hash:
+            supporting_evidence.append(f"trace:{update_packet_hash}")
+        request = SelfModelUpdateRequest(
+            delta=delta,
+            update_mode=str(confidence_meta.get("self_model_update_mode") or "append_observation"),
+            update_source=str(confidence_meta.get("self_model_update_source") or "proto_self_v2"),
+            trace_reference=str(
+                confidence_meta.get("self_model_trace_reference")
+                or f"proto_self:{proto_self_result.get('event_id', 'unknown')}"
+            ),
+            confidence_class=str(confidence_meta.get("self_model_confidence_class") or "medium"),
+            supporting_evidence=supporting_evidence,
+            candidate_id=confidence_meta.get("self_model_candidate_id"),
+        )
+        writeback = apply_governed_writeback(
+            store=store,
+            current_model=current_model,
+            request=request,
+            revisions=store.load_revision_log(identity_handle),
+        ).to_dict()
+        proto_self_result["self_model_writeback"] = writeback
+        return writeback
+
     def process_ingress(
         self,
         *,
@@ -598,8 +707,10 @@ class RuntimeV2ProtoSelfRuntime:
             source=source,
             user_input=user_input,
             state=state,
+            self_model_store=self.self_model_store,
         )
         proto_self_result = self.adapter.handle_event(proto_self_event)
+        writeback = self._apply_self_model_writeback(proto_self_result=proto_self_result, state=state)
         collector = self._resolve_collector(evidence_collector)
         if collector is not None:
             collector.capture_normalized_event(proto_self_event)
@@ -616,6 +727,8 @@ class RuntimeV2ProtoSelfRuntime:
             "reflection_note": proto_self_result.get("reflection_note"),
             "candidate_actions": proto_self_result.get("candidate_actions") or [],
             "governor_hint": (proto_self_result.get("policy_hint") or {}).get("governor_hint"),
+            "self_model_delta": proto_self_result.get("self_model_delta") or {},
+            "self_model_writeback": writeback,
         }
         state.record(
             "proto_self",
@@ -623,6 +736,7 @@ class RuntimeV2ProtoSelfRuntime:
                 "subject_profile": proto_self_result.get("subject_profile"),
                 "policy_hint": proto_self_result.get("policy_hint"),
                 "candidate_actions": proto_self_result.get("candidate_actions") or [],
+                "self_model_writeback": writeback,
                 "reflection_trigger": (
                     proto_self_result.get("reflection_note", {}).get("trigger")
                     if proto_self_result.get("reflection_note")
@@ -648,8 +762,10 @@ class RuntimeV2ProtoSelfRuntime:
             step=step,
             tool_result=state.last_tool_result,
             state=state,
+            self_model_store=self.self_model_store,
         )
         external_result = self.adapter.handle_event(external_result_event)
+        writeback = self._apply_self_model_writeback(proto_self_result=external_result, state=state)
         collector = self._resolve_collector(evidence_collector)
         if collector is not None:
             collector.capture_openemotion_result(external_result)
@@ -661,6 +777,8 @@ class RuntimeV2ProtoSelfRuntime:
         if state.proto_self_context is None:
             state.proto_self_context = {}
         state.proto_self_context["external_result"] = external_result
+        state.proto_self_context["self_model_delta"] = external_result.get("self_model_delta") or {}
+        state.proto_self_context["self_model_writeback"] = writeback
         if external_result.get("candidate_actions") is not None:
             state.proto_self_context["candidate_actions"] = external_result.get("candidate_actions") or []
         if external_result.get("policy_hint"):
@@ -689,10 +807,12 @@ class RuntimeV2ProtoSelfRuntime:
             turn_id=turn_id,
             result=result,
             state=state,
+            self_model_store=self.self_model_store,
         )
         if not finalized_event:
             return
         finalized_result = self.adapter.handle_event(finalized_event)
+        writeback = self._apply_self_model_writeback(proto_self_result=finalized_result, state=state)
         collector = self._resolve_collector(evidence_collector)
         if collector is not None:
             collector.capture_openemotion_result(finalized_result)
@@ -705,6 +825,8 @@ class RuntimeV2ProtoSelfRuntime:
             state.proto_self_context = {}
         state.proto_self_context["finalized_result"] = finalized_result
         state.proto_self_context["last_exec_result"] = finalized_result.get("trace_payload", {}).get("exec_result")
+        state.proto_self_context["self_model_delta"] = finalized_result.get("self_model_delta") or {}
+        state.proto_self_context["self_model_writeback"] = writeback
         if finalized_result.get("policy_hint"):
             state.proto_self_context["policy_hint"] = finalized_result.get("policy_hint")
             state.proto_self_context["governor_hint"] = finalized_result.get("policy_hint", {}).get("governor_hint")
@@ -721,10 +843,12 @@ class RuntimeV2ProtoSelfRuntime:
             session_id=session_id,
             turn_id=turn_id,
             state=state,
+            self_model_store=self.self_model_store,
         )
         if not idle_event:
             return
         idle_result = self.adapter.handle_event(idle_event)
+        writeback = self._apply_self_model_writeback(proto_self_result=idle_result, state=state)
         collector = self._resolve_collector(evidence_collector)
         if collector is not None:
             collector.capture_openemotion_result(idle_result)
@@ -738,6 +862,8 @@ class RuntimeV2ProtoSelfRuntime:
         state.proto_self_context["idle_check"] = idle_result
         state.proto_self_context["subject_profile"] = idle_result.get("subject_profile")
         state.proto_self_context["candidate_actions"] = idle_result.get("candidate_actions") or []
+        state.proto_self_context["self_model_delta"] = idle_result.get("self_model_delta") or {}
+        state.proto_self_context["self_model_writeback"] = writeback
         if idle_result.get("policy_hint"):
             state.proto_self_context["policy_hint"] = idle_result.get("policy_hint")
             state.proto_self_context["governor_hint"] = idle_result.get("policy_hint", {}).get("governor_hint")
@@ -772,10 +898,12 @@ class RuntimeV2ProtoSelfRuntime:
             state_snapshot=state_snapshot,
             replay_seed=replay_seed,
             force_enable=force_enable,
+            self_model_store=self.self_model_store,
         )
         if not developmental_event:
             return None
         developmental_result = self.adapter.handle_event(developmental_event)
+        writeback = self._apply_self_model_writeback(proto_self_result=developmental_result, state=state)
         collector = self._resolve_collector(evidence_collector)
         if collector is not None:
             collector.capture_normalized_event(developmental_event)
@@ -791,6 +919,8 @@ class RuntimeV2ProtoSelfRuntime:
         state.proto_self_context["developmental_summary"] = developmental_summary
         state.proto_self_context["shadow_revision"] = developmental_summary.get("shadow_revision")
         state.proto_self_context["last_developmental_cycle"] = developmental_summary.get("cycle_id")
+        state.proto_self_context["self_model_delta"] = developmental_result.get("self_model_delta") or {}
+        state.proto_self_context["self_model_writeback"] = writeback
         state.proto_self_context["background_thought_candidates"] = list(
             developmental_summary.get("background_thought_candidates") or []
         )

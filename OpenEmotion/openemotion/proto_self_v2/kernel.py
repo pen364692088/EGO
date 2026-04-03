@@ -11,6 +11,10 @@ from openemotion.proto_self_v2.schemas import (
     KernelOutputV2,
     UpdatePacketV2,
 )
+from openemotion.proto_self_v2.self_model_context import (
+    extract_runtime_self_model_context,
+    summarize_runtime_self_model_context,
+)
 from openemotion.proto_self_v2.seed_kernel import ProtoSelfSeedKernel
 from openemotion.proto_self_v2.seed_schemas import SEED_SUBJECT_PROFILE
 from openemotion.proto_self_v2.seed_state import ProtoSelfSeedState
@@ -23,13 +27,19 @@ def _stable_hash(payload: Dict[str, Any]) -> str:
     return hashlib.sha256(raw.encode("utf-8")).hexdigest()
 
 
-def _build_constraint_summary(state: ProtoSelfStateV2, *, subject_profile: str | None) -> Dict[str, Any]:
+def _build_constraint_summary(
+    state: ProtoSelfStateV2,
+    *,
+    subject_profile: str | None,
+    runtime_summary: Dict[str, Any] | None = None,
+) -> Dict[str, Any]:
     return {
         "identity_confidence": state.identity.identity_confidence,
         "core_boundaries_count": len(state.identity.core_boundaries),
         "current_mode": state.self_model.current_mode,
         "stable_preferences_count": len(state.identity.stable_preferences),
         "subject_profile": subject_profile,
+        "self_model_context": summarize_runtime_self_model_context(runtime_summary),
     }
 
 
@@ -45,6 +55,7 @@ def _build_retrieval_summary(state: ProtoSelfStateV2, packet: UpdatePacketV2) ->
         "recent_episode_count": len(state.trace_buffer),
         "matched_cycle_ids": matched_cycle_ids[:5],
         "seed_recent_outcomes_count": len(state.seed_state.recent_outcomes) if state.seed_state else 0,
+        "self_model_context_present": bool(extract_runtime_self_model_context(packet.runtime_summary)),
     }
 
 
@@ -75,7 +86,11 @@ def _process_seed_profile(state_v2: ProtoSelfStateV2, packet: UpdatePacketV2) ->
     revision_before = state_v2.seed_state.revision_counter
     update_packet_hash = _stable_hash(packet.to_dict())
     retrieval_summary = _build_retrieval_summary(state_v2, packet)
-    constraint_summary = _build_constraint_summary(state_v2, subject_profile=SEED_SUBJECT_PROFILE)
+    constraint_summary = _build_constraint_summary(
+        state_v2,
+        subject_profile=SEED_SUBJECT_PROFILE,
+        runtime_summary=packet.runtime_summary,
+    )
 
     seed_kernel = ProtoSelfSeedKernel()
     seed_result = seed_kernel.process_event(state_v2.seed_state, seed_event)
@@ -125,6 +140,7 @@ def _process_seed_profile(state_v2: ProtoSelfStateV2, packet: UpdatePacketV2) ->
             "seed_identity_confidence": state_v2.seed_state.identity_light.identity_confidence,
             "seed_revision_counter": state_v2.seed_state.revision_counter,
             "seed_recent_outcomes_count": len(state_v2.seed_state.recent_outcomes),
+            "self_model_context_present": constraint_summary["self_model_context"]["present"],
         },
         trace_payload=trace_payload,
     )
@@ -134,7 +150,11 @@ def _process_default_v2(state_v2: ProtoSelfStateV2, packet: UpdatePacketV2) -> K
     revision_before = state_v2.revision_counter
     packet_dict = packet.to_dict()
     retrieval_summary = _build_retrieval_summary(state_v2, packet)
-    constraint_summary = _build_constraint_summary(state_v2, subject_profile=packet.subject_profile)
+    constraint_summary = _build_constraint_summary(
+        state_v2,
+        subject_profile=packet.subject_profile,
+        runtime_summary=packet.runtime_summary,
+    )
 
     v1_state = state_v2.to_v1()
     v1_event = packet.to_v1_kernel_event()
@@ -169,7 +189,7 @@ def _process_default_v2(state_v2: ProtoSelfStateV2, packet: UpdatePacketV2) -> K
         timestamp=packet.timestamp,
         legacy_trace_payload=v1_output.trace_payload,
     )
-    return KernelOutputV2(
+    output = KernelOutputV2(
         event_id=packet.event_id,
         subject_profile=packet.subject_profile,
         identity_delta=v1_output.identity_state_delta,
@@ -185,6 +205,14 @@ def _process_default_v2(state_v2: ProtoSelfStateV2, packet: UpdatePacketV2) -> K
         trace_payload=trace_payload,
     )
 
+    if constraint_summary["self_model_context"]["present"]:
+        output.confidence_meta = dict(output.confidence_meta)
+        output.confidence_meta["self_model_context_present"] = True
+        output.confidence_meta["self_model_context_identity_handle"] = constraint_summary["self_model_context"].get(
+            "identity_handle"
+        )
+    return output
+
 
 def _process_developmental_v2(state_v2: ProtoSelfStateV2, packet: UpdatePacketV2) -> KernelOutputV2:
     revision_before = state_v2.revision_counter
@@ -196,7 +224,11 @@ def _process_developmental_v2(state_v2: ProtoSelfStateV2, packet: UpdatePacketV2
         state_revision_before=revision_before,
         state_revision_after=state_v2.revision_counter,
         retrieval_summary=_build_retrieval_summary(state_v2, packet),
-        constraint_summary=_build_constraint_summary(state_v2, subject_profile=packet.subject_profile),
+        constraint_summary=_build_constraint_summary(
+            state_v2,
+            subject_profile=packet.subject_profile,
+            runtime_summary=packet.runtime_summary,
+        ),
         perceived={},
         identity_delta={},
         self_model_delta={},
@@ -251,6 +283,7 @@ def _process_developmental_v2(state_v2: ProtoSelfStateV2, packet: UpdatePacketV2
         confidence_meta={
             "developmental_cycle_id": execution.summary.get("cycle_id"),
             "shadow_revision": execution.summary.get("shadow_revision"),
+            "self_model_context_present": bool(extract_runtime_self_model_context(packet.runtime_summary)),
         },
         developmental_summary=execution.summary,
         developmental_shadow_delta=execution.shadow_delta,
