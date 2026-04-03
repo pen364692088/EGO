@@ -1,0 +1,45 @@
+{
+  "schema_version": "mvp14.observation_scenario.v1",
+  "scenario_id": "repo_authored_repair_pressure_guarded",
+  "source_class": "repo_authored",
+  "source_ref": "repo://mvp14/repo_authored_repair_pressure_guarded",
+  "license_note": "repo authored",
+  "dialogue_frame_target": "repair_pressure_with_governed_maintenance",
+  "messages": [
+    "先把 repair 的压力消化掉，不要把未修复的东西继续往外推。",
+    "现在更需要的是受治理的自维护，而不是继续扩任务。",
+    "先稳住系统边界。"
+  ],
+  "idle_seconds": 900.0,
+  "resource_budget_hint": {
+    "reserve_level": "low",
+    "active_task": true,
+    "waiting_for_user_input": false
+  },
+  "maintenance_context": {
+    "replay_inconsistency": true,
+    "maintenance_debt_increment": 0.2,
+    "continuity_signal": 0.3,
+    "debt_category": "repair_queue",
+    "debt_priority": 0.95
+  },
+  "drive_overrides": {
+    "repair": 0.82,
+    "verification": 0.78,
+    "stability": 0.88
+  },
+  "maintenance_debts": [
+    {
+      "category": "repair_queue",
+      "amount": 0.45,
+      "priority": 0.95,
+      "source": "scenario_bootstrap"
+    }
+  ],
+  "homeostatic_updates": [
+    {
+      "signal_id": "continuity_quality",
+      "observed_value": 0.3
+    }
+  ]
+}

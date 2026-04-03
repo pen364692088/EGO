@@ -22,8 +22,9 @@ if str(OPENEMOTION_ROOT) not in sys.path:
 if str(SCRIPTS_ROOT) not in sys.path:
     sys.path.insert(0, str(SCRIPTS_ROOT))
 
-from openemotion.endogenous_drives import EndogenousDriveStore
+from openemotion.endogenous_drives import EndogenousDriveOwner, EndogenousDriveStore
 from openemotion.endogenous_drives.reducers import seed_default_state
+from openemotion.endogenous_drives.schemas import DriveType
 from runtime_mainline_observation_common import append_observation_records, build_runtime_observation_record
 from telegram_mainline_common import init_runtime
 
@@ -71,6 +72,39 @@ def _load_messages(args: argparse.Namespace) -> List[str]:
         "如果一致性没有补回来，后面的外发都不该升级。",
         "先把当前状态收稳。",
     ]
+
+
+def _seed_owner_state(
+    *,
+    store: EndogenousDriveStore,
+    drive_overrides: Optional[Dict[str, Any]] = None,
+    maintenance_debts: Optional[List[Dict[str, Any]]] = None,
+    homeostatic_updates: Optional[List[Dict[str, Any]]] = None,
+) -> None:
+    owner = EndogenousDriveOwner(initial_state=seed_default_state(), store=store)
+    for drive_key, target in dict(drive_overrides or {}).items():
+        drive_type = DriveType(str(drive_key))
+        current = owner.state.active_drives[drive_type.value].intensity
+        owner.update_drive(
+            drive_type,
+            float(target) - float(current),
+            cause="scenario_bootstrap",
+        )
+    for debt in list(maintenance_debts or []):
+        owner.add_maintenance_debt(
+            category=str(debt.get("category") or "scenario_debt"),
+            amount=float(debt.get("amount") or 0.0),
+            priority=float(debt.get("priority") or 0.5),
+            source=str(debt.get("source") or "scenario_bootstrap"),
+        )
+    for signal in list(homeostatic_updates or []):
+        signal_id = str(signal.get("signal_id") or "").strip()
+        if signal_id:
+            owner.update_homeostatic_signal(signal_id, float(signal.get("observed_value") or 0.0))
+    owner.persist(
+        update_source="owner_bootstrap",
+        trace_reference="mvp14:controlled_bootstrap",
+    )
 
 
 async def _run_runtime_drive_observation_session(
@@ -171,8 +205,12 @@ async def run_controlled_observation(
     session_id: str,
     output_json: Optional[Path],
     artifacts_dir: Optional[Path] = None,
+    scenario_manifest: Optional[Dict[str, Any]] = None,
     resource_budget_hint: Optional[Dict[str, Any]] = None,
     maintenance_context: Optional[Dict[str, Any]] = None,
+    drive_overrides: Optional[Dict[str, Any]] = None,
+    maintenance_debts: Optional[List[Dict[str, Any]]] = None,
+    homeostatic_updates: Optional[List[Dict[str, Any]]] = None,
 ) -> Dict[str, Any]:
     stamp = datetime.now(timezone.utc).strftime("%Y%m%d_%H%M%S")
     artifacts_dir = artifacts_dir or (ARTIFACTS_ROOT / f"controlled_mainline_{stamp}")
@@ -184,10 +222,11 @@ async def run_controlled_observation(
 
     store = EndogenousDriveStore(base_dir=artifacts_dir / "formal_endogenous_drives")
     if store.load() is None:
-        store.save(
-            seed_default_state(),
-            update_source="owner_bootstrap",
-            trace_reference="mvp14:controlled_bootstrap",
+        _seed_owner_state(
+            store=store,
+            drive_overrides=drive_overrides,
+            maintenance_debts=maintenance_debts,
+            homeostatic_updates=homeostatic_updates,
         )
     runtime.proto_self_runtime.endogenous_drive_store = store
 
@@ -233,6 +272,7 @@ async def run_controlled_observation(
         "session_id": session_id,
         "observation_count": len(records),
         "observation_log": str(observation_log),
+        "scenario_manifest": dict(scenario_manifest or {}) or None,
         "observation_refs": [
             {
                 "kind": "runtime_mainline_delivery",
