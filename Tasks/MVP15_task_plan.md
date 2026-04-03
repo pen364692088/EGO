@@ -1,6 +1,6 @@
 # MVP15 / WP10 Reflective Self / Counterfactual Self
 
-> 状态：WP10 observation_started
+> 状态：WP10 maintenance_mode
 > parent_authority: `Tasks/MVS_task_plan.md`
 > phase: `WP10`
 > predecessor: `WP9/MVP14`
@@ -114,10 +114,10 @@
 - `WP10` may not reinterpret `WP9 controlled E5` as live authority or broader transport maturity
 
 ## Current Phase Status
-- 当前层级：`runtime_mainline_observation`
-- 当前状态：`observation_started`
-- 当前 blocker：重复 controlled observation 样本尚未补齐；当前只到 `V4/E4`，不能报 `E5` 或 closeout
-- 当前最小闭环动作：继续收集 `WP10` controlled observation 样本，验证 replay / governance / proposal discipline 的重复稳定性
+- 当前层级：`closure`
+- 当前状态：`maintenance_mode`
+- 当前 blocker：controlled observation 范围内无主 blocker；provider `429/401` 仍仅记为外部预算层风险
+- 当前最小闭环动作：维持 `WP10` maintenance ledger intake，不扩 authority 边界，并在进入下一阶段前先定义新的 authority package
 
 ## Current Proven State
 - `MVP15` spec / docs / tests / legacy implementation 已存在
@@ -127,6 +127,7 @@
 - 当前 `runtime_v2 -> proto_self_runtime -> proto_self_adapter -> proto_self_v2` 已消费 bounded reflective context 并记录 governed reflective writeback
 - 当前 `OpenEmotion/artifacts/mvp15/mvp15_causal_validation_current.md` 为 `pass`，`pair_count = 3`、`passed_count = 3`
 - 当前 `OpenEmotion/artifacts/mvp15/mvp15_controlled_observation_current.md` 为 `pass`，`verification_level = V4`、`evidence_level = E4`、`gate_verdict = allow_writeback`、`replay_valid = true`
+- 当前 `OpenEmotion/artifacts/mvp15/mvp15_controlled_observation_batch_current.md` 为 `pass`，`verification_level = V5`、`evidence_level = E5`、`report_count = 3`、`accepted_count = 3`、`proposal_discipline_consistent_count = 3`、`behavioral_authority_none_count = 3`
 
 ## Success Criteria
 - `Tasks/MVS_task_plan.md` 中已正式出现 `WP10: Reflective Self / Counterfactual Self`

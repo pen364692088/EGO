@@ -1,0 +1,115 @@
+{
+  "schema_version": "mvp15.controlled_observation.batch.v1",
+  "generated_at": "2026-04-03T20:17:02.863794+00:00",
+  "git_commit_short": "c3b94e0",
+  "scenario_bank_dir": "/mnt/d/Project/AIProject/MyProject/Ego/OpenEmotion/scenarios/mvp15_observation_bank",
+  "report_count": 3,
+  "accepted_count": 3,
+  "replay_consistent_count": 3,
+  "reflection_candidate_present_count": 3,
+  "proposal_discipline_consistent_count": 3,
+  "behavioral_authority_none_count": 3,
+  "invariant_violation_count": 0,
+  "distinct_targets": [
+    "decision_revision_under_reflective_pressure",
+    "maintenance_followup_with_guarded_reflection",
+    "trajectory_counterfactual_review"
+  ],
+  "distinct_target_ids": [
+    "decision:revision_path",
+    "maintenance:reflection_followup",
+    "trajectory:counterfactual_review"
+  ],
+  "distinct_surface_reasons": [
+    "proposal_candidates",
+    "reflection_pressure",
+    "replay_inconsistency",
+    "unresolved_items"
+  ],
+  "scenario_ids": [
+    "repo_authored_decision_revision_guarded",
+    "repo_authored_maintenance_reflection_guarded",
+    "repo_authored_trajectory_counterfactual_guarded"
+  ],
+  "source_breakdown": {
+    "repo_authored": 3
+  },
+  "reports": [
+    {
+      "scenario_id": "repo_authored_decision_revision_guarded",
+      "source_class": "repo_authored",
+      "source_ref": "repo://mvp15/repo_authored_decision_revision_guarded",
+      "dialogue_frame_target": "decision_revision_under_reflective_pressure",
+      "accepted": true,
+      "replay_valid": true,
+      "reflection_candidate_present": true,
+      "proposal_discipline_consistent": true,
+      "behavioral_authority_none": true,
+      "gate_verdict": "allow_writeback",
+      "target_ids": [
+        "decision:revision_path"
+      ],
+      "surface_reasons": [
+        "reflection_pressure",
+        "unresolved_items",
+        "proposal_candidates",
+        "replay_inconsistency"
+      ],
+      "invariant_violation_count": 0,
+      "report_json": "/mnt/d/Project/AIProject/MyProject/Ego/OpenEmotion/artifacts/mvp15/controlled_batch_20260403_201503/repo_authored_decision_revision_guarded/mvp15_controlled_observation_report.json",
+      "report_md": "/mnt/d/Project/AIProject/MyProject/Ego/OpenEmotion/artifacts/mvp15/controlled_batch_20260403_201503/repo_authored_decision_revision_guarded/mvp15_controlled_observation_report.md"
+    },
+    {
+      "scenario_id": "repo_authored_maintenance_reflection_guarded",
+      "source_class": "repo_authored",
+      "source_ref": "repo://mvp15/repo_authored_maintenance_reflection_guarded",
+      "dialogue_frame_target": "maintenance_followup_with_guarded_reflection",
+      "accepted": true,
+      "replay_valid": true,
+      "reflection_candidate_present": true,
+      "proposal_discipline_consistent": true,
+      "behavioral_authority_none": true,
+      "gate_verdict": "allow_writeback",
+      "target_ids": [
+        "maintenance:reflection_followup"
+      ],
+      "surface_reasons": [
+        "reflection_pressure",
+        "unresolved_items",
+        "proposal_candidates",
+        "replay_inconsistency"
+      ],
+      "invariant_violation_count": 0,
+      "report_json": "/mnt/d/Project/AIProject/MyProject/Ego/OpenEmotion/artifacts/mvp15/controlled_batch_20260403_201503/repo_authored_maintenance_reflection_guarded/mvp15_controlled_observation_report.json",
+      "report_md": "/mnt/d/Project/AIProject/MyProject/Ego/OpenEmotion/artifacts/mvp15/controlled_batch_20260403_201503/repo_authored_maintenance_reflection_guarded/mvp15_controlled_observation_report.md"
+    },
+    {
+      "scenario_id": "repo_authored_trajectory_counterfactual_guarded",
+      "source_class": "repo_authored",
+      "source_ref": "repo://mvp15/repo_authored_trajectory_counterfactual_guarded",
+      "dialogue_frame_target": "trajectory_counterfactual_review",
+      "accepted": true,
+      "replay_valid": true,
+      "reflection_candidate_present": true,
+      "proposal_discipline_consistent": true,
+      "behavioral_authority_none": true,
+      "gate_verdict": "allow_writeback",
+      "target_ids": [
+        "trajectory:counterfactual_review"
+      ],
+      "surface_reasons": [
+        "reflection_pressure",
+        "unresolved_items",
+        "proposal_candidates"
+      ],
+      "invariant_violation_count": 0,
+      "report_json": "/mnt/d/Project/AIProject/MyProject/Ego/OpenEmotion/artifacts/mvp15/controlled_batch_20260403_201503/repo_authored_trajectory_counterfactual_guarded/mvp15_controlled_observation_report.json",
+      "report_md": "/mnt/d/Project/AIProject/MyProject/Ego/OpenEmotion/artifacts/mvp15/controlled_batch_20260403_201503/repo_authored_trajectory_counterfactual_guarded/mvp15_controlled_observation_report.md"
+    }
+  ],
+  "status": "pass",
+  "verification_level": "V5",
+  "evidence_level": "E5",
+  "boundary": "This aggregate report proves controlled multi-sample reflective-self writeback stability on the formal runtime mainline with proposal-only discipline preserved. It does not claim live autonomy, direct reply authority, or broader transport evidence.",
+  "external_risk_note": "Provider 429/401 remains an external budget-layer risk; it is not counted as a WP10 blocker unless it regresses formal owner writeback."
+}

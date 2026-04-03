@@ -1,0 +1,54 @@
+{
+  "schema_version": "mvp15.completion_report.v1",
+  "generated_at": "2026-04-03T15:18:00-05:00",
+  "phase": "WP10",
+  "milestone": "MVP15",
+  "status": "controlled_pass",
+  "maintenance_mode": true,
+  "completion_boundary": {
+    "controlled_observation": true,
+    "live_autonomy": false,
+    "transport_evidence": false,
+    "direct_reply_authority": false
+  },
+  "evidence_stack": {
+    "causal_behavioral_proof": {
+      "verification_level": "V3",
+      "evidence_level": "E3",
+      "path": "OpenEmotion/artifacts/mvp15/mvp15_causal_validation_current.md"
+    },
+    "single_controlled_sample": {
+      "verification_level": "V4",
+      "evidence_level": "E4",
+      "path": "OpenEmotion/artifacts/mvp15/mvp15_controlled_observation_current.md"
+    },
+    "batch_controlled_sample": {
+      "verification_level": "V5",
+      "evidence_level": "E5",
+      "path": "OpenEmotion/artifacts/mvp15/mvp15_controlled_observation_batch_current.md"
+    }
+  },
+  "batch_result": {
+    "report_count": 3,
+    "accepted_count": 3,
+    "replay_consistent_count": 3,
+    "reflection_candidate_present_count": 3,
+    "proposal_discipline_consistent_count": 3,
+    "behavioral_authority_none_count": 3,
+    "invariant_violation_count": 0,
+    "distinct_targets": [
+      "decision_revision_under_reflective_pressure",
+      "maintenance_followup_with_guarded_reflection",
+      "trajectory_counterfactual_review"
+    ],
+    "distinct_target_ids": [
+      "decision:revision_path",
+      "maintenance:reflection_followup",
+      "trajectory:counterfactual_review"
+    ],
+    "source_breakdown": {
+      "repo_authored": 3
+    }
+  },
+  "next_mainline_action": "hold WP10 in maintenance mode and define the next authority package before new scope"
+}

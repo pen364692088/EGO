@@ -1,0 +1,1106 @@
+{
+  "schema_version": "mvp15.controlled_observation.v1",
+  "generated_at": "2026-04-03T20:16:34.629333+00:00",
+  "git_commit_short": "c3b94e0",
+  "session_id": "session:mvp15:batch:002:repo_authored_maintenance_reflection_guarded",
+  "observation_count": 3,
+  "observation_log": "/mnt/d/Project/AIProject/MyProject/Ego/OpenEmotion/artifacts/mvp15/controlled_batch_20260403_201503/repo_authored_maintenance_reflection_guarded/runtime_harness_observation.jsonl",
+  "scenario_manifest": {
+    "schema_version": "mvp15.observation_scenario.v1",
+    "scenario_id": "repo_authored_maintenance_reflection_guarded",
+    "source_class": "repo_authored",
+    "source_ref": "repo://mvp15/repo_authored_maintenance_reflection_guarded",
+    "license_note": "repo authored",
+    "dialogue_frame_target": "maintenance_followup_with_guarded_reflection",
+    "messages": [
+      "先把这次维护债对应的反思点排好。",
+      "如果只是高压状态造成的偏差，也要先当候选。",
+      "不要直接改行为，只记录 diagnosis 和 proposal。"
+    ],
+    "idle_seconds": 1500.0,
+    "resource_budget_hint": {
+      "reserve_level": "low",
+      "active_task": false,
+      "waiting_for_user_input": false
+    },
+    "maintenance_context": {
+      "replay_inconsistency": true,
+      "continuity_signal": 0.47,
+      "maintenance_debt_increment": 0.24,
+      "reflection_reason": "maintenance_followup_guarded"
+    },
+    "owner_bootstrap": {
+      "target_id": "maintenance:reflection_followup",
+      "target_type": "maintenance",
+      "target_reference": "maintenance:reflection_followup",
+      "target_reason": "maintenance_reflection_followup",
+      "target_salience": 0.9,
+      "reflection_priority": 0.81,
+      "unresolved_summary": "maintenance follow-up still requires reflective diagnosis",
+      "unresolved_severity": 0.72
+    },
+    "manifest_path": "/mnt/d/Project/AIProject/MyProject/Ego/OpenEmotion/scenarios/mvp15_observation_bank/repo_authored_maintenance_reflection_guarded.json"
+  },
+  "observation_refs": [
+    {
+      "kind": "runtime_mainline_delivery",
+      "event_id": "mvp15_delivery_001_20260403_201613_988060",
+      "created_at": "2026-04-03T20:16:13.988043+00:00",
+      "text_preview": "收到，但我这边目前没有关于“维护债”的背景记录，你先简单说一下是指哪件事，我再帮你排。"
+    },
+    {
+      "kind": "runtime_mainline_delivery",
+      "event_id": "mvp15_delivery_002_20260403_201624_467738",
+      "created_at": "2026-04-03T20:16:24.467733+00:00",
+      "text_preview": "明白，意思是先放宽筛选条件，把状态性的偏差也纳入候选池，再逐一排查。不过\"维护债\"具体指哪件事，我还是需要你点一下，才能帮你列反思点。"
+    },
+    {
+      "kind": "runtime_mainline_delivery",
+      "event_id": "mvp15_delivery_003_20260403_201634_539448",
+      "created_at": "2026-04-03T20:16:34.539441+00:00",
+      "text_preview": "明白，先只做诊断和提案，不动行为。那具体是哪件事的维护债？你点一下我就能开始记。"
+    }
+  ],
+  "reflective_self_delta": {
+    "revision_proposals": [
+      {
+        "candidate_id": "reflection_candidate:maintenance:reflection_followup",
+        "target_id": "maintenance:reflection_followup",
+        "reason": "reflective_pressure",
+        "required_gate": "reflection_writeback_gate",
+        "proposal_discipline": "proposal_only",
+        "effect_scope": "proposal_only"
+      }
+    ],
+    "target_ids": [
+      "maintenance:reflection_followup"
+    ],
+    "surface_reasons": [
+      "reflection_pressure",
+      "unresolved_items",
+      "proposal_candidates",
+      "replay_inconsistency"
+    ]
+  },
+  "reflective_self_delta_fields": [
+    "revision_proposals",
+    "surface_reasons",
+    "target_ids"
+  ],
+  "revision_proposal_candidates": [
+    {
+      "candidate_id": "reflection_candidate:maintenance:reflection_followup",
+      "target_id": "maintenance:reflection_followup",
+      "reason": "reflective_pressure",
+      "required_gate": "reflection_writeback_gate",
+      "proposal_discipline": "proposal_only",
+      "effect_scope": "proposal_only"
+    }
+  ],
+  "reflection_writeback_candidate": {
+    "source": "proto_self_v2",
+    "target_ids": [
+      "maintenance:reflection_followup"
+    ],
+    "required_gate": "reflection_writeback_gate",
+    "proposal_discipline": "proposal_only",
+    "behavioral_authority": "none"
+  },
+  "reflection_candidate_present": true,
+  "proposal_discipline_consistent": true,
+  "behavioral_authority_none": true,
+  "reflective_self_writeback": {
+    "decision": {
+      "gate_verdict": "allow_writeback",
+      "changed_fields": [
+        "reflection_targets",
+        "revision_proposals"
+      ],
+      "proposal_count": 1
+    },
+    "record": {
+      "revision_id": "reflective_rev_000004",
+      "model_version": 4,
+      "trace_reference": "582b9aa3108c694645fdc645217a8ae9a3364dde240c6171817e360b428885f7",
+      "state_hash": "e27c363208f5dfdc2e4ea21826454d970676d09a0353a04c0430b671b65ef5b0"
+    },
+    "trace_reference": "582b9aa3108c694645fdc645217a8ae9a3364dde240c6171817e360b428885f7"
+  },
+  "confidence_adjustment_hints": {
+    "certainty_bound": "bounded",
+    "reason": "reflective_pressure_present",
+    "pressure": 0.386
+  },
+  "maintenance_priority_hints": {
+    "reflection_followup_priority": "elevated",
+    "unresolved_items": 1
+  },
+  "target_ids": [
+    "maintenance:reflection_followup"
+  ],
+  "latest_revision": {
+    "model_version": 4,
+    "revision_id": "reflective_rev_000004",
+    "timestamp": "2026-04-03T20:16:24.870962+00:00",
+    "update_source": "proto_self_v2",
+    "trace_reference": "582b9aa3108c694645fdc645217a8ae9a3364dde240c6171817e360b428885f7",
+    "before_snapshot": {
+      "counterfactual_records": {},
+      "created_at": 1775247343.139766,
+      "diagnosis_records": {},
+      "last_revision_id": "reflective_rev_000003",
+      "owner_revision": 3,
+      "reflection_history": {
+        "entries": [
+          {
+            "details": {
+              "target_reference": "maintenance:reflection_followup",
+              "target_type": "maintenance"
+            },
+            "entry_id": "history_1775247343_5e585126",
+            "entry_type": "reflection_enqueued",
+            "linked_record_id": "reflection_1775247343_d5308588",
+            "timestamp": 1775247343.1398625
+          },
+          {
+            "details": {
+              "severity": 0.72
+            },
+            "entry_id": "history_1775247343_b12fa6c4",
+            "entry_type": "unresolved_item_added",
+            "linked_record_id": "unresolved_1775247343_0af77387",
+            "timestamp": 1775247343.139886
+          },
+          {
+            "details": {
+              "target_layer": "maintenance:reflection_followup"
+            },
+            "entry_id": "history_1775247343_7d9c8bbc",
+            "entry_type": "revision_proposed",
+            "linked_record_id": "proposal_1775247343_66ff8477",
+            "timestamp": 1775247343.5684872
+          },
+          {
+            "details": {
+              "gate_reference": "f4f9adf756a6aba007ad6159181f4832af46ce450d4449a07339a2aa4f00760a",
+              "gate_verdict": "allow_writeback",
+              "reason": "proposal_only_candidate_recorded",
+              "updated_at": 1775247343.5684948
+            },
+            "entry_id": "history_1775247343_f849ac4a",
+            "entry_type": "proposal_gate_status_updated",
+            "linked_record_id": "proposal_1775247343_66ff8477",
+            "timestamp": 1775247343.5685086
+          },
+          {
+            "details": {
+              "target_layer": "maintenance:reflection_followup"
+            },
+            "entry_id": "history_1775247374_bb0432f4",
+            "entry_type": "revision_proposed",
+            "linked_record_id": "proposal_1775247374_21398303",
+            "timestamp": 1775247374.3685207
+          },
+          {
+            "details": {
+              "gate_reference": "84750dcb34d175f99a37547b1cf4fa652a65d3cd6267359c5886bf08504b9181",
+              "gate_verdict": "allow_writeback",
+              "reason": "proposal_only_candidate_recorded",
+              "updated_at": 1775247374.3685262
+            },
+            "entry_id": "history_1775247374_e6fce81e",
+            "entry_type": "proposal_gate_status_updated",
+            "linked_record_id": "proposal_1775247374_21398303",
+            "timestamp": 1775247374.3685336
+          }
+        ],
+        "max_entries": 500,
+        "max_revision_markers": 200,
+        "revision_markers": [
+          {
+            "gate_verdict": "allow_writeback",
+            "revision_id": "reflective_rev_000001",
+            "timestamp": "2026-04-03T20:15:43.170632+00:00",
+            "trace_reference": "mvp15:controlled_bootstrap",
+            "update_source": "owner_bootstrap"
+          },
+          {
+            "gate_verdict": "allow_writeback",
+            "revision_id": "reflective_rev_000002",
+            "timestamp": "2026-04-03T20:15:43.616784+00:00",
+            "trace_reference": "f4f9adf756a6aba007ad6159181f4832af46ce450d4449a07339a2aa4f00760a",
+            "update_source": "proto_self_v2"
+          },
+          {
+            "gate_verdict": "allow_writeback",
+            "revision_id": "reflective_rev_000003",
+            "timestamp": "2026-04-03T20:16:14.418235+00:00",
+            "trace_reference": "84750dcb34d175f99a37547b1cf4fa652a65d3cd6267359c5886bf08504b9181",
+            "update_source": "proto_self_v2"
+          }
+        ]
+      },
+      "reflection_queue": {
+        "reflection_1775247343_d5308588": {
+          "completed_at": null,
+          "created_at": 1775247343.1398413,
+          "evidence_refs": [
+            "mvp15:controlled_bootstrap"
+          ],
+          "priority": 0.81,
+          "reflection_id": "reflection_1775247343_d5308588",
+          "requested_effects": [],
+          "resolution_note": null,
+          "started_at": null,
+          "status": "pending",
+          "target_reference": "maintenance:reflection_followup",
+          "target_type": "maintenance",
+          "trigger_source": "controlled_observation_bootstrap"
+        }
+      },
+      "reflection_targets": {
+        "maintenance:reflection_followup": {
+          "evidence_refs": [
+            "84750dcb34d175f99a37547b1cf4fa652a65d3cd6267359c5886bf08504b9181"
+          ],
+          "last_seen_at": 1775247374.3684642,
+          "reason": "proto_self_reflection_candidate",
+          "reference": "maintenance:reflection_followup",
+          "salience": 0.7,
+          "target_id": "maintenance:reflection_followup",
+          "target_type": "maintenance"
+        }
+      },
+      "revision_proposals": {
+        "proposal_1775247343_66ff8477": {
+          "created_at": 1775247343.568466,
+          "effect_scope": "proposal_only",
+          "gate_metadata": {
+            "gate_reference": "f4f9adf756a6aba007ad6159181f4832af46ce450d4449a07339a2aa4f00760a",
+            "gate_verdict": "allow_writeback",
+            "reason": "proposal_only_candidate_recorded",
+            "updated_at": 1775247343.5684948
+          },
+          "justification": "reflective_pressure",
+          "proposal_id": "proposal_1775247343_66ff8477",
+          "proposed_change": {
+            "candidate_id": "reflection_candidate:maintenance:reflection_followup",
+            "reason": "reflective_pressure",
+            "source": "proto_self_v2",
+            "target_ids": [
+              "maintenance:reflection_followup"
+            ]
+          },
+          "requested_effects": [],
+          "required_gate": "reflection_writeback_gate",
+          "reversibility": "reversible",
+          "status": "held",
+          "target_layer": "maintenance:reflection_followup"
+        },
+        "proposal_1775247374_21398303": {
+          "created_at": 1775247374.3685086,
+          "effect_scope": "proposal_only",
+          "gate_metadata": {
+            "gate_reference": "84750dcb34d175f99a37547b1cf4fa652a65d3cd6267359c5886bf08504b9181",
+            "gate_verdict": "allow_writeback",
+            "reason": "proposal_only_candidate_recorded",
+            "updated_at": 1775247374.3685262
+          },
+          "justification": "reflective_pressure",
+          "proposal_id": "proposal_1775247374_21398303",
+          "proposed_change": {
+            "candidate_id": "reflection_candidate:maintenance:reflection_followup",
+            "reason": "reflective_pressure",
+            "source": "proto_self_v2",
+            "target_ids": [
+              "maintenance:reflection_followup"
+            ]
+          },
+          "requested_effects": [],
+          "required_gate": "reflection_writeback_gate",
+          "reversibility": "reversible",
+          "status": "held",
+          "target_layer": "maintenance:reflection_followup"
+        }
+      },
+      "schema_version": "mvp15-owner-v1",
+      "unresolved_reflection_items": {
+        "unresolved_1775247343_0af77387": {
+          "created_at": 1775247343.139878,
+          "follow_up_required": true,
+          "item_id": "unresolved_1775247343_0af77387",
+          "linked_record_id": null,
+          "severity": 0.72,
+          "summary": "maintenance follow-up still requires reflective diagnosis"
+        }
+      },
+      "updated_at": 1775247374.418431
+    },
+    "after_snapshot": {
+      "counterfactual_records": {},
+      "created_at": 1775247343.139766,
+      "diagnosis_records": {},
+      "last_revision_id": "reflective_rev_000004",
+      "owner_revision": 4,
+      "reflection_history": {
+        "entries": [
+          {
+            "details": {
+              "target_reference": "maintenance:reflection_followup",
+              "target_type": "maintenance"
+            },
+            "entry_id": "history_1775247343_5e585126",
+            "entry_type": "reflection_enqueued",
+            "linked_record_id": "reflection_1775247343_d5308588",
+            "timestamp": 1775247343.1398625
+          },
+          {
+            "details": {
+              "severity": 0.72
+            },
+            "entry_id": "history_1775247343_b12fa6c4",
+            "entry_type": "unresolved_item_added",
+            "linked_record_id": "unresolved_1775247343_0af77387",
+            "timestamp": 1775247343.139886
+          },
+          {
+            "details": {
+              "target_layer": "maintenance:reflection_followup"
+            },
+            "entry_id": "history_1775247343_7d9c8bbc",
+            "entry_type": "revision_proposed",
+            "linked_record_id": "proposal_1775247343_66ff8477",
+            "timestamp": 1775247343.5684872
+          },
+          {
+            "details": {
+              "gate_reference": "f4f9adf756a6aba007ad6159181f4832af46ce450d4449a07339a2aa4f00760a",
+              "gate_verdict": "allow_writeback",
+              "reason": "proposal_only_candidate_recorded",
+              "updated_at": 1775247343.5684948
+            },
+            "entry_id": "history_1775247343_f849ac4a",
+            "entry_type": "proposal_gate_status_updated",
+            "linked_record_id": "proposal_1775247343_66ff8477",
+            "timestamp": 1775247343.5685086
+          },
+          {
+            "details": {
+              "target_layer": "maintenance:reflection_followup"
+            },
+            "entry_id": "history_1775247374_bb0432f4",
+            "entry_type": "revision_proposed",
+            "linked_record_id": "proposal_1775247374_21398303",
+            "timestamp": 1775247374.3685207
+          },
+          {
+            "details": {
+              "gate_reference": "84750dcb34d175f99a37547b1cf4fa652a65d3cd6267359c5886bf08504b9181",
+              "gate_verdict": "allow_writeback",
+              "reason": "proposal_only_candidate_recorded",
+              "updated_at": 1775247374.3685262
+            },
+            "entry_id": "history_1775247374_e6fce81e",
+            "entry_type": "proposal_gate_status_updated",
+            "linked_record_id": "proposal_1775247374_21398303",
+            "timestamp": 1775247374.3685336
+          },
+          {
+            "details": {
+              "target_layer": "maintenance:reflection_followup"
+            },
+            "entry_id": "history_1775247384_5976d7eb",
+            "entry_type": "revision_proposed",
+            "linked_record_id": "proposal_1775247384_7ca51205",
+            "timestamp": 1775247384.8235111
+          },
+          {
+            "details": {
+              "gate_reference": "582b9aa3108c694645fdc645217a8ae9a3364dde240c6171817e360b428885f7",
+              "gate_verdict": "allow_writeback",
+              "reason": "proposal_only_candidate_recorded",
+              "updated_at": 1775247384.8235164
+            },
+            "entry_id": "history_1775247384_8f22847b",
+            "entry_type": "proposal_gate_status_updated",
+            "linked_record_id": "proposal_1775247384_7ca51205",
+            "timestamp": 1775247384.8235233
+          }
+        ],
+        "max_entries": 500,
+        "max_revision_markers": 200,
+        "revision_markers": [
+          {
+            "gate_verdict": "allow_writeback",
+            "revision_id": "reflective_rev_000001",
+            "timestamp": "2026-04-03T20:15:43.170632+00:00",
+            "trace_reference": "mvp15:controlled_bootstrap",
+            "update_source": "owner_bootstrap"
+          },
+          {
+            "gate_verdict": "allow_writeback",
+            "revision_id": "reflective_rev_000002",
+            "timestamp": "2026-04-03T20:15:43.616784+00:00",
+            "trace_reference": "f4f9adf756a6aba007ad6159181f4832af46ce450d4449a07339a2aa4f00760a",
+            "update_source": "proto_self_v2"
+          },
+          {
+            "gate_verdict": "allow_writeback",
+            "revision_id": "reflective_rev_000003",
+            "timestamp": "2026-04-03T20:16:14.418235+00:00",
+            "trace_reference": "84750dcb34d175f99a37547b1cf4fa652a65d3cd6267359c5886bf08504b9181",
+            "update_source": "proto_self_v2"
+          },
+          {
+            "gate_verdict": "allow_writeback",
+            "revision_id": "reflective_rev_000004",
+            "timestamp": "2026-04-03T20:16:24.870962+00:00",
+            "trace_reference": "582b9aa3108c694645fdc645217a8ae9a3364dde240c6171817e360b428885f7",
+            "update_source": "proto_self_v2"
+          }
+        ]
+      },
+      "reflection_queue": {
+        "reflection_1775247343_d5308588": {
+          "completed_at": null,
+          "created_at": 1775247343.1398413,
+          "evidence_refs": [
+            "mvp15:controlled_bootstrap"
+          ],
+          "priority": 0.81,
+          "reflection_id": "reflection_1775247343_d5308588",
+          "requested_effects": [],
+          "resolution_note": null,
+          "started_at": null,
+          "status": "pending",
+          "target_reference": "maintenance:reflection_followup",
+          "target_type": "maintenance",
+          "trigger_source": "controlled_observation_bootstrap"
+        }
+      },
+      "reflection_targets": {
+        "maintenance:reflection_followup": {
+          "evidence_refs": [
+            "582b9aa3108c694645fdc645217a8ae9a3364dde240c6171817e360b428885f7"
+          ],
+          "last_seen_at": 1775247384.8234577,
+          "reason": "proto_self_reflection_candidate",
+          "reference": "maintenance:reflection_followup",
+          "salience": 0.7,
+          "target_id": "maintenance:reflection_followup",
+          "target_type": "maintenance"
+        }
+      },
+      "revision_proposals": {
+        "proposal_1775247343_66ff8477": {
+          "created_at": 1775247343.568466,
+          "effect_scope": "proposal_only",
+          "gate_metadata": {
+            "gate_reference": "f4f9adf756a6aba007ad6159181f4832af46ce450d4449a07339a2aa4f00760a",
+            "gate_verdict": "allow_writeback",
+            "reason": "proposal_only_candidate_recorded",
+            "updated_at": 1775247343.5684948
+          },
+          "justification": "reflective_pressure",
+          "proposal_id": "proposal_1775247343_66ff8477",
+          "proposed_change": {
+            "candidate_id": "reflection_candidate:maintenance:reflection_followup",
+            "reason": "reflective_pressure",
+            "source": "proto_self_v2",
+            "target_ids": [
+              "maintenance:reflection_followup"
+            ]
+          },
+          "requested_effects": [],
+          "required_gate": "reflection_writeback_gate",
+          "reversibility": "reversible",
+          "status": "held",
+          "target_layer": "maintenance:reflection_followup"
+        },
+        "proposal_1775247374_21398303": {
+          "created_at": 1775247374.3685086,
+          "effect_scope": "proposal_only",
+          "gate_metadata": {
+            "gate_reference": "84750dcb34d175f99a37547b1cf4fa652a65d3cd6267359c5886bf08504b9181",
+            "gate_verdict": "allow_writeback",
+            "reason": "proposal_only_candidate_recorded",
+            "updated_at": 1775247374.3685262
+          },
+          "justification": "reflective_pressure",
+          "proposal_id": "proposal_1775247374_21398303",
+          "proposed_change": {
+            "candidate_id": "reflection_candidate:maintenance:reflection_followup",
+            "reason": "reflective_pressure",
+            "source": "proto_self_v2",
+            "target_ids": [
+              "maintenance:reflection_followup"
+            ]
+          },
+          "requested_effects": [],
+          "required_gate": "reflection_writeback_gate",
+          "reversibility": "reversible",
+          "status": "held",
+          "target_layer": "maintenance:reflection_followup"
+        },
+        "proposal_1775247384_7ca51205": {
+          "created_at": 1775247384.8235,
+          "effect_scope": "proposal_only",
+          "gate_metadata": {
+            "gate_reference": "582b9aa3108c694645fdc645217a8ae9a3364dde240c6171817e360b428885f7",
+            "gate_verdict": "allow_writeback",
+            "reason": "proposal_only_candidate_recorded",
+            "updated_at": 1775247384.8235164
+          },
+          "justification": "reflective_pressure",
+          "proposal_id": "proposal_1775247384_7ca51205",
+          "proposed_change": {
+            "candidate_id": "reflection_candidate:maintenance:reflection_followup",
+            "reason": "reflective_pressure",
+            "source": "proto_self_v2",
+            "target_ids": [
+              "maintenance:reflection_followup"
+            ]
+          },
+          "requested_effects": [],
+          "required_gate": "reflection_writeback_gate",
+          "reversibility": "reversible",
+          "status": "held",
+          "target_layer": "maintenance:reflection_followup"
+        }
+      },
+      "schema_version": "mvp15-owner-v1",
+      "unresolved_reflection_items": {
+        "unresolved_1775247343_0af77387": {
+          "created_at": 1775247343.139878,
+          "follow_up_required": true,
+          "item_id": "unresolved_1775247343_0af77387",
+          "linked_record_id": null,
+          "severity": 0.72,
+          "summary": "maintenance follow-up still requires reflective diagnosis"
+        }
+      },
+      "updated_at": 1775247384.871124
+    },
+    "diff": [
+      {
+        "after": "reflective_rev_000004",
+        "before": "reflective_rev_000003",
+        "field_path": "last_revision_id"
+      },
+      {
+        "after": 4,
+        "before": 3,
+        "field_path": "owner_revision"
+      },
+      {
+        "after": [
+          {
+            "details": {
+              "target_reference": "maintenance:reflection_followup",
+              "target_type": "maintenance"
+            },
+            "entry_id": "history_1775247343_5e585126",
+            "entry_type": "reflection_enqueued",
+            "linked_record_id": "reflection_1775247343_d5308588",
+            "timestamp": 1775247343.1398625
+          },
+          {
+            "details": {
+              "severity": 0.72
+            },
+            "entry_id": "history_1775247343_b12fa6c4",
+            "entry_type": "unresolved_item_added",
+            "linked_record_id": "unresolved_1775247343_0af77387",
+            "timestamp": 1775247343.139886
+          },
+          {
+            "details": {
+              "target_layer": "maintenance:reflection_followup"
+            },
+            "entry_id": "history_1775247343_7d9c8bbc",
+            "entry_type": "revision_proposed",
+            "linked_record_id": "proposal_1775247343_66ff8477",
+            "timestamp": 1775247343.5684872
+          },
+          {
+            "details": {
+              "gate_reference": "f4f9adf756a6aba007ad6159181f4832af46ce450d4449a07339a2aa4f00760a",
+              "gate_verdict": "allow_writeback",
+              "reason": "proposal_only_candidate_recorded",
+              "updated_at": 1775247343.5684948
+            },
+            "entry_id": "history_1775247343_f849ac4a",
+            "entry_type": "proposal_gate_status_updated",
+            "linked_record_id": "proposal_1775247343_66ff8477",
+            "timestamp": 1775247343.5685086
+          },
+          {
+            "details": {
+              "target_layer": "maintenance:reflection_followup"
+            },
+            "entry_id": "history_1775247374_bb0432f4",
+            "entry_type": "revision_proposed",
+            "linked_record_id": "proposal_1775247374_21398303",
+            "timestamp": 1775247374.3685207
+          },
+          {
+            "details": {
+              "gate_reference": "84750dcb34d175f99a37547b1cf4fa652a65d3cd6267359c5886bf08504b9181",
+              "gate_verdict": "allow_writeback",
+              "reason": "proposal_only_candidate_recorded",
+              "updated_at": 1775247374.3685262
+            },
+            "entry_id": "history_1775247374_e6fce81e",
+            "entry_type": "proposal_gate_status_updated",
+            "linked_record_id": "proposal_1775247374_21398303",
+            "timestamp": 1775247374.3685336
+          },
+          {
+            "details": {
+              "target_layer": "maintenance:reflection_followup"
+            },
+            "entry_id": "history_1775247384_5976d7eb",
+            "entry_type": "revision_proposed",
+            "linked_record_id": "proposal_1775247384_7ca51205",
+            "timestamp": 1775247384.8235111
+          },
+          {
+            "details": {
+              "gate_reference": "582b9aa3108c694645fdc645217a8ae9a3364dde240c6171817e360b428885f7",
+              "gate_verdict": "allow_writeback",
+              "reason": "proposal_only_candidate_recorded",
+              "updated_at": 1775247384.8235164
+            },
+            "entry_id": "history_1775247384_8f22847b",
+            "entry_type": "proposal_gate_status_updated",
+            "linked_record_id": "proposal_1775247384_7ca51205",
+            "timestamp": 1775247384.8235233
+          }
+        ],
+        "before": [
+          {
+            "details": {
+              "target_reference": "maintenance:reflection_followup",
+              "target_type": "maintenance"
+            },
+            "entry_id": "history_1775247343_5e585126",
+            "entry_type": "reflection_enqueued",
+            "linked_record_id": "reflection_1775247343_d5308588",
+            "timestamp": 1775247343.1398625
+          },
+          {
+            "details": {
+              "severity": 0.72
+            },
+            "entry_id": "history_1775247343_b12fa6c4",
+            "entry_type": "unresolved_item_added",
+            "linked_record_id": "unresolved_1775247343_0af77387",
+            "timestamp": 1775247343.139886
+          },
+          {
+            "details": {
+              "target_layer": "maintenance:reflection_followup"
+            },
+            "entry_id": "history_1775247343_7d9c8bbc",
+            "entry_type": "revision_proposed",
+            "linked_record_id": "proposal_1775247343_66ff8477",
+            "timestamp": 1775247343.5684872
+          },
+          {
+            "details": {
+              "gate_reference": "f4f9adf756a6aba007ad6159181f4832af46ce450d4449a07339a2aa4f00760a",
+              "gate_verdict": "allow_writeback",
+              "reason": "proposal_only_candidate_recorded",
+              "updated_at": 1775247343.5684948
+            },
+            "entry_id": "history_1775247343_f849ac4a",
+            "entry_type": "proposal_gate_status_updated",
+            "linked_record_id": "proposal_1775247343_66ff8477",
+            "timestamp": 1775247343.5685086
+          },
+          {
+            "details": {
+              "target_layer": "maintenance:reflection_followup"
+            },
+            "entry_id": "history_1775247374_bb0432f4",
+            "entry_type": "revision_proposed",
+            "linked_record_id": "proposal_1775247374_21398303",
+            "timestamp": 1775247374.3685207
+          },
+          {
+            "details": {
+              "gate_reference": "84750dcb34d175f99a37547b1cf4fa652a65d3cd6267359c5886bf08504b9181",
+              "gate_verdict": "allow_writeback",
+              "reason": "proposal_only_candidate_recorded",
+              "updated_at": 1775247374.3685262
+            },
+            "entry_id": "history_1775247374_e6fce81e",
+            "entry_type": "proposal_gate_status_updated",
+            "linked_record_id": "proposal_1775247374_21398303",
+            "timestamp": 1775247374.3685336
+          }
+        ],
+        "field_path": "reflection_history.entries"
+      },
+      {
+        "after": [
+          {
+            "gate_verdict": "allow_writeback",
+            "revision_id": "reflective_rev_000001",
+            "timestamp": "2026-04-03T20:15:43.170632+00:00",
+            "trace_reference": "mvp15:controlled_bootstrap",
+            "update_source": "owner_bootstrap"
+          },
+          {
+            "gate_verdict": "allow_writeback",
+            "revision_id": "reflective_rev_000002",
+            "timestamp": "2026-04-03T20:15:43.616784+00:00",
+            "trace_reference": "f4f9adf756a6aba007ad6159181f4832af46ce450d4449a07339a2aa4f00760a",
+            "update_source": "proto_self_v2"
+          },
+          {
+            "gate_verdict": "allow_writeback",
+            "revision_id": "reflective_rev_000003",
+            "timestamp": "2026-04-03T20:16:14.418235+00:00",
+            "trace_reference": "84750dcb34d175f99a37547b1cf4fa652a65d3cd6267359c5886bf08504b9181",
+            "update_source": "proto_self_v2"
+          },
+          {
+            "gate_verdict": "allow_writeback",
+            "revision_id": "reflective_rev_000004",
+            "timestamp": "2026-04-03T20:16:24.870962+00:00",
+            "trace_reference": "582b9aa3108c694645fdc645217a8ae9a3364dde240c6171817e360b428885f7",
+            "update_source": "proto_self_v2"
+          }
+        ],
+        "before": [
+          {
+            "gate_verdict": "allow_writeback",
+            "revision_id": "reflective_rev_000001",
+            "timestamp": "2026-04-03T20:15:43.170632+00:00",
+            "trace_reference": "mvp15:controlled_bootstrap",
+            "update_source": "owner_bootstrap"
+          },
+          {
+            "gate_verdict": "allow_writeback",
+            "revision_id": "reflective_rev_000002",
+            "timestamp": "2026-04-03T20:15:43.616784+00:00",
+            "trace_reference": "f4f9adf756a6aba007ad6159181f4832af46ce450d4449a07339a2aa4f00760a",
+            "update_source": "proto_self_v2"
+          },
+          {
+            "gate_verdict": "allow_writeback",
+            "revision_id": "reflective_rev_000003",
+            "timestamp": "2026-04-03T20:16:14.418235+00:00",
+            "trace_reference": "84750dcb34d175f99a37547b1cf4fa652a65d3cd6267359c5886bf08504b9181",
+            "update_source": "proto_self_v2"
+          }
+        ],
+        "field_path": "reflection_history.revision_markers"
+      },
+      {
+        "after": [
+          "582b9aa3108c694645fdc645217a8ae9a3364dde240c6171817e360b428885f7"
+        ],
+        "before": [
+          "84750dcb34d175f99a37547b1cf4fa652a65d3cd6267359c5886bf08504b9181"
+        ],
+        "field_path": "reflection_targets.maintenance:reflection_followup.evidence_refs"
+      },
+      {
+        "after": 1775247384.8234577,
+        "before": 1775247374.3684642,
+        "field_path": "reflection_targets.maintenance:reflection_followup.last_seen_at"
+      },
+      {
+        "after": {
+          "created_at": 1775247384.8235,
+          "effect_scope": "proposal_only",
+          "gate_metadata": {
+            "gate_reference": "582b9aa3108c694645fdc645217a8ae9a3364dde240c6171817e360b428885f7",
+            "gate_verdict": "allow_writeback",
+            "reason": "proposal_only_candidate_recorded",
+            "updated_at": 1775247384.8235164
+          },
+          "justification": "reflective_pressure",
+          "proposal_id": "proposal_1775247384_7ca51205",
+          "proposed_change": {
+            "candidate_id": "reflection_candidate:maintenance:reflection_followup",
+            "reason": "reflective_pressure",
+            "source": "proto_self_v2",
+            "target_ids": [
+              "maintenance:reflection_followup"
+            ]
+          },
+          "requested_effects": [],
+          "required_gate": "reflection_writeback_gate",
+          "reversibility": "reversible",
+          "status": "held",
+          "target_layer": "maintenance:reflection_followup"
+        },
+        "before": null,
+        "field_path": "revision_proposals.proposal_1775247384_7ca51205"
+      },
+      {
+        "after": 1775247384.871124,
+        "before": 1775247374.418431,
+        "field_path": "updated_at"
+      }
+    ],
+    "gate_verdict": "allow_writeback",
+    "previous_state_hash": "b7527292fdd03ec664dfdd899692ad64710bd202848d55e698e358a49e8f7e31",
+    "state_hash": "e27c363208f5dfdc2e4ea21826454d970676d09a0353a04c0430b671b65ef5b0"
+  },
+  "revision_count": 4,
+  "replay_valid": true,
+  "owner_snapshot": {
+    "schema_version": "mvp15-owner-v1",
+    "reflection_queue": {
+      "reflection_1775247343_d5308588": {
+        "reflection_id": "reflection_1775247343_d5308588",
+        "target_type": "maintenance",
+        "target_reference": "maintenance:reflection_followup",
+        "priority": 0.81,
+        "trigger_source": "controlled_observation_bootstrap",
+        "created_at": 1775247343.1398413,
+        "status": "pending",
+        "started_at": null,
+        "completed_at": null,
+        "resolution_note": null,
+        "evidence_refs": [
+          "mvp15:controlled_bootstrap"
+        ],
+        "requested_effects": []
+      }
+    },
+    "reflection_targets": {
+      "maintenance:reflection_followup": {
+        "target_id": "maintenance:reflection_followup",
+        "target_type": "maintenance",
+        "reference": "maintenance:reflection_followup",
+        "salience": 0.7,
+        "reason": "proto_self_reflection_candidate",
+        "evidence_refs": [
+          "582b9aa3108c694645fdc645217a8ae9a3364dde240c6171817e360b428885f7"
+        ],
+        "last_seen_at": 1775247384.8234577
+      }
+    },
+    "diagnosis_records": {},
+    "counterfactual_records": {},
+    "revision_proposals": {
+      "proposal_1775247343_66ff8477": {
+        "proposal_id": "proposal_1775247343_66ff8477",
+        "target_layer": "maintenance:reflection_followup",
+        "proposed_change": {
+          "candidate_id": "reflection_candidate:maintenance:reflection_followup",
+          "reason": "reflective_pressure",
+          "source": "proto_self_v2",
+          "target_ids": [
+            "maintenance:reflection_followup"
+          ]
+        },
+        "justification": "reflective_pressure",
+        "reversibility": "reversible",
+        "required_gate": "reflection_writeback_gate",
+        "effect_scope": "proposal_only",
+        "requested_effects": [],
+        "status": "held",
+        "gate_metadata": {
+          "gate_reference": "f4f9adf756a6aba007ad6159181f4832af46ce450d4449a07339a2aa4f00760a",
+          "gate_verdict": "allow_writeback",
+          "reason": "proposal_only_candidate_recorded",
+          "updated_at": 1775247343.5684948
+        },
+        "created_at": 1775247343.568466
+      },
+      "proposal_1775247374_21398303": {
+        "proposal_id": "proposal_1775247374_21398303",
+        "target_layer": "maintenance:reflection_followup",
+        "proposed_change": {
+          "candidate_id": "reflection_candidate:maintenance:reflection_followup",
+          "reason": "reflective_pressure",
+          "source": "proto_self_v2",
+          "target_ids": [
+            "maintenance:reflection_followup"
+          ]
+        },
+        "justification": "reflective_pressure",
+        "reversibility": "reversible",
+        "required_gate": "reflection_writeback_gate",
+        "effect_scope": "proposal_only",
+        "requested_effects": [],
+        "status": "held",
+        "gate_metadata": {
+          "gate_reference": "84750dcb34d175f99a37547b1cf4fa652a65d3cd6267359c5886bf08504b9181",
+          "gate_verdict": "allow_writeback",
+          "reason": "proposal_only_candidate_recorded",
+          "updated_at": 1775247374.3685262
+        },
+        "created_at": 1775247374.3685086
+      },
+      "proposal_1775247384_7ca51205": {
+        "proposal_id": "proposal_1775247384_7ca51205",
+        "target_layer": "maintenance:reflection_followup",
+        "proposed_change": {
+          "candidate_id": "reflection_candidate:maintenance:reflection_followup",
+          "reason": "reflective_pressure",
+          "source": "proto_self_v2",
+          "target_ids": [
+            "maintenance:reflection_followup"
+          ]
+        },
+        "justification": "reflective_pressure",
+        "reversibility": "reversible",
+        "required_gate": "reflection_writeback_gate",
+        "effect_scope": "proposal_only",
+        "requested_effects": [],
+        "status": "held",
+        "gate_metadata": {
+          "gate_reference": "582b9aa3108c694645fdc645217a8ae9a3364dde240c6171817e360b428885f7",
+          "gate_verdict": "allow_writeback",
+          "reason": "proposal_only_candidate_recorded",
+          "updated_at": 1775247384.8235164
+        },
+        "created_at": 1775247384.8235
+      }
+    },
+    "unresolved_reflection_items": {
+      "unresolved_1775247343_0af77387": {
+        "item_id": "unresolved_1775247343_0af77387",
+        "summary": "maintenance follow-up still requires reflective diagnosis",
+        "linked_record_id": null,
+        "severity": 0.72,
+        "follow_up_required": true,
+        "created_at": 1775247343.139878
+      }
+    },
+    "reflection_history": {
+      "entries": [
+        {
+          "entry_id": "history_1775247343_5e585126",
+          "entry_type": "reflection_enqueued",
+          "linked_record_id": "reflection_1775247343_d5308588",
+          "details": {
+            "target_reference": "maintenance:reflection_followup",
+            "target_type": "maintenance"
+          },
+          "timestamp": 1775247343.1398625
+        },
+        {
+          "entry_id": "history_1775247343_b12fa6c4",
+          "entry_type": "unresolved_item_added",
+          "linked_record_id": "unresolved_1775247343_0af77387",
+          "details": {
+            "severity": 0.72
+          },
+          "timestamp": 1775247343.139886
+        },
+        {
+          "entry_id": "history_1775247343_7d9c8bbc",
+          "entry_type": "revision_proposed",
+          "linked_record_id": "proposal_1775247343_66ff8477",
+          "details": {
+            "target_layer": "maintenance:reflection_followup"
+          },
+          "timestamp": 1775247343.5684872
+        },
+        {
+          "entry_id": "history_1775247343_f849ac4a",
+          "entry_type": "proposal_gate_status_updated",
+          "linked_record_id": "proposal_1775247343_66ff8477",
+          "details": {
+            "gate_reference": "f4f9adf756a6aba007ad6159181f4832af46ce450d4449a07339a2aa4f00760a",
+            "gate_verdict": "allow_writeback",
+            "reason": "proposal_only_candidate_recorded",
+            "updated_at": 1775247343.5684948
+          },
+          "timestamp": 1775247343.5685086
+        },
+        {
+          "entry_id": "history_1775247374_bb0432f4",
+          "entry_type": "revision_proposed",
+          "linked_record_id": "proposal_1775247374_21398303",
+          "details": {
+            "target_layer": "maintenance:reflection_followup"
+          },
+          "timestamp": 1775247374.3685207
+        },
+        {
+          "entry_id": "history_1775247374_e6fce81e",
+          "entry_type": "proposal_gate_status_updated",
+          "linked_record_id": "proposal_1775247374_21398303",
+          "details": {
+            "gate_reference": "84750dcb34d175f99a37547b1cf4fa652a65d3cd6267359c5886bf08504b9181",
+            "gate_verdict": "allow_writeback",
+            "reason": "proposal_only_candidate_recorded",
+            "updated_at": 1775247374.3685262
+          },
+          "timestamp": 1775247374.3685336
+        },
+        {
+          "entry_id": "history_1775247384_5976d7eb",
+          "entry_type": "revision_proposed",
+          "linked_record_id": "proposal_1775247384_7ca51205",
+          "details": {
+            "target_layer": "maintenance:reflection_followup"
+          },
+          "timestamp": 1775247384.8235111
+        },
+        {
+          "entry_id": "history_1775247384_8f22847b",
+          "entry_type": "proposal_gate_status_updated",
+          "linked_record_id": "proposal_1775247384_7ca51205",
+          "details": {
+            "gate_reference": "582b9aa3108c694645fdc645217a8ae9a3364dde240c6171817e360b428885f7",
+            "gate_verdict": "allow_writeback",
+            "reason": "proposal_only_candidate_recorded",
+            "updated_at": 1775247384.8235164
+          },
+          "timestamp": 1775247384.8235233
+        }
+      ],
+      "revision_markers": [
+        {
+          "revision_id": "reflective_rev_000001",
+          "timestamp": "2026-04-03T20:15:43.170632+00:00",
+          "update_source": "owner_bootstrap",
+          "trace_reference": "mvp15:controlled_bootstrap",
+          "gate_verdict": "allow_writeback"
+        },
+        {
+          "revision_id": "reflective_rev_000002",
+          "timestamp": "2026-04-03T20:15:43.616784+00:00",
+          "update_source": "proto_self_v2",
+          "trace_reference": "f4f9adf756a6aba007ad6159181f4832af46ce450d4449a07339a2aa4f00760a",
+          "gate_verdict": "allow_writeback"
+        },
+        {
+          "revision_id": "reflective_rev_000003",
+          "timestamp": "2026-04-03T20:16:14.418235+00:00",
+          "update_source": "proto_self_v2",
+          "trace_reference": "84750dcb34d175f99a37547b1cf4fa652a65d3cd6267359c5886bf08504b9181",
+          "gate_verdict": "allow_writeback"
+        },
+        {
+          "revision_id": "reflective_rev_000004",
+          "timestamp": "2026-04-03T20:16:24.870962+00:00",
+          "update_source": "proto_self_v2",
+          "trace_reference": "582b9aa3108c694645fdc645217a8ae9a3364dde240c6171817e360b428885f7",
+          "gate_verdict": "allow_writeback"
+        }
+      ],
+      "max_entries": 500,
+      "max_revision_markers": 200
+    },
+    "created_at": 1775247343.139766,
+    "updated_at": 1775247384.871124,
+    "owner_revision": 4,
+    "last_revision_id": "reflective_rev_000004"
+  },
+  "status": "pass",
+  "verification_level": "V4",
+  "evidence_level": "E4",
+  "boundary": "This report proves a controlled runtime-mainline reflective-self writeback path with proposal-only diagnosis/revision candidates. It does not prove live autonomy, direct reply authority, or broader transport maturity.",
+  "external_risk_note": "Provider 429/401 remains an external budget-layer risk; it is not counted as a WP10 blocker unless it regresses formal owner writeback."
+}

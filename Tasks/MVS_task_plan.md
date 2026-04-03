@@ -595,18 +595,18 @@
 - provider `429/401` 被持续标注为外部预算层风险，不回灌为 `WP9` blocker
 - `WP10` 保持 proposal-only reflective path，不放开 live autonomy / direct reply / broader transport claims
 - 文档中没有出现“因为 `WP10` 观察到 reflective writeback，所以 OpenEmotion 可以直接反思发言 / 直接拿 transport claim”这类边界回退
-- 证据层级目标：E1 -> E4（current mainline observation started）
+- 证据层级目标：E1 -> E5（current mainline observation stable on the controlled axis）
 
 **当前状态（2026-04-03）**
-- `WP10/MVP15` 当前层级是 `runtime_mainline_observation`
-- 当前状态是 `observation_started`
+- `WP10/MVP15` 当前层级是 `closure`
+- 当前状态是 `maintenance_mode`
 - 旧 `MVP15` reflection / counterfactual infra、shadow artifact、bounded `/plan` / `/decision/target` consumer 与 paired relevance proof 都存在，但全部属于 legacy/reference input，不自动构成当前 formal owner / current-runtime mainline 证据
 - 当前 formal owner target 固定为 `OpenEmotion/openemotion/reflective_self/*`
 - 当前 formal owner package、bounded reflective consumer、runtime bridge 与 governed reflective writeback 已落地
 - 当前 causal proof 报告为 `OpenEmotion/artifacts/mvp15/mvp15_causal_validation_current.md`，结果 `status = pass`、`verification_level = V3`、`evidence_level = E3`
-- 当前 controlled observation 报告为 `OpenEmotion/artifacts/mvp15/mvp15_controlled_observation_current.md`，结果 `status = pass`、`verification_level = V4`、`evidence_level = E4`、`gate_verdict = allow_writeback`、`replay_valid = true`
-- 当前 blocker 是：仍缺重复 controlled observation 样本，尚未达到 `E5`
-- 当前最小闭环动作是：继续收集 `WP10` controlled observation 样本，不扩 authority 边界
+- 当前 single controlled observation 报告为 `OpenEmotion/artifacts/mvp15/mvp15_controlled_observation_current.md`，结果 `status = pass`、`verification_level = V4`、`evidence_level = E4`、`gate_verdict = allow_writeback`、`replay_valid = true`
+- 当前 batch controlled observation 报告为 `OpenEmotion/artifacts/mvp15/mvp15_controlled_observation_batch_current.md`，结果 `status = pass`、`verification_level = V5`、`evidence_level = E5`、`report_count = 3`、`accepted_count = 3`、`proposal_discipline_consistent_count = 3`、`behavioral_authority_none_count = 3`
+- 当前 blocker：controlled observation 范围内无主 blocker；provider `429/401` 继续记为外部预算层风险，不回灌为 `WP10` 主链 blocker
 
 ---
 

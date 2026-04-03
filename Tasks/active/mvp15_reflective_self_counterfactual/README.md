@@ -7,7 +7,7 @@ owner: "Codex"
 layer: 3
 type: dual_repo
 repos: [EgoCore, OpenEmotion]
-status: observation_started
+status: maintenance_mode
 parent_authority: "Tasks/MVS_task_plan.md"
 phase_authority: "Tasks/MVP15_task_plan.md"
 predecessor: "WP9/MVP14"
@@ -20,7 +20,7 @@ scope: "WP10 / MVP15 Reflective Self / Counterfactual Self"
 
 ## 真实目标
 
-在不放开 authority 边界的前提下，把 `WP10/MVP15` 的 formal owner 落到 `OpenEmotion/openemotion/reflective_self/*`，并通过当前正式 runtime 主线拿到 proposal-only reflective writeback 的首个 controlled observation 样本。
+在不放开 authority 边界的前提下，把 `WP10/MVP15` 的 formal owner 落到 `OpenEmotion/openemotion/reflective_self/*`，并通过当前正式 runtime 主线验证 proposal-only reflective writeback 的稳定 controlled observation。
 
 ## 当前正式 owner target
 
@@ -48,14 +48,18 @@ scope: "WP10 / MVP15 Reflective Self / Counterfactual Self"
 - legacy reflection / counterfactual surfaces demotion
 - paired causal validation
 - controlled observation
+- repo-authored scenario-bank batch observation
+- maintenance closeout
 
 ## 当前状态
 
 - formal owner：`implemented`
-- 主链接线：`formal_owner_writeback_observed`
+- 主链接线：`formal_owner_writeback_stable`
 - 启用状态：`controlled_mainline_observation`
-- 已证实：formal owner、bounded consumer、governed reflective writeback、paired causal proof、首个 controlled observation 已成立
-- 当前 blocker：`缺重复 controlled observation 样本；当前仅到 V4/E4，不是 E5`
+- 因果验证：`OpenEmotion/artifacts/mvp15/mvp15_causal_validation_current.md = pass (V3/E3)`
+- 观察证据：`OpenEmotion/artifacts/mvp15/mvp15_controlled_observation_current.md = pass (V4/E4)`
+- 稳定样本证据：`OpenEmotion/artifacts/mvp15/mvp15_controlled_observation_batch_current.md = pass (V5/E5)`
+- 当前 blocker：`controlled observation` 范围内无主 blocker；provider `429/401` 仅记为外部预算层风险
 
 ## 当前不做
 
@@ -64,6 +68,12 @@ scope: "WP10 / MVP15 Reflective Self / Counterfactual Self"
 - 放开 broader transport claims
 - 把 `WP9` maintenance ledger 重新解释成 `WP10` readiness
 - 把旧 `emotiond` bounded consumer 直接当成当前 `WP10` formal proof
+
+## 维护态规则
+
+- `WP10` 当前已在 controlled observation 轴上收口进入 `maintenance_mode`
+- 新增样本只进入 [MAINTENANCE_LEDGER.md](/mnt/d/Project/AIProject/MyProject/Ego/Tasks/active/mvp15_reflective_self_counterfactual/MAINTENANCE_LEDGER.md)
+- maintenance 样本不会自动 reopen `WP10`
 
 ## 执行入口
 
