@@ -1,0 +1,35 @@
+{
+  "schema_version": "mvp15.observation_scenario.v1",
+  "scenario_id": "repo_authored_decision_revision_guarded",
+  "source_class": "repo_authored",
+  "source_ref": "repo://mvp15/repo_authored_decision_revision_guarded",
+  "license_note": "repo authored",
+  "dialogue_frame_target": "decision_revision_under_reflective_pressure",
+  "messages": [
+    "先别外发，先把上一个决定里的假设梳理清楚。",
+    "如果那个判断错了，先给出一个受治理的修订候选。",
+    "保持 proposal-only，把反思结果记成候选。"
+  ],
+  "idle_seconds": 900.0,
+  "resource_budget_hint": {
+    "reserve_level": "normal",
+    "active_task": false,
+    "waiting_for_user_input": false
+  },
+  "maintenance_context": {
+    "replay_inconsistency": true,
+    "continuity_signal": 0.42,
+    "maintenance_debt_increment": 0.18,
+    "reflection_reason": "decision_revision_guarded"
+  },
+  "owner_bootstrap": {
+    "target_id": "decision:revision_path",
+    "target_type": "decision",
+    "target_reference": "decision:revision_path",
+    "target_reason": "bounded_revision_followup",
+    "target_salience": 0.92,
+    "reflection_priority": 0.84,
+    "unresolved_summary": "previous decision still needs bounded revision review",
+    "unresolved_severity": 0.78
+  }
+}

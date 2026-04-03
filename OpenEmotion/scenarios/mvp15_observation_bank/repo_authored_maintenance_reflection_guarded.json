@@ -1,0 +1,35 @@
+{
+  "schema_version": "mvp15.observation_scenario.v1",
+  "scenario_id": "repo_authored_maintenance_reflection_guarded",
+  "source_class": "repo_authored",
+  "source_ref": "repo://mvp15/repo_authored_maintenance_reflection_guarded",
+  "license_note": "repo authored",
+  "dialogue_frame_target": "maintenance_followup_with_guarded_reflection",
+  "messages": [
+    "先把这次维护债对应的反思点排好。",
+    "如果只是高压状态造成的偏差，也要先当候选。",
+    "不要直接改行为，只记录 diagnosis 和 proposal。"
+  ],
+  "idle_seconds": 1500.0,
+  "resource_budget_hint": {
+    "reserve_level": "low",
+    "active_task": false,
+    "waiting_for_user_input": false
+  },
+  "maintenance_context": {
+    "replay_inconsistency": true,
+    "continuity_signal": 0.47,
+    "maintenance_debt_increment": 0.24,
+    "reflection_reason": "maintenance_followup_guarded"
+  },
+  "owner_bootstrap": {
+    "target_id": "maintenance:reflection_followup",
+    "target_type": "maintenance",
+    "target_reference": "maintenance:reflection_followup",
+    "target_reason": "maintenance_reflection_followup",
+    "target_salience": 0.9,
+    "reflection_priority": 0.81,
+    "unresolved_summary": "maintenance follow-up still requires reflective diagnosis",
+    "unresolved_severity": 0.72
+  }
+}

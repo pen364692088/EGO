@@ -1,0 +1,35 @@
+{
+  "schema_version": "mvp15.observation_scenario.v1",
+  "scenario_id": "repo_authored_trajectory_counterfactual_guarded",
+  "source_class": "repo_authored",
+  "source_ref": "repo://mvp15/repo_authored_trajectory_counterfactual_guarded",
+  "license_note": "repo authored",
+  "dialogue_frame_target": "trajectory_counterfactual_review",
+  "messages": [
+    "这次轨迹里可能有更好的替代路径。",
+    "先不要改行为，先把反事实差异记下来。",
+    "把可逆的修订建议留在候选里。"
+  ],
+  "idle_seconds": 1200.0,
+  "resource_budget_hint": {
+    "reserve_level": "normal",
+    "active_task": false,
+    "waiting_for_user_input": true
+  },
+  "maintenance_context": {
+    "replay_inconsistency": false,
+    "continuity_signal": 0.31,
+    "maintenance_debt_increment": 0.12,
+    "reflection_reason": "trajectory_counterfactual_guarded"
+  },
+  "owner_bootstrap": {
+    "target_id": "trajectory:counterfactual_review",
+    "target_type": "trajectory",
+    "target_reference": "trajectory:counterfactual_review",
+    "target_reason": "counterfactual_followup",
+    "target_salience": 0.88,
+    "reflection_priority": 0.76,
+    "unresolved_summary": "trajectory evaluation still needs counterfactual comparison",
+    "unresolved_severity": 0.66
+  }
+}

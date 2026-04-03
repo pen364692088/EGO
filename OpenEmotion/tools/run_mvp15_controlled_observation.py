@@ -31,6 +31,20 @@ from app.telegram_runtime_bridge import TelegramRuntimeBridge
 
 ARTIFACTS_ROOT = OPENEMOTION_ROOT / "artifacts" / "mvp15"
 
+DEFAULT_OWNER_BOOTSTRAP = {
+    "target_id": "decision:target",
+    "target_type": "decision",
+    "target_reference": "decision:target",
+    "target_reason": "controlled_observation_bootstrap",
+    "target_salience": 0.85,
+    "target_evidence_refs": ["mvp15:controlled_bootstrap"],
+    "reflection_trigger_source": "controlled_observation_bootstrap",
+    "reflection_priority": 0.75,
+    "reflection_evidence_refs": ["mvp15:controlled_bootstrap"],
+    "unresolved_summary": "previous decision needs bounded reflective follow-up",
+    "unresolved_severity": 0.7,
+}
+
 
 def _git_commit_short() -> str:
     completed = subprocess.run(
@@ -72,33 +86,63 @@ def _load_messages(args: argparse.Namespace) -> List[str]:
     ]
 
 
+def _resolve_target_type(raw: Any) -> ReflectionTargetType:
+    try:
+        return ReflectionTargetType(str(raw or "").strip() or ReflectionTargetType.DECISION.value)
+    except ValueError:
+        return ReflectionTargetType.STATE
+
+
 def _seed_owner_state(
     *,
     store: ReflectiveSelfStore,
-    target_id: str = "decision:target",
-    target_reference: str = "decision:target",
-    unresolved_summary: str = "previous decision needs bounded reflective follow-up",
+    owner_bootstrap: Optional[Dict[str, Any]] = None,
 ) -> None:
+    bootstrap = dict(DEFAULT_OWNER_BOOTSTRAP)
+    bootstrap.update(dict(owner_bootstrap or {}))
     owner = ReflectiveSelfOwner(store=store)
+    target_id = str(bootstrap.get("target_id") or "decision:target")
+    target_reference = str(bootstrap.get("target_reference") or target_id)
+    target_type = _resolve_target_type(bootstrap.get("target_type"))
     owner.upsert_target(
         target_id=target_id,
-        target_type=ReflectionTargetType.DECISION,
+        target_type=target_type,
         reference=target_reference,
-        reason="controlled_observation_bootstrap",
-        salience=0.85,
-        evidence_refs=["mvp15:controlled_bootstrap"],
+        reason=str(bootstrap.get("target_reason") or "controlled_observation_bootstrap"),
+        salience=float(bootstrap.get("target_salience") or 0.85),
+        evidence_refs=list(bootstrap.get("target_evidence_refs") or ["mvp15:controlled_bootstrap"]),
     )
+    for extra_target in list(bootstrap.get("extra_targets") or []):
+        if not isinstance(extra_target, dict):
+            continue
+        extra_target_id = str(extra_target.get("target_id") or "").strip()
+        if not extra_target_id:
+            continue
+        owner.upsert_target(
+            target_id=extra_target_id,
+            target_type=_resolve_target_type(extra_target.get("target_type")),
+            reference=str(extra_target.get("target_reference") or extra_target_id),
+            reason=str(extra_target.get("target_reason") or "controlled_observation_bootstrap"),
+            salience=float(extra_target.get("target_salience") or 0.5),
+            evidence_refs=list(extra_target.get("target_evidence_refs") or []),
+        )
     owner.enqueue_reflection(
-        target_type=ReflectionTargetType.DECISION,
+        target_type=target_type,
         target_reference=target_reference,
-        trigger_source="controlled_observation_bootstrap",
-        priority=0.75,
-        evidence_refs=["mvp15:controlled_bootstrap"],
+        trigger_source=str(bootstrap.get("reflection_trigger_source") or "controlled_observation_bootstrap"),
+        priority=float(bootstrap.get("reflection_priority") or 0.75),
+        evidence_refs=list(bootstrap.get("reflection_evidence_refs") or ["mvp15:controlled_bootstrap"]),
     )
     owner.add_unresolved_item(
-        summary=unresolved_summary,
-        linked_record_id=None,
-        severity=0.7,
+        summary=str(
+            bootstrap.get("unresolved_summary") or "previous decision needs bounded reflective follow-up"
+        ),
+        linked_record_id=(
+            str(bootstrap.get("unresolved_linked_record_id")).strip()
+            if bootstrap.get("unresolved_linked_record_id")
+            else None
+        ),
+        severity=float(bootstrap.get("unresolved_severity") or 0.7),
     )
     owner.persist(
         update_source="owner_bootstrap",
@@ -186,6 +230,8 @@ def _render_markdown(payload: Dict[str, Any]) -> str:
         "## Reflection Observation",
         "",
         f"- reflection_candidate_present: `{payload.get('reflection_candidate_present')}`",
+        f"- proposal_discipline_consistent: `{payload.get('proposal_discipline_consistent')}`",
+        f"- behavioral_authority_none: `{payload.get('behavioral_authority_none')}`",
         f"- delta_fields: `{payload.get('reflective_self_delta_fields')}`",
         f"- latest_target_ids: `{payload.get('target_ids')}`",
         f"- replay_valid: `{payload.get('replay_valid')}`",
@@ -205,8 +251,10 @@ async def run_controlled_observation(
     session_id: str,
     output_json: Optional[Path],
     artifacts_dir: Optional[Path] = None,
+    scenario_manifest: Optional[Dict[str, Any]] = None,
     resource_budget_hint: Optional[Dict[str, Any]] = None,
     maintenance_context: Optional[Dict[str, Any]] = None,
+    owner_bootstrap: Optional[Dict[str, Any]] = None,
 ) -> Dict[str, Any]:
     stamp = datetime.now(timezone.utc).strftime("%Y%m%d_%H%M%S")
     artifacts_dir = artifacts_dir or (ARTIFACTS_ROOT / f"controlled_mainline_{stamp}")
@@ -218,7 +266,7 @@ async def run_controlled_observation(
 
     store = ReflectiveSelfStore(base_dir=artifacts_dir / "formal_reflective_self")
     if store.load() is None:
-        _seed_owner_state(store=store)
+        _seed_owner_state(store=store, owner_bootstrap=owner_bootstrap)
     runtime.proto_self_runtime.reflective_self_store = store
 
     runtime, state, records = await _run_runtime_reflective_observation_session(
@@ -248,12 +296,22 @@ async def run_controlled_observation(
     revision_log = store.load_revision_log()
     latest_revision = revision_log[-1].model_dump(mode="json") if revision_log else None
     replay = store.replay()
+    revision_proposal_candidates = list(proto_self_context.get("revision_proposal_candidates") or [])
+    reflection_writeback_candidate = dict(proto_self_context.get("reflection_writeback_candidate") or {})
+    proposal_discipline_consistent = bool(revision_proposal_candidates) and all(
+        str(candidate.get("proposal_discipline") or "") == "proposal_only"
+        and str(candidate.get("effect_scope") or "") in {"", "proposal_only"}
+        for candidate in revision_proposal_candidates
+    )
+    behavioral_authority_none = str(reflection_writeback_candidate.get("behavioral_authority") or "") == "none"
 
     accepted = (
         decision.get("gate_verdict") == "allow_writeback"
         and bool(latest_revision)
         and replay is not None
         and proto_self_context.get("reflection_writeback_candidate") is not None
+        and proposal_discipline_consistent
+        and behavioral_authority_none
     )
 
     payload = {
@@ -263,6 +321,7 @@ async def run_controlled_observation(
         "session_id": session_id,
         "observation_count": len(records),
         "observation_log": str(observation_log),
+        "scenario_manifest": dict(scenario_manifest or {}) or None,
         "observation_refs": [
             {
                 "kind": "runtime_mainline_delivery",
@@ -274,9 +333,11 @@ async def run_controlled_observation(
         ],
         "reflective_self_delta": proto_self_context.get("reflective_self_delta") or {},
         "reflective_self_delta_fields": sorted((proto_self_context.get("reflective_self_delta") or {}).keys()),
-        "revision_proposal_candidates": proto_self_context.get("revision_proposal_candidates") or [],
+        "revision_proposal_candidates": revision_proposal_candidates,
         "reflection_writeback_candidate": proto_self_context.get("reflection_writeback_candidate"),
         "reflection_candidate_present": bool(proto_self_context.get("reflection_writeback_candidate")),
+        "proposal_discipline_consistent": proposal_discipline_consistent,
+        "behavioral_authority_none": behavioral_authority_none,
         "reflective_self_writeback": writeback,
         "confidence_adjustment_hints": proto_self_context.get("confidence_adjustment_hints") or {},
         "maintenance_priority_hints": proto_self_context.get("maintenance_priority_hints") or {},
