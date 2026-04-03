@@ -12,6 +12,7 @@
 
 ## Reference-Only Compatibility / Legacy Code Surfaces
 
+- `OpenEmotion/emotiond/drives/*`
 - `OpenEmotion/emotiond/drive_adapter.py`
 - `OpenEmotion/emotiond/drive_homeostasis.py`
 - `OpenEmotion/emotiond/homeostasis.py`

@@ -14,6 +14,10 @@
 - governed long-horizon goal backlog pressure
 - bounded homeostatic measurements
 - runtime freshness / drift markers
+- `runtime_summary.idle_window`
+- `runtime_summary.recent_delivery_outcome`
+- `runtime_summary.resource_budget_hint`
+- `runtime_summary.maintenance_context`
 
 ## Input Constraints
 
@@ -23,12 +27,14 @@
 
 ## Allowed Outputs
 
+- `endogenous_drive_delta`
 - `drive_state_snapshot`
 - `priority_snapshot`
-- `maintenance_request_candidates`
+- `self_maintenance_candidate`
 - `candidate_bias_terms`
 - `drive_audit_entries`
 - `homeostatic_signal_snapshot`
+- `trace_payload.drive_context`
 
 ## Output Constraints
 

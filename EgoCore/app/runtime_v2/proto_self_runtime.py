@@ -8,6 +8,8 @@ import logging
 import os
 
 from openemotion.proto_self_v2.seed_schemas import SEED_SCHEMA_VERSION, SEED_SUBJECT_PROFILE
+from openemotion.endogenous_drives import EndogenousDriveStore, EndogenousDriveOwner, compact_endogenous_drive_context
+from openemotion.endogenous_drives.reducers import seed_default_state
 from openemotion.self_model import (
     PHASE1_AUTHORITATIVE_FIELDS,
     SelfModelStore,
@@ -25,6 +27,7 @@ from .state import RuntimeV2State
 logger = logging.getLogger(__name__)
 ENABLE_MVP12_SANDBOX = os.environ.get("EGO_ENABLE_MVP12_SANDBOX", "false").lower() == "true"
 DEFAULT_SELF_MODEL_IDENTITY_HANDLE = "openemotion"
+DEFAULT_ENDOGENOUS_DRIVE_IDENTITY_HANDLE = "openemotion"
 
 
 def assess_risk_level(user_input: str) -> str:
@@ -74,6 +77,10 @@ def _seed_runtime_summary(state: RuntimeV2State) -> Dict[str, Any]:
             else None
         ),
         "browser_tabs": list(ingress_context.get("browser_tabs") or []),
+        "idle_window": _build_idle_window(state),
+        "recent_delivery_outcome": _build_recent_delivery_outcome(state),
+        "resource_budget_hint": _build_resource_budget_hint(state),
+        "maintenance_context": _build_maintenance_context(state),
     }
 
 
@@ -84,6 +91,72 @@ def _resolve_self_model_identity_handle(state: RuntimeV2State) -> str:
         or ingress_context.get("identity_handle")
         or DEFAULT_SELF_MODEL_IDENTITY_HANDLE
     )
+
+
+def _resolve_endogenous_drive_identity_handle(state: RuntimeV2State) -> str:
+    ingress_context = state.ingress_context or {}
+    return str(
+        ingress_context.get("endogenous_drive_identity_handle")
+        or ingress_context.get("identity_handle")
+        or DEFAULT_ENDOGENOUS_DRIVE_IDENTITY_HANDLE
+    )
+
+
+def _build_idle_window(state: RuntimeV2State) -> Dict[str, Any]:
+    return {
+        "idle_seconds": round(state.idle_seconds_since_chat_activity(), 3),
+        "active_turn_status": state.active_turn_status,
+        "task_status": state.task_status,
+    }
+
+
+def _build_recent_delivery_outcome(state: RuntimeV2State) -> Dict[str, Any]:
+    outcome: Dict[str, Any] = {
+        "delivery_type": state.last_delivery_type,
+        "final_sent": state.final_sent,
+        "active_turn_terminal": state.active_turn_status == "terminal",
+    }
+    if state.last_tool_result:
+        outcome.update(
+            {
+                "kind": "tool",
+                "success": bool(state.last_tool_result.get("success")),
+                "status": "success" if state.last_tool_result.get("success") else "failed",
+                "tool": state.last_tool_result.get("tool"),
+            }
+        )
+    else:
+        outcome.setdefault("kind", "chat")
+        if state.final_sent:
+            outcome.setdefault("success", True)
+            outcome.setdefault("status", "sent")
+    return outcome
+
+
+def _build_resource_budget_hint(state: RuntimeV2State) -> Dict[str, Any]:
+    ingress_context = state.ingress_context or {}
+    if ingress_context.get("resource_budget_hint"):
+        return dict(ingress_context.get("resource_budget_hint") or {})
+    reserve_level = "low" if state.task_status in {"running", "blocked"} else "normal"
+    return {
+        "reserve_level": reserve_level,
+        "active_task": state.task_status in {"running", "waiting_input", "resumable_pause", "blocked"},
+        "waiting_for_user_input": state.waiting_for_user_input,
+    }
+
+
+def _build_maintenance_context(state: RuntimeV2State) -> Dict[str, Any]:
+    ingress_context = state.ingress_context or {}
+    maintenance_context = dict(ingress_context.get("maintenance_context") or {})
+    proto_self_context = dict(state.proto_self_context or {})
+    if "shadow_revision" in proto_self_context:
+        maintenance_context.setdefault("shadow_revision", proto_self_context.get("shadow_revision"))
+    if "background_thought_candidates" in proto_self_context:
+        maintenance_context.setdefault(
+            "background_thought_candidate_count",
+            len(proto_self_context.get("background_thought_candidates") or []),
+        )
+    return maintenance_context
 
 
 def _compact_self_model_context(snapshot: Dict[str, Any]) -> Dict[str, Any]:
@@ -109,6 +182,19 @@ def _inject_self_model_context(
     snapshot = store.load_snapshot(_resolve_self_model_identity_handle(state))
     if snapshot:
         runtime_summary["self_model_context"] = _compact_self_model_context(snapshot)
+    return runtime_summary
+
+
+def _inject_endogenous_drive_context(
+    runtime_summary: Dict[str, Any],
+    *,
+    state: RuntimeV2State,
+    endogenous_drive_store: Optional[EndogenousDriveStore] = None,
+) -> Dict[str, Any]:
+    store = endogenous_drive_store or EndogenousDriveStore()
+    snapshot = store.load_snapshot(_resolve_endogenous_drive_identity_handle(state))
+    if snapshot:
+        runtime_summary["endogenous_drive_context"] = compact_endogenous_drive_context(snapshot)
     return runtime_summary
 
 
@@ -174,6 +260,7 @@ def build_proto_self_ingress_event(
     user_input: str,
     state: RuntimeV2State,
     self_model_store: Optional[SelfModelStore] = None,
+    endogenous_drive_store: Optional[EndogenousDriveStore] = None,
 ) -> Dict[str, Any]:
     risk_level = assess_risk_level(user_input)
     restore_observation = (state.ingress_context or {}).get("restore_observation")
@@ -189,6 +276,11 @@ def build_proto_self_ingress_event(
             },
             state=state,
             self_model_store=self_model_store,
+        )
+        runtime_summary = _inject_endogenous_drive_context(
+            runtime_summary,
+            state=state,
+            endogenous_drive_store=endogenous_drive_store,
         )
         runtime_summary.update(
             {
@@ -280,6 +372,7 @@ def build_external_result_event(
     tool_result: Dict[str, Any],
     state: RuntimeV2State,
     self_model_store: Optional[SelfModelStore] = None,
+    endogenous_drive_store: Optional[EndogenousDriveStore] = None,
 ) -> Dict[str, Any]:
     failed = not tool_result.get("success")
     schema_version = resolve_proto_self_schema_version(state)
@@ -327,6 +420,11 @@ def build_external_result_event(
             "prediction_snapshot_prev": ingress_context.get("prediction_snapshot_prev", {}),
         }
         subject_profile = resolve_proto_self_subject_profile(state)
+        payload["runtime_summary"] = _inject_endogenous_drive_context(
+            payload["runtime_summary"],
+            state=state,
+            endogenous_drive_store=endogenous_drive_store,
+        )
         payload["subject_profile"] = subject_profile
         if subject_profile == SEED_SUBJECT_PROFILE:
             payload["seed_event"] = _build_seed_event(
@@ -390,6 +488,7 @@ def build_finalized_result_event(
     result: Any,
     state: RuntimeV2State,
     self_model_store: Optional[SelfModelStore] = None,
+    endogenous_drive_store: Optional[EndogenousDriveStore] = None,
 ) -> Optional[Dict[str, Any]]:
     if resolve_proto_self_schema_version(state) != "proto_self.v2":
         return None
@@ -437,6 +536,11 @@ def build_finalized_result_event(
         "intervention_context": ingress_context.get("intervention_context", {}),
         "prediction_snapshot_prev": ingress_context.get("prediction_snapshot_prev", {}),
     }
+    payload["runtime_summary"] = _inject_endogenous_drive_context(
+        payload["runtime_summary"],
+        state=state,
+        endogenous_drive_store=endogenous_drive_store,
+    )
     if subject_profile == SEED_SUBJECT_PROFILE:
         payload["seed_event"] = _build_seed_event(
             event_type="exec_result",
@@ -457,13 +561,14 @@ def build_idle_check_event(
     turn_id: str,
     state: RuntimeV2State,
     self_model_store: Optional[SelfModelStore] = None,
+    endogenous_drive_store: Optional[EndogenousDriveStore] = None,
 ) -> Optional[Dict[str, Any]]:
     if resolve_proto_self_schema_version(state) != "proto_self.v2":
         return None
     subject_profile = resolve_proto_self_subject_profile(state)
     if subject_profile != SEED_SUBJECT_PROFILE:
         return None
-    return {
+    event = {
         "schema_version": "proto_self.v2",
         "event_id": f"{session_id}_{turn_id}_idle",
         "timestamp": datetime.now().isoformat(),
@@ -512,6 +617,12 @@ def build_idle_check_event(
         "intervention_context": {},
         "prediction_snapshot_prev": {},
     }
+    event["runtime_summary"] = _inject_endogenous_drive_context(
+        event["runtime_summary"],
+        state=state,
+        endogenous_drive_store=endogenous_drive_store,
+    )
+    return event
 
 
 def build_developmental_tick_event(
@@ -529,6 +640,7 @@ def build_developmental_tick_event(
     replay_seed: Optional[int] = None,
     force_enable: bool = False,
     self_model_store: Optional[SelfModelStore] = None,
+    endogenous_drive_store: Optional[EndogenousDriveStore] = None,
 ) -> Optional[Dict[str, Any]]:
     if resolve_proto_self_schema_version(state) != "proto_self.v2":
         return None
@@ -549,6 +661,11 @@ def build_developmental_tick_event(
         },
         state=state,
         self_model_store=self_model_store,
+    )
+    runtime_summary = _inject_endogenous_drive_context(
+        runtime_summary,
+        state=state,
+        endogenous_drive_store=endogenous_drive_store,
     )
     if replay_seed is not None:
         runtime_summary["replay_seed"] = replay_seed
@@ -621,6 +738,7 @@ class RuntimeV2ProtoSelfRuntime:
     trace_bridge: Any = None
     evidence_collector_factory: Optional[Any] = None
     self_model_store: Optional[SelfModelStore] = None
+    endogenous_drive_store: Optional[EndogenousDriveStore] = None
 
     def _resolve_collector(self, evidence_collector: Optional[Any]) -> Optional[Any]:
         if evidence_collector is not None:
@@ -695,6 +813,53 @@ class RuntimeV2ProtoSelfRuntime:
         proto_self_result["self_model_writeback"] = writeback
         return writeback
 
+    def _apply_endogenous_drive_writeback(
+        self,
+        *,
+        proto_self_result: Dict[str, Any],
+        state: RuntimeV2State,
+    ) -> Optional[Dict[str, Any]]:
+        delta = dict(proto_self_result.get("endogenous_drive_delta") or {})
+        if not delta:
+            return None
+
+        identity_handle = _resolve_endogenous_drive_identity_handle(state)
+        store = self.endogenous_drive_store or EndogenousDriveStore(default_identity=identity_handle)
+        current_state = store.load(identity_handle) or seed_default_state()
+        owner = EndogenousDriveOwner(initial_state=current_state, store=store)
+        confidence_meta = dict(proto_self_result.get("confidence_meta") or {})
+        trace_payload = dict(proto_self_result.get("trace_payload") or {})
+        try:
+            applied = owner.apply_owner_delta(delta)
+            record = owner.persist(
+                update_source=str(confidence_meta.get("endogenous_drive_update_source") or "proto_self_v2"),
+                trace_reference=str(
+                    confidence_meta.get("endogenous_drive_trace_reference")
+                    or f"proto_self:{proto_self_result.get('event_id', 'unknown')}"
+                ),
+            )
+            writeback = {
+                "decision": {
+                    "gate_verdict": "allow_writeback",
+                    "changed_fields": applied.get("changed_fields", []),
+                },
+                "record": {
+                    "revision_id": record.revision_id,
+                    "model_version": record.model_version,
+                    "trace_reference": record.trace_reference,
+                    "state_hash": record.state_hash,
+                },
+                "trace_reference": trace_payload.get("update_packet_hash"),
+            }
+        except Exception as exc:
+            writeback = {
+                "decision": {"gate_verdict": "reject", "reason": str(exc)},
+                "record": None,
+                "trace_reference": trace_payload.get("update_packet_hash"),
+            }
+        proto_self_result["endogenous_drive_writeback"] = writeback
+        return writeback
+
     def process_ingress(
         self,
         *,
@@ -712,9 +877,14 @@ class RuntimeV2ProtoSelfRuntime:
             user_input=user_input,
             state=state,
             self_model_store=self.self_model_store,
+            endogenous_drive_store=self.endogenous_drive_store,
         )
         proto_self_result = self.adapter.handle_event(proto_self_event)
         writeback = self._apply_self_model_writeback(proto_self_result=proto_self_result, state=state)
+        endogenous_drive_writeback = self._apply_endogenous_drive_writeback(
+            proto_self_result=proto_self_result,
+            state=state,
+        )
         collector = self._resolve_collector(evidence_collector)
         if collector is not None:
             collector.capture_normalized_event(proto_self_event)
@@ -733,6 +903,12 @@ class RuntimeV2ProtoSelfRuntime:
             "governor_hint": (proto_self_result.get("policy_hint") or {}).get("governor_hint"),
             "self_model_delta": proto_self_result.get("self_model_delta") or {},
             "self_model_writeback": writeback,
+            "endogenous_drive_delta": proto_self_result.get("endogenous_drive_delta") or {},
+            "endogenous_drive_writeback": endogenous_drive_writeback,
+            "drive_state_snapshot": proto_self_result.get("drive_state_snapshot") or {},
+            "priority_snapshot": proto_self_result.get("priority_snapshot") or {},
+            "candidate_bias_terms": proto_self_result.get("candidate_bias_terms") or {},
+            "self_maintenance_candidate": proto_self_result.get("self_maintenance_candidate"),
         }
         state.record(
             "proto_self",
@@ -741,6 +917,7 @@ class RuntimeV2ProtoSelfRuntime:
                 "policy_hint": proto_self_result.get("policy_hint"),
                 "candidate_actions": proto_self_result.get("candidate_actions") or [],
                 "self_model_writeback": writeback,
+                "endogenous_drive_writeback": endogenous_drive_writeback,
                 "reflection_trigger": (
                     proto_self_result.get("reflection_note", {}).get("trigger")
                     if proto_self_result.get("reflection_note")
@@ -767,9 +944,14 @@ class RuntimeV2ProtoSelfRuntime:
             tool_result=state.last_tool_result,
             state=state,
             self_model_store=self.self_model_store,
+            endogenous_drive_store=self.endogenous_drive_store,
         )
         external_result = self.adapter.handle_event(external_result_event)
         writeback = self._apply_self_model_writeback(proto_self_result=external_result, state=state)
+        endogenous_drive_writeback = self._apply_endogenous_drive_writeback(
+            proto_self_result=external_result,
+            state=state,
+        )
         collector = self._resolve_collector(evidence_collector)
         if collector is not None:
             collector.capture_openemotion_result(external_result)
@@ -783,6 +965,12 @@ class RuntimeV2ProtoSelfRuntime:
         state.proto_self_context["external_result"] = external_result
         state.proto_self_context["self_model_delta"] = external_result.get("self_model_delta") or {}
         state.proto_self_context["self_model_writeback"] = writeback
+        state.proto_self_context["endogenous_drive_delta"] = external_result.get("endogenous_drive_delta") or {}
+        state.proto_self_context["endogenous_drive_writeback"] = endogenous_drive_writeback
+        state.proto_self_context["drive_state_snapshot"] = external_result.get("drive_state_snapshot") or {}
+        state.proto_self_context["priority_snapshot"] = external_result.get("priority_snapshot") or {}
+        state.proto_self_context["candidate_bias_terms"] = external_result.get("candidate_bias_terms") or {}
+        state.proto_self_context["self_maintenance_candidate"] = external_result.get("self_maintenance_candidate")
         if external_result.get("candidate_actions") is not None:
             state.proto_self_context["candidate_actions"] = external_result.get("candidate_actions") or []
         if external_result.get("policy_hint"):
@@ -812,11 +1000,16 @@ class RuntimeV2ProtoSelfRuntime:
             result=result,
             state=state,
             self_model_store=self.self_model_store,
+            endogenous_drive_store=self.endogenous_drive_store,
         )
         if not finalized_event:
             return
         finalized_result = self.adapter.handle_event(finalized_event)
         writeback = self._apply_self_model_writeback(proto_self_result=finalized_result, state=state)
+        endogenous_drive_writeback = self._apply_endogenous_drive_writeback(
+            proto_self_result=finalized_result,
+            state=state,
+        )
         collector = self._resolve_collector(evidence_collector)
         if collector is not None:
             collector.capture_openemotion_result(finalized_result)
@@ -831,6 +1024,12 @@ class RuntimeV2ProtoSelfRuntime:
         state.proto_self_context["last_exec_result"] = finalized_result.get("trace_payload", {}).get("exec_result")
         state.proto_self_context["self_model_delta"] = finalized_result.get("self_model_delta") or {}
         state.proto_self_context["self_model_writeback"] = writeback
+        state.proto_self_context["endogenous_drive_delta"] = finalized_result.get("endogenous_drive_delta") or {}
+        state.proto_self_context["endogenous_drive_writeback"] = endogenous_drive_writeback
+        state.proto_self_context["drive_state_snapshot"] = finalized_result.get("drive_state_snapshot") or {}
+        state.proto_self_context["priority_snapshot"] = finalized_result.get("priority_snapshot") or {}
+        state.proto_self_context["candidate_bias_terms"] = finalized_result.get("candidate_bias_terms") or {}
+        state.proto_self_context["self_maintenance_candidate"] = finalized_result.get("self_maintenance_candidate")
         if finalized_result.get("policy_hint"):
             state.proto_self_context["policy_hint"] = finalized_result.get("policy_hint")
             state.proto_self_context["governor_hint"] = finalized_result.get("policy_hint", {}).get("governor_hint")
@@ -848,11 +1047,16 @@ class RuntimeV2ProtoSelfRuntime:
             turn_id=turn_id,
             state=state,
             self_model_store=self.self_model_store,
+            endogenous_drive_store=self.endogenous_drive_store,
         )
         if not idle_event:
             return
         idle_result = self.adapter.handle_event(idle_event)
         writeback = self._apply_self_model_writeback(proto_self_result=idle_result, state=state)
+        endogenous_drive_writeback = self._apply_endogenous_drive_writeback(
+            proto_self_result=idle_result,
+            state=state,
+        )
         collector = self._resolve_collector(evidence_collector)
         if collector is not None:
             collector.capture_openemotion_result(idle_result)
@@ -868,6 +1072,12 @@ class RuntimeV2ProtoSelfRuntime:
         state.proto_self_context["candidate_actions"] = idle_result.get("candidate_actions") or []
         state.proto_self_context["self_model_delta"] = idle_result.get("self_model_delta") or {}
         state.proto_self_context["self_model_writeback"] = writeback
+        state.proto_self_context["endogenous_drive_delta"] = idle_result.get("endogenous_drive_delta") or {}
+        state.proto_self_context["endogenous_drive_writeback"] = endogenous_drive_writeback
+        state.proto_self_context["drive_state_snapshot"] = idle_result.get("drive_state_snapshot") or {}
+        state.proto_self_context["priority_snapshot"] = idle_result.get("priority_snapshot") or {}
+        state.proto_self_context["candidate_bias_terms"] = idle_result.get("candidate_bias_terms") or {}
+        state.proto_self_context["self_maintenance_candidate"] = idle_result.get("self_maintenance_candidate")
         if idle_result.get("policy_hint"):
             state.proto_self_context["policy_hint"] = idle_result.get("policy_hint")
             state.proto_self_context["governor_hint"] = idle_result.get("policy_hint", {}).get("governor_hint")
@@ -903,11 +1113,16 @@ class RuntimeV2ProtoSelfRuntime:
             replay_seed=replay_seed,
             force_enable=force_enable,
             self_model_store=self.self_model_store,
+            endogenous_drive_store=self.endogenous_drive_store,
         )
         if not developmental_event:
             return None
         developmental_result = self.adapter.handle_event(developmental_event)
         writeback = self._apply_self_model_writeback(proto_self_result=developmental_result, state=state)
+        endogenous_drive_writeback = self._apply_endogenous_drive_writeback(
+            proto_self_result=developmental_result,
+            state=state,
+        )
         collector = self._resolve_collector(evidence_collector)
         if collector is not None:
             collector.capture_normalized_event(developmental_event)
@@ -925,6 +1140,12 @@ class RuntimeV2ProtoSelfRuntime:
         state.proto_self_context["last_developmental_cycle"] = developmental_summary.get("cycle_id")
         state.proto_self_context["self_model_delta"] = developmental_result.get("self_model_delta") or {}
         state.proto_self_context["self_model_writeback"] = writeback
+        state.proto_self_context["endogenous_drive_delta"] = developmental_result.get("endogenous_drive_delta") or {}
+        state.proto_self_context["endogenous_drive_writeback"] = endogenous_drive_writeback
+        state.proto_self_context["drive_state_snapshot"] = developmental_result.get("drive_state_snapshot") or {}
+        state.proto_self_context["priority_snapshot"] = developmental_result.get("priority_snapshot") or {}
+        state.proto_self_context["candidate_bias_terms"] = developmental_result.get("candidate_bias_terms") or {}
+        state.proto_self_context["self_maintenance_candidate"] = developmental_result.get("self_maintenance_candidate")
         state.proto_self_context["background_thought_candidates"] = list(
             developmental_summary.get("background_thought_candidates") or []
         )

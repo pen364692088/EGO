@@ -446,20 +446,26 @@
 - `Tasks/MVP14_task_plan.md`
 - `Tasks/active/mvp14_endogenous_drives_self_maintenance/`
 
-**本阶段第一刀范围**
-- 只做 authority / contract / boundary freeze
-- 不直接开 `MVP14` 代码
+**本阶段当前范围**
+- authority / contract / boundary freeze 已完成
+- formal owner package / proto-self contract / runtime bridge / legacy demotion / causal proof 已完成
+- 当前进入 controlled observation；live 默认 off
 - 不把新能力塞回 `WP8`
 
 **任务**
 - capability ownership 固定为：
-  - endogenous drive state / drive history / priority snapshot / maintenance candidate generation 归 `OpenEmotion/emotiond/drives/*`
+  - endogenous drive state / drive history / priority snapshot / maintenance candidate generation 归 `OpenEmotion/openemotion/endogenous_drives/*`
   - runtime scheduling / final reply / tool execution / transport 仍归 `EgoCore`
 - authority source 固定为：
   - 顶层裁决：`Tasks/MVS_task_plan.md`
   - `WP9` phase-detail authority：`Tasks/MVP14_task_plan.md`
   - version spec：`OpenEmotion/roadmap/versions/MVP14.spec.yaml`
   - technical reference：`OpenEmotion/docs/mvp14/*`
+- migration/reference surfaces 固定为：
+  - `OpenEmotion/emotiond/drives/*`
+  - `OpenEmotion/emotiond/drive_adapter.py`
+  - `OpenEmotion/emotiond/drive_homeostasis.py`
+  - `OpenEmotion/emotiond/homeostasis.py`
 - input / output contract 先冻结，再开实现：
   - 输入只允许结构化内部状态、self-model projection、continuity / drift / debt / replay 等信号
   - 输出只允许 governed priority / maintenance candidates / drive audit artifacts
@@ -495,10 +501,18 @@
 - 证据层级目标：E0 -> E1（authority / contract freeze）
 
 **当前状态（2026-04-03）**
-- `WP9/MVP14` 当前层级是 `strategy`
-- 当前状态是 `authority_contract_freeze_only`
-- 当前还没有 `MVP14` 代码实现、主链接入或生效证据
-- 下一步最小动作是：在不改代码的前提下，冻结 capability ownership / authority source / IO contract / WP8 boundary / locked non-releases
+- `WP9/MVP14` 当前层级是 `verification`
+- 当前状态是 `controlled observation started`
+- formal owner 已迁到 `OpenEmotion/openemotion/endogenous_drives/*`
+- `runtime_v2 -> proto_self_runtime -> proto_self_adapter -> proto_self_v2` 已观测到 `endogenous_drive_writeback`
+- 首个 controlled observation 结果见 `OpenEmotion/artifacts/mvp14/mvp14_controlled_observation_current.md`
+  - `status = pass`
+  - `verification_level = V4`
+  - `evidence_level = E4`
+  - `gate_verdict = allow_writeback`
+  - `maintenance_candidate_present = true`
+  - `replay_valid = true`
+- 当前 blocker 是：缺重复 controlled observation 样本，尚未达到 `E5`
 
 ---
 

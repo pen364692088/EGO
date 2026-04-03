@@ -165,6 +165,12 @@ class KernelOutputV2:
     developmental_summary: Dict[str, Any] = field(default_factory=dict)
     developmental_shadow_delta: Dict[str, Any] = field(default_factory=dict)
     developmental_gate: Dict[str, Any] = field(default_factory=dict)
+    endogenous_drive_delta: Dict[str, Any] = field(default_factory=dict)
+    drive_state_snapshot: Dict[str, Any] = field(default_factory=dict)
+    priority_snapshot: Dict[str, Any] = field(default_factory=dict)
+    candidate_bias_terms: Dict[str, float] = field(default_factory=dict)
+    self_maintenance_candidate: Optional[Dict[str, Any]] = None
+    drive_audit_entries: List[Dict[str, Any]] = field(default_factory=list)
     trace_payload: Dict[str, Any] = field(default_factory=dict)
 
     def to_dict(self) -> Dict[str, Any]:
@@ -187,6 +193,12 @@ class KernelOutputV2:
             "developmental_summary": self.developmental_summary,
             "developmental_shadow_delta": self.developmental_shadow_delta,
             "developmental_gate": self.developmental_gate,
+            "endogenous_drive_delta": self.endogenous_drive_delta,
+            "drive_state_snapshot": self.drive_state_snapshot,
+            "priority_snapshot": self.priority_snapshot,
+            "candidate_bias_terms": self.candidate_bias_terms,
+            "self_maintenance_candidate": self.self_maintenance_candidate,
+            "drive_audit_entries": self.drive_audit_entries,
             "trace_payload": self.trace_payload,
         }
 

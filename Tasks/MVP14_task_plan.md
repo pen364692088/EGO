@@ -1,6 +1,6 @@
 # MVP14 / WP9 Endogenous Drives + Self-Maintenance
 
-> 状态：WP9 authority/contract freeze
+> 状态：WP9 controlled observation started
 > parent_authority: `Tasks/MVS_task_plan.md`
 > phase: `WP9`
 > predecessor: `WP8/MVP13`
@@ -21,7 +21,7 @@
 ## Non-Goals
 - 不直接实现 `MVP14` 代码
 - 不把新能力塞回 `WP8`
-- 不把旧 `drive_adapter / drive_homeostasis / homeostasis` 直接升格为 formal owner
+- 不把旧 `emotiond/drives / drive_adapter / drive_homeostasis / homeostasis` 直接升格为 formal owner
 - 不放开 live autonomy
 - 不放开 OpenEmotion direct reply authority
 - 不放开 broader transport claims
@@ -43,8 +43,8 @@
 ## Locked Decisions
 - `WP9/MVP14` 仍属于同一条 MVS 主线，不是新的主体线
 - formal owner target 固定为：
-  - `OpenEmotion/emotiond/drives/*`
-- `OpenEmotion/emotiond/drive_adapter.py` 只作为 bounded compatibility / replay-friendly access surface
+  - `OpenEmotion/openemotion/endogenous_drives/*`
+- `OpenEmotion/emotiond/drives/*`、`OpenEmotion/emotiond/drive_adapter.py` 只作为 bounded compatibility / migration / replay-friendly reference surfaces
 - `OpenEmotion/emotiond/drive_homeostasis.py` 与 `OpenEmotion/emotiond/homeostasis.py` 只作为测量/参考/输入表面；在 `WP9` 第一刀中不升格为 formal drive owner
 - `WP8` formal self-model owner 继续固定为：
   - `OpenEmotion/openemotion/self_model/*`
@@ -60,6 +60,7 @@
   - maintenance debt interpretation
   - governed maintenance candidate generation
   - drive audit / replayable state transitions
+  - formal owner package: `OpenEmotion/openemotion/endogenous_drives/*`
 - EgoCore owns:
   - runtime scheduling
   - Governor / approval / delivery / transport
@@ -79,12 +80,18 @@
   - replay inconsistency / maintenance debt / drift markers
   - bounded homeostatic measurements
   - long-horizon unfinished-goal pressure
+  - `runtime_summary.idle_window`
+  - `runtime_summary.recent_delivery_outcome`
+  - `runtime_summary.resource_budget_hint`
+  - `runtime_summary.maintenance_context`
 - Allowed outputs:
+  - `endogenous_drive_delta`
   - `drive_state_snapshot`
   - `priority_snapshot`
-  - `maintenance_request_candidates`
+  - `self_maintenance_candidate`
   - `candidate_bias_terms`
   - `drive_audit_entries`
+  - `trace_payload.drive_context`
 - Forbidden outputs:
   - final reply text
   - tool command
@@ -100,10 +107,20 @@
 - `WP9` may not reinterpret `WP8 controlled E5` as live authority or broader transport maturity
 
 ## Current Phase Status
-- 当前层级：`strategy`
-- 当前状态：`authority_contract_freeze_only`
-- 当前 blocker：`MVP14` 代码实现未开始，这是本阶段刻意冻结，不是阻塞故障
-- 当前最小闭环动作：完成 capability ownership / authority source / IO contract / WP8 boundary / non-release guardrails 文档包
+- 当前层级：`verification`
+- 当前状态：`formal owner mainline wired; first controlled observation pass`
+- 当前 blocker：`缺重复 controlled observation 样本，尚未达到 E5 / closeout`
+- 当前最小闭环动作：继续收集 `WP9` formal owner writeback + governed maintenance candidate 的受控样本
+
+## Current Proven State
+- `OpenEmotion/openemotion/endogenous_drives/*` 已成为 `WP9` formal owner package
+- `runtime_v2 -> proto_self_runtime -> proto_self_adapter -> proto_self_v2` 已能读 bounded drive projection，并把 `endogenous_drive_delta / endogenous_drive_writeback / self_maintenance_candidate` 挂回宿主上下文
+- `emotiond/drives/*` 已降级为 compatibility/reference surface，不再作为 formal owner
+- paired causal proof 已通过：
+  - `OpenEmotion/tests/mvp14/test_drive_behavioral_influence_formal_proof.py = 4 passed`
+- 首个 controlled observation 已通过：
+  - `OpenEmotion/artifacts/mvp14/mvp14_controlled_observation_current.md`
+  - 结果：`status = pass`、`verification_level = V4`、`evidence_level = E4`、`gate_verdict = allow_writeback`、`maintenance_candidate_present = true`、`replay_valid = true`
 
 ## Success Criteria
 - `Tasks/MVS_task_plan.md` 中已正式出现 `WP9: Endogenous Drives + Self-Maintenance`
@@ -117,6 +134,6 @@
 - 文档没有把 `WP8` 的轴内 `E5` 冒充为 `WP9` readiness 或全局成熟
 
 ## Completion Rules
-- 本文件完成不等于 `MVP14` 实现开始
-- 本文件完成不等于 `MVP14` 已接主链
-- 只有 authority / contract 冻结后，才允许选第一张 `WP9` 实现卡
+- 首个 controlled observation `V4/E4` 不等于 `WP9` 已稳定通过
+- 未达到重复样本 `E5` 前，不得宣称 `WP9` 稳定解决或可收口
+- `WP9` 的 `V4/E4` 不得被解释为 live autonomy、OpenEmotion direct reply authority、或 broader transport maturity

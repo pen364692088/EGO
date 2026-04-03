@@ -5,8 +5,14 @@ import json
 from typing import Any, Dict
 
 from openemotion.proto_self.kernel import process_event as process_event_v1
+from openemotion.proto_self.schemas import ResponseTendency
 from openemotion.proto_self.state import ProtoSelfState
 from openemotion.proto_self_v2.developmental import run_developmental_cycle
+from openemotion.proto_self_v2.endogenous_drive_context import (
+    derive_endogenous_drive_outputs,
+    extract_runtime_endogenous_drive_context,
+    summarize_runtime_endogenous_drive_context,
+)
 from openemotion.proto_self_v2.schemas import (
     KernelOutputV2,
     UpdatePacketV2,
@@ -40,6 +46,7 @@ def _build_constraint_summary(
         "stable_preferences_count": len(state.identity.stable_preferences),
         "subject_profile": subject_profile,
         "self_model_context": summarize_runtime_self_model_context(runtime_summary),
+        "endogenous_drive_context": summarize_runtime_endogenous_drive_context(runtime_summary),
     }
 
 
@@ -56,6 +63,7 @@ def _build_retrieval_summary(state: ProtoSelfStateV2, packet: UpdatePacketV2) ->
         "matched_cycle_ids": matched_cycle_ids[:5],
         "seed_recent_outcomes_count": len(state.seed_state.recent_outcomes) if state.seed_state else 0,
         "self_model_context_present": bool(extract_runtime_self_model_context(packet.runtime_summary)),
+        "endogenous_drive_context_present": bool(extract_runtime_endogenous_drive_context(packet.runtime_summary)),
     }
 
 
@@ -163,6 +171,7 @@ def _process_default_v2(state_v2: ProtoSelfStateV2, packet: UpdatePacketV2) -> K
 
     reflection_dict = v1_output.reflection_note.to_dict() if v1_output.reflection_note else None
     predictive_reflective_delta = _build_predictive_reflective_delta(packet, reflection_dict)
+    endogenous_drive_outputs = derive_endogenous_drive_outputs(packet.runtime_summary)
     state_v2.apply_v1_state(
         v1_state,
         prediction_snapshot_prev=packet.prediction_snapshot_prev,
@@ -181,14 +190,27 @@ def _process_default_v2(state_v2: ProtoSelfStateV2, packet: UpdatePacketV2) -> K
         identity_delta=v1_output.identity_state_delta,
         self_model_delta=v1_output.self_model_delta,
         drives_delta=v1_output.appraisal_state_delta,
+        endogenous_drive_delta=endogenous_drive_outputs["endogenous_drive_delta"],
+        drive_state_snapshot=endogenous_drive_outputs["drive_state_snapshot"],
+        priority_snapshot=endogenous_drive_outputs["priority_snapshot"],
+        candidate_bias_terms=endogenous_drive_outputs["candidate_bias_terms"],
+        self_maintenance_candidate=endogenous_drive_outputs["self_maintenance_candidate"],
+        drive_audit_entries=endogenous_drive_outputs["drive_audit_entries"],
+        drive_context=endogenous_drive_outputs["drive_context"],
         cycles_delta=v1_output.trace_payload.get("cycle_delta", {}),
         predictive_reflective_delta=predictive_reflective_delta,
         reflection_note=reflection_dict,
-        policy_hint=v1_output.policy_hint,
-        response_tendency=v1_output.response_tendency.to_dict() if v1_output.response_tendency else None,
+        policy_hint={**v1_output.policy_hint, **endogenous_drive_outputs["policy_hint_patch"]},
+        response_tendency=(
+            endogenous_drive_outputs["response_tendency"].to_dict()
+            if endogenous_drive_outputs["response_tendency"]
+            else (v1_output.response_tendency.to_dict() if v1_output.response_tendency else None)
+        ),
         timestamp=packet.timestamp,
         legacy_trace_payload=v1_output.trace_payload,
     )
+    merged_policy_hint = {**v1_output.policy_hint, **endogenous_drive_outputs["policy_hint_patch"]}
+    merged_response_tendency = endogenous_drive_outputs["response_tendency"] or v1_output.response_tendency
     output = KernelOutputV2(
         event_id=packet.event_id,
         subject_profile=packet.subject_profile,
@@ -199,9 +221,15 @@ def _process_default_v2(state_v2: ProtoSelfStateV2, packet: UpdatePacketV2) -> K
         predictive_reflective_delta=predictive_reflective_delta,
         memory_update=v1_output.memory_update,
         reflection_note=v1_output.reflection_note,
-        policy_hint=v1_output.policy_hint,
-        response_tendency=v1_output.response_tendency,
+        policy_hint=merged_policy_hint,
+        response_tendency=merged_response_tendency,
         confidence_meta=v1_output.confidence_meta,
+        endogenous_drive_delta=endogenous_drive_outputs["endogenous_drive_delta"],
+        drive_state_snapshot=endogenous_drive_outputs["drive_state_snapshot"],
+        priority_snapshot=endogenous_drive_outputs["priority_snapshot"],
+        candidate_bias_terms=endogenous_drive_outputs["candidate_bias_terms"],
+        self_maintenance_candidate=endogenous_drive_outputs["self_maintenance_candidate"],
+        drive_audit_entries=endogenous_drive_outputs["drive_audit_entries"],
         trace_payload=trace_payload,
     )
 
@@ -211,12 +239,19 @@ def _process_default_v2(state_v2: ProtoSelfStateV2, packet: UpdatePacketV2) -> K
         output.confidence_meta["self_model_context_identity_handle"] = constraint_summary["self_model_context"].get(
             "identity_handle"
         )
+    if constraint_summary["endogenous_drive_context"]["present"]:
+        output.confidence_meta = dict(output.confidence_meta)
+        output.confidence_meta["endogenous_drive_context_present"] = True
+        output.confidence_meta["endogenous_drive_owner_revision"] = constraint_summary["endogenous_drive_context"].get(
+            "owner_revision"
+        )
     return output
 
 
 def _process_developmental_v2(state_v2: ProtoSelfStateV2, packet: UpdatePacketV2) -> KernelOutputV2:
     revision_before = state_v2.revision_counter
     execution = run_developmental_cycle(state_v2, packet)
+    endogenous_drive_outputs = derive_endogenous_drive_outputs(packet.runtime_summary)
     trace_payload = build_trace_payload_v2(
         event_id=packet.event_id,
         subject_profile=packet.subject_profile,
@@ -233,6 +268,13 @@ def _process_developmental_v2(state_v2: ProtoSelfStateV2, packet: UpdatePacketV2
         identity_delta={},
         self_model_delta=execution.self_model_delta,
         drives_delta={},
+        endogenous_drive_delta=endogenous_drive_outputs["endogenous_drive_delta"],
+        drive_state_snapshot=endogenous_drive_outputs["drive_state_snapshot"],
+        priority_snapshot=endogenous_drive_outputs["priority_snapshot"],
+        candidate_bias_terms=endogenous_drive_outputs["candidate_bias_terms"],
+        self_maintenance_candidate=endogenous_drive_outputs["self_maintenance_candidate"],
+        drive_audit_entries=endogenous_drive_outputs["drive_audit_entries"],
+        drive_context=endogenous_drive_outputs["drive_context"],
         cycles_delta={},
         predictive_reflective_delta={},
         policy_hint={
@@ -247,8 +289,13 @@ def _process_developmental_v2(state_v2: ProtoSelfStateV2, packet: UpdatePacketV2
                 "status": execution.gate.get("status"),
                 "mode": "developmental_shadow_only",
             },
+            **endogenous_drive_outputs["policy_hint_patch"],
         },
-        response_tendency=None,
+        response_tendency=(
+            endogenous_drive_outputs["response_tendency"].to_dict()
+            if endogenous_drive_outputs["response_tendency"]
+            else None
+        ),
         candidate_actions=[],
         governor_hint={
             "status": execution.gate.get("status"),
@@ -267,6 +314,16 @@ def _process_developmental_v2(state_v2: ProtoSelfStateV2, packet: UpdatePacketV2
         subject_profile=packet.subject_profile,
         memory_update={"developmental_shadow_updated": True},
         candidate_actions=[],
+        confidence_meta={
+            "developmental_cycle_id": execution.summary.get("cycle_id"),
+            "shadow_revision": execution.summary.get("shadow_revision"),
+            "self_model_context_present": bool(extract_runtime_self_model_context(packet.runtime_summary)),
+            **execution.self_model_confidence_meta,
+        },
+        self_model_delta=execution.self_model_delta,
+        developmental_summary=execution.summary,
+        developmental_shadow_delta=execution.shadow_delta,
+        developmental_gate=execution.gate,
         policy_hint={
             "preferred_action_type": "wait",
             "risk_tolerance": "conservative",
@@ -279,17 +336,15 @@ def _process_developmental_v2(state_v2: ProtoSelfStateV2, packet: UpdatePacketV2
                 "status": execution.gate.get("status"),
                 "mode": "developmental_shadow_only",
             },
+            **endogenous_drive_outputs["policy_hint_patch"],
         },
-        confidence_meta={
-            "developmental_cycle_id": execution.summary.get("cycle_id"),
-            "shadow_revision": execution.summary.get("shadow_revision"),
-            "self_model_context_present": bool(extract_runtime_self_model_context(packet.runtime_summary)),
-            **execution.self_model_confidence_meta,
-        },
-        self_model_delta=execution.self_model_delta,
-        developmental_summary=execution.summary,
-        developmental_shadow_delta=execution.shadow_delta,
-        developmental_gate=execution.gate,
+        response_tendency=endogenous_drive_outputs["response_tendency"],
+        endogenous_drive_delta=endogenous_drive_outputs["endogenous_drive_delta"],
+        drive_state_snapshot=endogenous_drive_outputs["drive_state_snapshot"],
+        priority_snapshot=endogenous_drive_outputs["priority_snapshot"],
+        candidate_bias_terms=endogenous_drive_outputs["candidate_bias_terms"],
+        self_maintenance_candidate=endogenous_drive_outputs["self_maintenance_candidate"],
+        drive_audit_entries=endogenous_drive_outputs["drive_audit_entries"],
         trace_payload=trace_payload,
     )
 

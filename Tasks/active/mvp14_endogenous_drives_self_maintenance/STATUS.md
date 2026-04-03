@@ -2,23 +2,25 @@
 
 ```yaml
 phase: WP9
-status: authority_contract_freeze
-current_layer: strategy
-main_chain_status: authority_target_selected_mainline_not_yet_wired
-enabled_status: not_started
+status: observation_started
+current_layer: verification
+main_chain_status: formal_owner_writeback_observed
+enabled_status: controlled_mainline_observation
 trigger_evidence:
   - WP8/MVP13 controlled observation V5/E5 pass
   - WP8 maintenance_mode declared
-verification_level: V1
-evidence_level: E1
-current_blocker: "none; implementation intentionally not started before authority/contract freeze"
-next_minimal_closure_action: "freeze WP9 capability ownership, authority source, IO contract, WP8 boundary, and locked non-releases"
+  - T10/T20/T30/T40/T50 completed
+  - OpenEmotion/artifacts/mvp14/mvp14_controlled_observation_current.md = pass
+verification_level: V4
+evidence_level: E4
+current_blocker: "needs repeated controlled observation samples before E5/closeout"
+next_minimal_closure_action: "continue controlled runtime-mainline observation without broadening authority"
 ```
 
 ## 当前口径
 
-- 可宣称完成：`WP9` 已开始于 authority / contract，而不是继续扩写 `WP8`
-- 不可宣称完成：`MVP14` 已实现、已接主链、已启用、或已生效
+- 可宣称完成：formal owner migration、runtime mainline wiring、causal proof，以及首个 controlled observation `V4/E4`
+- 不可宣称完成：`WP9` 稳定 `E5`、closeout、live autonomy、OpenEmotion direct reply authority、broader transport claims
 
 ## 边界提醒
 

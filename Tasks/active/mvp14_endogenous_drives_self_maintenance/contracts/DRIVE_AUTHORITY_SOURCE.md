@@ -22,10 +22,11 @@
 
 ## Formal Owner Target
 
-- `OpenEmotion/emotiond/drives/*`
+- `OpenEmotion/openemotion/endogenous_drives/*`
 
 ## Bounded Compatibility Surface
 
+- `OpenEmotion/emotiond/drives/*`
 - `OpenEmotion/emotiond/drive_adapter.py`
 
 ## Measurement / Reference Surfaces

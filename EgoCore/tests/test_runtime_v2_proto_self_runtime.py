@@ -17,6 +17,8 @@ from app.runtime_v2.proto_self_runtime import (
 from app.runtime_v2.runtime_reply import RuntimeV2Reply, RuntimeV2TurnResult
 from app.runtime_v2.state import RuntimeV2State
 from app.telegram_evidence_collector import TelegramEvidenceCollector
+from openemotion.endogenous_drives import EndogenousDriveStore
+from openemotion.endogenous_drives.reducers import seed_default_state
 from openemotion.proto_self_v2.seed_schemas import SEED_SUBJECT_PROFILE
 from openemotion.self_model import Goal, GoalStatus, Priority, SelfModelStore, create_default_self_model
 from openemotion.self_model import SelfModelStore, create_default_self_model
@@ -139,6 +141,45 @@ def test_v2_events_inject_formal_self_model_context(tmp_path):
     assert finalized_event["runtime_summary"]["self_model_context"]["identity_handle"] == "openemotion"
 
 
+def test_v2_events_inject_formal_endogenous_drive_context(tmp_path):
+    store = EndogenousDriveStore(base_dir=tmp_path)
+    store.save(
+        seed_default_state(),
+        update_source="owner_bootstrap",
+        trace_reference="trace:drive_context",
+    )
+
+    state = RuntimeV2State(session_id="session:test")
+    state.current_goal = "verify_drive_bridge"
+    state.ingress_context = {"proto_self_version": "v2"}
+    result = RuntimeV2TurnResult(
+        status="completed_verified",
+        state=state,
+        reply=RuntimeV2Reply(reply_text="已完成", delivery_kind="final", status="completed_verified"),
+    )
+
+    ingress_event = build_proto_self_ingress_event(
+        session_id="session:test",
+        turn_id="turn_drive_ctx_ingress",
+        source="telegram",
+        user_input="帮我整理 drive read 链",
+        state=state,
+        endogenous_drive_store=store,
+    )
+    finalized_event = build_finalized_result_event(
+        session_id="session:test",
+        turn_id="turn_drive_ctx_finalized",
+        result=result,
+        state=state,
+        endogenous_drive_store=store,
+    )
+
+    assert ingress_event["runtime_summary"]["endogenous_drive_context"]["schema_version"] == "mvp14-owner-v1"
+    assert ingress_event["runtime_summary"]["endogenous_drive_context"]["owner_revision"] == 1
+    assert finalized_event is not None
+    assert finalized_event["runtime_summary"]["endogenous_drive_context"]["owner_revision"] == 1
+
+
 def test_process_ingress_applies_governed_self_model_writeback(tmp_path):
     store = SelfModelStore(base_dir=tmp_path)
     baseline = create_default_self_model("openemotion")
@@ -251,6 +292,76 @@ def test_process_ingress_rejects_legacy_self_model_writeback(tmp_path):
     assert saved is not None
     assert "active_tensions" not in saved.to_dict()
     assert len(store.load_revision_log("openemotion")) == 1
+
+
+def test_process_ingress_applies_governed_endogenous_drive_writeback(tmp_path):
+    store = EndogenousDriveStore(base_dir=tmp_path)
+    store.save(
+        seed_default_state(),
+        update_source="owner_bootstrap",
+        trace_reference="trace:init_drive",
+    )
+
+    class DummyAdapter:
+        def __init__(self):
+            self.last_event = None
+
+        def handle_event(self, event):
+            self.last_event = event
+            return {
+                "event_id": event["event_id"],
+                "subject_profile": event.get("subject_profile"),
+                "policy_hint": {},
+                "response_tendency": {},
+                "reflection_note": None,
+                "candidate_actions": [],
+                "self_model_delta": {},
+                "endogenous_drive_delta": {
+                    "maintenance_debts": [
+                        {
+                            "category": "replay_verification",
+                            "amount": 0.25,
+                            "priority": 0.8,
+                            "source": "maintenance_context",
+                        }
+                    ],
+                    "drive_adjustments": [
+                        {
+                            "drive_type": "repair",
+                            "intensity_delta": 0.1,
+                            "cause": "recent_delivery_outcome:failure",
+                        }
+                    ],
+                },
+                "drive_state_snapshot": {"owner_revision": 1},
+                "priority_snapshot": {"dominant_drive": "repair"},
+                "candidate_bias_terms": {"repair": 0.3},
+                "self_maintenance_candidate": {"category": "self_maintenance", "priority": 0.8},
+                "confidence_meta": {
+                    "endogenous_drive_update_source": "proto_self_v2",
+                    "endogenous_drive_trace_reference": "trace:drive_writeback",
+                },
+                "trace_payload": {"update_packet_hash": "hash_drive_runtime_bridge"},
+            }
+
+    runtime = RuntimeV2ProtoSelfRuntime(adapter=DummyAdapter(), endogenous_drive_store=store)
+    state = RuntimeV2State(session_id="session:test")
+    state.ingress_context = {"proto_self_version": "v2"}
+
+    runtime.process_ingress(
+        session_id="session:test",
+        turn_id="turn_drive_writeback",
+        source="telegram",
+        user_input="把 drive writeback 接上正式主链",
+        state=state,
+    )
+
+    saved = store.load("openemotion")
+
+    assert state.proto_self_context["endogenous_drive_writeback"]["decision"]["gate_verdict"] == "allow_writeback"
+    assert saved is not None
+    assert saved.get_total_maintenance_debt() >= 0.25
+    assert len(store.load_revision_log("openemotion")) == 2
 
 
 def test_build_proto_self_ingress_event_supports_seed_profile_shape():

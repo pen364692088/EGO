@@ -101,6 +101,71 @@ def test_adapter_handle_event_accepts_runtime_self_model_context(tmp_path):
     assert result["trace_payload"]["constraint_summary"]["self_model_context"]["identity_handle"] == "openemotion"
 
 
+def test_adapter_handle_event_accepts_runtime_endogenous_drive_context(tmp_path):
+    adapter = ProtoSelfAdapter(mirror_dir=tmp_path / "mirror")
+    payload = {
+        "schema_version": "proto_self.v2",
+        "event_id": "evt_v2_drive_ctx_001",
+        "timestamp": datetime.now().isoformat(),
+        "event": {
+            "actor": "user",
+            "source": "telegram",
+            "event_type": "user_message",
+            "user_intent": "continue discussion",
+            "raw_text": "继续",
+        },
+        "conversation_summary": {"session_id": "session:test", "thread_id": "session:test", "turn_id": "turn_001"},
+        "task_summary": {"pending_tasks": 0, "blocked_tasks": 0},
+        "runtime_summary": {
+            "runtime": "runtime_v2",
+            "state_scope": "agent_global",
+            "endogenous_drive_context": {
+                "schema_version": "mvp14-owner-v1",
+                "owner_revision": 3,
+                "last_revision_id": "drive_rev_000003",
+                "active_drives": [
+                    {
+                        "drive_id": "verification",
+                        "drive_type": "verification",
+                        "intensity": 0.9,
+                        "persistence": 0.8,
+                        "candidate_bias": 0.0,
+                        "pressure": 0.72,
+                    },
+                    {
+                        "drive_id": "completion",
+                        "drive_type": "completion",
+                        "intensity": 0.7,
+                        "persistence": 0.7,
+                        "candidate_bias": 0.0,
+                        "pressure": 0.49,
+                    },
+                ],
+                "homeostatic_signals": [],
+                "maintenance_debt": [],
+                "priority_snapshot": {
+                    "dominant_drive": "verification",
+                    "bias_terms": {"verification": 0.72, "completion": 0.49},
+                },
+                "summary": {"total_maintenance_debt": 0.0},
+                "self_maintenance_candidate": None,
+            },
+            "resource_budget_hint": {"reserve_level": "normal"},
+            "maintenance_context": {},
+            "recent_delivery_outcome": {"success": True, "status": "sent"},
+        },
+        "safety_context": {"risk_level": "low"},
+    }
+
+    result = adapter.handle_event(payload)
+
+    assert result["schema_version"] == "proto_self.output.v2"
+    assert result["trace_payload"]["constraint_summary"]["endogenous_drive_context"]["owner_revision"] == 3
+    assert result["trace_payload"]["retrieval_summary"]["endogenous_drive_context_present"] is True
+    assert result["candidate_bias_terms"]["verification"] == 0.72
+    assert result["policy_hint"]["risk_bias"] == "high"
+
+
 def test_adapter_handle_event_supports_seed_profile_contract(tmp_path):
     adapter = ProtoSelfAdapter(mirror_dir=tmp_path / "mirror")
     payload = {

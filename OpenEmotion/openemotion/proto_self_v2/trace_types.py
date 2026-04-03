@@ -26,6 +26,13 @@ class ProtoSelfTracePayloadV2:
     identity_delta: Dict[str, Any] = field(default_factory=dict)
     self_model_delta: Dict[str, Any] = field(default_factory=dict)
     drives_delta: Dict[str, Any] = field(default_factory=dict)
+    endogenous_drive_delta: Dict[str, Any] = field(default_factory=dict)
+    drive_state_snapshot: Dict[str, Any] = field(default_factory=dict)
+    priority_snapshot: Dict[str, Any] = field(default_factory=dict)
+    candidate_bias_terms: Dict[str, float] = field(default_factory=dict)
+    self_maintenance_candidate: Optional[Dict[str, Any]] = None
+    drive_audit_entries: list = field(default_factory=list)
+    drive_context: Dict[str, Any] = field(default_factory=dict)
     cycles_delta: Dict[str, Any] = field(default_factory=dict)
     predictive_reflective_delta: Dict[str, Any] = field(default_factory=dict)
     reflection_note: Optional[Dict[str, Any]] = None
@@ -60,6 +67,13 @@ class ProtoSelfTracePayloadV2:
             "identity_delta": self.identity_delta,
             "self_model_delta": self.self_model_delta,
             "drives_delta": self.drives_delta,
+            "endogenous_drive_delta": self.endogenous_drive_delta,
+            "drive_state_snapshot": self.drive_state_snapshot,
+            "priority_snapshot": self.priority_snapshot,
+            "candidate_bias_terms": self.candidate_bias_terms,
+            "self_maintenance_candidate": self.self_maintenance_candidate,
+            "drive_audit_entries": self.drive_audit_entries,
+            "drive_context": self.drive_context,
             "cycles_delta": self.cycles_delta,
             "predictive_reflective_delta": self.predictive_reflective_delta,
             "reflection_note": self.reflection_note,
