@@ -71,6 +71,8 @@ scope: "WP8 / MVP13 Persistent Self-Model"
   - `OpenEmotion/artifacts/mvp13/mvp13_controlled_observation_batch_current.md`
 - formal closure report 已生成：
   - `OpenEmotion/artifacts/mvp13/MVP13_COMPLETION_CURRENT.md`
+- maintenance ledger 已建立：
+  - `Tasks/active/mvp13_persistent_self_model/MAINTENANCE_LEDGER.md`
 
 ## 当前 blocker
 
@@ -80,7 +82,8 @@ scope: "WP8 / MVP13 Persistent Self-Model"
   - 这不影响当前 formal owner writeback `E5` 口径，但会影响后续重复运行的稳定性预算
 - 当前状态：
   - `WP8` 已可收口进入维护态
-  - 若继续推进主线，应先定义 `WP9/MVP14` authority
+  - 新增样本只进入 maintenance ledger，不自动 reopen `WP8`
+  - 若继续推进主线，应先定义 `WP9/MVP14` authority / contract
 
 ## 本轮不做
 
@@ -93,6 +96,7 @@ scope: "WP8 / MVP13 Persistent Self-Model"
 
 - authority：`Tasks/MVP13_task_plan.md`
 - status：`STATUS.md`
+- maintenance ledger：`MAINTENANCE_LEDGER.md`
 - legacy register：`LEGACY_REFERENCE_REGISTER.md`
 - contracts：`contracts/`
 - subagent 说明：`SUBAGENT_ASSIGNMENT.md`

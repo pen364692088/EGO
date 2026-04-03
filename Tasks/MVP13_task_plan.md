@@ -80,8 +80,8 @@
 ## Current Phase Status
 - `T00/T10/T20/T30/T40/T50/T60/T70/T80` 已完成，且已通过 `scenario bank + batch controlled observation runner` 拿到 controlled `E5` formal owner writeback 稳定样本集
 - 当前层级：`closure`
-- 当前 blocker：`controlled observation` 范围内无主 blocker；live autonomy / transport evidence 仍不在 `WP8` scope
-- 当前最小闭环动作：将 `WP8` 置为维护态；若继续推进主线，先定义 `WP9/MVP14` authority，而不是继续扩 `WP8`
+- 当前 blocker：`controlled observation` 范围内无主 blocker；provider `429/401` 仅记为外部预算层风险；live autonomy / transport evidence 仍不在 `WP8` scope
+- 当前最小闭环动作：将 `WP8` 置为维护态并把后续样本写入 `Tasks/active/mvp13_persistent_self_model/MAINTENANCE_LEDGER.md`；若继续推进主线，先定义 `WP9/MVP14` authority，而不是继续扩 `WP8`
 
 ## Success Criteria
 - 文档层：
@@ -99,3 +99,4 @@
 - 只有实现、验证、E4 样本到位后，才可宣称 `WP8` 生效
 - 达到 `E5` 后，仍不得把 controlled observation 等同于 live autonomous authority
 - `WP8` 达到 controlled `E5` 后，可宣称本阶段在 formal owner / controlled observation 轴上收口，并转入维护态
+- 维护态期间新增样本只进入 maintenance ledger，除非触发明确 reopen 条件

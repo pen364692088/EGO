@@ -15,7 +15,7 @@ trigger_evidence:
 verification_level: V5
 evidence_level: E5
 current_blocker: "none within controlled observation scope"
-next_minimal_closure_action: "hold WP8 in maintenance mode; define WP9/MVP14 authority before new scope"
+next_minimal_closure_action: "hold WP8 in maintenance mode, append new samples to maintenance ledger, and define WP9/MVP14 authority before new scope"
 ```
 
 ## Milestones
@@ -34,6 +34,7 @@ next_minimal_closure_action: "hold WP8 in maintenance mode; define WP9/MVP14 aut
 
 - 可宣称完成：`WP8/MVP13` 已通过 `repo_authored + open_license` scenario bank 的 controlled batch observation 拿到 formal owner writeback `V5/E5`，并在 controlled observation 轴上收口进入维护态
 - 不可宣称完成：默认 live autonomy 已开放，或已经获得 transport/live evidence
+- 后续样本处理：只进入 [MAINTENANCE_LEDGER.md](/mnt/d/Project/AIProject/MyProject/Ego/Tasks/active/mvp13_persistent_self_model/MAINTENANCE_LEDGER.md)，不自动 reopen `WP8`
 
 ## 当前观察证据
 
@@ -46,3 +47,9 @@ next_minimal_closure_action: "hold WP8 in maintenance mode; define WP9/MVP14 aut
   - `accepted_count = 3`
   - `replay_consistent_count = 3`
   - `invariant_violation_count = 0`
+
+## 外部预算层风险
+
+- chat provider 在 batch 运行时可能出现 transient `429/401`
+- 当前分类：`external_budget_risk`
+- 当前口径：不回灌为 `WP8` blocker

@@ -1,13 +1,13 @@
 # MVS / Proto-Self 任务安排
 
 > 状态：MVS 主线唯一最终裁决源
-> 执行层工作包：`Tasks/active/krd_mvs_mainline/`
+> 执行层工作包：`Tasks/active/krd_mvs_mainline/` + 各阶段 child packs
 
 ## 一句话主线
 先把 **EgoCore 宿主壳收稳**，再把 **OpenEmotion 的 Proto-Self Kernel** 以最小闭环方式接进主链，先拿到 **MVS（最小可持续主体）** 的真实证据，再进入 Developmental Sandbox。
 
 ## 裁决关系
-- 本文件负责 `WP0~WP8` 的阶段、依赖、Gate、证据等级和停止条件。
+- 本文件负责 `WP0~WP9` 的阶段、依赖、Gate、证据等级和停止条件。
 - `Tasks/active/krd_mvs_mainline/` 只负责把 `WP0/WP1` 拆成可执行工作包与状态台账，不与本文件并列裁决。
 - 本任务按 **主线原地替换** 推进，不开平行实现、不走双轨切换、不保留 shadow implementation。
 
@@ -28,6 +28,7 @@
 7. **WP6 MVS 主链样本级生效**
 8. **WP7 Developmental Sandbox**
 9. **WP8 Persistent Self-Model**
+10. **WP9 Endogenous Drives + Self-Maintenance**
 
 ---
 
@@ -430,12 +431,80 @@
 - `WP7/MVP12` 当前已达到 controlled observation `pass`
 - `WP8/MVP13` 当前已完成 `T00/T10/T20/T30/T40/T50/T60/T70/T80`，并已通过 `repo_authored + open_license` scenario bank 的 controlled batch observation 拿到 `V5/E5` formal owner writeback 稳定样本集
 - 当前 `WP8` 口径是：controlled observation `pass` 且可收口进入维护态；这不等于 live autonomy，也不等于 transport evidence
-- 若继续推进主线，下一步不再是扩 `WP8`，而是先定义 `WP9/MVP14` authority
+- `WP8` 后续新增样本只进入 `Tasks/active/mvp13_persistent_self_model/MAINTENANCE_LEDGER.md`，不自动触发 scope reopen
+- batch 中出现的 chat provider `429/401` 继续归类为外部预算层风险，不回灌为 `WP8` blocker，除非它导致 formal owner writeback 主链失效
+- 若继续推进主线，下一步不再是扩 `WP8`，而是先定义 `WP9/MVP14` authority / contract
+
+---
+
+## WP9：Endogenous Drives + Self-Maintenance
+**前提**：只有 `WP8/MVP13` 进入 `maintenance_mode` 后才启动。
+
+**归属**：OpenEmotion（drive / maintenance owner target）+ EgoCore（runtime / Governor / delivery）
+
+**child authority**
+- `Tasks/MVP14_task_plan.md`
+- `Tasks/active/mvp14_endogenous_drives_self_maintenance/`
+
+**本阶段第一刀范围**
+- 只做 authority / contract / boundary freeze
+- 不直接开 `MVP14` 代码
+- 不把新能力塞回 `WP8`
+
+**任务**
+- capability ownership 固定为：
+  - endogenous drive state / drive history / priority snapshot / maintenance candidate generation 归 `OpenEmotion/emotiond/drives/*`
+  - runtime scheduling / final reply / tool execution / transport 仍归 `EgoCore`
+- authority source 固定为：
+  - 顶层裁决：`Tasks/MVS_task_plan.md`
+  - `WP9` phase-detail authority：`Tasks/MVP14_task_plan.md`
+  - version spec：`OpenEmotion/roadmap/versions/MVP14.spec.yaml`
+  - technical reference：`OpenEmotion/docs/mvp14/*`
+- input / output contract 先冻结，再开实现：
+  - 输入只允许结构化内部状态、self-model projection、continuity / drift / debt / replay 等信号
+  - 输出只允许 governed priority / maintenance candidates / drive audit artifacts
+  - 不允许输出 final reply / tool command / transport directive
+- `WP8` 边界冻结：
+  - `WP8` 继续是 `maintenance_mode`
+  - 新样本只进 maintenance ledger
+  - 不因 `WP9` 启动而改写 `WP8` formal owner、formal read/write path、或 evidence claim
+- 显式锁定当前仍不放开的能力：
+  - live autonomy
+  - OpenEmotion direct reply authority
+  - broader transport claims
+  - drive bypass of Governor
+  - drive-authored privileged execution
+
+**交付物**
+- `Tasks/MVP14_task_plan.md`
+- `Tasks/active/mvp14_endogenous_drives_self_maintenance/README.md`
+- `Tasks/active/mvp14_endogenous_drives_self_maintenance/STATUS.md`
+- `Tasks/active/mvp14_endogenous_drives_self_maintenance/LEGACY_REFERENCE_REGISTER.md`
+- `Tasks/active/mvp14_endogenous_drives_self_maintenance/contracts/DRIVE_CAPABILITY_OWNERSHIP.md`
+- `Tasks/active/mvp14_endogenous_drives_self_maintenance/contracts/DRIVE_AUTHORITY_SOURCE.md`
+- `Tasks/active/mvp14_endogenous_drives_self_maintenance/contracts/DRIVE_IO_CONTRACT.md`
+- `Tasks/active/mvp14_endogenous_drives_self_maintenance/contracts/WP8_BOUNDARY_FREEZE.md`
+- `Tasks/active/mvp14_endogenous_drives_self_maintenance/contracts/LOCKED_NON_RELEASES.md`
+
+**验收**
+- `STATUS / README / task plan` 三方口径一致，不把 `WP8` 的轴内 `E5` 误写成全局成熟
+- `WP8` 新增样本只进入 maintenance ledger，不自动触发 `WP8` scope reopen
+- provider `429/401` 被持续标注为外部预算层风险，不回灌为 `WP8` blocker
+- `WP9` 从 authority / contract 开始，而不是把新能力塞进 `WP8`
+- 文档中没有出现“因为 `WP8 pass`，所以 OpenEmotion 可以直接说话 / 直接拿 transport claim”这类边界回退
+- 证据层级目标：E0 -> E1（authority / contract freeze）
+
+**当前状态（2026-04-03）**
+- `WP9/MVP14` 当前层级是 `strategy`
+- 当前状态是 `authority_contract_freeze_only`
+- 当前还没有 `MVP14` 代码实现、主链接入或生效证据
+- 下一步最小动作是：在不改代码的前提下，冻结 capability ownership / authority source / IO contract / WP8 boundary / locked non-releases
 
 ---
 
 ## 串行依赖
 - `WP0 -> WP2 -> WP3 -> WP6 -> WP7 -> WP8` 必须串行
+- `WP8 -> WP9` 必须串行
 - `WP1` 可与 `WP2 / WP3` 并行，但其表达 contract 不得反向覆盖 Proto-Self 边界定义
 - `WP4 / WP5` 在 `WP2` 基础上推进
 
@@ -447,6 +516,7 @@
 - 复杂情绪文案层
 - 任何让 OpenEmotion 直接执行现实动作的设计
 - 在 `WP8` 中复活旧 `MVP13 mirror / dual-write` 作为正式 owner path
+- 因 `WP8` 收口就放开 `WP9` 的 direct reply / broader transport authority
 
 ## 最小里程碑定义
 - **里程碑 A**：`WP0 + WP1`
@@ -455,3 +525,4 @@
 - **里程碑 D**：`WP6`
 - **里程碑 E**：`WP7`
 - **里程碑 F**：`WP8`
+- **里程碑 G**：`WP9`
