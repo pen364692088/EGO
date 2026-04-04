@@ -1062,10 +1062,11 @@
 - 证据层级目标：E0 -> E1（authority / contract freeze）
 
 **当前状态（2026-04-04）**
-- `WP14/MVP19` 当前层级是 `authority`
-- 当前状态是 `authority_frozen`
+- `WP14/MVP19` 当前层级是 `owner`
+- 当前状态是 `owner_package_completed`
 - 当前 formal owner target 固定为 `OpenEmotion/openemotion/selfhood_integration/*`
 - 当前正式主链接线目标固定为 `runtime_v2 -> proto_self_runtime -> proto_self_adapter -> proto_self_v2`
-- 当前 phase 1 只冻结 cross-axis integration semantics、formal intake/output、stability-first arbitration policy 与 boundary / non-release 约束；不证明 owner/runtime 实现
+- 当前 phase 1 只证明 cross-axis integration semantics 的 owner-level schema/state/store/governance/replay/projection 已落地；不证明 `proto_self_v2` bounded contract、EgoCore runtime bridge、`E4/E5`、observation、或 maintenance mode
 - 当前已证实：`Tasks/MVP19_task_plan.md` 与 `Tasks/active/mvp19_cross_axis_self_integration/*` 已把 capability ownership、authority source、IO contract、`WP8~WP13` boundary freeze、subagent assignment 与 task cards 收成一致 authority package
-- 当前 blocker：按设计停在 docs-only authority freeze；下一步最小闭环动作是 `T10_FORMAL_OWNER_PACKAGE`
+- 当前已证实：`OpenEmotion/openemotion/selfhood_integration/*` formal owner package 已落地，且 `OpenEmotion/tests/mvp19/test_selfhood_integration_owner_infra.py` 已证明 owner state 覆盖 `integration_state / cross_axis_priority_state / proposal_conflict_state / stabilize_explore_balance / repair_progress_balance / social_boundary_balance / integrated_tendency_proposal / axis_arbitration_hints / integration_ledger`，同时验证 owner store / replay / proposal-only governance / bounded projection 成立
+- 当前 blocker：`T10` owner-only 轴内无主 blocker；下一步最小闭环动作是 `T20_PROTO_SELF_CONTRACT_INTEGRATION`

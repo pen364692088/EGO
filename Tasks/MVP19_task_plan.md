@@ -178,11 +178,11 @@
 - `WP14` may not reinterpret `WP8~WP13` maintenance or controlled evidence as live authority or broader transport maturity
 
 ## Current Phase Status
-- 当前层级：`authority`
-- 当前状态：`authority_frozen`
-- 当前 blocker：`none inside docs-only freeze scope`
-- 当前最小闭环动作：`T10_FORMAL_OWNER_PACKAGE`
-- 当前 claim ceiling：`authority_frozen / task_package_ready`
+- 当前层级：`owner`
+- 当前状态：`owner_package_completed`
+- 当前 blocker：`none on the T10 owner-only axis`
+- 当前最小闭环动作：`T20_PROTO_SELF_CONTRACT_INTEGRATION`
+- 当前 claim ceiling：`T10 only / formal_owner_package_completed`
 
 ## Success Criteria
 - `Tasks/MVS_task_plan.md` 中已正式出现 `WP14: Cross-Axis Self-Integration / Self-Maintenance Arbitration`

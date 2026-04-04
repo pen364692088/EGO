@@ -7,14 +7,14 @@ owner: "Codex"
 layer: 3
 type: dual_repo
 repos: [EgoCore, OpenEmotion]
-status: authority_frozen
+status: owner_package_completed
 parent_authority: "Tasks/MVS_task_plan.md"
 phase_authority: "Tasks/MVP19_task_plan.md"
 predecessor: "WP13/MVP18"
 same_subject_line: true
 not_parallel_track: true
 scope: "WP14 / MVP19 Cross-Axis Self-Integration / Self-Maintenance Arbitration"
-claim_ceiling: "authority_frozen / task_package_ready"
+claim_ceiling: "T10 only / formal_owner_package_completed"
 ```
 
 ---
@@ -51,10 +51,10 @@ claim_ceiling: "authority_frozen / task_package_ready"
 
 ## 当前状态
 
-- 执行包状态：`task_package_ready`
+- 执行包状态：`owner_package_completed`
 - authority freeze：`completed`
 - `T00_AUTHORITY_FREEZE`：`completed`
-- `T10` formal owner：`pending`
+- `T10` formal owner：`completed`
 - `T20` proto_self_v2 contract：`pending`
 - `T30` EgoCore runtime bridge：`pending`
 - `T40` legacy demotion / compat map：`pending`
@@ -63,10 +63,10 @@ claim_ceiling: "authority_frozen / task_package_ready"
 - `T70` batch controlled observation / aggregate：`pending`
 - `T80` closeout / QA baseline：`pending`
 - `T90` subagent assignment sync：`completed`
-- 主链接线：`frozen_target_only`
-- 启用状态：`not_started_by_design`
-- 当前 blocker：`none inside docs-only freeze scope`
-- 当前最小动作：`T10_FORMAL_OWNER_PACKAGE`
+- 主链接线：`formal_owner_only_not_runtime_wired`
+- 启用状态：`owner_infra_only`
+- 当前 blocker：`none on the T10 owner-only axis`
+- 当前最小动作：`T20_PROTO_SELF_CONTRACT_INTEGRATION`
 
 ## 当前已证实内容
 
@@ -77,6 +77,14 @@ claim_ceiling: "authority_frozen / task_package_ready"
   - phase 1 arbitration policy 是 `stability-first`
   - outputs 只允许 proposal-only / advisory / gated writeback candidates
 - `SUBAGENT_ASSIGNMENT.md` 与 `cards/T00..T90` 已把初始 worker mapping、write scope 与后续实现顺序收成可执行 package
+
+## T10 已证实内容
+
+- `OpenEmotion/openemotion/selfhood_integration/*` 已成为 phase 1 的唯一 formal owner 落点
+- owner state 已覆盖 `integration_state / cross_axis_priority_state / proposal_conflict_state / stabilize_explore_balance / repair_progress_balance / social_boundary_balance / integrated_tendency_proposal / axis_arbitration_hints / integration_ledger`
+- owner store、revision log、replay、proposal-only governance 与 bounded runtime projection 已由 `OpenEmotion/tests/mvp19/test_selfhood_integration_owner_infra.py` 定向证明
+- `axis_arbitration_hints` 当前仍保持 advisory-only，`integrated_tendency_proposal` 仍保持 `proposal_only + behavioral_authority = none + required_gate = self_integration_writeback_gate`
+- `WP8~WP13` upstream owner surfaces 仍只作为 frozen read surfaces / read-only authority，不构成 `WP14` fallback owner 或 direct mutation authority
 
 ## 当前不做
 
@@ -98,4 +106,3 @@ claim_ceiling: "authority_frozen / task_package_ready"
 - contracts：`contracts/`
 - task cards：`cards/`
 - subagent assignment：`SUBAGENT_ASSIGNMENT.md`
-
