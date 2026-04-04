@@ -4,6 +4,11 @@ Causal Intervention Experiments for MVP11.5-16
 
 This script performs controlled experiments to verify causal relationships
 between state changes and behavioral outcomes.
+
+WP11 / MVP16 status:
+- reference-only / historical experiment
+- not the formal owner path
+- not current-mainline closeout proof
 """
 import sys
 import json

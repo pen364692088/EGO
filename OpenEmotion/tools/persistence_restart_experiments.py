@@ -6,6 +6,11 @@ This script tests whether state persists across:
 1. Process restart (in-memory state lost)
 2. Manager reset (intentional reset)
 3. State serialization/deserialization
+
+WP11 / MVP16 status:
+- reference-only / historical experiment
+- not the formal owner path
+- not current-mainline closeout proof
 """
 import sys
 import json

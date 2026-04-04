@@ -7,6 +7,11 @@ Run this daily during the observation window.
 CRITICAL: This check reads from REAL persisted developmental state.
 - No fake positives from reading default values after reset
 - Returns 'insufficient_evidence' if no real data exists
+
+WP11 / MVP16 status:
+- input-only / historical observation helper
+- not the formal owner path
+- not current-mainline closeout proof
 """
 import sys
 import json

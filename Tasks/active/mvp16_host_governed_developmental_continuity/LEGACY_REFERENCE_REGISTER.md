@@ -53,3 +53,8 @@
 - `Tasks/active/mvp16_host_governed_developmental_continuity/*` 是当前执行包
 
 All listed legacy code and docs above are `reference-only` or `input-only` for `WP11`.
+
+Current formal owner reminder:
+
+- `OpenEmotion/openemotion/developmental_self/*` is the only formal owner path
+- `runtime_v2 -> proto_self_runtime -> proto_self_adapter -> proto_self_v2` is the only current-mainline consumer path

@@ -2,6 +2,10 @@
 MVP16: Developmental Schema
 
 Long-horizon developmental continuity and governed growth.
+
+WP11 / MVP16 status:
+- reference-only compatibility surface
+- not the formal owner schema
 """
 from __future__ import annotations
 

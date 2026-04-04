@@ -2,6 +2,11 @@
 MVP16: Open Developmental Self
 
 Long-horizon developmental continuity with governed growth.
+
+WP11 / MVP16 status:
+- reference-only compatibility surface
+- not the formal owner path
+- not current-mainline closeout proof
 """
 from pathlib import Path
 from typing import Optional

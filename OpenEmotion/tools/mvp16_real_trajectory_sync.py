@@ -1,6 +1,11 @@
 #!/usr/bin/env python3
 """
 Sync MVP16 developmental projection from authoritative real-channel sample artifacts.
+
+WP11 / MVP16 status:
+- input-only helper
+- not the formal owner path
+- not current-mainline closeout proof
 """
 from __future__ import annotations
 

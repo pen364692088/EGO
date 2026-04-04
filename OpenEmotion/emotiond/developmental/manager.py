@@ -2,6 +2,11 @@
 MVP16: Developmental Manager
 
 Manages long-horizon developmental continuity with real persistence.
+
+WP11 / MVP16 status:
+- reference-only compatibility surface
+- not the formal owner path
+- not current-mainline closeout proof
 """
 from __future__ import annotations
 

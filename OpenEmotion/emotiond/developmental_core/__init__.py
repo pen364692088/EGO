@@ -10,6 +10,10 @@ Constraints:
 - No direct execution
 - All outputs through trace/artifacts chain
 - Subject to Governor v2 authority
+
+WP11 / MVP16 status:
+- candidate-source / trace-reference only
+- not the formal developmental owner path
 """
 
 from .models import (

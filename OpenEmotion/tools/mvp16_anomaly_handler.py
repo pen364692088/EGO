@@ -4,6 +4,11 @@ MVP16 Anomaly Handler
 
 Called when daily check detects an anomaly.
 Generates blocker package and escalation report.
+
+WP11 / MVP16 status:
+- input-only / historical helper
+- not the formal owner path
+- not current-mainline closeout proof
 """
 import sys
 import json
