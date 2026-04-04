@@ -178,11 +178,11 @@
 - `WP14` may not reinterpret `WP8~WP13` maintenance or controlled evidence as live authority or broader transport maturity
 
 ## Current Phase Status
-- 当前层级：`runtime_bridge`
-- 当前状态：`runtime_bridge_completed`
-- 当前 blocker：`none on the T30 runtime bridge axis`
-- 当前最小闭环动作：`T40_LEGACY_DEMOTION_AND_COMPAT_MAP`
-- 当前 claim ceiling：`T30 only / runtime_bridge_completed`
+- 当前层级：`legacy_demotion`
+- 当前状态：`legacy_demotion_complete`
+- 当前 blocker：`none on the T40 legacy demotion axis`
+- 当前最小闭环动作：`T50_CAUSAL_VALIDATION`
+- 当前 claim ceiling：`T40 only / legacy_demotion_complete`
 
 ## Success Criteria
 - `Tasks/MVS_task_plan.md` 中已正式出现 `WP14: Cross-Axis Self-Integration / Self-Maintenance Arbitration`

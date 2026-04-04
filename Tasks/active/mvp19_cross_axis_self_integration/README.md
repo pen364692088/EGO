@@ -7,14 +7,14 @@ owner: "Codex"
 layer: 3
 type: dual_repo
 repos: [EgoCore, OpenEmotion]
-status: runtime_bridge_completed
+status: legacy_demotion_complete
 parent_authority: "Tasks/MVS_task_plan.md"
 phase_authority: "Tasks/MVP19_task_plan.md"
 predecessor: "WP13/MVP18"
 same_subject_line: true
 not_parallel_track: true
 scope: "WP14 / MVP19 Cross-Axis Self-Integration / Self-Maintenance Arbitration"
-claim_ceiling: "T30 only / runtime_bridge_completed"
+claim_ceiling: "T40 only / legacy_demotion_complete"
 ```
 
 ---
@@ -57,16 +57,16 @@ claim_ceiling: "T30 only / runtime_bridge_completed"
 - `T10` formal owner：`completed`
 - `T20` proto_self_v2 contract：`completed`
 - `T30` EgoCore runtime bridge：`completed`
-- `T40` legacy demotion / compat map：`pending`
+- `T40` legacy demotion / compat map：`completed`
 - `T50` causal validation：`pending`
 - `T60` single controlled observation：`pending`
 - `T70` batch controlled observation / aggregate：`pending`
 - `T80` closeout / QA baseline：`pending`
 - `T90` subagent assignment sync：`completed`
-- 主链接线：`egocore_runtime_bridge_connected`
+- 主链接线：`current_runtime_selfhood_consumer_present_legacy_reference_only`
 - 启用状态：`owner_infra_plus_proto_self_contract_plus_runtime_bridge`
-- 当前 blocker：`none on the T30 runtime bridge axis`
-- 当前最小动作：`T40_LEGACY_DEMOTION_AND_COMPAT_MAP`
+- 当前 blocker：`none on the T40 legacy demotion axis`
+- 当前最小动作：`T50_CAUSAL_VALIDATION`
 
 ## 当前已证实内容
 
@@ -108,6 +108,16 @@ claim_ceiling: "T30 only / runtime_bridge_completed"
 - 当前 runtime thin bridge 会把 `self_integration_delta / cross_axis_priority_snapshot / proposal_conflict_snapshot / integrated_policy_hints / integrated_tendency_proposal / axis_arbitration_hints / integration_audit_entries / self_integration_writeback_candidate / selfhood_integration_context` 记录进 `state.proto_self_context`
 - `selfhood_integration_writeback` 当前已通过宿主侧 gate 接回 `OpenEmotion/openemotion/selfhood_integration/*` formal owner，且仍保持 `proposal_only + behavioral_authority = none + required_gate = self_integration_writeback_gate`
 - `EgoCore/tests/test_runtime_v2_proto_self_runtime.py` 已定向证明 current runtime bridge 成立，且不会把 `WP14` proposal-only 输出抬高成 direct reply / tool / transport authority
+
+## T40 已证实内容
+
+- `WP8~WP13` upstream owner surfaces 现在已在 `LEGACY_REFERENCE_REGISTER.md` 中明确登记为 `upstream_authority_read_only`
+- historical self-aware step files 与 roadmap materials 现在已明确登记为 technical reference / reference-only，不得充当 `WP14` fallback owner 或 current-mainline proof
+- `OpenEmotion/tools/verify_mvp19_mainline_wiring.py` 已静态证明：
+  - `OpenEmotion/openemotion/selfhood_integration/*` 是 formal owner path
+  - `proto_self_v2` 与 `runtime_v2` 的 current runtime selfhood consumer 仍在 formal owner 路径上
+  - upstream read-only map 与 legacy reference-only demotion 同时成立
+- `OpenEmotion/tests/mvp19/test_mvp19_mainline_reference_demotion.py` 已定向锁定 no-second-truth demotion contract
 
 ## 当前不做
 

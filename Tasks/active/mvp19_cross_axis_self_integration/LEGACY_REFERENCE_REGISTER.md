@@ -15,6 +15,26 @@
 - `Tasks/MVP17_task_plan.md`
 - `Tasks/MVP18_task_plan.md`
 - `OpenEmotion/roadmap/VersionRoadmap.md`
+- `Tasks/active/SELF_AWARE_STEP_07_mvp16_unblock.md`
+- `Tasks/active/SELF_AWARE_STEP_08_admission_review.md`
+- `Tasks/active/SELF_AWARE_STEP_08A_real_developmental_evidence_closure.md`
+- `Tasks/active/SELF_AWARE_STEP_08B_admission_retry_review.md`
+- `OpenEmotion/roadmap/SELF_AWARE_EXECUTION_MASTER_PLAN_20260328.md`
+- `OpenEmotion/roadmap/SELF_AWARE_NORMALIZATION_RULES_20260328.md`
+
+这些历史材料在 `WP14` 中最多只能承担：
+
+- technical reference
+- historical comparison
+- migration clue
+- reference-only or input-only boundary reminder
+
+它们不得承担：
+
+- `WP14` formal owner
+- `WP14` current-mainline proof
+- `WP14` authority override
+- `WP14` fallback arbitration source
 
 ## Upstream Authority, Read-only To WP14
 
@@ -54,6 +74,11 @@
 - `WP14` current-mainline closeout proof
 - `WP14` authority override
 
+Plain-language guard:
+
+- WP14 formal owner state must remain exclusive to `OpenEmotion/openemotion/selfhood_integration/*`
+- WP14 fallback owner is forbidden for every upstream authority surface
+
 ## Current Authority Reminder
 
 - `Tasks/MVS_task_plan.md` 是顶层裁决
@@ -65,3 +90,8 @@ Current formal owner reminder:
 - `OpenEmotion/openemotion/selfhood_integration/*` is the only formal owner target
 - `runtime_v2 -> proto_self_runtime -> proto_self_adapter -> proto_self_v2` is the only current-mainline target
 
+## No-Second-Truth Reminder
+
+- `WP14` 只能整合 upstream proposals，不能把 upstream owner packages 重新解释成自己的 owner
+- `WP14` 不能把 self-aware 历史 step 文档、roadmap、或旧执行报告升格成 current-runtime authority
+- 当前 no-second-truth verifier 应以 `OpenEmotion/tools/verify_mvp19_mainline_wiring.py` 为准

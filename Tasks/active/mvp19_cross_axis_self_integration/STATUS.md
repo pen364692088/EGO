@@ -2,9 +2,9 @@
 
 ```yaml
 phase: WP14
-status: runtime_bridge_completed
-current_layer: runtime_bridge
-main_chain_status: egocore_runtime_bridge_connected
+status: legacy_demotion_complete
+current_layer: legacy_demotion
+main_chain_status: current_runtime_selfhood_consumer_present_legacy_reference_only
 enabled_status: owner_infra_plus_proto_self_contract_plus_runtime_bridge
 trigger_evidence:
   - WP13/MVP18 is the predecessor and remains the last completed maintenance upstream
@@ -29,18 +29,22 @@ trigger_evidence:
   - current runtime mainline now records self_integration_delta, cross_axis_priority_snapshot, proposal_conflict_snapshot, integrated_policy_hints, integrated_tendency_proposal, axis_arbitration_hints, integration_audit_entries, self_integration_writeback_candidate, selfhood_integration_context, and selfhood_integration_writeback in state.proto_self_context
   - selfhood integration writeback remains gated to self_integration_writeback_gate with proposal_only discipline and behavioral_authority none
   - scoped EgoCore runtime bridge tests passed in EgoCore/tests/test_runtime_v2_proto_self_runtime.py
+  - WP8~WP13 upstream owner surfaces are now explicitly registered as read-only to WP14 in LEGACY_REFERENCE_REGISTER.md
+  - archived self-aware step files and roadmap materials are now explicitly classified as technical reference / reference-only and may not become WP14 fallback authority
+  - OpenEmotion/tools/verify_mvp19_mainline_wiring.py now proves current runtime selfhood consumer presence plus no-second-truth legacy demotion
+  - OpenEmotion/tests/mvp19/test_mvp19_mainline_reference_demotion.py now proves upstream read-only registration and legacy reference-only demotion
 verification_level: V3
 evidence_level: E3
-current_blocker: "none on the T30 runtime bridge axis"
-next_minimal_closure_action: "start T40_LEGACY_DEMOTION_AND_COMPAT_MAP without upgrading the claim ceiling beyond T30"
+current_blocker: "none on the T40 legacy demotion axis"
+next_minimal_closure_action: "start T50_CAUSAL_VALIDATION without upgrading the claim ceiling beyond T40"
 ```
 
 ## 当前口径
 
-- 可宣称完成：`WP14/MVP19` 的 authority 仍保持冻结，且 `T10_FORMAL_OWNER_PACKAGE`、`T20_PROTO_SELF_CONTRACT_INTEGRATION` 与 `T30_EGOCORE_RUNTIME_BRIDGE` 已完成
-- 条件性完成：当前只覆盖 authority + owner infra + `proto_self_v2` bounded contract + EgoCore runtime thin bridge 这一条轴，不覆盖 legacy demotion、causal proof、controlled observation、或 closeout
+- 可宣称完成：`WP14/MVP19` 的 authority 仍保持冻结，且 `T10_FORMAL_OWNER_PACKAGE`、`T20_PROTO_SELF_CONTRACT_INTEGRATION`、`T30_EGOCORE_RUNTIME_BRIDGE` 与 `T40_LEGACY_DEMOTION_AND_COMPAT_MAP` 已完成
+- 条件性完成：当前只覆盖 authority + owner infra + `proto_self_v2` bounded contract + EgoCore runtime thin bridge + no-second-truth legacy demotion 这一条轴，不覆盖 causal proof、controlled observation、或 closeout
 - 不可宣称完成：`MVP19` 已拿到 `E4/E5`、已开始 observation、或已进入 maintenance mode
-- 后续处理：下一步只允许推进 `T40_LEGACY_DEMOTION_AND_COMPAT_MAP`；在此之前不得抬高 claim ceiling 超过 `T30`
+- 后续处理：下一步只允许推进 `T50_CAUSAL_VALIDATION`；在此之前不得抬高 claim ceiling 超过 `T40`
 
 ## 边界提醒
 
