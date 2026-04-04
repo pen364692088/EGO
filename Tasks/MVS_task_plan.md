@@ -7,14 +7,14 @@
 先把 **EgoCore 宿主壳收稳**，再把 **OpenEmotion 的 Proto-Self Kernel** 以最小闭环方式接进主链，先拿到 **MVS（最小可持续主体）** 的真实证据，再进入 Developmental Sandbox。
 
 ## 裁决关系
-- 本文件负责 `WP0~WP13` 的阶段、依赖、Gate、证据等级和停止条件。
+- 本文件负责 `WP0~WP14` 的阶段、依赖、Gate、证据等级和停止条件。
 - `Tasks/active/krd_mvs_mainline/` 只负责把 `WP0/WP1` 拆成可执行工作包与状态台账，不与本文件并列裁决。
 - 本任务按 **主线原地替换** 推进，不开平行实现、不走双轨切换、不保留 shadow implementation。
 
 ## 当前真实状态
 - 正式核心只有两个：**EgoCore**（对外宿主 / 运行时 / 执行 / 治理）与 **OpenEmotion**（identity / self-model / memory / appraisal / reflection 本体）。
-- 当前主线已从 **MVS** 推进到其后的受治理扩展阶段；当前最新已收口阶段是 `WP12/MVP17`，其 authority freeze、`T10` formal owner package、`T20` proto-self social contract integration、`T30` EgoCore runtime bridge、`T40` legacy demotion / compat map、`T50` causal proof、`T60` single controlled observation、`T70` batch observation / aggregate 与 `T80` closeout / QA baseline 均已完成，当前已进入 `maintenance_mode`，不是 live social autonomy。
-- 当前下一阶段已冻结为 `WP13/MVP18` 的 authority/task package，范围收窄为 `Embodied Loop / Environment Coupling (host-governed, proposal-only)`；`T10` formal owner package、`T20` proto-self contract integration、`T30` EgoCore runtime bridge、`T40` legacy demotion / compat map、`T50` causal proof 与 `T60` single controlled observation 已完成，当前已进入 `observation_started`，并拿到首个 controlled `V4/E4` embodied proposal-only writeback 样本，但仍未达到 batch `E5`。
+- 当前主线已从 **MVS** 推进到其后的受治理扩展阶段；当前最新已收口阶段是 `WP13/MVP18`，其 authority freeze、`T10` formal owner package、`T20` proto-self embodied contract integration、`T30` EgoCore runtime bridge、`T40` legacy demotion / compat map、`T50` causal proof、`T60` single controlled observation、`T70` batch observation / aggregate 与 `T80` closeout / QA baseline 均已完成，当前已进入 `maintenance_mode`，不是 live embodied autonomy。
+- 当前下一阶段已冻结为 `WP14/MVP19` 的 authority/task package，范围收窄为 `Cross-Axis Self-Integration / Self-Maintenance Arbitration`；当前只完成 authority freeze、phase-detail task plan 与执行包建档，claim ceiling 固定为 `authority_frozen / task_package_ready`，不代表 owner/runtime 实现、主链接线、`E4/E5`、observation、或 maintenance mode。
 - 宿主壳已有多轮主链切片真实生效证据；Proto-Self 侧当前正式现实是 **`proto_self.v2 + seed_v0_2`**。
 - 旧 `openemotion/proto_self/` 仍可存在，但从本计划开始只作为 compatibility / deletion inventory，对未来功能不再是正式落点。
 - 所有验收必须遵守 E0-E6 证据分级，结论强度不得高于证据层级。
@@ -34,6 +34,7 @@
 12. **WP11 Host-governed Developmental Continuity（MVP16 第一正式切片）**
 13. **WP12 Social Self / Other-Modeling（MVP17 第一正式切片）**
 14. **WP13 Embodied Loop / Environment Coupling（MVP18 第一正式切片）**
+15. **WP14 Cross-Axis Self-Integration / Self-Maintenance Arbitration（MVP19 第一正式切片）**
 
 ---
 
@@ -950,3 +951,121 @@
 - 当前已证实：`OpenEmotion/tools/run_mvp18_controlled_observation.py` 已生成首个 controlled runtime-mainline embodied observation artifact，当前 `OpenEmotion/artifacts/mvp18/mvp18_controlled_observation_current.md` 的结果为 `status = pass`、`verification_level = V4`、`evidence_level = E4`、`embodied_writeback_gate = allow_writeback`、`embodied_proposal_present = true`、`proposal_only_discipline_consistent = true`、`behavioral_authority_none = true`、`bounded_influence_present = true`、`replay_valid = true`
 - 当前已证实：`OpenEmotion/tools/run_mvp18_controlled_observation_batch.py` 已生成 repeated controlled runtime-mainline embodied aggregate artifact，当前 `OpenEmotion/artifacts/mvp18/mvp18_controlled_observation_batch_current.md` 的结果为 `status = pass`、`verification_level = V5`、`evidence_level = E5`、`report_count = 3`、`accepted_count = 3`、`proposal_only_discipline_count = 3`、`behavioral_authority_none_count = 3`、`bounded_influence_present_count = 3`
 - 当前 blocker：`WP13` 仍缺 `T80` closeout / QA baseline；当前不能宣称收口或 `maintenance_mode`
+
+---
+
+## WP14：Cross-Axis Self-Integration / Self-Maintenance Arbitration
+**前提**：只有 `WP13/MVP18` 进入 `maintenance_mode` 后才启动。
+
+**归属**：OpenEmotion（cross-axis integration semantics / arbitration owner target）+ EgoCore（runtime / session / task / tool / transport / outward response / gate / audit / real-world adjudication）
+
+**child authority**
+- `Tasks/MVP19_task_plan.md`
+- `Tasks/active/mvp19_cross_axis_self_integration/`
+
+**本阶段当前范围**
+- authority / contract / boundary freeze
+- formal selfhood integration owner package target 定义
+- bounded proto-self selfhood integration contract target 定义
+- EgoCore runtime selfhood integration bridge target 定义
+- upstream `WP8~WP13` read-surface freeze
+- legacy / compat / upstream read-only register
+- subagent-ready task decomposition
+- 不把新能力塞回 `WP8~WP13`
+
+**任务**
+- capability ownership 固定为：
+  - `integration_state / cross_axis_priority_state / proposal_conflict_state / stabilize_explore_balance / repair_progress_balance / social_boundary_balance / integrated_tendency_proposal / axis_arbitration_hints / integration_ledger` 归 `OpenEmotion/openemotion/selfhood_integration/*`
+  - runtime / session / task / tool / transport、outward response contract、ask / wait / block / escalate、trace / replay / gate / audit / maintenance ledger、real-world execution / risk adjudication 仍归 `EgoCore`
+- authority source 固定为：
+  - 顶层裁决：`Tasks/MVS_task_plan.md`
+  - `WP14` phase-detail authority：`Tasks/MVP19_task_plan.md`
+  - technical reference：`Tasks/MVP13_task_plan.md`、`Tasks/MVP14_task_plan.md`、`Tasks/MVP15_task_plan.md`、`Tasks/MVP16_task_plan.md`、`Tasks/MVP17_task_plan.md`、`Tasks/MVP18_task_plan.md`、`OpenEmotion/roadmap/VersionRoadmap.md`
+  - 当前没有 repo-tracked `MVP19` version spec；若后续补写，也不得自动覆盖 `Tasks/*` authority
+- phase 1 formal intake 固定为：
+  - `runtime_summary.self_model_context`
+  - `runtime_summary.endogenous_drive_context`
+  - `runtime_summary.reflective_self_context`
+  - `runtime_summary.developmental_self_context`
+  - `runtime_summary.social_self_context`
+  - `runtime_summary.embodied_self_context`
+  - `runtime_summary.maintenance_context`
+  - `runtime_summary.resource_budget_hint`
+  - `runtime_summary.recent_delivery_outcome`
+  - `runtime_summary.idle_window`
+  - `WP8`: self-model confidence / identity consistency / known-unknowns constraints
+  - `WP9`: `candidate_bias_terms` / `priority_snapshot` / `self_maintenance_candidate`
+  - `WP10`: `revision_proposal_candidates` / `confidence_adjustment_hints` / `maintenance_priority_hints`
+  - `WP11`: `developmental_proposal_candidates` / `developmental_priority_hints` / `developmental_continuity_snapshot`
+  - `WP12`: `relation_update_candidates` / `repair_proposal_candidates` / `social_policy_hints` / `trust_commitment_snapshot`
+  - `WP13`: `consequence_update_candidates` / `repair_or_stabilize_proposal_candidates` / `embodied_policy_hints` / `resource_boundary_snapshot`
+- phase 1 formal outputs 固定为：
+  - `self_integration_delta`
+  - `cross_axis_priority_snapshot`
+  - `proposal_conflict_snapshot`
+  - `integrated_policy_hints`
+  - `integrated_tendency_proposal`
+  - `axis_arbitration_hints`
+  - `integration_audit_entries`
+  - `self_integration_writeback_candidate`
+  - `trace_payload.selfhood_integration_context`
+- output discipline 固定为：
+  - `proposal_only = true`
+  - `behavioral_authority = none`
+  - `required_gate = self_integration_writeback_gate`
+  - `axis_arbitration_hints` 只是 advisory，不能直接改写 `WP8~WP13` owner state
+  - 不允许输出 final reply / tool command / transport directive / authority escalation
+- phase 1 arbitration policy 固定为 `stability-first`：
+  - priority 1：若 `WP8` 低 confidence，或 `WP9/WP13` 出现高 maintenance / resource / boundary pressure，则优先 `stabilize / conserve / guard / review`
+  - priority 2：否则，`WP12` commitment / repair risk 可抬高 repair bias
+  - priority 3：否则，`WP11` growth / continuity 可抬高 growth bias
+  - priority 4：`WP10` reflective revision 只作 modifier，不是 phase 1 的更高优先轴
+- `WP8~WP13` 边界冻结：
+  - `WP8~WP13` 都继续是 maintenance / frozen upstreams
+  - 新样本只进各自 maintenance ledger
+  - 不因 `WP14` 启动而改写 `WP8~WP13` formal owner、formal read/write path、或 evidence claim
+- 显式锁定当前仍不放开的能力：
+  - live autonomy
+  - OpenEmotion direct reply authority
+  - broader transport claims
+  - direct mutation of `reflective_self/*`、`developmental_self/*`、`social_self/*`、`embodied_self/*`、`self_model/*`、`endogenous_drives/*`
+  - direct reply / tool / transport / authority escalation
+
+**交付物**
+- `Tasks/MVP19_task_plan.md`
+- `Tasks/active/mvp19_cross_axis_self_integration/README.md`
+- `Tasks/active/mvp19_cross_axis_self_integration/STATUS.md`
+- `Tasks/active/mvp19_cross_axis_self_integration/LEGACY_REFERENCE_REGISTER.md`
+- `Tasks/active/mvp19_cross_axis_self_integration/SUBAGENT_ASSIGNMENT.md`
+- `Tasks/active/mvp19_cross_axis_self_integration/contracts/SELFHOOD_INTEGRATION_CAPABILITY_OWNERSHIP.md`
+- `Tasks/active/mvp19_cross_axis_self_integration/contracts/SELFHOOD_INTEGRATION_AUTHORITY_SOURCE.md`
+- `Tasks/active/mvp19_cross_axis_self_integration/contracts/SELFHOOD_INTEGRATION_IO_CONTRACT.md`
+- `Tasks/active/mvp19_cross_axis_self_integration/contracts/WP8_WP13_BOUNDARY_FREEZE.md`
+- `Tasks/active/mvp19_cross_axis_self_integration/contracts/LOCKED_NON_RELEASES.md`
+- `Tasks/active/mvp19_cross_axis_self_integration/cards/T00_AUTHORITY_FREEZE.md`
+- `Tasks/active/mvp19_cross_axis_self_integration/cards/T10_FORMAL_OWNER_PACKAGE.md`
+- `Tasks/active/mvp19_cross_axis_self_integration/cards/T20_PROTO_SELF_CONTRACT_INTEGRATION.md`
+- `Tasks/active/mvp19_cross_axis_self_integration/cards/T30_EGOCORE_RUNTIME_BRIDGE.md`
+- `Tasks/active/mvp19_cross_axis_self_integration/cards/T40_LEGACY_DEMOTION_AND_COMPAT_MAP.md`
+- `Tasks/active/mvp19_cross_axis_self_integration/cards/T50_CAUSAL_VALIDATION.md`
+- `Tasks/active/mvp19_cross_axis_self_integration/cards/T60_CONTROLLED_OBSERVATION_SINGLE.md`
+- `Tasks/active/mvp19_cross_axis_self_integration/cards/T70_BATCH_OBSERVATION_AND_AGGREGATE.md`
+- `Tasks/active/mvp19_cross_axis_self_integration/cards/T80_CLOSEOUT_AND_QA_BASELINE.md`
+- `Tasks/active/mvp19_cross_axis_self_integration/cards/T90_SUBAGENT_ASSIGNMENT.md`
+
+**验收**
+- `Tasks/MVS_task_plan.md` 中已正式出现 `WP14`
+- `Tasks/MVP19_task_plan.md`、执行包 `README / STATUS / contracts / cards` 口径一致
+- `WP8~WP13` 继续处于 maintenance / frozen upstream 状态，没有被 `WP14` reopen
+- formal intake / outputs / stability-first arbitration policy 已冻结成唯一 authority package
+- `WP14` 文档没有把 cross-axis self-integration 漂成实现完成、主链接线、`E4/E5`、observation、或 maintenance mode
+- 证据层级目标：E0 -> E1（authority / contract freeze）
+
+**当前状态（2026-04-04）**
+- `WP14/MVP19` 当前层级是 `authority`
+- 当前状态是 `authority_frozen`
+- 当前 formal owner target 固定为 `OpenEmotion/openemotion/selfhood_integration/*`
+- 当前正式主链接线目标固定为 `runtime_v2 -> proto_self_runtime -> proto_self_adapter -> proto_self_v2`
+- 当前 phase 1 只冻结 cross-axis integration semantics、formal intake/output、stability-first arbitration policy 与 boundary / non-release 约束；不证明 owner/runtime 实现
+- 当前已证实：`Tasks/MVP19_task_plan.md` 与 `Tasks/active/mvp19_cross_axis_self_integration/*` 已把 capability ownership、authority source、IO contract、`WP8~WP13` boundary freeze、subagent assignment 与 task cards 收成一致 authority package
+- 当前 blocker：按设计停在 docs-only authority freeze；下一步最小闭环动作是 `T10_FORMAL_OWNER_PACKAGE`
