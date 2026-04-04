@@ -7,7 +7,7 @@ owner: "Codex"
 layer: 3
 type: dual_repo
 repos: [EgoCore, OpenEmotion]
-status: authority_frozen
+status: owner_package_in_place
 parent_authority: "Tasks/MVS_task_plan.md"
 phase_authority: "Tasks/MVP17_task_plan.md"
 predecessor: "WP11/MVP16"
@@ -20,7 +20,7 @@ scope: "WP12 / MVP17 Social Self / Other-Modeling"
 
 ## 真实目标
 
-在不放开 authority 边界的前提下，把 `WP12/MVP17` 的 formal owner 冻结到 `OpenEmotion/openemotion/social_self/*`，并为后续 `trust / commitment / repair` proposal-only 社会连续性能力定义正式 runtime 主线与任务分工。
+在不放开 authority 边界的前提下，把 `WP12/MVP17` 的 formal owner 落到 `OpenEmotion/openemotion/social_self/*`，并在不接主链的前提下先完成 `trust / commitment / repair` proposal-only owner 基础设施。
 
 ## 当前正式 owner target
 
@@ -51,11 +51,18 @@ scope: "WP12 / MVP17 Social Self / Other-Modeling"
 
 ## 当前状态
 
-- formal owner：`not_started`
+- formal owner：`T10 completed`
 - 主链接线：`not_started`
-- 启用状态：`authority_frozen_only`
-- 当前 blocker：`none on the authority surface`
-- 当前最小动作：`T10_FORMAL_OWNER_PACKAGE`
+- 启用状态：`formal_owner_only`
+- 当前 blocker：`runtime intake and proto_self contract are not connected yet`
+- 当前最小动作：`T20_PROTO_SELF_CONTRACT_INTEGRATION`
+
+## T10 已证实内容
+
+- `OpenEmotion/openemotion/social_self/*` 已成为 phase 1 的唯一 formal owner 落点
+- owner state 已覆盖 `relation_memory / other_model_state / trust_state / commitment_state / repair_state / social_boundary_state / governance_ledger`
+- owner store、revision log、replay 与 proposal-only governance 已有最小测试通过
+- 旧 social surfaces 仍只作为 reference-only / input-only，不构成 current formal owner
 
 ## 当前不做
 

@@ -1,6 +1,6 @@
 # MVP17 / WP12 Social Self / Other-Modeling
 
-> 状态：WP12 authority_frozen
+> 状态：WP12 authority_frozen + T10 formal owner package completed
 > parent_authority: `Tasks/MVS_task_plan.md`
 > phase: `WP12`
 > predecessor: `WP11/MVP16`
@@ -141,10 +141,10 @@
 - `WP12` may not reinterpret `WP11 controlled E5` as live authority or broader transport maturity
 
 ## Current Phase Status
-- 当前层级：`authority`
-- 当前状态：`authority_frozen`
-- 当前 blocker：`none on the authority surface`
-- 当前最小闭环动作：只做 `T10_FORMAL_OWNER_PACKAGE`，不 reopen `WP11`
+- 当前层级：`implementation`
+- 当前状态：`authority_frozen + owner_package_in_place`
+- 当前 blocker：`runtime intake and proto_self social contract are not connected yet`
+- 当前最小闭环动作：只做 `T20_PROTO_SELF_CONTRACT_INTEGRATION`，不 reopen `WP11`
 
 ## Success Criteria
 - `Tasks/MVS_task_plan.md` 中已正式出现 `WP12: Social Self / Other-Modeling`
@@ -160,6 +160,7 @@
 ## Completion Rules
 - 本文件完成不等于 `MVP17` 已实现
 - 本文件完成不等于 `MVP17` 已接当前 runtime 主链
+- `T10` 完成只证明 formal owner package 在 OpenEmotion owner 层落地，不证明 social behavior 已生效
 - 未拿到当前 formal owner + current mainline `E4` 之前，不得宣称 `WP12` 生效
 - 未拿到重复样本 `E5` 之前，不得宣称 `WP12` 稳定解决或可收口
 - 即使未来达到 controlled `E5`，也不得把 `WP12` 解释为 live autonomy、OpenEmotion direct reply authority、或 broader transport maturity
