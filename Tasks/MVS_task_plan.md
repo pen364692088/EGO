@@ -14,7 +14,7 @@
 ## 当前真实状态
 - 正式核心只有两个：**EgoCore**（对外宿主 / 运行时 / 执行 / 治理）与 **OpenEmotion**（identity / self-model / memory / appraisal / reflection 本体）。
 - 当前主线已从 **MVS** 推进到其后的受治理扩展阶段；当前最新已收口阶段是 `WP13/MVP18`，其 authority freeze、`T10` formal owner package、`T20` proto-self embodied contract integration、`T30` EgoCore runtime bridge、`T40` legacy demotion / compat map、`T50` causal proof、`T60` single controlled observation、`T70` batch observation / aggregate 与 `T80` closeout / QA baseline 均已完成，当前已进入 `maintenance_mode`，不是 live embodied autonomy。
-- 当前下一阶段为 `WP14/MVP19` 的 `Cross-Axis Self-Integration / Self-Maintenance Arbitration`；authority freeze、phase-detail task plan、执行包、`T10` formal owner package、`T20` proto_self_v2 bounded contract integration、`T30` EgoCore runtime bridge 与 `T40` legacy demotion / compat map 已完成，当前 claim ceiling 固定为 `T40 only / legacy_demotion_complete`，不代表 `E4/E5`、observation、或 maintenance mode。
+- 当前下一阶段为 `WP14/MVP19` 的 `Cross-Axis Self-Integration / Self-Maintenance Arbitration`；authority freeze、phase-detail task plan、执行包、`T10` formal owner package、`T20` proto_self_v2 bounded contract integration、`T30` EgoCore runtime bridge、`T40` legacy demotion / compat map 与 `T50` causal validation 已完成，当前 claim ceiling 固定为 `T50 only / V3-E3 causal_proof_complete`，不代表 `E4/E5`、observation、或 maintenance mode。
 - 宿主壳已有多轮主链切片真实生效证据；Proto-Self 侧当前正式现实是 **`proto_self.v2 + seed_v0_2`**。
 - 旧 `openemotion/proto_self/` 仍可存在，但从本计划开始只作为 compatibility / deletion inventory，对未来功能不再是正式落点。
 - 所有验收必须遵守 E0-E6 证据分级，结论强度不得高于证据层级。
@@ -1062,12 +1062,13 @@
 - 证据层级目标：E0 -> E1（authority / contract freeze）
 
 **当前状态（2026-04-04）**
-- `WP14/MVP19` 当前层级是 `runtime_bridge`
-- 当前状态是 `runtime_bridge_completed`
+- `WP14/MVP19` 当前层级是 `causal_validation`
+- 当前状态是 `causal_proof_complete`
 - 当前 formal owner target 固定为 `OpenEmotion/openemotion/selfhood_integration/*`
 - 当前正式主链接线目标固定为 `runtime_v2 -> proto_self_runtime -> proto_self_adapter -> proto_self_v2`
-- 当前 phase 1 已证明 cross-axis integration semantics 的 owner-level schema/state/store/governance/replay/projection、`proto_self_v2` bounded contract 与 EgoCore runtime thin bridge 已落地；不证明 `E4/E5`、observation、或 maintenance mode
+- 当前 phase 1 已证明 cross-axis integration semantics 的 owner-level schema/state/store/governance/replay/projection、`proto_self_v2` bounded contract、EgoCore runtime thin bridge、以及 stability-first bounded downstream weighting 的 paired causal shifts 已落地；不证明 `E4/E5`、observation、或 maintenance mode
 - 当前已证实：`Tasks/MVP19_task_plan.md` 与 `Tasks/active/mvp19_cross_axis_self_integration/*` 已把 capability ownership、authority source、IO contract、`WP8~WP13` boundary freeze、subagent assignment 与 task cards 收成一致 authority package
 - 当前已证实：`OpenEmotion/openemotion/selfhood_integration/*` formal owner package 已落地，且 `OpenEmotion/tests/mvp19/test_selfhood_integration_owner_infra.py` 已证明 owner state 覆盖 `integration_state / cross_axis_priority_state / proposal_conflict_state / stabilize_explore_balance / repair_progress_balance / social_boundary_balance / integrated_tendency_proposal / axis_arbitration_hints / integration_ledger`，同时验证 owner store / replay / proposal-only governance / bounded projection 成立
 - 当前已证实：`EgoCore/app/runtime_v2/proto_self_runtime.py` 已把 `runtime_summary.selfhood_integration_context` 接入正式主链，并把 `self_integration_delta / cross_axis_priority_snapshot / proposal_conflict_snapshot / integrated_policy_hints / integrated_tendency_proposal / axis_arbitration_hints / integration_audit_entries / self_integration_writeback_candidate / selfhood_integration_writeback` 以 `proposal_only + behavioral_authority = none + required_gate = self_integration_writeback_gate` 的约束挂回宿主上下文与 formal owner
-- 当前 blocker：`T30` runtime bridge 轴内无主 blocker；下一步最小闭环动作是 `T40_LEGACY_DEMOTION_AND_COMPAT_MAP`
+- 当前已证实：`OpenEmotion/tests/mvp19/test_selfhood_integration_causal_formal_proof.py` 与 `OpenEmotion/tools/run_mvp19_causal_validation.py` 已通过 4 组正向 paired intervention/control proof 和 1 组 wording-only no-effect guard，证明 stability-first cross-axis arbitration 会改变 bounded downstream weighting，而不是只生成日志文本；当前 causal artifact 见 `OpenEmotion/artifacts/mvp19/mvp19_causal_validation_current.md`
+- 当前 blocker：`T50` causal proof 轴内无主 blocker；下一步最小闭环动作是 `T60_CONTROLLED_OBSERVATION_SINGLE`

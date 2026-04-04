@@ -7,14 +7,14 @@ owner: "Codex"
 layer: 3
 type: dual_repo
 repos: [EgoCore, OpenEmotion]
-status: legacy_demotion_complete
+status: causal_proof_complete
 parent_authority: "Tasks/MVS_task_plan.md"
 phase_authority: "Tasks/MVP19_task_plan.md"
 predecessor: "WP13/MVP18"
 same_subject_line: true
 not_parallel_track: true
 scope: "WP14 / MVP19 Cross-Axis Self-Integration / Self-Maintenance Arbitration"
-claim_ceiling: "T40 only / legacy_demotion_complete"
+claim_ceiling: "T50 only / V3-E3 causal_proof_complete"
 ```
 
 ---
@@ -51,22 +51,22 @@ claim_ceiling: "T40 only / legacy_demotion_complete"
 
 ## 当前状态
 
-- 执行包状态：`runtime_bridge_completed`
+- 执行包状态：`causal_proof_complete`
 - authority freeze：`completed`
 - `T00_AUTHORITY_FREEZE`：`completed`
 - `T10` formal owner：`completed`
 - `T20` proto_self_v2 contract：`completed`
 - `T30` EgoCore runtime bridge：`completed`
 - `T40` legacy demotion / compat map：`completed`
-- `T50` causal validation：`pending`
+- `T50` causal validation：`completed`
 - `T60` single controlled observation：`pending`
 - `T70` batch controlled observation / aggregate：`pending`
 - `T80` closeout / QA baseline：`pending`
 - `T90` subagent assignment sync：`completed`
 - 主链接线：`current_runtime_selfhood_consumer_present_legacy_reference_only`
 - 启用状态：`owner_infra_plus_proto_self_contract_plus_runtime_bridge`
-- 当前 blocker：`none on the T40 legacy demotion axis`
-- 当前最小动作：`T50_CAUSAL_VALIDATION`
+- 当前 blocker：`none on the T50 causal proof axis`
+- 当前最小动作：`T60_CONTROLLED_OBSERVATION_SINGLE`
 
 ## 当前已证实内容
 
@@ -118,6 +118,25 @@ claim_ceiling: "T40 only / legacy_demotion_complete"
   - `proto_self_v2` 与 `runtime_v2` 的 current runtime selfhood consumer 仍在 formal owner 路径上
   - upstream read-only map 与 legacy reference-only demotion 同时成立
 - `OpenEmotion/tests/mvp19/test_mvp19_mainline_reference_demotion.py` 已定向锁定 no-second-truth demotion contract
+
+## T50 已证实内容
+
+- `OpenEmotion/tests/mvp19/test_selfhood_integration_causal_formal_proof.py` 已通过 5 组 paired intervention/control checks：
+  - low self-model confidence + high embodied pressure 会压过 developmental growth，转成 stability-first review weighting
+  - high maintenance candidate + reflective revision proposal 会把 bounded downstream weighting 推向 review，而不是只写日志文本
+  - social repair breach 在 stability bounded 时会抬高 repair priority
+  - boundary guard 与 social repair 冲突时会阻断 `social_self`，把 priority 推向 guarded arbitration
+  - text-only runtime note 改写不会制造假的 structural arbitration effect
+- `OpenEmotion/tools/run_mvp19_causal_validation.py` 已产出：
+  - `OpenEmotion/artifacts/mvp19/mvp19_causal_validation_current.md`
+  - `OpenEmotion/artifacts/mvp19/mvp19_causal_validation_current.json`
+- 当前 causal artifact 结果为：
+  - `status = pass`
+  - `verification_level = V3`
+  - `evidence_level = E3`
+  - `pair_count = 5`
+  - `passed_count = 5`
+- 本层仍只证明 stability-first cross-axis arbitration 会改变 bounded downstream weighting；不证明 controlled observation、`E4/E5`、observation started、或 maintenance mode
 
 ## 当前不做
 

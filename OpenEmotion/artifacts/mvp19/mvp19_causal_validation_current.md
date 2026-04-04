@@ -1,0 +1,17 @@
+# MVP19 Causal Validation
+
+- generated_at: `2026-04-04T19:44:56.997726+00:00`
+- git_commit_short: `3ffb8ea`
+- status: `pass`
+- verification_level: `V3`
+- evidence_level: `E3`
+- pair_count: `5`
+- passed_count: `5`
+
+## Pairs
+
+- `stability_first_overrides_growth_under_low_confidence_and_embodied_pressure`: `pass` {"control_selected_priority": "grow", "intervention_selected_priority": "review", "intervention_blocked_axes": ["developmental_self"], "intervention_surface_reasons": ["wp8:self_model_low_confidence", "wp9:self_maintenance_pressure", "wp10:reflective_modifier", "wp11:developmental_growth_pressure", "wp13:embodied_pressure", "wp14:selfhood_projection", "host:maintenance_context", "host:recent_delivery_outcome"]}
+- `maintenance_and_reflective_pressure_shift_to_review`: `pass` {"control_selected_priority": "stabilize", "intervention_selected_priority": "review", "control_reflection_bias": null, "intervention_reflection_bias": "elevated", "intervention_surface_reasons": ["wp9:self_maintenance_pressure", "wp10:reflective_modifier", "wp14:selfhood_projection"]}
+- `social_repair_breach_surfaces_repair_priority`: `pass` {"control_selected_priority": "stabilize", "intervention_selected_priority": "repair", "intervention_dominant_axis": "social_self", "intervention_surface_reasons": ["wp12:social_repair_pressure", "wp14:selfhood_projection"]}
+- `boundary_guard_blocks_social_repair_when_conflicted`: `pass` {"control_selected_priority": "repair", "intervention_selected_priority": "guard", "intervention_blocked_axes": ["social_self"], "intervention_conflicts": ["conflict:social_vs_boundary", "conflict:projection_priority_drift"]}
+- `text_only_runtime_notes_do_not_change_structural_outputs`: `pass` {"control_selected_priority": "stabilize", "intervention_selected_priority": "stabilize", "control_policy_hint": {"risk_bias": "normal", "closure_bias": false, "ask_preferred": false, "should_avoid_commitment_upgrade": true, "exploration_mode": false, "maintenance_bias": "elevated", "self_integration_priority": "stabilize", "self_integration_conflict_severity": "low", "self_integration_required_gate": "self_integration_writeback_gate", "self_integration_active_axes": ["self_model", "endogenous_drives", "reflective_self", "developmental_self", "social_self", "embodied_self"]}, "intervention_policy_hint": {"risk_bias": "normal", "closure_bias": false, "ask_preferred": false, "should_avoid_commitment_upgrade": true, "exploration_mode": false, "maintenance_bias": "elevated", "self_integration_priority": "stabilize", "self_integration_conflict_severity": "low", "self_integration_required_gate": "self_integration_writeback_gate", "self_integration_active_axes": ["self_model", "endogenous_drives", "reflective_self", "developmental_self", "social_self", "embodied_self"]}}

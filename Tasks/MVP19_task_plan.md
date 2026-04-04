@@ -1,6 +1,6 @@
 # MVP19 / WP14 Cross-Axis Self-Integration / Self-Maintenance Arbitration
 
-> 状态：authority_frozen + task_package_ready
+> 状态：causal_proof_complete
 > parent_authority: `Tasks/MVS_task_plan.md`
 > phase: `WP14`
 > predecessor: `WP13/MVP18`
@@ -178,11 +178,11 @@
 - `WP14` may not reinterpret `WP8~WP13` maintenance or controlled evidence as live authority or broader transport maturity
 
 ## Current Phase Status
-- 当前层级：`legacy_demotion`
-- 当前状态：`legacy_demotion_complete`
-- 当前 blocker：`none on the T40 legacy demotion axis`
-- 当前最小闭环动作：`T50_CAUSAL_VALIDATION`
-- 当前 claim ceiling：`T40 only / legacy_demotion_complete`
+- 当前层级：`causal_validation`
+- 当前状态：`causal_proof_complete`
+- 当前 blocker：`none on the T50 causal proof axis`
+- 当前最小闭环动作：`T60_CONTROLLED_OBSERVATION_SINGLE`
+- 当前 claim ceiling：`T50 only / V3-E3 causal_proof_complete`
 
 ## Success Criteria
 - `Tasks/MVS_task_plan.md` 中已正式出现 `WP14: Cross-Axis Self-Integration / Self-Maintenance Arbitration`

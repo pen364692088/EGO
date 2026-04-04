@@ -2,8 +2,8 @@
 
 ```yaml
 phase: WP14
-status: legacy_demotion_complete
-current_layer: legacy_demotion
+status: causal_proof_complete
+current_layer: causal_validation
 main_chain_status: current_runtime_selfhood_consumer_present_legacy_reference_only
 enabled_status: owner_infra_plus_proto_self_contract_plus_runtime_bridge
 trigger_evidence:
@@ -33,23 +33,26 @@ trigger_evidence:
   - archived self-aware step files and roadmap materials are now explicitly classified as technical reference / reference-only and may not become WP14 fallback authority
   - OpenEmotion/tools/verify_mvp19_mainline_wiring.py now proves current runtime selfhood consumer presence plus no-second-truth legacy demotion
   - OpenEmotion/tests/mvp19/test_mvp19_mainline_reference_demotion.py now proves upstream read-only registration and legacy reference-only demotion
+  - OpenEmotion/tests/mvp19/test_selfhood_integration_causal_formal_proof.py now proves 4 positive paired intervention/control shifts plus 1 wording-only no-effect guard
+  - OpenEmotion/tools/run_mvp19_causal_validation.py now emits the current V3/E3 causal artifact under OpenEmotion/artifacts/mvp19/mvp19_causal_validation_current.*
+  - stability-first cross-axis arbitration now has paired proof for growth-vs-stability, maintenance-plus-reflection, social repair priority, and boundary-vs-repair conflict arbitration
 verification_level: V3
 evidence_level: E3
-current_blocker: "none on the T40 legacy demotion axis"
-next_minimal_closure_action: "start T50_CAUSAL_VALIDATION without upgrading the claim ceiling beyond T40"
+current_blocker: "none on the T50 causal proof axis"
+next_minimal_closure_action: "start T60_CONTROLLED_OBSERVATION_SINGLE without upgrading the claim ceiling beyond T50"
 ```
 
 ## 当前口径
 
-- 可宣称完成：`WP14/MVP19` 的 authority 仍保持冻结，且 `T10_FORMAL_OWNER_PACKAGE`、`T20_PROTO_SELF_CONTRACT_INTEGRATION`、`T30_EGOCORE_RUNTIME_BRIDGE` 与 `T40_LEGACY_DEMOTION_AND_COMPAT_MAP` 已完成
-- 条件性完成：当前只覆盖 authority + owner infra + `proto_self_v2` bounded contract + EgoCore runtime thin bridge + no-second-truth legacy demotion 这一条轴，不覆盖 causal proof、controlled observation、或 closeout
+- 可宣称完成：`WP14/MVP19` 的 authority 仍保持冻结，且 `T10_FORMAL_OWNER_PACKAGE`、`T20_PROTO_SELF_CONTRACT_INTEGRATION`、`T30_EGOCORE_RUNTIME_BRIDGE`、`T40_LEGACY_DEMOTION_AND_COMPAT_MAP` 与 `T50_CAUSAL_VALIDATION` 已完成
+- 条件性完成：当前只覆盖 authority + owner infra + `proto_self_v2` bounded contract + EgoCore runtime thin bridge + no-second-truth legacy demotion + `V3/E3` causal proof 这一条轴，不覆盖 controlled observation、或 closeout
 - 不可宣称完成：`MVP19` 已拿到 `E4/E5`、已开始 observation、或已进入 maintenance mode
-- 后续处理：下一步只允许推进 `T50_CAUSAL_VALIDATION`；在此之前不得抬高 claim ceiling 超过 `T40`
+- 后续处理：下一步只允许推进 `T60_CONTROLLED_OBSERVATION_SINGLE`；在此之前不得抬高 claim ceiling 超过 `T50`
 
 ## 边界提醒
 
 - `WP8~WP13` 的 maintenance / frozen upstream 状态不是 `WP14` 的实现证据
 - `WP14` 只能读取冻结 surfaces，不能直接回写 `self_model/*`、`endogenous_drives/*`、`reflective_self/*`、`developmental_self/*`、`social_self/*`、`embodied_self/*`
-- `OpenEmotion/openemotion/selfhood_integration/*` 当前只证明 owner-level schema/state/store/governance/replay/projection primitives 成立，不证明 current runtime mainline 已消费
+- `OpenEmotion/openemotion/selfhood_integration/*` 当前已证明 owner-level primitives、current runtime bounded consumption 与 causal weighting shifts 成立，但仍不证明 controlled observation 或 closeout
 - `axis_arbitration_hints` 当前只允许 advisory use，不允许冒充行为裁决
 - 不得出现“因为已有多轴 proposal，所以 OpenEmotion 可以直接说话 / 直接发工具 / 直接拿 transport claim”这类边界回退
