@@ -51,6 +51,13 @@ class ProtoSelfTracePayloadV2:
     seed_state_delta: Dict[str, Any] = field(default_factory=dict)
     seed_state_snapshot: Dict[str, Any] = field(default_factory=dict)
     developmental: Dict[str, Any] = field(default_factory=dict)
+    developmental_self_delta: Dict[str, Any] = field(default_factory=dict)
+    developmental_proposal_candidates: list = field(default_factory=list)
+    developmental_continuity_snapshot: Dict[str, Any] = field(default_factory=dict)
+    developmental_priority_hints: Dict[str, Any] = field(default_factory=dict)
+    developmental_audit_entries: list = field(default_factory=list)
+    developmental_writeback_candidate: Optional[Dict[str, Any]] = None
+    developmental_context: Dict[str, Any] = field(default_factory=dict)
     timestamp: str = ""
     legacy_trace_payload: Dict[str, Any] = field(default_factory=dict)
 
@@ -98,6 +105,13 @@ class ProtoSelfTracePayloadV2:
             "seed_state_delta": self.seed_state_delta,
             "seed_state_snapshot": self.seed_state_snapshot,
             "developmental": self.developmental,
+            "developmental_self_delta": self.developmental_self_delta,
+            "developmental_proposal_candidates": self.developmental_proposal_candidates,
+            "developmental_continuity_snapshot": self.developmental_continuity_snapshot,
+            "developmental_priority_hints": self.developmental_priority_hints,
+            "developmental_audit_entries": self.developmental_audit_entries,
+            "developmental_writeback_candidate": self.developmental_writeback_candidate,
+            "developmental_context": self.developmental_context,
             "timestamp": self.timestamp,
             "legacy_trace_payload": self.legacy_trace_payload,
         }
