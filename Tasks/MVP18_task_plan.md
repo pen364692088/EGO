@@ -1,6 +1,6 @@
 # MVP18 / WP13 Embodied Loop / Environment Coupling
 
-> 状态：WP13 owner-layer complete + T10 completed + T20 pending
+> 状态：WP13 proto-self contract complete + T10 completed + T20 completed + T30 pending
 > parent_authority: `Tasks/MVS_task_plan.md`
 > phase: `WP13`
 > predecessor: `WP12/MVP17`
@@ -135,8 +135,8 @@
 ## Current Phase Status
 - 当前层级：`implementation`
 - 当前状态：`owner_layer_complete`
-- 当前 blocker：`T20 proto-self contract integration not started`
-- 当前最小闭环动作：只开 `T20_PROTO_SELF_CONTRACT_INTEGRATION`，不提前进入 runtime bridge / observation
+- 当前 blocker：`T30 EgoCore runtime bridge not started`
+- 当前最小闭环动作：只开 `T30_EGOCORE_RUNTIME_BRIDGE`，不提前进入 observation
 
 ## Success Criteria
 - `Tasks/MVS_task_plan.md` 中已正式出现 `WP13: Embodied Loop / Environment Coupling`

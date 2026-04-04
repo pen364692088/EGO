@@ -7,7 +7,7 @@ owner: "Codex"
 layer: 3
 type: dual_repo
 repos: [EgoCore, OpenEmotion]
-status: owner_layer_complete
+status: proto_self_contract_complete
 parent_authority: "Tasks/MVS_task_plan.md"
 phase_authority: "Tasks/MVP18_task_plan.md"
 predecessor: "WP12/MVP17"
@@ -51,19 +51,19 @@ scope: "WP13 / MVP18 Embodied Loop / Environment Coupling"
 
 ## 当前状态
 
-- 执行包状态：`owner_layer_complete`
+- 执行包状态：`proto_self_contract_complete`
 - authority freeze：`completed`
 - formal owner：`T10 completed`
-- proto_self_v2 contract：`T20 pending`
+- proto_self_v2 contract：`T20 completed`
 - EgoCore runtime bridge：`T30 pending`
 - legacy demotion / compat map：`T40 pending`
 - causal validation：`T50 pending`
 - single controlled observation：`T60 pending`
 - batch controlled observation / aggregate：`T70 pending`
-- 主链接线：`formal owner package present`
+- 主链接线：`bounded proto-self embodied contract present`
 - 启用状态：`not_started`
-- 当前 blocker：`T20 proto-self contract integration not started`
-- 当前最小动作：`start T20_PROTO_SELF_CONTRACT_INTEGRATION; do not implement runtime or observation before T20`
+- 当前 blocker：`T30 EgoCore runtime bridge not started`
+- 当前最小动作：`start T30_EGOCORE_RUNTIME_BRIDGE; do not implement observation before T30`
 
 ## T10 已证实内容
 
@@ -72,6 +72,14 @@ scope: "WP13 / MVP18 Embodied Loop / Environment Coupling"
 - owner store、revision log、replay 与 proposal-only governance 已有最小测试通过
 - bounded runtime projection 已形成，但不泄漏 owner 全量状态
 - 旧 consequence / intervention surfaces 仍只作为 reference-only / input-only，不构成 current formal owner
+
+## T20 已证实内容
+
+- `proto_self_v2` 已能消费 `runtime_summary.embodied_self_context` 与 `runtime_summary.environment_context`
+- `KernelOutputV2` 已发出锁定的 `embodied_self_delta / consequence_update_candidates / resource_boundary_snapshot / embodied_policy_hints / repair_or_stabilize_proposal_candidates / embodied_writeback_candidate`
+- trace payload 已镜像 `environment_context`
+- embodied outputs 仍保持 `proposal_only + behavioral_authority = none`
+- legacy consequence / intervention fields 不会被误当成正式 embodied contract 输入
 
 ## 当前不做
 

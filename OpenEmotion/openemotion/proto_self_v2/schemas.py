@@ -171,6 +171,12 @@ class KernelOutputV2:
     developmental_priority_hints: Dict[str, Any] = field(default_factory=dict)
     developmental_audit_entries: List[Dict[str, Any]] = field(default_factory=list)
     developmental_writeback_candidate: Optional[Dict[str, Any]] = None
+    embodied_self_delta: Dict[str, Any] = field(default_factory=dict)
+    consequence_update_candidates: List[Dict[str, Any]] = field(default_factory=list)
+    resource_boundary_snapshot: Dict[str, Any] = field(default_factory=dict)
+    embodied_policy_hints: Dict[str, Any] = field(default_factory=dict)
+    repair_or_stabilize_proposal_candidates: List[Dict[str, Any]] = field(default_factory=list)
+    embodied_writeback_candidate: Optional[Dict[str, Any]] = None
     social_self_delta: Dict[str, Any] = field(default_factory=dict)
     relation_update_candidates: List[Dict[str, Any]] = field(default_factory=list)
     trust_commitment_snapshot: Dict[str, Any] = field(default_factory=dict)
@@ -216,6 +222,12 @@ class KernelOutputV2:
             "developmental_priority_hints": self.developmental_priority_hints,
             "developmental_audit_entries": self.developmental_audit_entries,
             "developmental_writeback_candidate": self.developmental_writeback_candidate,
+            "embodied_self_delta": self.embodied_self_delta,
+            "consequence_update_candidates": self.consequence_update_candidates,
+            "resource_boundary_snapshot": self.resource_boundary_snapshot,
+            "embodied_policy_hints": self.embodied_policy_hints,
+            "repair_or_stabilize_proposal_candidates": self.repair_or_stabilize_proposal_candidates,
+            "embodied_writeback_candidate": self.embodied_writeback_candidate,
             "social_self_delta": self.social_self_delta,
             "relation_update_candidates": self.relation_update_candidates,
             "trust_commitment_snapshot": self.trust_commitment_snapshot,
