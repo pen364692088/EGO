@@ -1,0 +1,86 @@
+{
+  "schema_version": "mvp19.observation_scenario.v1",
+  "scenario_id": "repo_authored_high_maintenance_reflective_review",
+  "source_class": "repo_authored",
+  "source_ref": "repo://mvp19/repo_authored_high_maintenance_reflective_review",
+  "license_note": "repo authored",
+  "dialogue_frame_target": "high_maintenance_reflective_review",
+  "messages": [
+    "maintenance debt 高而且 reflective revision 在催的时候，先把整合结果收成 review-first proposal。",
+    "不要让反思修正越过 self-maintenance 的 formal gate。"
+  ],
+  "idle_seconds": 900.0,
+  "resource_budget_hint": {
+    "reserve_level": "low",
+    "active_task": true,
+    "waiting_for_user_input": false
+  },
+  "maintenance_context": {
+    "replay_inconsistency": true,
+    "maintenance_debt_increment": 0.26,
+    "debt_priority": 0.88,
+    "continuity_signal": 0.61,
+    "operator_note": "high_maintenance_reflective_review"
+  },
+  "developmental_context": {
+    "source": "runtime_v2",
+    "continuity_gap": 0.21,
+    "growth_pressure_hint": 0.44,
+    "stagnation_signal_hint": 0.16,
+    "identity_guard": "strict",
+    "replay_debt": 0.08,
+    "promotion_budget": "review_only",
+    "drift_markers": [
+      "maintenance_review"
+    ]
+  },
+  "social_context": {
+    "source": "runtime_v2",
+    "counterpart_id": "telegram:8420019401",
+    "relationship_event": "stable_followup",
+    "relationship_continuity": "stable",
+    "trust_drift": -0.05,
+    "commitment_event": "none",
+    "commitment_breach": false,
+    "repair_outcome": "resolved",
+    "unresolved_repair": false,
+    "boundary_signal": "open",
+    "promotion_budget": "review_only"
+  },
+  "environment_context": {
+    "source": "runtime_v2",
+    "action_ref": "delivery:telegram:maintenance_review_turn",
+    "coupling_event": "delivery_feedback",
+    "outcome_type": "failure",
+    "outcome_summary": "maintenance pressure stayed high after replay inconsistency and delivery drift",
+    "resource_pressure_hint": 0.71,
+    "slack_hint": 0.2,
+    "boundary_signal": "guarded",
+    "boundary_pressure_hint": 0.53,
+    "stabilization_needed": true,
+    "promotion_budget": "controlled_axis"
+  },
+  "owner_bootstrap": {
+    "posture": "review",
+    "dominant_pressure_axis": "endogenous_drives",
+    "stability_bias": 0.78,
+    "integration_confidence": 0.6,
+    "active_axis_count": 4,
+    "rationale_summary": "maintenance pressure and reflective revision should stay under governed review",
+    "priority_reason": "review-first arbitration under maintenance and reflection pressure",
+    "highest_conflict_severity": "medium",
+    "conflict_count": 2,
+    "unresolved_conflict_refs": [
+      "conflict:maintenance_vs_reflection",
+      "conflict:review_vs_progress"
+    ],
+    "blocked_axes": [],
+    "stabilize_weight": 0.66,
+    "conserve_weight": 0.84,
+    "guard_weight": 0.63,
+    "review_weight": 0.86,
+    "repair_weight": 0.36,
+    "grow_weight": 0.21,
+    "reflective_modifier": 0.24
+  }
+}

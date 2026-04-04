@@ -7,14 +7,14 @@ owner: "Codex"
 layer: 3
 type: dual_repo
 repos: [EgoCore, OpenEmotion]
-status: observation_started
+status: observation_passed
 parent_authority: "Tasks/MVS_task_plan.md"
 phase_authority: "Tasks/MVP19_task_plan.md"
 predecessor: "WP13/MVP18"
 same_subject_line: true
 not_parallel_track: true
 scope: "WP14 / MVP19 Cross-Axis Self-Integration / Self-Maintenance Arbitration"
-claim_ceiling: "T60 only / single-sample V4-E4 observation_started"
+claim_ceiling: "T70 only / controlled-axis V5-E5 observation_passed"
 ```
 
 ---
@@ -51,7 +51,7 @@ claim_ceiling: "T60 only / single-sample V4-E4 observation_started"
 
 ## 当前状态
 
-- 执行包状态：`observation_started`
+- 执行包状态：`observation_passed`
 - authority freeze：`completed`
 - `T00_AUTHORITY_FREEZE`：`completed`
 - `T10` formal owner：`completed`
@@ -60,13 +60,13 @@ claim_ceiling: "T60 only / single-sample V4-E4 observation_started"
 - `T40` legacy demotion / compat map：`completed`
 - `T50` causal validation：`completed`
 - `T60` single controlled observation：`completed`
-- `T70` batch controlled observation / aggregate：`pending`
+- `T70` batch controlled observation / aggregate：`completed`
 - `T80` closeout / QA baseline：`pending`
 - `T90` subagent assignment sync：`completed`
 - 主链接线：`current_runtime_selfhood_consumer_present_legacy_reference_only`
 - 启用状态：`owner_infra_plus_proto_self_contract_plus_runtime_bridge`
-- 当前 blocker：`none on the T60 single-observation axis`
-- 当前最小动作：`T70_BATCH_OBSERVATION_AND_AGGREGATE`
+- 当前 blocker：`none on the T70 controlled batch axis`
+- 当前最小动作：`T80_CLOSEOUT_AND_QA_BASELINE`
 
 ## 当前已证实内容
 
@@ -159,10 +159,33 @@ claim_ceiling: "T60 only / single-sample V4-E4 observation_started"
   - `replay_valid = true`
 - 本层只证明 current formal owner + current runtime mainline 已拿到首个 controlled `V4/E4` single observation；不证明 repeated stability、batch `E5`、maintenance mode、或任何 authority 放开
 
+## T70 已证实内容
+
+- `OpenEmotion/scenarios/mvp19_observation_bank/` 已新增 3 个 repo-authored controlled scenarios：
+  - `low_confidence_embodied_growth_conflict`
+  - `high_maintenance_reflective_review`
+  - `social_repair_boundary_guard_conflict`
+- `OpenEmotion/tools/mvp19_scenario_bank.py` 已把 `mvp19` batch scenario bank 固化为正式 repo-tracked manifest loader / validator
+- `OpenEmotion/tools/run_mvp19_controlled_observation_batch.py` 已通过 formal runtime mainline 复用单样本 runner，生成当前 batch artifact：
+  - `OpenEmotion/artifacts/mvp19/mvp19_controlled_observation_batch_current.md`
+  - `OpenEmotion/artifacts/mvp19/mvp19_controlled_observation_batch_current.json`
+- `OpenEmotion/tests/mvp19/test_controlled_observation_batch.py` 已定向证明 batch aggregation 与 `V5/E5` claim ceiling
+- 当前 batch 结果为：
+  - `report_count = 3`
+  - `accepted_count = 3`
+  - `replay_consistent_count = 3`
+  - `self_integration_proposal_present_count = 3`
+  - `proposal_only_discipline_count = 3`
+  - `behavioral_authority_none_count = 3`
+  - `bounded_influence_present_count = 3`
+  - `verification_level = V5`
+  - `evidence_level = E5`
+- 本层只证明 `WP14` 已在 controlled axis 上拿到 repeated batch `V5/E5`；不证明 closeout、maintenance mode、live autonomy、OpenEmotion direct reply authority、或 broader transport claims
+
 ## 当前不做
 
 - 不宣称 owner/runtime 已实现
-- 不宣称 `E5`
+- 不宣称 maintenance mode
 - 不宣称 maintenance mode
 - 不 reopen `WP8~WP13`
 - 不放开 live autonomy

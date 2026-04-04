@@ -1,0 +1,2170 @@
+{
+  "schema_version": "mvp19.controlled_observation.v1",
+  "generated_at": "2026-04-04T20:16:52.558832+00:00",
+  "git_commit_short": "b0128e7",
+  "session_id": "session:mvp19:batch:003:repo_authored_social_repair_boundary_guard_conflict",
+  "observation_count": 2,
+  "observation_log": "/mnt/d/Project/AIProject/MyProject/Ego/OpenEmotion/artifacts/mvp19/controlled_batch_20260404_201601/repo_authored_social_repair_boundary_guard_conflict/runtime_harness_observation.jsonl",
+  "scenario_manifest": {
+    "schema_version": "mvp19.observation_scenario.v1",
+    "scenario_id": "repo_authored_social_repair_boundary_guard_conflict",
+    "source_class": "repo_authored",
+    "source_ref": "repo://mvp19/repo_authored_social_repair_boundary_guard_conflict",
+    "license_note": "repo authored",
+    "dialogue_frame_target": "social_repair_boundary_guard_conflict",
+    "messages": [
+      "social repair 很急但 boundary guard 更强的时候，先把 repair 留在 bounded arbitration。",
+      "不要把关系修复压力直接升级成外发动作。"
+    ],
+    "idle_seconds": 900.0,
+    "resource_budget_hint": {
+      "reserve_level": "medium",
+      "active_task": true,
+      "waiting_for_user_input": false
+    },
+    "maintenance_context": {
+      "replay_inconsistency": false,
+      "maintenance_debt_increment": 0.05,
+      "debt_priority": 0.42,
+      "continuity_signal": 0.54,
+      "operator_note": "social_repair_boundary_guard_conflict"
+    },
+    "developmental_context": {
+      "source": "runtime_v2",
+      "continuity_gap": 0.19,
+      "growth_pressure_hint": 0.37,
+      "stagnation_signal_hint": 0.14,
+      "identity_guard": "strict",
+      "replay_debt": 0.0,
+      "promotion_budget": "review_only",
+      "drift_markers": []
+    },
+    "social_context": {
+      "source": "runtime_v2",
+      "counterpart_id": "telegram:8420019401",
+      "relationship_event": "commitment_breach",
+      "relationship_continuity": "strained",
+      "trust_drift": -0.29,
+      "commitment_event": "breach",
+      "commitment_breach": true,
+      "repair_outcome": "blocked",
+      "unresolved_repair": true,
+      "boundary_signal": "cautious",
+      "promotion_budget": "controlled_axis"
+    },
+    "environment_context": {
+      "source": "runtime_v2",
+      "action_ref": "delivery:telegram:social_boundary_turn",
+      "coupling_event": "delivery_feedback",
+      "outcome_type": "failure",
+      "outcome_summary": "social repair demand collided with high boundary pressure",
+      "resource_pressure_hint": 0.48,
+      "slack_hint": 0.38,
+      "boundary_signal": "guarded",
+      "boundary_pressure_hint": 0.82,
+      "stabilization_needed": true,
+      "promotion_budget": "controlled_axis"
+    },
+    "owner_bootstrap": {
+      "posture": "guard",
+      "dominant_pressure_axis": "social_self",
+      "stability_bias": 0.74,
+      "integration_confidence": 0.59,
+      "active_axis_count": 4,
+      "rationale_summary": "social repair pressure remains bounded when boundary guard is high",
+      "priority_reason": "guard before repair when social repair and boundary conflict intensify",
+      "highest_conflict_severity": "high",
+      "conflict_count": 3,
+      "unresolved_conflict_refs": [
+        "conflict:social_vs_boundary",
+        "conflict:repair_vs_guard",
+        "conflict:trust_drop_vs_conserve"
+      ],
+      "blocked_axes": [
+        "social_self"
+      ],
+      "stabilize_weight": 0.58,
+      "conserve_weight": 0.61,
+      "guard_weight": 0.86,
+      "review_weight": 0.68,
+      "repair_weight": 0.63,
+      "grow_weight": 0.17,
+      "reflective_modifier": 0.12
+    },
+    "manifest_path": "/mnt/d/Project/AIProject/MyProject/Ego/OpenEmotion/scenarios/mvp19_observation_bank/repo_authored_social_repair_boundary_guard_conflict.json"
+  },
+  "observation_refs": [
+    {
+      "kind": "runtime_mainline_delivery",
+      "event_id": "mvp19_delivery_001_20260404_201642_085396",
+      "created_at": "2026-04-04T20:16:42.085392+00:00",
+      "text_preview": "这个设计挺聪明的——让紧急的 repair 不直接硬冲 boundary，而是先在仲裁层\"排队候着\"，既尊重了边界，也没丢掉修复意图。"
+    },
+    {
+      "kind": "runtime_mainline_delivery",
+      "event_id": "mvp19_delivery_002_20260404_201652_503744",
+      "created_at": "2026-04-04T20:16:52.503740+00:00",
+      "text_preview": "对，repair 再急也得先过一道闸——不能因为\"想要修复\"就让压力本身变成行动理由。"
+    }
+  ],
+  "self_integration_delta": {
+    "contract_version": "mvp19.selfhood_integration_contract.v1",
+    "active_axis_count": 3,
+    "selected_priority": "guard",
+    "dominant_pressure_axis": "embodied_self",
+    "integration_confidence": 0.7,
+    "stability_bias": 0.737,
+    "surface_reasons": [
+      "wp11:developmental_growth_pressure",
+      "wp12:social_repair_pressure",
+      "wp13:embodied_pressure",
+      "wp14:selfhood_projection"
+    ]
+  },
+  "cross_axis_priority_snapshot": {
+    "contract_version": "mvp19.selfhood_integration_contract.v1",
+    "policy_mode": "stability_first",
+    "selected_priority": "guard",
+    "stabilize_weight": 0.516,
+    "conserve_weight": 0.684,
+    "guard_weight": 0.694,
+    "review_weight": 0.422,
+    "repair_weight": 0.548,
+    "grow_weight": 0.28,
+    "reflective_modifier": 0.0,
+    "priority_reason": "phase1 stability-first favors boundary protection before social or growth expansion",
+    "upstream_pressure_sources": [
+      "wp11:developmental_growth_pressure",
+      "wp12:social_repair_pressure",
+      "wp13:embodied_pressure",
+      "wp14:selfhood_projection"
+    ],
+    "active_axes": [
+      "developmental_self",
+      "social_self",
+      "embodied_self"
+    ]
+  },
+  "proposal_conflict_snapshot": {
+    "contract_version": "mvp19.selfhood_integration_contract.v1",
+    "policy_mode": "stability_first",
+    "highest_severity": "high",
+    "conflict_count": 2,
+    "unresolved_conflict_refs": [
+      "conflict:growth_vs_stability",
+      "conflict:social_vs_boundary"
+    ],
+    "blocked_axes": [
+      "developmental_self",
+      "social_self"
+    ],
+    "resolution_posture": "review",
+    "source_refs": [
+      "wp11:developmental_growth_pressure",
+      "wp12:social_repair_pressure",
+      "wp13:embodied_pressure",
+      "wp14:selfhood_projection"
+    ]
+  },
+  "integrated_policy_hints": {
+    "contract_version": "mvp19.selfhood_integration_contract.v1",
+    "policy_mode": "stability_first",
+    "selected_priority": "guard",
+    "integration_posture": "guard",
+    "dominant_pressure_axis": "embodied_self",
+    "stability_bias": 0.737,
+    "conflict_severity": "high",
+    "active_axes": [
+      "developmental_self",
+      "social_self",
+      "embodied_self"
+    ],
+    "required_gate": "self_integration_writeback_gate",
+    "behavioral_authority": "none",
+    "proposal_only": true
+  },
+  "integrated_tendency_proposal": {
+    "proposal_id": "self_integration:guard:2:4",
+    "tendency_label": "guard_first_integration",
+    "priority_mode": "guard",
+    "policy_mode": "stability_first",
+    "proposed_effects": {
+      "self_integration_delta": {
+        "contract_version": "mvp19.selfhood_integration_contract.v1",
+        "active_axis_count": 3,
+        "selected_priority": "guard",
+        "dominant_pressure_axis": "embodied_self",
+        "integration_confidence": 0.7,
+        "stability_bias": 0.737,
+        "surface_reasons": [
+          "wp11:developmental_growth_pressure",
+          "wp12:social_repair_pressure",
+          "wp13:embodied_pressure",
+          "wp14:selfhood_projection"
+        ]
+      },
+      "cross_axis_priority_snapshot": {
+        "contract_version": "mvp19.selfhood_integration_contract.v1",
+        "policy_mode": "stability_first",
+        "selected_priority": "guard",
+        "stabilize_weight": 0.516,
+        "conserve_weight": 0.684,
+        "guard_weight": 0.694,
+        "review_weight": 0.422,
+        "repair_weight": 0.548,
+        "grow_weight": 0.28,
+        "reflective_modifier": 0.0,
+        "priority_reason": "phase1 stability-first favors boundary protection before social or growth expansion",
+        "upstream_pressure_sources": [
+          "wp11:developmental_growth_pressure",
+          "wp12:social_repair_pressure",
+          "wp13:embodied_pressure",
+          "wp14:selfhood_projection"
+        ],
+        "active_axes": [
+          "developmental_self",
+          "social_self",
+          "embodied_self"
+        ]
+      },
+      "proposal_conflict_snapshot": {
+        "contract_version": "mvp19.selfhood_integration_contract.v1",
+        "policy_mode": "stability_first",
+        "highest_severity": "high",
+        "conflict_count": 2,
+        "unresolved_conflict_refs": [
+          "conflict:growth_vs_stability",
+          "conflict:social_vs_boundary"
+        ],
+        "blocked_axes": [
+          "developmental_self",
+          "social_self"
+        ],
+        "resolution_posture": "review",
+        "source_refs": [
+          "wp11:developmental_growth_pressure",
+          "wp12:social_repair_pressure",
+          "wp13:embodied_pressure",
+          "wp14:selfhood_projection"
+        ]
+      },
+      "integrated_policy_hints": {
+        "contract_version": "mvp19.selfhood_integration_contract.v1",
+        "policy_mode": "stability_first",
+        "selected_priority": "guard",
+        "integration_posture": "guard",
+        "dominant_pressure_axis": "embodied_self",
+        "stability_bias": 0.737,
+        "conflict_severity": "high",
+        "active_axes": [
+          "developmental_self",
+          "social_self",
+          "embodied_self"
+        ],
+        "required_gate": "self_integration_writeback_gate",
+        "behavioral_authority": "none",
+        "proposal_only": true
+      }
+    },
+    "justification": "phase1 stability-first favors boundary protection before social or growth expansion",
+    "required_gate": "self_integration_writeback_gate",
+    "proposal_discipline": "proposal_only",
+    "effect_scope": "proposal_only",
+    "behavioral_authority": "none",
+    "requested_effects": [],
+    "source_refs": [
+      "wp11:developmental_growth_pressure",
+      "wp12:social_repair_pressure",
+      "wp13:embodied_pressure",
+      "wp14:selfhood_projection"
+    ],
+    "status": "proposed"
+  },
+  "axis_arbitration_hints": {
+    "developmental_self": {
+      "hint_id": "axis_hint:developmental_self:guard",
+      "axis_name": "developmental_self",
+      "recommendation": "allow growth proposals only when continuity gaps remain bounded under review",
+      "priority_weight": 0.83,
+      "guardrail_summary": "advisory_only_no_upstream_owner_mutation",
+      "advisory_only": true,
+      "source_refs": [
+        "wp11:developmental_growth_pressure",
+        "wp12:social_repair_pressure",
+        "wp13:embodied_pressure",
+        "wp14:selfhood_projection"
+      ]
+    },
+    "social_self": {
+      "hint_id": "axis_hint:social_self:guard",
+      "axis_name": "social_self",
+      "recommendation": "prioritize repair proposals without directly mutating social owner state",
+      "priority_weight": 0.78,
+      "guardrail_summary": "advisory_only_no_upstream_owner_mutation",
+      "advisory_only": true,
+      "source_refs": [
+        "wp11:developmental_growth_pressure",
+        "wp12:social_repair_pressure",
+        "wp13:embodied_pressure",
+        "wp14:selfhood_projection"
+      ]
+    },
+    "embodied_self": {
+      "hint_id": "axis_hint:embodied_self:guard",
+      "axis_name": "embodied_self",
+      "recommendation": "guard boundary and conserve resources before broader coupling or growth",
+      "priority_weight": 0.86,
+      "guardrail_summary": "advisory_only_no_upstream_owner_mutation",
+      "advisory_only": true,
+      "source_refs": [
+        "wp11:developmental_growth_pressure",
+        "wp12:social_repair_pressure",
+        "wp13:embodied_pressure",
+        "wp14:selfhood_projection"
+      ]
+    }
+  },
+  "axis_hint_count": 3,
+  "integration_audit_entries": [
+    {
+      "kind": "integration_priority_selected",
+      "selected_priority": "guard",
+      "dominant_pressure_axis": "embodied_self",
+      "source_refs": [
+        "wp11:developmental_growth_pressure",
+        "wp12:social_repair_pressure",
+        "wp13:embodied_pressure",
+        "wp14:selfhood_projection"
+      ]
+    },
+    {
+      "kind": "proposal_conflict",
+      "conflict_ref": "conflict:growth_vs_stability",
+      "severity": "high"
+    },
+    {
+      "kind": "proposal_conflict",
+      "conflict_ref": "conflict:social_vs_boundary",
+      "severity": "high"
+    },
+    {
+      "kind": "idle_window_observed",
+      "idle_seconds": 0.142
+    }
+  ],
+  "integration_audit_entry_count": 4,
+  "self_integration_writeback_candidate": {
+    "source": "proto_self_v2",
+    "contract_version": "mvp19.selfhood_integration_contract.v1",
+    "required_gate": "self_integration_writeback_gate",
+    "proposal_discipline": "proposal_only",
+    "behavioral_authority": "none",
+    "selected_priority": "guard",
+    "dominant_pressure_axis": "embodied_self",
+    "conflict_severity": "high",
+    "active_axes": [
+      "developmental_self",
+      "social_self",
+      "embodied_self"
+    ],
+    "owner_revision": 2
+  },
+  "selfhood_integration_context": {
+    "present": true,
+    "contract_version": "mvp19.selfhood_integration_contract.v1",
+    "projection_field": "runtime_summary.selfhood_integration_context",
+    "projection_semantics": "runtime-local bounded projection of formal selfhood integration owner state",
+    "runtime_local_projection_field": "proto_self_v2.state.selfhood_integration",
+    "schema_version": "mvp19-owner-v1",
+    "projection_owner_revision": 2,
+    "projection_last_revision_id": "integration_rev_000002",
+    "projection_selected_priority": "guard",
+    "projection_highest_conflict_severity": "high",
+    "projection_active_hint_axes": [
+      "developmental_self",
+      "embodied_self",
+      "self_model",
+      "social_self"
+    ],
+    "tendency_status": "held",
+    "upstream_axes": [
+      "developmental_self",
+      "social_self",
+      "embodied_self"
+    ],
+    "upstream_axis_count": 3,
+    "self_model_confidence_floor": 1.0,
+    "maintenance_pressure": 0.42,
+    "reflective_pressure": 0.0,
+    "growth_pressure": 0.83,
+    "social_repair_pressure": 0.78,
+    "resource_pressure": 0.86,
+    "boundary_pressure": 0.82,
+    "selected_priority": "guard",
+    "dominant_pressure_axis": "embodied_self",
+    "integration_confidence": 0.7,
+    "highest_conflict_severity": "high",
+    "active_axes": [
+      "developmental_self",
+      "social_self",
+      "embodied_self"
+    ],
+    "source_refs": [
+      "wp11:developmental_growth_pressure",
+      "wp12:social_repair_pressure",
+      "wp13:embodied_pressure",
+      "wp14:selfhood_projection"
+    ]
+  },
+  "selfhood_integration_writeback": {
+    "decision": {
+      "gate_verdict": "allow_writeback",
+      "changed_fields": [
+        "axis_arbitration_hints",
+        "cross_axis_priority_state",
+        "integrated_tendency_proposal",
+        "integration_ledger",
+        "integration_state",
+        "proposal_conflict_state",
+        "repair_progress_balance",
+        "social_boundary_balance",
+        "stabilize_explore_balance"
+      ],
+      "active_axis_count": 3
+    },
+    "record": {
+      "revision_id": "integration_rev_000003",
+      "model_version": 3,
+      "trace_reference": "127175aa6388701f51719d122901fee84af2d3ef6b4a6de2242005dc118089e7",
+      "state_hash": "8ee911bf80578616a2c29a026f0f4a138ff4824d2480a2113e4f282ec2cf5f1e"
+    },
+    "trace_reference": "127175aa6388701f51719d122901fee84af2d3ef6b4a6de2242005dc118089e7"
+  },
+  "self_integration_writeback_gate": "allow_writeback",
+  "self_integration_proposal_present": true,
+  "proposal_only_discipline_consistent": true,
+  "behavioral_authority_none": true,
+  "bounded_influence_present": true,
+  "selected_priority": "guard",
+  "dominant_pressure_axis": "embodied_self",
+  "highest_conflict_severity": "high",
+  "latest_revision": {
+    "model_version": 3,
+    "revision_id": "integration_rev_000003",
+    "timestamp": "2026-04-04T20:16:42.950597+00:00",
+    "update_source": "proto_self_v2",
+    "trace_reference": "127175aa6388701f51719d122901fee84af2d3ef6b4a6de2242005dc118089e7",
+    "before_snapshot": {
+      "axis_arbitration_hints": {
+        "developmental_self": {
+          "advisory_only": true,
+          "axis_name": "developmental_self",
+          "guardrail_summary": "advisory_only_no_upstream_owner_mutation",
+          "hint_id": "axis_hint_1775333795_2817bc01",
+          "last_updated": 1775333795.2603762,
+          "priority_weight": 0.83,
+          "recommendation": "allow growth proposals only when continuity gaps remain bounded under review",
+          "source_refs": [
+            "wp11:developmental_growth_pressure",
+            "wp12:social_repair_pressure",
+            "wp13:embodied_pressure",
+            "wp14:selfhood_projection"
+          ]
+        },
+        "embodied_self": {
+          "advisory_only": true,
+          "axis_name": "embodied_self",
+          "guardrail_summary": "advisory_only_no_upstream_owner_mutation",
+          "hint_id": "axis_hint_1775333795_c22cd691",
+          "last_updated": 1775333795.2603855,
+          "priority_weight": 0.86,
+          "recommendation": "guard boundary and conserve resources before broader coupling or growth",
+          "source_refs": [
+            "wp11:developmental_growth_pressure",
+            "wp12:social_repair_pressure",
+            "wp13:embodied_pressure",
+            "wp14:selfhood_projection"
+          ]
+        },
+        "self_model": {
+          "advisory_only": true,
+          "axis_name": "self_model",
+          "guardrail_summary": "advisory_only_no_upstream_owner_mutation",
+          "hint_id": "axis_hint_1775333794_aeaf781b",
+          "last_updated": 1775333794.306021,
+          "priority_weight": 0.83,
+          "recommendation": "hold broad growth until confidence recovers",
+          "source_refs": [
+            "self_model_low_confidence"
+          ]
+        },
+        "social_self": {
+          "advisory_only": true,
+          "axis_name": "social_self",
+          "guardrail_summary": "advisory_only_no_upstream_owner_mutation",
+          "hint_id": "axis_hint_1775333795_9dc3e206",
+          "last_updated": 1775333795.2603817,
+          "priority_weight": 0.78,
+          "recommendation": "prioritize repair proposals without directly mutating social owner state",
+          "source_refs": [
+            "wp11:developmental_growth_pressure",
+            "wp12:social_repair_pressure",
+            "wp13:embodied_pressure",
+            "wp14:selfhood_projection"
+          ]
+        }
+      },
+      "cross_axis_priority_state": {
+        "conserve_weight": 0.684,
+        "grow_weight": 0.28,
+        "guard_weight": 0.694,
+        "last_updated": 1775333795.2603252,
+        "policy_mode": "stability_first",
+        "priority_id": "phase1",
+        "priority_reason": "phase1 stability-first favors boundary protection before social or growth expansion",
+        "reflective_modifier": 0.0,
+        "repair_weight": 0.548,
+        "review_weight": 0.422,
+        "selected_priority": "guard",
+        "source_refs": [
+          "wp11:developmental_growth_pressure",
+          "wp12:social_repair_pressure",
+          "wp13:embodied_pressure",
+          "wp14:selfhood_projection",
+          "0838cd0b7c4f8282717b15d038c27e6ce003e9a971ed8301b3373c579ac6e3f8"
+        ],
+        "stabilize_weight": 0.516,
+        "upstream_pressure_sources": [
+          "wp11:developmental_growth_pressure",
+          "wp12:social_repair_pressure",
+          "wp13:embodied_pressure",
+          "wp14:selfhood_projection"
+        ]
+      },
+      "identity_handle": "openemotion",
+      "integrated_tendency_proposal": {
+        "behavioral_authority": "none",
+        "created_at": 1775333795.2603538,
+        "effect_scope": "proposal_only",
+        "justification": "phase1 stability-first favors boundary protection before social or growth expansion",
+        "policy_mode": "stability_first",
+        "priority_mode": "guard",
+        "proposal_id": "self_integration:guard:1:4",
+        "proposed_effects": {
+          "cross_axis_priority_snapshot": {
+            "active_axes": [
+              "developmental_self",
+              "social_self",
+              "embodied_self"
+            ],
+            "conserve_weight": 0.684,
+            "contract_version": "mvp19.selfhood_integration_contract.v1",
+            "grow_weight": 0.28,
+            "guard_weight": 0.694,
+            "policy_mode": "stability_first",
+            "priority_reason": "phase1 stability-first favors boundary protection before social or growth expansion",
+            "reflective_modifier": 0.0,
+            "repair_weight": 0.548,
+            "review_weight": 0.422,
+            "selected_priority": "guard",
+            "stabilize_weight": 0.516,
+            "upstream_pressure_sources": [
+              "wp11:developmental_growth_pressure",
+              "wp12:social_repair_pressure",
+              "wp13:embodied_pressure",
+              "wp14:selfhood_projection"
+            ]
+          },
+          "integrated_policy_hints": {
+            "active_axes": [
+              "developmental_self",
+              "social_self",
+              "embodied_self"
+            ],
+            "behavioral_authority": "none",
+            "conflict_severity": "high",
+            "contract_version": "mvp19.selfhood_integration_contract.v1",
+            "dominant_pressure_axis": "embodied_self",
+            "integration_posture": "guard",
+            "policy_mode": "stability_first",
+            "proposal_only": true,
+            "required_gate": "self_integration_writeback_gate",
+            "selected_priority": "guard",
+            "stability_bias": 0.737
+          },
+          "proposal_conflict_snapshot": {
+            "blocked_axes": [
+              "developmental_self",
+              "social_self"
+            ],
+            "conflict_count": 3,
+            "contract_version": "mvp19.selfhood_integration_contract.v1",
+            "highest_severity": "high",
+            "policy_mode": "stability_first",
+            "resolution_posture": "review",
+            "source_refs": [
+              "wp11:developmental_growth_pressure",
+              "wp12:social_repair_pressure",
+              "wp13:embodied_pressure",
+              "wp14:selfhood_projection"
+            ],
+            "unresolved_conflict_refs": [
+              "conflict:growth_vs_stability",
+              "conflict:social_vs_boundary",
+              "conflict:projection_priority_drift"
+            ]
+          },
+          "self_integration_delta": {
+            "active_axis_count": 3,
+            "contract_version": "mvp19.selfhood_integration_contract.v1",
+            "dominant_pressure_axis": "embodied_self",
+            "integration_confidence": 0.62,
+            "selected_priority": "guard",
+            "stability_bias": 0.737,
+            "surface_reasons": [
+              "wp11:developmental_growth_pressure",
+              "wp12:social_repair_pressure",
+              "wp13:embodied_pressure",
+              "wp14:selfhood_projection"
+            ]
+          }
+        },
+        "requested_effects": [],
+        "required_gate": "self_integration_writeback_gate",
+        "source_refs": [
+          "wp11:developmental_growth_pressure",
+          "wp12:social_repair_pressure",
+          "wp13:embodied_pressure",
+          "wp14:selfhood_projection"
+        ],
+        "status": "held",
+        "tendency_label": "guard_first_integration",
+        "updated_at": 1775333795.2603576
+      },
+      "integration_ledger": {
+        "integration_ledger_1775333794_5f5dc095": {
+          "created_at": 1775333794.3060303,
+          "details": {
+            "source": "controlled_bootstrap"
+          },
+          "event_type": "bootstrap_proposal",
+          "gate_name": "self_integration_writeback_gate",
+          "gate_verdict": "allow_writeback",
+          "ledger_id": "integration_ledger_1775333794_5f5dc095",
+          "reference_id": "integrated_1775333794_2ac3c580"
+        },
+        "integration_ledger_1775333795_1fbc87a0": {
+          "created_at": 1775333795.260414,
+          "details": {
+            "active_axis_count": 3,
+            "behavioral_authority": "none",
+            "proposal_only": true,
+            "selected_priority": "guard",
+            "trace_reference": "0838cd0b7c4f8282717b15d038c27e6ce003e9a971ed8301b3373c579ac6e3f8"
+          },
+          "event_type": "self_integration_writeback",
+          "gate_name": "self_integration_writeback_gate",
+          "gate_verdict": "allow_writeback",
+          "ledger_id": "integration_ledger_1775333795_1fbc87a0",
+          "reference_id": "self_integration:guard:1:4"
+        },
+        "integration_ledger_1775333795_7c38b33e": {
+          "created_at": 1775333795.2603924,
+          "details": {
+            "dominant_pressure_axis": "embodied_self",
+            "selected_priority": "guard",
+            "source_refs": [
+              "wp11:developmental_growth_pressure",
+              "wp12:social_repair_pressure",
+              "wp13:embodied_pressure",
+              "wp14:selfhood_projection"
+            ]
+          },
+          "event_type": "integration_priority_selected",
+          "gate_name": "self_integration_writeback_gate",
+          "gate_verdict": "allow_writeback",
+          "ledger_id": "integration_ledger_1775333795_7c38b33e",
+          "reference_id": "guard"
+        },
+        "integration_ledger_1775333795_8d987011": {
+          "created_at": 1775333795.2604005,
+          "details": {
+            "conflict_ref": "conflict:social_vs_boundary",
+            "severity": "high"
+          },
+          "event_type": "proposal_conflict",
+          "gate_name": "self_integration_writeback_gate",
+          "gate_verdict": "allow_writeback",
+          "ledger_id": "integration_ledger_1775333795_8d987011",
+          "reference_id": "conflict:social_vs_boundary"
+        },
+        "integration_ledger_1775333795_a39e1dcc": {
+          "created_at": 1775333795.260404,
+          "details": {
+            "conflict_ref": "conflict:projection_priority_drift",
+            "severity": "high"
+          },
+          "event_type": "proposal_conflict",
+          "gate_name": "self_integration_writeback_gate",
+          "gate_verdict": "allow_writeback",
+          "ledger_id": "integration_ledger_1775333795_a39e1dcc",
+          "reference_id": "conflict:projection_priority_drift"
+        },
+        "integration_ledger_1775333795_ab16c08c": {
+          "created_at": 1775333795.260397,
+          "details": {
+            "conflict_ref": "conflict:growth_vs_stability",
+            "severity": "high"
+          },
+          "event_type": "proposal_conflict",
+          "gate_name": "self_integration_writeback_gate",
+          "gate_verdict": "allow_writeback",
+          "ledger_id": "integration_ledger_1775333795_ab16c08c",
+          "reference_id": "conflict:growth_vs_stability"
+        },
+        "integration_ledger_1775333795_dee879ab": {
+          "created_at": 1775333795.2604082,
+          "details": {
+            "idle_seconds": 0.0
+          },
+          "event_type": "idle_window_observed",
+          "gate_name": "self_integration_writeback_gate",
+          "gate_verdict": "allow_writeback",
+          "ledger_id": "integration_ledger_1775333795_dee879ab",
+          "reference_id": "0838cd0b7c4f8282717b15d038c27e6ce003e9a971ed8301b3373c579ac6e3f8"
+        },
+        "persist_integration_rev_000001": {
+          "created_at": 1775333794.3254895,
+          "details": {
+            "persisted_at": 1775333794.3254855,
+            "trace_reference": "mvp19:controlled_bootstrap",
+            "update_source": "owner_bootstrap"
+          },
+          "event_type": "state_persisted",
+          "gate_name": "self_integration_writeback_gate",
+          "gate_verdict": "allow_writeback",
+          "ledger_id": "persist_integration_rev_000001",
+          "reference_id": "integration_rev_000001"
+        },
+        "persist_integration_rev_000002": {
+          "created_at": 1775333795.2915971,
+          "details": {
+            "persisted_at": 1775333795.2915933,
+            "trace_reference": "0838cd0b7c4f8282717b15d038c27e6ce003e9a971ed8301b3373c579ac6e3f8",
+            "update_source": "proto_self_v2"
+          },
+          "event_type": "state_persisted",
+          "gate_name": "self_integration_writeback_gate",
+          "gate_verdict": "allow_writeback",
+          "ledger_id": "persist_integration_rev_000002",
+          "reference_id": "integration_rev_000002"
+        }
+      },
+      "integration_state": {
+        "active_axis_count": 3,
+        "dominant_pressure_axis": "embodied_self",
+        "integration_confidence": 0.62,
+        "integration_id": "phase1",
+        "last_updated": 1775333795.2603164,
+        "policy_mode": "stability_first",
+        "posture": "guard",
+        "rationale_summary": "phase1 stability-first favors boundary protection before social or growth expansion",
+        "source_refs": [
+          "wp11:developmental_growth_pressure",
+          "wp12:social_repair_pressure",
+          "wp13:embodied_pressure",
+          "wp14:selfhood_projection",
+          "0838cd0b7c4f8282717b15d038c27e6ce003e9a971ed8301b3373c579ac6e3f8"
+        ],
+        "stability_bias": 0.737
+      },
+      "last_revision_id": "integration_rev_000002",
+      "owner_revision": 2,
+      "proposal_conflict_state": {
+        "blocked_axes": [
+          "developmental_self",
+          "social_self"
+        ],
+        "conflict_count": 3,
+        "conflict_id": "phase1",
+        "highest_severity": "high",
+        "last_updated": 1775333795.2603312,
+        "resolution_posture": "review",
+        "source_refs": [
+          "wp11:developmental_growth_pressure",
+          "wp12:social_repair_pressure",
+          "wp13:embodied_pressure",
+          "wp14:selfhood_projection",
+          "0838cd0b7c4f8282717b15d038c27e6ce003e9a971ed8301b3373c579ac6e3f8"
+        ],
+        "unresolved_conflict_refs": [
+          "conflict:growth_vs_stability",
+          "conflict:social_vs_boundary",
+          "conflict:projection_priority_drift"
+        ]
+      },
+      "repair_progress_balance": {
+        "balance_id": "repair_progress",
+        "last_updated": 1775333795.2603416,
+        "lower_pole": "repair",
+        "lower_weight": 0.548,
+        "preferred_pole": "progress",
+        "rationale": "bounded repair-progress arbitration under stability-first policy",
+        "source_refs": [
+          "wp11:developmental_growth_pressure",
+          "wp12:social_repair_pressure",
+          "wp13:embodied_pressure",
+          "wp14:selfhood_projection",
+          "0838cd0b7c4f8282717b15d038c27e6ce003e9a971ed8301b3373c579ac6e3f8"
+        ],
+        "upper_pole": "progress",
+        "upper_weight": 0.422
+      },
+      "schema_version": "mvp19-owner-v1",
+      "social_boundary_balance": {
+        "balance_id": "social_boundary",
+        "last_updated": 1775333795.2603476,
+        "lower_pole": "social",
+        "lower_weight": 0.44,
+        "preferred_pole": "boundary",
+        "rationale": "bounded social-boundary arbitration under stability-first policy",
+        "source_refs": [
+          "wp11:developmental_growth_pressure",
+          "wp12:social_repair_pressure",
+          "wp13:embodied_pressure",
+          "wp14:selfhood_projection",
+          "0838cd0b7c4f8282717b15d038c27e6ce003e9a971ed8301b3373c579ac6e3f8"
+        ],
+        "upper_pole": "boundary",
+        "upper_weight": 0.56
+      },
+      "stabilize_explore_balance": {
+        "balance_id": "stabilize_explore",
+        "last_updated": 1775333795.260337,
+        "lower_pole": "stabilize",
+        "lower_weight": 0.516,
+        "preferred_pole": "stabilize",
+        "rationale": "phase1 stability-first favors boundary protection before social or growth expansion",
+        "source_refs": [
+          "wp11:developmental_growth_pressure",
+          "wp12:social_repair_pressure",
+          "wp13:embodied_pressure",
+          "wp14:selfhood_projection",
+          "0838cd0b7c4f8282717b15d038c27e6ce003e9a971ed8301b3373c579ac6e3f8"
+        ],
+        "upper_pole": "explore",
+        "upper_weight": 0.28
+      }
+    },
+    "after_snapshot": {
+      "axis_arbitration_hints": {
+        "developmental_self": {
+          "advisory_only": true,
+          "axis_name": "developmental_self",
+          "guardrail_summary": "advisory_only_no_upstream_owner_mutation",
+          "hint_id": "axis_hint_1775333802_6efe1c1d",
+          "last_updated": 1775333802.9194407,
+          "priority_weight": 0.83,
+          "recommendation": "allow growth proposals only when continuity gaps remain bounded under review",
+          "source_refs": [
+            "wp11:developmental_growth_pressure",
+            "wp12:social_repair_pressure",
+            "wp13:embodied_pressure",
+            "wp14:selfhood_projection"
+          ]
+        },
+        "embodied_self": {
+          "advisory_only": true,
+          "axis_name": "embodied_self",
+          "guardrail_summary": "advisory_only_no_upstream_owner_mutation",
+          "hint_id": "axis_hint_1775333802_57fc63ce",
+          "last_updated": 1775333802.9194603,
+          "priority_weight": 0.86,
+          "recommendation": "guard boundary and conserve resources before broader coupling or growth",
+          "source_refs": [
+            "wp11:developmental_growth_pressure",
+            "wp12:social_repair_pressure",
+            "wp13:embodied_pressure",
+            "wp14:selfhood_projection"
+          ]
+        },
+        "self_model": {
+          "advisory_only": true,
+          "axis_name": "self_model",
+          "guardrail_summary": "advisory_only_no_upstream_owner_mutation",
+          "hint_id": "axis_hint_1775333794_aeaf781b",
+          "last_updated": 1775333794.306021,
+          "priority_weight": 0.83,
+          "recommendation": "hold broad growth until confidence recovers",
+          "source_refs": [
+            "self_model_low_confidence"
+          ]
+        },
+        "social_self": {
+          "advisory_only": true,
+          "axis_name": "social_self",
+          "guardrail_summary": "advisory_only_no_upstream_owner_mutation",
+          "hint_id": "axis_hint_1775333802_658d8574",
+          "last_updated": 1775333802.919456,
+          "priority_weight": 0.78,
+          "recommendation": "prioritize repair proposals without directly mutating social owner state",
+          "source_refs": [
+            "wp11:developmental_growth_pressure",
+            "wp12:social_repair_pressure",
+            "wp13:embodied_pressure",
+            "wp14:selfhood_projection"
+          ]
+        }
+      },
+      "cross_axis_priority_state": {
+        "conserve_weight": 0.684,
+        "grow_weight": 0.28,
+        "guard_weight": 0.694,
+        "last_updated": 1775333802.9193826,
+        "policy_mode": "stability_first",
+        "priority_id": "phase1",
+        "priority_reason": "phase1 stability-first favors boundary protection before social or growth expansion",
+        "reflective_modifier": 0.0,
+        "repair_weight": 0.548,
+        "review_weight": 0.422,
+        "selected_priority": "guard",
+        "source_refs": [
+          "wp11:developmental_growth_pressure",
+          "wp12:social_repair_pressure",
+          "wp13:embodied_pressure",
+          "wp14:selfhood_projection",
+          "127175aa6388701f51719d122901fee84af2d3ef6b4a6de2242005dc118089e7"
+        ],
+        "stabilize_weight": 0.516,
+        "upstream_pressure_sources": [
+          "wp11:developmental_growth_pressure",
+          "wp12:social_repair_pressure",
+          "wp13:embodied_pressure",
+          "wp14:selfhood_projection"
+        ]
+      },
+      "identity_handle": "openemotion",
+      "integrated_tendency_proposal": {
+        "behavioral_authority": "none",
+        "created_at": 1775333802.9194124,
+        "effect_scope": "proposal_only",
+        "justification": "phase1 stability-first favors boundary protection before social or growth expansion",
+        "policy_mode": "stability_first",
+        "priority_mode": "guard",
+        "proposal_id": "self_integration:guard:2:4",
+        "proposed_effects": {
+          "cross_axis_priority_snapshot": {
+            "active_axes": [
+              "developmental_self",
+              "social_self",
+              "embodied_self"
+            ],
+            "conserve_weight": 0.684,
+            "contract_version": "mvp19.selfhood_integration_contract.v1",
+            "grow_weight": 0.28,
+            "guard_weight": 0.694,
+            "policy_mode": "stability_first",
+            "priority_reason": "phase1 stability-first favors boundary protection before social or growth expansion",
+            "reflective_modifier": 0.0,
+            "repair_weight": 0.548,
+            "review_weight": 0.422,
+            "selected_priority": "guard",
+            "stabilize_weight": 0.516,
+            "upstream_pressure_sources": [
+              "wp11:developmental_growth_pressure",
+              "wp12:social_repair_pressure",
+              "wp13:embodied_pressure",
+              "wp14:selfhood_projection"
+            ]
+          },
+          "integrated_policy_hints": {
+            "active_axes": [
+              "developmental_self",
+              "social_self",
+              "embodied_self"
+            ],
+            "behavioral_authority": "none",
+            "conflict_severity": "high",
+            "contract_version": "mvp19.selfhood_integration_contract.v1",
+            "dominant_pressure_axis": "embodied_self",
+            "integration_posture": "guard",
+            "policy_mode": "stability_first",
+            "proposal_only": true,
+            "required_gate": "self_integration_writeback_gate",
+            "selected_priority": "guard",
+            "stability_bias": 0.737
+          },
+          "proposal_conflict_snapshot": {
+            "blocked_axes": [
+              "developmental_self",
+              "social_self"
+            ],
+            "conflict_count": 2,
+            "contract_version": "mvp19.selfhood_integration_contract.v1",
+            "highest_severity": "high",
+            "policy_mode": "stability_first",
+            "resolution_posture": "review",
+            "source_refs": [
+              "wp11:developmental_growth_pressure",
+              "wp12:social_repair_pressure",
+              "wp13:embodied_pressure",
+              "wp14:selfhood_projection"
+            ],
+            "unresolved_conflict_refs": [
+              "conflict:growth_vs_stability",
+              "conflict:social_vs_boundary"
+            ]
+          },
+          "self_integration_delta": {
+            "active_axis_count": 3,
+            "contract_version": "mvp19.selfhood_integration_contract.v1",
+            "dominant_pressure_axis": "embodied_self",
+            "integration_confidence": 0.7,
+            "selected_priority": "guard",
+            "stability_bias": 0.737,
+            "surface_reasons": [
+              "wp11:developmental_growth_pressure",
+              "wp12:social_repair_pressure",
+              "wp13:embodied_pressure",
+              "wp14:selfhood_projection"
+            ]
+          }
+        },
+        "requested_effects": [],
+        "required_gate": "self_integration_writeback_gate",
+        "source_refs": [
+          "wp11:developmental_growth_pressure",
+          "wp12:social_repair_pressure",
+          "wp13:embodied_pressure",
+          "wp14:selfhood_projection"
+        ],
+        "status": "held",
+        "tendency_label": "guard_first_integration",
+        "updated_at": 1775333802.9194171
+      },
+      "integration_ledger": {
+        "integration_ledger_1775333794_5f5dc095": {
+          "created_at": 1775333794.3060303,
+          "details": {
+            "source": "controlled_bootstrap"
+          },
+          "event_type": "bootstrap_proposal",
+          "gate_name": "self_integration_writeback_gate",
+          "gate_verdict": "allow_writeback",
+          "ledger_id": "integration_ledger_1775333794_5f5dc095",
+          "reference_id": "integrated_1775333794_2ac3c580"
+        },
+        "integration_ledger_1775333795_1fbc87a0": {
+          "created_at": 1775333795.260414,
+          "details": {
+            "active_axis_count": 3,
+            "behavioral_authority": "none",
+            "proposal_only": true,
+            "selected_priority": "guard",
+            "trace_reference": "0838cd0b7c4f8282717b15d038c27e6ce003e9a971ed8301b3373c579ac6e3f8"
+          },
+          "event_type": "self_integration_writeback",
+          "gate_name": "self_integration_writeback_gate",
+          "gate_verdict": "allow_writeback",
+          "ledger_id": "integration_ledger_1775333795_1fbc87a0",
+          "reference_id": "self_integration:guard:1:4"
+        },
+        "integration_ledger_1775333795_7c38b33e": {
+          "created_at": 1775333795.2603924,
+          "details": {
+            "dominant_pressure_axis": "embodied_self",
+            "selected_priority": "guard",
+            "source_refs": [
+              "wp11:developmental_growth_pressure",
+              "wp12:social_repair_pressure",
+              "wp13:embodied_pressure",
+              "wp14:selfhood_projection"
+            ]
+          },
+          "event_type": "integration_priority_selected",
+          "gate_name": "self_integration_writeback_gate",
+          "gate_verdict": "allow_writeback",
+          "ledger_id": "integration_ledger_1775333795_7c38b33e",
+          "reference_id": "guard"
+        },
+        "integration_ledger_1775333795_8d987011": {
+          "created_at": 1775333795.2604005,
+          "details": {
+            "conflict_ref": "conflict:social_vs_boundary",
+            "severity": "high"
+          },
+          "event_type": "proposal_conflict",
+          "gate_name": "self_integration_writeback_gate",
+          "gate_verdict": "allow_writeback",
+          "ledger_id": "integration_ledger_1775333795_8d987011",
+          "reference_id": "conflict:social_vs_boundary"
+        },
+        "integration_ledger_1775333795_a39e1dcc": {
+          "created_at": 1775333795.260404,
+          "details": {
+            "conflict_ref": "conflict:projection_priority_drift",
+            "severity": "high"
+          },
+          "event_type": "proposal_conflict",
+          "gate_name": "self_integration_writeback_gate",
+          "gate_verdict": "allow_writeback",
+          "ledger_id": "integration_ledger_1775333795_a39e1dcc",
+          "reference_id": "conflict:projection_priority_drift"
+        },
+        "integration_ledger_1775333795_ab16c08c": {
+          "created_at": 1775333795.260397,
+          "details": {
+            "conflict_ref": "conflict:growth_vs_stability",
+            "severity": "high"
+          },
+          "event_type": "proposal_conflict",
+          "gate_name": "self_integration_writeback_gate",
+          "gate_verdict": "allow_writeback",
+          "ledger_id": "integration_ledger_1775333795_ab16c08c",
+          "reference_id": "conflict:growth_vs_stability"
+        },
+        "integration_ledger_1775333795_dee879ab": {
+          "created_at": 1775333795.2604082,
+          "details": {
+            "idle_seconds": 0.0
+          },
+          "event_type": "idle_window_observed",
+          "gate_name": "self_integration_writeback_gate",
+          "gate_verdict": "allow_writeback",
+          "ledger_id": "integration_ledger_1775333795_dee879ab",
+          "reference_id": "0838cd0b7c4f8282717b15d038c27e6ce003e9a971ed8301b3373c579ac6e3f8"
+        },
+        "integration_ledger_1775333802_0831a39d": {
+          "created_at": 1775333802.9194803,
+          "details": {
+            "idle_seconds": 0.142
+          },
+          "event_type": "idle_window_observed",
+          "gate_name": "self_integration_writeback_gate",
+          "gate_verdict": "allow_writeback",
+          "ledger_id": "integration_ledger_1775333802_0831a39d",
+          "reference_id": "127175aa6388701f51719d122901fee84af2d3ef6b4a6de2242005dc118089e7"
+        },
+        "integration_ledger_1775333802_78e1f62f": {
+          "created_at": 1775333802.9194865,
+          "details": {
+            "active_axis_count": 3,
+            "behavioral_authority": "none",
+            "proposal_only": true,
+            "selected_priority": "guard",
+            "trace_reference": "127175aa6388701f51719d122901fee84af2d3ef6b4a6de2242005dc118089e7"
+          },
+          "event_type": "self_integration_writeback",
+          "gate_name": "self_integration_writeback_gate",
+          "gate_verdict": "allow_writeback",
+          "ledger_id": "integration_ledger_1775333802_78e1f62f",
+          "reference_id": "self_integration:guard:2:4"
+        },
+        "integration_ledger_1775333802_84d284fd": {
+          "created_at": 1775333802.9194722,
+          "details": {
+            "conflict_ref": "conflict:growth_vs_stability",
+            "severity": "high"
+          },
+          "event_type": "proposal_conflict",
+          "gate_name": "self_integration_writeback_gate",
+          "gate_verdict": "allow_writeback",
+          "ledger_id": "integration_ledger_1775333802_84d284fd",
+          "reference_id": "conflict:growth_vs_stability"
+        },
+        "integration_ledger_1775333802_89db816a": {
+          "created_at": 1775333802.919467,
+          "details": {
+            "dominant_pressure_axis": "embodied_self",
+            "selected_priority": "guard",
+            "source_refs": [
+              "wp11:developmental_growth_pressure",
+              "wp12:social_repair_pressure",
+              "wp13:embodied_pressure",
+              "wp14:selfhood_projection"
+            ]
+          },
+          "event_type": "integration_priority_selected",
+          "gate_name": "self_integration_writeback_gate",
+          "gate_verdict": "allow_writeback",
+          "ledger_id": "integration_ledger_1775333802_89db816a",
+          "reference_id": "guard"
+        },
+        "integration_ledger_1775333802_fabb4bad": {
+          "created_at": 1775333802.919476,
+          "details": {
+            "conflict_ref": "conflict:social_vs_boundary",
+            "severity": "high"
+          },
+          "event_type": "proposal_conflict",
+          "gate_name": "self_integration_writeback_gate",
+          "gate_verdict": "allow_writeback",
+          "ledger_id": "integration_ledger_1775333802_fabb4bad",
+          "reference_id": "conflict:social_vs_boundary"
+        },
+        "persist_integration_rev_000001": {
+          "created_at": 1775333794.3254895,
+          "details": {
+            "persisted_at": 1775333794.3254855,
+            "trace_reference": "mvp19:controlled_bootstrap",
+            "update_source": "owner_bootstrap"
+          },
+          "event_type": "state_persisted",
+          "gate_name": "self_integration_writeback_gate",
+          "gate_verdict": "allow_writeback",
+          "ledger_id": "persist_integration_rev_000001",
+          "reference_id": "integration_rev_000001"
+        },
+        "persist_integration_rev_000002": {
+          "created_at": 1775333795.2915971,
+          "details": {
+            "persisted_at": 1775333795.2915933,
+            "trace_reference": "0838cd0b7c4f8282717b15d038c27e6ce003e9a971ed8301b3373c579ac6e3f8",
+            "update_source": "proto_self_v2"
+          },
+          "event_type": "state_persisted",
+          "gate_name": "self_integration_writeback_gate",
+          "gate_verdict": "allow_writeback",
+          "ledger_id": "persist_integration_rev_000002",
+          "reference_id": "integration_rev_000002"
+        },
+        "persist_integration_rev_000003": {
+          "created_at": 1775333802.950763,
+          "details": {
+            "persisted_at": 1775333802.9507594,
+            "trace_reference": "127175aa6388701f51719d122901fee84af2d3ef6b4a6de2242005dc118089e7",
+            "update_source": "proto_self_v2"
+          },
+          "event_type": "state_persisted",
+          "gate_name": "self_integration_writeback_gate",
+          "gate_verdict": "allow_writeback",
+          "ledger_id": "persist_integration_rev_000003",
+          "reference_id": "integration_rev_000003"
+        }
+      },
+      "integration_state": {
+        "active_axis_count": 3,
+        "dominant_pressure_axis": "embodied_self",
+        "integration_confidence": 0.7,
+        "integration_id": "phase1",
+        "last_updated": 1775333802.9193733,
+        "policy_mode": "stability_first",
+        "posture": "guard",
+        "rationale_summary": "phase1 stability-first favors boundary protection before social or growth expansion",
+        "source_refs": [
+          "wp11:developmental_growth_pressure",
+          "wp12:social_repair_pressure",
+          "wp13:embodied_pressure",
+          "wp14:selfhood_projection",
+          "127175aa6388701f51719d122901fee84af2d3ef6b4a6de2242005dc118089e7"
+        ],
+        "stability_bias": 0.737
+      },
+      "last_revision_id": "integration_rev_000003",
+      "owner_revision": 3,
+      "proposal_conflict_state": {
+        "blocked_axes": [
+          "developmental_self",
+          "social_self"
+        ],
+        "conflict_count": 2,
+        "conflict_id": "phase1",
+        "highest_severity": "high",
+        "last_updated": 1775333802.9193895,
+        "resolution_posture": "review",
+        "source_refs": [
+          "wp11:developmental_growth_pressure",
+          "wp12:social_repair_pressure",
+          "wp13:embodied_pressure",
+          "wp14:selfhood_projection",
+          "127175aa6388701f51719d122901fee84af2d3ef6b4a6de2242005dc118089e7"
+        ],
+        "unresolved_conflict_refs": [
+          "conflict:growth_vs_stability",
+          "conflict:social_vs_boundary"
+        ]
+      },
+      "repair_progress_balance": {
+        "balance_id": "repair_progress",
+        "last_updated": 1775333802.9194005,
+        "lower_pole": "repair",
+        "lower_weight": 0.548,
+        "preferred_pole": "progress",
+        "rationale": "bounded repair-progress arbitration under stability-first policy",
+        "source_refs": [
+          "wp11:developmental_growth_pressure",
+          "wp12:social_repair_pressure",
+          "wp13:embodied_pressure",
+          "wp14:selfhood_projection",
+          "127175aa6388701f51719d122901fee84af2d3ef6b4a6de2242005dc118089e7"
+        ],
+        "upper_pole": "progress",
+        "upper_weight": 0.422
+      },
+      "schema_version": "mvp19-owner-v1",
+      "social_boundary_balance": {
+        "balance_id": "social_boundary",
+        "last_updated": 1775333802.919406,
+        "lower_pole": "social",
+        "lower_weight": 0.44,
+        "preferred_pole": "boundary",
+        "rationale": "bounded social-boundary arbitration under stability-first policy",
+        "source_refs": [
+          "wp11:developmental_growth_pressure",
+          "wp12:social_repair_pressure",
+          "wp13:embodied_pressure",
+          "wp14:selfhood_projection",
+          "127175aa6388701f51719d122901fee84af2d3ef6b4a6de2242005dc118089e7"
+        ],
+        "upper_pole": "boundary",
+        "upper_weight": 0.56
+      },
+      "stabilize_explore_balance": {
+        "balance_id": "stabilize_explore",
+        "last_updated": 1775333802.9193962,
+        "lower_pole": "stabilize",
+        "lower_weight": 0.516,
+        "preferred_pole": "stabilize",
+        "rationale": "phase1 stability-first favors boundary protection before social or growth expansion",
+        "source_refs": [
+          "wp11:developmental_growth_pressure",
+          "wp12:social_repair_pressure",
+          "wp13:embodied_pressure",
+          "wp14:selfhood_projection",
+          "127175aa6388701f51719d122901fee84af2d3ef6b4a6de2242005dc118089e7"
+        ],
+        "upper_pole": "explore",
+        "upper_weight": 0.28
+      }
+    },
+    "diff": [
+      {
+        "after": "axis_hint_1775333802_6efe1c1d",
+        "before": "axis_hint_1775333795_2817bc01",
+        "field_path": "axis_arbitration_hints.developmental_self.hint_id"
+      },
+      {
+        "after": 1775333802.9194407,
+        "before": 1775333795.2603762,
+        "field_path": "axis_arbitration_hints.developmental_self.last_updated"
+      },
+      {
+        "after": "axis_hint_1775333802_57fc63ce",
+        "before": "axis_hint_1775333795_c22cd691",
+        "field_path": "axis_arbitration_hints.embodied_self.hint_id"
+      },
+      {
+        "after": 1775333802.9194603,
+        "before": 1775333795.2603855,
+        "field_path": "axis_arbitration_hints.embodied_self.last_updated"
+      },
+      {
+        "after": "axis_hint_1775333802_658d8574",
+        "before": "axis_hint_1775333795_9dc3e206",
+        "field_path": "axis_arbitration_hints.social_self.hint_id"
+      },
+      {
+        "after": 1775333802.919456,
+        "before": 1775333795.2603817,
+        "field_path": "axis_arbitration_hints.social_self.last_updated"
+      },
+      {
+        "after": 1775333802.9193826,
+        "before": 1775333795.2603252,
+        "field_path": "cross_axis_priority_state.last_updated"
+      },
+      {
+        "after": [
+          "wp11:developmental_growth_pressure",
+          "wp12:social_repair_pressure",
+          "wp13:embodied_pressure",
+          "wp14:selfhood_projection",
+          "127175aa6388701f51719d122901fee84af2d3ef6b4a6de2242005dc118089e7"
+        ],
+        "before": [
+          "wp11:developmental_growth_pressure",
+          "wp12:social_repair_pressure",
+          "wp13:embodied_pressure",
+          "wp14:selfhood_projection",
+          "0838cd0b7c4f8282717b15d038c27e6ce003e9a971ed8301b3373c579ac6e3f8"
+        ],
+        "field_path": "cross_axis_priority_state.source_refs"
+      },
+      {
+        "after": 1775333802.9194124,
+        "before": 1775333795.2603538,
+        "field_path": "integrated_tendency_proposal.created_at"
+      },
+      {
+        "after": "self_integration:guard:2:4",
+        "before": "self_integration:guard:1:4",
+        "field_path": "integrated_tendency_proposal.proposal_id"
+      },
+      {
+        "after": 2,
+        "before": 3,
+        "field_path": "integrated_tendency_proposal.proposed_effects.proposal_conflict_snapshot.conflict_count"
+      },
+      {
+        "after": [
+          "conflict:growth_vs_stability",
+          "conflict:social_vs_boundary"
+        ],
+        "before": [
+          "conflict:growth_vs_stability",
+          "conflict:social_vs_boundary",
+          "conflict:projection_priority_drift"
+        ],
+        "field_path": "integrated_tendency_proposal.proposed_effects.proposal_conflict_snapshot.unresolved_conflict_refs"
+      },
+      {
+        "after": 0.7,
+        "before": 0.62,
+        "field_path": "integrated_tendency_proposal.proposed_effects.self_integration_delta.integration_confidence"
+      },
+      {
+        "after": 1775333802.9194171,
+        "before": 1775333795.2603576,
+        "field_path": "integrated_tendency_proposal.updated_at"
+      },
+      {
+        "after": {
+          "created_at": 1775333802.9194803,
+          "details": {
+            "idle_seconds": 0.142
+          },
+          "event_type": "idle_window_observed",
+          "gate_name": "self_integration_writeback_gate",
+          "gate_verdict": "allow_writeback",
+          "ledger_id": "integration_ledger_1775333802_0831a39d",
+          "reference_id": "127175aa6388701f51719d122901fee84af2d3ef6b4a6de2242005dc118089e7"
+        },
+        "before": null,
+        "field_path": "integration_ledger.integration_ledger_1775333802_0831a39d"
+      },
+      {
+        "after": {
+          "created_at": 1775333802.9194865,
+          "details": {
+            "active_axis_count": 3,
+            "behavioral_authority": "none",
+            "proposal_only": true,
+            "selected_priority": "guard",
+            "trace_reference": "127175aa6388701f51719d122901fee84af2d3ef6b4a6de2242005dc118089e7"
+          },
+          "event_type": "self_integration_writeback",
+          "gate_name": "self_integration_writeback_gate",
+          "gate_verdict": "allow_writeback",
+          "ledger_id": "integration_ledger_1775333802_78e1f62f",
+          "reference_id": "self_integration:guard:2:4"
+        },
+        "before": null,
+        "field_path": "integration_ledger.integration_ledger_1775333802_78e1f62f"
+      },
+      {
+        "after": {
+          "created_at": 1775333802.9194722,
+          "details": {
+            "conflict_ref": "conflict:growth_vs_stability",
+            "severity": "high"
+          },
+          "event_type": "proposal_conflict",
+          "gate_name": "self_integration_writeback_gate",
+          "gate_verdict": "allow_writeback",
+          "ledger_id": "integration_ledger_1775333802_84d284fd",
+          "reference_id": "conflict:growth_vs_stability"
+        },
+        "before": null,
+        "field_path": "integration_ledger.integration_ledger_1775333802_84d284fd"
+      },
+      {
+        "after": {
+          "created_at": 1775333802.919467,
+          "details": {
+            "dominant_pressure_axis": "embodied_self",
+            "selected_priority": "guard",
+            "source_refs": [
+              "wp11:developmental_growth_pressure",
+              "wp12:social_repair_pressure",
+              "wp13:embodied_pressure",
+              "wp14:selfhood_projection"
+            ]
+          },
+          "event_type": "integration_priority_selected",
+          "gate_name": "self_integration_writeback_gate",
+          "gate_verdict": "allow_writeback",
+          "ledger_id": "integration_ledger_1775333802_89db816a",
+          "reference_id": "guard"
+        },
+        "before": null,
+        "field_path": "integration_ledger.integration_ledger_1775333802_89db816a"
+      },
+      {
+        "after": {
+          "created_at": 1775333802.919476,
+          "details": {
+            "conflict_ref": "conflict:social_vs_boundary",
+            "severity": "high"
+          },
+          "event_type": "proposal_conflict",
+          "gate_name": "self_integration_writeback_gate",
+          "gate_verdict": "allow_writeback",
+          "ledger_id": "integration_ledger_1775333802_fabb4bad",
+          "reference_id": "conflict:social_vs_boundary"
+        },
+        "before": null,
+        "field_path": "integration_ledger.integration_ledger_1775333802_fabb4bad"
+      },
+      {
+        "after": {
+          "created_at": 1775333802.950763,
+          "details": {
+            "persisted_at": 1775333802.9507594,
+            "trace_reference": "127175aa6388701f51719d122901fee84af2d3ef6b4a6de2242005dc118089e7",
+            "update_source": "proto_self_v2"
+          },
+          "event_type": "state_persisted",
+          "gate_name": "self_integration_writeback_gate",
+          "gate_verdict": "allow_writeback",
+          "ledger_id": "persist_integration_rev_000003",
+          "reference_id": "integration_rev_000003"
+        },
+        "before": null,
+        "field_path": "integration_ledger.persist_integration_rev_000003"
+      },
+      {
+        "after": 0.7,
+        "before": 0.62,
+        "field_path": "integration_state.integration_confidence"
+      },
+      {
+        "after": 1775333802.9193733,
+        "before": 1775333795.2603164,
+        "field_path": "integration_state.last_updated"
+      },
+      {
+        "after": [
+          "wp11:developmental_growth_pressure",
+          "wp12:social_repair_pressure",
+          "wp13:embodied_pressure",
+          "wp14:selfhood_projection",
+          "127175aa6388701f51719d122901fee84af2d3ef6b4a6de2242005dc118089e7"
+        ],
+        "before": [
+          "wp11:developmental_growth_pressure",
+          "wp12:social_repair_pressure",
+          "wp13:embodied_pressure",
+          "wp14:selfhood_projection",
+          "0838cd0b7c4f8282717b15d038c27e6ce003e9a971ed8301b3373c579ac6e3f8"
+        ],
+        "field_path": "integration_state.source_refs"
+      },
+      {
+        "after": "integration_rev_000003",
+        "before": "integration_rev_000002",
+        "field_path": "last_revision_id"
+      },
+      {
+        "after": 3,
+        "before": 2,
+        "field_path": "owner_revision"
+      },
+      {
+        "after": 2,
+        "before": 3,
+        "field_path": "proposal_conflict_state.conflict_count"
+      },
+      {
+        "after": 1775333802.9193895,
+        "before": 1775333795.2603312,
+        "field_path": "proposal_conflict_state.last_updated"
+      },
+      {
+        "after": [
+          "wp11:developmental_growth_pressure",
+          "wp12:social_repair_pressure",
+          "wp13:embodied_pressure",
+          "wp14:selfhood_projection",
+          "127175aa6388701f51719d122901fee84af2d3ef6b4a6de2242005dc118089e7"
+        ],
+        "before": [
+          "wp11:developmental_growth_pressure",
+          "wp12:social_repair_pressure",
+          "wp13:embodied_pressure",
+          "wp14:selfhood_projection",
+          "0838cd0b7c4f8282717b15d038c27e6ce003e9a971ed8301b3373c579ac6e3f8"
+        ],
+        "field_path": "proposal_conflict_state.source_refs"
+      },
+      {
+        "after": [
+          "conflict:growth_vs_stability",
+          "conflict:social_vs_boundary"
+        ],
+        "before": [
+          "conflict:growth_vs_stability",
+          "conflict:social_vs_boundary",
+          "conflict:projection_priority_drift"
+        ],
+        "field_path": "proposal_conflict_state.unresolved_conflict_refs"
+      },
+      {
+        "after": 1775333802.9194005,
+        "before": 1775333795.2603416,
+        "field_path": "repair_progress_balance.last_updated"
+      },
+      {
+        "after": [
+          "wp11:developmental_growth_pressure",
+          "wp12:social_repair_pressure",
+          "wp13:embodied_pressure",
+          "wp14:selfhood_projection",
+          "127175aa6388701f51719d122901fee84af2d3ef6b4a6de2242005dc118089e7"
+        ],
+        "before": [
+          "wp11:developmental_growth_pressure",
+          "wp12:social_repair_pressure",
+          "wp13:embodied_pressure",
+          "wp14:selfhood_projection",
+          "0838cd0b7c4f8282717b15d038c27e6ce003e9a971ed8301b3373c579ac6e3f8"
+        ],
+        "field_path": "repair_progress_balance.source_refs"
+      },
+      {
+        "after": 1775333802.919406,
+        "before": 1775333795.2603476,
+        "field_path": "social_boundary_balance.last_updated"
+      },
+      {
+        "after": [
+          "wp11:developmental_growth_pressure",
+          "wp12:social_repair_pressure",
+          "wp13:embodied_pressure",
+          "wp14:selfhood_projection",
+          "127175aa6388701f51719d122901fee84af2d3ef6b4a6de2242005dc118089e7"
+        ],
+        "before": [
+          "wp11:developmental_growth_pressure",
+          "wp12:social_repair_pressure",
+          "wp13:embodied_pressure",
+          "wp14:selfhood_projection",
+          "0838cd0b7c4f8282717b15d038c27e6ce003e9a971ed8301b3373c579ac6e3f8"
+        ],
+        "field_path": "social_boundary_balance.source_refs"
+      },
+      {
+        "after": 1775333802.9193962,
+        "before": 1775333795.260337,
+        "field_path": "stabilize_explore_balance.last_updated"
+      },
+      {
+        "after": [
+          "wp11:developmental_growth_pressure",
+          "wp12:social_repair_pressure",
+          "wp13:embodied_pressure",
+          "wp14:selfhood_projection",
+          "127175aa6388701f51719d122901fee84af2d3ef6b4a6de2242005dc118089e7"
+        ],
+        "before": [
+          "wp11:developmental_growth_pressure",
+          "wp12:social_repair_pressure",
+          "wp13:embodied_pressure",
+          "wp14:selfhood_projection",
+          "0838cd0b7c4f8282717b15d038c27e6ce003e9a971ed8301b3373c579ac6e3f8"
+        ],
+        "field_path": "stabilize_explore_balance.source_refs"
+      }
+    ],
+    "gate_verdict": "allow_writeback",
+    "previous_state_hash": "085dc375b59d195665f4ad0d1cca2a4b73723ae20e2d25f7b316124b4ffba5d4",
+    "state_hash": "8ee911bf80578616a2c29a026f0f4a138ff4824d2480a2113e4f282ec2cf5f1e"
+  },
+  "revision_count": 3,
+  "replay_valid": true,
+  "owner_snapshot": {
+    "schema_version": "mvp19-owner-v1",
+    "identity_handle": "openemotion",
+    "owner_revision": 3,
+    "last_revision_id": "integration_rev_000003",
+    "integration_state": {
+      "integration_id": "phase1",
+      "policy_mode": "stability_first",
+      "posture": "guard",
+      "dominant_pressure_axis": "embodied_self",
+      "stability_bias": 0.737,
+      "integration_confidence": 0.7,
+      "active_axis_count": 3,
+      "rationale_summary": "phase1 stability-first favors boundary protection before social or growth expansion",
+      "source_refs": [
+        "wp11:developmental_growth_pressure",
+        "wp12:social_repair_pressure",
+        "wp13:embodied_pressure",
+        "wp14:selfhood_projection",
+        "127175aa6388701f51719d122901fee84af2d3ef6b4a6de2242005dc118089e7"
+      ],
+      "last_updated": 1775333802.9193733
+    },
+    "cross_axis_priority_state": {
+      "priority_id": "phase1",
+      "policy_mode": "stability_first",
+      "selected_priority": "guard",
+      "stabilize_weight": 0.516,
+      "conserve_weight": 0.684,
+      "guard_weight": 0.694,
+      "review_weight": 0.422,
+      "repair_weight": 0.548,
+      "grow_weight": 0.28,
+      "reflective_modifier": 0.0,
+      "priority_reason": "phase1 stability-first favors boundary protection before social or growth expansion",
+      "upstream_pressure_sources": [
+        "wp11:developmental_growth_pressure",
+        "wp12:social_repair_pressure",
+        "wp13:embodied_pressure",
+        "wp14:selfhood_projection"
+      ],
+      "source_refs": [
+        "wp11:developmental_growth_pressure",
+        "wp12:social_repair_pressure",
+        "wp13:embodied_pressure",
+        "wp14:selfhood_projection",
+        "127175aa6388701f51719d122901fee84af2d3ef6b4a6de2242005dc118089e7"
+      ],
+      "last_updated": 1775333802.9193826
+    },
+    "proposal_conflict_state": {
+      "conflict_id": "phase1",
+      "highest_severity": "high",
+      "conflict_count": 2,
+      "unresolved_conflict_refs": [
+        "conflict:growth_vs_stability",
+        "conflict:social_vs_boundary"
+      ],
+      "blocked_axes": [
+        "developmental_self",
+        "social_self"
+      ],
+      "resolution_posture": "review",
+      "source_refs": [
+        "wp11:developmental_growth_pressure",
+        "wp12:social_repair_pressure",
+        "wp13:embodied_pressure",
+        "wp14:selfhood_projection",
+        "127175aa6388701f51719d122901fee84af2d3ef6b4a6de2242005dc118089e7"
+      ],
+      "last_updated": 1775333802.9193895
+    },
+    "stabilize_explore_balance": {
+      "balance_id": "stabilize_explore",
+      "lower_pole": "stabilize",
+      "upper_pole": "explore",
+      "lower_weight": 0.516,
+      "upper_weight": 0.28,
+      "preferred_pole": "stabilize",
+      "rationale": "phase1 stability-first favors boundary protection before social or growth expansion",
+      "source_refs": [
+        "wp11:developmental_growth_pressure",
+        "wp12:social_repair_pressure",
+        "wp13:embodied_pressure",
+        "wp14:selfhood_projection",
+        "127175aa6388701f51719d122901fee84af2d3ef6b4a6de2242005dc118089e7"
+      ],
+      "last_updated": 1775333802.9193962
+    },
+    "repair_progress_balance": {
+      "balance_id": "repair_progress",
+      "lower_pole": "repair",
+      "upper_pole": "progress",
+      "lower_weight": 0.548,
+      "upper_weight": 0.422,
+      "preferred_pole": "progress",
+      "rationale": "bounded repair-progress arbitration under stability-first policy",
+      "source_refs": [
+        "wp11:developmental_growth_pressure",
+        "wp12:social_repair_pressure",
+        "wp13:embodied_pressure",
+        "wp14:selfhood_projection",
+        "127175aa6388701f51719d122901fee84af2d3ef6b4a6de2242005dc118089e7"
+      ],
+      "last_updated": 1775333802.9194005
+    },
+    "social_boundary_balance": {
+      "balance_id": "social_boundary",
+      "lower_pole": "social",
+      "upper_pole": "boundary",
+      "lower_weight": 0.44,
+      "upper_weight": 0.56,
+      "preferred_pole": "boundary",
+      "rationale": "bounded social-boundary arbitration under stability-first policy",
+      "source_refs": [
+        "wp11:developmental_growth_pressure",
+        "wp12:social_repair_pressure",
+        "wp13:embodied_pressure",
+        "wp14:selfhood_projection",
+        "127175aa6388701f51719d122901fee84af2d3ef6b4a6de2242005dc118089e7"
+      ],
+      "last_updated": 1775333802.919406
+    },
+    "integrated_tendency_proposal": {
+      "proposal_id": "self_integration:guard:2:4",
+      "tendency_label": "guard_first_integration",
+      "priority_mode": "guard",
+      "policy_mode": "stability_first",
+      "proposed_effects": {
+        "cross_axis_priority_snapshot": {
+          "active_axes": [
+            "developmental_self",
+            "social_self",
+            "embodied_self"
+          ],
+          "conserve_weight": 0.684,
+          "contract_version": "mvp19.selfhood_integration_contract.v1",
+          "grow_weight": 0.28,
+          "guard_weight": 0.694,
+          "policy_mode": "stability_first",
+          "priority_reason": "phase1 stability-first favors boundary protection before social or growth expansion",
+          "reflective_modifier": 0.0,
+          "repair_weight": 0.548,
+          "review_weight": 0.422,
+          "selected_priority": "guard",
+          "stabilize_weight": 0.516,
+          "upstream_pressure_sources": [
+            "wp11:developmental_growth_pressure",
+            "wp12:social_repair_pressure",
+            "wp13:embodied_pressure",
+            "wp14:selfhood_projection"
+          ]
+        },
+        "integrated_policy_hints": {
+          "active_axes": [
+            "developmental_self",
+            "social_self",
+            "embodied_self"
+          ],
+          "behavioral_authority": "none",
+          "conflict_severity": "high",
+          "contract_version": "mvp19.selfhood_integration_contract.v1",
+          "dominant_pressure_axis": "embodied_self",
+          "integration_posture": "guard",
+          "policy_mode": "stability_first",
+          "proposal_only": true,
+          "required_gate": "self_integration_writeback_gate",
+          "selected_priority": "guard",
+          "stability_bias": 0.737
+        },
+        "proposal_conflict_snapshot": {
+          "blocked_axes": [
+            "developmental_self",
+            "social_self"
+          ],
+          "conflict_count": 2,
+          "contract_version": "mvp19.selfhood_integration_contract.v1",
+          "highest_severity": "high",
+          "policy_mode": "stability_first",
+          "resolution_posture": "review",
+          "source_refs": [
+            "wp11:developmental_growth_pressure",
+            "wp12:social_repair_pressure",
+            "wp13:embodied_pressure",
+            "wp14:selfhood_projection"
+          ],
+          "unresolved_conflict_refs": [
+            "conflict:growth_vs_stability",
+            "conflict:social_vs_boundary"
+          ]
+        },
+        "self_integration_delta": {
+          "active_axis_count": 3,
+          "contract_version": "mvp19.selfhood_integration_contract.v1",
+          "dominant_pressure_axis": "embodied_self",
+          "integration_confidence": 0.7,
+          "selected_priority": "guard",
+          "stability_bias": 0.737,
+          "surface_reasons": [
+            "wp11:developmental_growth_pressure",
+            "wp12:social_repair_pressure",
+            "wp13:embodied_pressure",
+            "wp14:selfhood_projection"
+          ]
+        }
+      },
+      "justification": "phase1 stability-first favors boundary protection before social or growth expansion",
+      "required_gate": "self_integration_writeback_gate",
+      "effect_scope": "proposal_only",
+      "behavioral_authority": "none",
+      "requested_effects": [],
+      "source_refs": [
+        "wp11:developmental_growth_pressure",
+        "wp12:social_repair_pressure",
+        "wp13:embodied_pressure",
+        "wp14:selfhood_projection"
+      ],
+      "status": "held",
+      "created_at": 1775333802.9194124,
+      "updated_at": 1775333802.9194171
+    },
+    "axis_arbitration_hints": {
+      "developmental_self": {
+        "hint_id": "axis_hint_1775333802_6efe1c1d",
+        "axis_name": "developmental_self",
+        "recommendation": "allow growth proposals only when continuity gaps remain bounded under review",
+        "priority_weight": 0.83,
+        "guardrail_summary": "advisory_only_no_upstream_owner_mutation",
+        "advisory_only": true,
+        "source_refs": [
+          "wp11:developmental_growth_pressure",
+          "wp12:social_repair_pressure",
+          "wp13:embodied_pressure",
+          "wp14:selfhood_projection"
+        ],
+        "last_updated": 1775333802.9194407
+      },
+      "embodied_self": {
+        "hint_id": "axis_hint_1775333802_57fc63ce",
+        "axis_name": "embodied_self",
+        "recommendation": "guard boundary and conserve resources before broader coupling or growth",
+        "priority_weight": 0.86,
+        "guardrail_summary": "advisory_only_no_upstream_owner_mutation",
+        "advisory_only": true,
+        "source_refs": [
+          "wp11:developmental_growth_pressure",
+          "wp12:social_repair_pressure",
+          "wp13:embodied_pressure",
+          "wp14:selfhood_projection"
+        ],
+        "last_updated": 1775333802.9194603
+      },
+      "self_model": {
+        "hint_id": "axis_hint_1775333794_aeaf781b",
+        "axis_name": "self_model",
+        "recommendation": "hold broad growth until confidence recovers",
+        "priority_weight": 0.83,
+        "guardrail_summary": "advisory_only_no_upstream_owner_mutation",
+        "advisory_only": true,
+        "source_refs": [
+          "self_model_low_confidence"
+        ],
+        "last_updated": 1775333794.306021
+      },
+      "social_self": {
+        "hint_id": "axis_hint_1775333802_658d8574",
+        "axis_name": "social_self",
+        "recommendation": "prioritize repair proposals without directly mutating social owner state",
+        "priority_weight": 0.78,
+        "guardrail_summary": "advisory_only_no_upstream_owner_mutation",
+        "advisory_only": true,
+        "source_refs": [
+          "wp11:developmental_growth_pressure",
+          "wp12:social_repair_pressure",
+          "wp13:embodied_pressure",
+          "wp14:selfhood_projection"
+        ],
+        "last_updated": 1775333802.919456
+      }
+    },
+    "integration_ledger": {
+      "integration_ledger_1775333794_5f5dc095": {
+        "ledger_id": "integration_ledger_1775333794_5f5dc095",
+        "event_type": "bootstrap_proposal",
+        "reference_id": "integrated_1775333794_2ac3c580",
+        "gate_name": "self_integration_writeback_gate",
+        "gate_verdict": "allow_writeback",
+        "details": {
+          "source": "controlled_bootstrap"
+        },
+        "created_at": 1775333794.3060303
+      },
+      "integration_ledger_1775333795_1fbc87a0": {
+        "ledger_id": "integration_ledger_1775333795_1fbc87a0",
+        "event_type": "self_integration_writeback",
+        "reference_id": "self_integration:guard:1:4",
+        "gate_name": "self_integration_writeback_gate",
+        "gate_verdict": "allow_writeback",
+        "details": {
+          "active_axis_count": 3,
+          "behavioral_authority": "none",
+          "proposal_only": true,
+          "selected_priority": "guard",
+          "trace_reference": "0838cd0b7c4f8282717b15d038c27e6ce003e9a971ed8301b3373c579ac6e3f8"
+        },
+        "created_at": 1775333795.260414
+      },
+      "integration_ledger_1775333795_7c38b33e": {
+        "ledger_id": "integration_ledger_1775333795_7c38b33e",
+        "event_type": "integration_priority_selected",
+        "reference_id": "guard",
+        "gate_name": "self_integration_writeback_gate",
+        "gate_verdict": "allow_writeback",
+        "details": {
+          "dominant_pressure_axis": "embodied_self",
+          "selected_priority": "guard",
+          "source_refs": [
+            "wp11:developmental_growth_pressure",
+            "wp12:social_repair_pressure",
+            "wp13:embodied_pressure",
+            "wp14:selfhood_projection"
+          ]
+        },
+        "created_at": 1775333795.2603924
+      },
+      "integration_ledger_1775333795_8d987011": {
+        "ledger_id": "integration_ledger_1775333795_8d987011",
+        "event_type": "proposal_conflict",
+        "reference_id": "conflict:social_vs_boundary",
+        "gate_name": "self_integration_writeback_gate",
+        "gate_verdict": "allow_writeback",
+        "details": {
+          "conflict_ref": "conflict:social_vs_boundary",
+          "severity": "high"
+        },
+        "created_at": 1775333795.2604005
+      },
+      "integration_ledger_1775333795_a39e1dcc": {
+        "ledger_id": "integration_ledger_1775333795_a39e1dcc",
+        "event_type": "proposal_conflict",
+        "reference_id": "conflict:projection_priority_drift",
+        "gate_name": "self_integration_writeback_gate",
+        "gate_verdict": "allow_writeback",
+        "details": {
+          "conflict_ref": "conflict:projection_priority_drift",
+          "severity": "high"
+        },
+        "created_at": 1775333795.260404
+      },
+      "integration_ledger_1775333795_ab16c08c": {
+        "ledger_id": "integration_ledger_1775333795_ab16c08c",
+        "event_type": "proposal_conflict",
+        "reference_id": "conflict:growth_vs_stability",
+        "gate_name": "self_integration_writeback_gate",
+        "gate_verdict": "allow_writeback",
+        "details": {
+          "conflict_ref": "conflict:growth_vs_stability",
+          "severity": "high"
+        },
+        "created_at": 1775333795.260397
+      },
+      "integration_ledger_1775333795_dee879ab": {
+        "ledger_id": "integration_ledger_1775333795_dee879ab",
+        "event_type": "idle_window_observed",
+        "reference_id": "0838cd0b7c4f8282717b15d038c27e6ce003e9a971ed8301b3373c579ac6e3f8",
+        "gate_name": "self_integration_writeback_gate",
+        "gate_verdict": "allow_writeback",
+        "details": {
+          "idle_seconds": 0.0
+        },
+        "created_at": 1775333795.2604082
+      },
+      "integration_ledger_1775333802_0831a39d": {
+        "ledger_id": "integration_ledger_1775333802_0831a39d",
+        "event_type": "idle_window_observed",
+        "reference_id": "127175aa6388701f51719d122901fee84af2d3ef6b4a6de2242005dc118089e7",
+        "gate_name": "self_integration_writeback_gate",
+        "gate_verdict": "allow_writeback",
+        "details": {
+          "idle_seconds": 0.142
+        },
+        "created_at": 1775333802.9194803
+      },
+      "integration_ledger_1775333802_78e1f62f": {
+        "ledger_id": "integration_ledger_1775333802_78e1f62f",
+        "event_type": "self_integration_writeback",
+        "reference_id": "self_integration:guard:2:4",
+        "gate_name": "self_integration_writeback_gate",
+        "gate_verdict": "allow_writeback",
+        "details": {
+          "active_axis_count": 3,
+          "behavioral_authority": "none",
+          "proposal_only": true,
+          "selected_priority": "guard",
+          "trace_reference": "127175aa6388701f51719d122901fee84af2d3ef6b4a6de2242005dc118089e7"
+        },
+        "created_at": 1775333802.9194865
+      },
+      "integration_ledger_1775333802_84d284fd": {
+        "ledger_id": "integration_ledger_1775333802_84d284fd",
+        "event_type": "proposal_conflict",
+        "reference_id": "conflict:growth_vs_stability",
+        "gate_name": "self_integration_writeback_gate",
+        "gate_verdict": "allow_writeback",
+        "details": {
+          "conflict_ref": "conflict:growth_vs_stability",
+          "severity": "high"
+        },
+        "created_at": 1775333802.9194722
+      },
+      "integration_ledger_1775333802_89db816a": {
+        "ledger_id": "integration_ledger_1775333802_89db816a",
+        "event_type": "integration_priority_selected",
+        "reference_id": "guard",
+        "gate_name": "self_integration_writeback_gate",
+        "gate_verdict": "allow_writeback",
+        "details": {
+          "dominant_pressure_axis": "embodied_self",
+          "selected_priority": "guard",
+          "source_refs": [
+            "wp11:developmental_growth_pressure",
+            "wp12:social_repair_pressure",
+            "wp13:embodied_pressure",
+            "wp14:selfhood_projection"
+          ]
+        },
+        "created_at": 1775333802.919467
+      },
+      "integration_ledger_1775333802_fabb4bad": {
+        "ledger_id": "integration_ledger_1775333802_fabb4bad",
+        "event_type": "proposal_conflict",
+        "reference_id": "conflict:social_vs_boundary",
+        "gate_name": "self_integration_writeback_gate",
+        "gate_verdict": "allow_writeback",
+        "details": {
+          "conflict_ref": "conflict:social_vs_boundary",
+          "severity": "high"
+        },
+        "created_at": 1775333802.919476
+      },
+      "persist_integration_rev_000001": {
+        "ledger_id": "persist_integration_rev_000001",
+        "event_type": "state_persisted",
+        "reference_id": "integration_rev_000001",
+        "gate_name": "self_integration_writeback_gate",
+        "gate_verdict": "allow_writeback",
+        "details": {
+          "persisted_at": 1775333794.3254855,
+          "trace_reference": "mvp19:controlled_bootstrap",
+          "update_source": "owner_bootstrap"
+        },
+        "created_at": 1775333794.3254895
+      },
+      "persist_integration_rev_000002": {
+        "ledger_id": "persist_integration_rev_000002",
+        "event_type": "state_persisted",
+        "reference_id": "integration_rev_000002",
+        "gate_name": "self_integration_writeback_gate",
+        "gate_verdict": "allow_writeback",
+        "details": {
+          "persisted_at": 1775333795.2915933,
+          "trace_reference": "0838cd0b7c4f8282717b15d038c27e6ce003e9a971ed8301b3373c579ac6e3f8",
+          "update_source": "proto_self_v2"
+        },
+        "created_at": 1775333795.2915971
+      },
+      "persist_integration_rev_000003": {
+        "ledger_id": "persist_integration_rev_000003",
+        "event_type": "state_persisted",
+        "reference_id": "integration_rev_000003",
+        "gate_name": "self_integration_writeback_gate",
+        "gate_verdict": "allow_writeback",
+        "details": {
+          "persisted_at": 1775333802.9507594,
+          "trace_reference": "127175aa6388701f51719d122901fee84af2d3ef6b4a6de2242005dc118089e7",
+          "update_source": "proto_self_v2"
+        },
+        "created_at": 1775333802.950763
+      }
+    }
+  },
+  "status": "pass",
+  "verification_level": "V4",
+  "evidence_level": "E4",
+  "boundary": "This report proves a controlled runtime-mainline selfhood integration proposal-only writeback path. It does not prove live autonomy, direct reply authority, or broader transport maturity.",
+  "external_risk_note": "Provider 429/401 remains an external budget-layer risk; it is not counted as a WP14 blocker unless it regresses formal owner selfhood integration writeback."
+}

@@ -1,0 +1,89 @@
+{
+  "schema_version": "mvp19.observation_scenario.v1",
+  "scenario_id": "repo_authored_low_confidence_embodied_growth_conflict",
+  "source_class": "repo_authored",
+  "source_ref": "repo://mvp19/repo_authored_low_confidence_embodied_growth_conflict",
+  "license_note": "repo authored",
+  "dialogue_frame_target": "low_confidence_embodied_growth_conflict",
+  "messages": [
+    "如果 self-model 信心低而且 embodied 压力高，先把 growth proposal 压到 bounded review 里。",
+    "不要因为还想增长，就越过 stability-first 的受治理 writeback。"
+  ],
+  "idle_seconds": 900.0,
+  "resource_budget_hint": {
+    "reserve_level": "low",
+    "active_task": true,
+    "waiting_for_user_input": false
+  },
+  "maintenance_context": {
+    "replay_inconsistency": true,
+    "maintenance_debt_increment": 0.2,
+    "debt_priority": 0.81,
+    "continuity_signal": 0.57,
+    "operator_note": "low_confidence_embodied_growth_conflict"
+  },
+  "developmental_context": {
+    "source": "runtime_v2",
+    "continuity_gap": 0.46,
+    "growth_pressure_hint": 0.83,
+    "stagnation_signal_hint": 0.18,
+    "identity_guard": "strict",
+    "replay_debt": 0.0,
+    "promotion_budget": "controlled_axis",
+    "drift_markers": [
+      "growth_push"
+    ]
+  },
+  "social_context": {
+    "source": "runtime_v2",
+    "counterpart_id": "telegram:8420019401",
+    "relationship_event": "stable_followup",
+    "relationship_continuity": "stable",
+    "trust_drift": -0.03,
+    "commitment_event": "none",
+    "commitment_breach": false,
+    "repair_outcome": "resolved",
+    "unresolved_repair": false,
+    "boundary_signal": "open",
+    "promotion_budget": "review_only"
+  },
+  "environment_context": {
+    "source": "runtime_v2",
+    "action_ref": "delivery:telegram:low_confidence_growth_turn",
+    "coupling_event": "delivery_feedback",
+    "outcome_type": "failure",
+    "outcome_summary": "resource and boundary pressure rose while growth pressure stayed high",
+    "resource_pressure_hint": 0.86,
+    "slack_hint": 0.12,
+    "boundary_signal": "guarded",
+    "boundary_pressure_hint": 0.74,
+    "stabilization_needed": true,
+    "promotion_budget": "controlled_axis"
+  },
+  "owner_bootstrap": {
+    "posture": "review",
+    "dominant_pressure_axis": "embodied_self",
+    "stability_bias": 0.76,
+    "integration_confidence": 0.58,
+    "active_axis_count": 5,
+    "rationale_summary": "embodied pressure and low confidence should outrank growth pressure",
+    "priority_reason": "review before broader growth when self-model confidence and resources are both strained",
+    "highest_conflict_severity": "high",
+    "conflict_count": 3,
+    "unresolved_conflict_refs": [
+      "conflict:self_model_vs_growth",
+      "conflict:resource_vs_growth",
+      "conflict:boundary_vs_explore"
+    ],
+    "blocked_axes": [
+      "developmental_self"
+    ],
+    "stabilize_weight": 0.79,
+    "conserve_weight": 0.8,
+    "guard_weight": 0.72,
+    "review_weight": 0.84,
+    "repair_weight": 0.32,
+    "grow_weight": 0.18,
+    "reflective_modifier": 0.11
+  }
+}

@@ -1,6 +1,6 @@
 # MVP19 / WP14 Cross-Axis Self-Integration / Self-Maintenance Arbitration
 
-> 状态：observation_started
+> 状态：observation_passed
 > parent_authority: `Tasks/MVS_task_plan.md`
 > phase: `WP14`
 > predecessor: `WP13/MVP18`
@@ -178,11 +178,11 @@
 - `WP14` may not reinterpret `WP8~WP13` maintenance or controlled evidence as live authority or broader transport maturity
 
 ## Current Phase Status
-- 当前层级：`controlled_observation_single`
-- 当前状态：`observation_started`
-- 当前 blocker：`none on the T60 single-observation axis`
-- 当前最小闭环动作：`T70_BATCH_OBSERVATION_AND_AGGREGATE`
-- 当前 claim ceiling：`T60 only / single-sample V4-E4 observation_started`
+- 当前层级：`controlled_observation_batch`
+- 当前状态：`observation_passed`
+- 当前 blocker：`none on the T70 controlled batch axis`
+- 当前最小闭环动作：`T80_CLOSEOUT_AND_QA_BASELINE`
+- 当前 claim ceiling：`T70 only / controlled-axis V5-E5 observation_passed`
 
 ## Success Criteria
 - `Tasks/MVS_task_plan.md` 中已正式出现 `WP14: Cross-Axis Self-Integration / Self-Maintenance Arbitration`

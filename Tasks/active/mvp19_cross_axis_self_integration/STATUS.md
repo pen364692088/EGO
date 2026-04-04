@@ -2,8 +2,8 @@
 
 ```yaml
 phase: WP14
-status: observation_started
-current_layer: controlled_observation_single
+status: observation_passed
+current_layer: controlled_observation_batch
 main_chain_status: current_runtime_selfhood_consumer_present_legacy_reference_only
 enabled_status: owner_infra_plus_proto_self_contract_plus_runtime_bridge
 trigger_evidence:
@@ -39,23 +39,28 @@ trigger_evidence:
   - OpenEmotion/tests/mvp19/test_controlled_observation.py now proves the governed single-sample report shape and claim ceiling for MVP19 controlled observation
   - OpenEmotion/tools/run_mvp19_controlled_observation.py now emits the first controlled runtime-mainline single observation artifact under OpenEmotion/artifacts/mvp19/mvp19_controlled_observation_current.*
   - current single-sample controlled observation reached allow_writeback with behavioral_authority none preserved and replay_valid true
-verification_level: V4
-evidence_level: E4
-current_blocker: "none on the T60 single-observation axis; next blocker is repeated-sample batch evidence"
-next_minimal_closure_action: "start T70_BATCH_OBSERVATION_AND_AGGREGATE without upgrading beyond single-sample V4/E4 until batch evidence exists"
+  - OpenEmotion/scenarios/mvp19_observation_bank/* now provides three repo-authored controlled selfhood integration scenarios covering low-confidence embodied growth conflict, high maintenance plus reflective review pressure, and social repair conflict under boundary guard
+  - OpenEmotion/tools/mvp19_scenario_bank.py now validates and loads repo-authored MVP19 observation manifests
+  - OpenEmotion/tests/mvp19/test_controlled_observation_batch.py now proves batch aggregation and E5 claim ceiling under three accepted reports
+  - OpenEmotion/tools/run_mvp19_controlled_observation_batch.py now emits the current V5/E5 batch artifact under OpenEmotion/artifacts/mvp19/mvp19_controlled_observation_batch_current.*
+  - current controlled batch observation reached report_count 3, accepted_count 3, replay_consistent_count 3, proposal_only_discipline_count 3, behavioral_authority_none_count 3, and bounded_influence_present_count 3
+verification_level: V5
+evidence_level: E5
+current_blocker: "none on the T70 controlled batch axis"
+next_minimal_closure_action: "start T80_CLOSEOUT_AND_QA_BASELINE without upgrading beyond controlled-axis V5/E5"
 ```
 
 ## 当前口径
 
-- 可宣称完成：`WP14/MVP19` 的 authority 仍保持冻结，且 `T10_FORMAL_OWNER_PACKAGE`、`T20_PROTO_SELF_CONTRACT_INTEGRATION`、`T30_EGOCORE_RUNTIME_BRIDGE`、`T40_LEGACY_DEMOTION_AND_COMPAT_MAP`、`T50_CAUSAL_VALIDATION` 与 `T60_CONTROLLED_OBSERVATION_SINGLE` 已完成
-- 条件性完成：当前已覆盖 authority + owner infra + `proto_self_v2` bounded contract + EgoCore runtime thin bridge + no-second-truth legacy demotion + `V3/E3` causal proof + 首个 controlled runtime-mainline `V4/E4` single observation，不覆盖 repeated batch observation、或 closeout
-- 不可宣称完成：`MVP19` 已拿到 `E5`、已进入 maintenance mode、或已放开任何 authority 边界
-- 后续处理：下一步只允许推进 `T70_BATCH_OBSERVATION_AND_AGGREGATE`；在此之前不得把 claim ceiling 抬高到 batch `E5` 或 maintenance mode
+- 可宣称完成：`WP14/MVP19` 的 authority 仍保持冻结，且 `T10_FORMAL_OWNER_PACKAGE`、`T20_PROTO_SELF_CONTRACT_INTEGRATION`、`T30_EGOCORE_RUNTIME_BRIDGE`、`T40_LEGACY_DEMOTION_AND_COMPAT_MAP`、`T50_CAUSAL_VALIDATION`、`T60_CONTROLLED_OBSERVATION_SINGLE` 与 `T70_BATCH_OBSERVATION_AND_AGGREGATE` 已完成
+- 条件性完成：当前已覆盖 authority + owner infra + `proto_self_v2` bounded contract + EgoCore runtime thin bridge + no-second-truth legacy demotion + `V3/E3` causal proof + single `V4/E4` controlled observation + repeated `V5/E5` controlled batch observation，不覆盖 closeout、QA baseline、或 maintenance mode
+- 不可宣称完成：`MVP19` 已进入 maintenance mode、或已放开任何 authority 边界
+- 后续处理：下一步只允许推进 `T80_CLOSEOUT_AND_QA_BASELINE`；在此之前不得把 claim ceiling 抬高到 maintenance mode
 
 ## 边界提醒
 
 - `WP8~WP13` 的 maintenance / frozen upstream 状态不是 `WP14` 的实现证据
 - `WP14` 只能读取冻结 surfaces，不能直接回写 `self_model/*`、`endogenous_drives/*`、`reflective_self/*`、`developmental_self/*`、`social_self/*`、`embodied_self/*`
-- `OpenEmotion/openemotion/selfhood_integration/*` 当前已证明 owner-level primitives、current runtime bounded consumption、causal weighting shifts 与首个 controlled observation 单样本成立，但仍不证明 repeated stability、batch `E5`、或 closeout
+- `OpenEmotion/openemotion/selfhood_integration/*` 当前已证明 owner-level primitives、current runtime bounded consumption、causal weighting shifts、首个 controlled observation 单样本与 repeated controlled batch `E5` 成立，但仍不证明 closeout、maintenance mode、或 authority 放开
 - `axis_arbitration_hints` 当前只允许 advisory use，不允许冒充行为裁决
 - 不得出现“因为已有多轴 proposal，所以 OpenEmotion 可以直接说话 / 直接发工具 / 直接拿 transport claim”这类边界回退

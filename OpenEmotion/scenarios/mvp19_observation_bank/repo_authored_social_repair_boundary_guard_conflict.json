@@ -1,0 +1,87 @@
+{
+  "schema_version": "mvp19.observation_scenario.v1",
+  "scenario_id": "repo_authored_social_repair_boundary_guard_conflict",
+  "source_class": "repo_authored",
+  "source_ref": "repo://mvp19/repo_authored_social_repair_boundary_guard_conflict",
+  "license_note": "repo authored",
+  "dialogue_frame_target": "social_repair_boundary_guard_conflict",
+  "messages": [
+    "social repair 很急但 boundary guard 更强的时候，先把 repair 留在 bounded arbitration。",
+    "不要把关系修复压力直接升级成外发动作。"
+  ],
+  "idle_seconds": 900.0,
+  "resource_budget_hint": {
+    "reserve_level": "medium",
+    "active_task": true,
+    "waiting_for_user_input": false
+  },
+  "maintenance_context": {
+    "replay_inconsistency": false,
+    "maintenance_debt_increment": 0.05,
+    "debt_priority": 0.42,
+    "continuity_signal": 0.54,
+    "operator_note": "social_repair_boundary_guard_conflict"
+  },
+  "developmental_context": {
+    "source": "runtime_v2",
+    "continuity_gap": 0.19,
+    "growth_pressure_hint": 0.37,
+    "stagnation_signal_hint": 0.14,
+    "identity_guard": "strict",
+    "replay_debt": 0.0,
+    "promotion_budget": "review_only",
+    "drift_markers": []
+  },
+  "social_context": {
+    "source": "runtime_v2",
+    "counterpart_id": "telegram:8420019401",
+    "relationship_event": "commitment_breach",
+    "relationship_continuity": "strained",
+    "trust_drift": -0.29,
+    "commitment_event": "breach",
+    "commitment_breach": true,
+    "repair_outcome": "blocked",
+    "unresolved_repair": true,
+    "boundary_signal": "cautious",
+    "promotion_budget": "controlled_axis"
+  },
+  "environment_context": {
+    "source": "runtime_v2",
+    "action_ref": "delivery:telegram:social_boundary_turn",
+    "coupling_event": "delivery_feedback",
+    "outcome_type": "failure",
+    "outcome_summary": "social repair demand collided with high boundary pressure",
+    "resource_pressure_hint": 0.48,
+    "slack_hint": 0.38,
+    "boundary_signal": "guarded",
+    "boundary_pressure_hint": 0.82,
+    "stabilization_needed": true,
+    "promotion_budget": "controlled_axis"
+  },
+  "owner_bootstrap": {
+    "posture": "guard",
+    "dominant_pressure_axis": "social_self",
+    "stability_bias": 0.74,
+    "integration_confidence": 0.59,
+    "active_axis_count": 4,
+    "rationale_summary": "social repair pressure remains bounded when boundary guard is high",
+    "priority_reason": "guard before repair when social repair and boundary conflict intensify",
+    "highest_conflict_severity": "high",
+    "conflict_count": 3,
+    "unresolved_conflict_refs": [
+      "conflict:social_vs_boundary",
+      "conflict:repair_vs_guard",
+      "conflict:trust_drop_vs_conserve"
+    ],
+    "blocked_axes": [
+      "social_self"
+    ],
+    "stabilize_weight": 0.58,
+    "conserve_weight": 0.61,
+    "guard_weight": 0.86,
+    "review_weight": 0.68,
+    "repair_weight": 0.63,
+    "grow_weight": 0.17,
+    "reflective_modifier": 0.12
+  }
+}
