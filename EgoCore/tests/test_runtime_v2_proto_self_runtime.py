@@ -17,6 +17,11 @@ from app.runtime_v2.proto_self_runtime import (
 from app.runtime_v2.runtime_reply import RuntimeV2Reply, RuntimeV2TurnResult
 from app.runtime_v2.state import RuntimeV2State
 from app.telegram_evidence_collector import TelegramEvidenceCollector
+from openemotion.developmental_self import (
+    DevelopmentalSelfOwner,
+    DevelopmentalSelfStore,
+    PromotionLevel,
+)
 from openemotion.endogenous_drives import EndogenousDriveStore
 from openemotion.endogenous_drives.reducers import seed_default_state
 from openemotion.reflective_self import ReflectiveSelfOwner, ReflectiveSelfStore, ReflectionTargetType
@@ -229,6 +234,81 @@ def test_v2_events_inject_formal_reflective_self_context(tmp_path):
     assert ingress_event["runtime_summary"]["reflective_self_context"]["top_target_ids"] == ["decision:target"]
     assert finalized_event is not None
     assert finalized_event["runtime_summary"]["reflective_self_context"]["owner_revision"] == 1
+
+
+def test_v2_events_inject_formal_developmental_self_context_and_host_context(tmp_path):
+    store = DevelopmentalSelfStore(base_dir=tmp_path)
+    owner = DevelopmentalSelfOwner(store=store)
+    owner.set_identity_anchor(
+        anchor_summary="bounded developmental continuity",
+        invariant_refs=["self_model:identity"],
+        confidence=0.93,
+    )
+    owner.set_trajectory_summary(
+        current_arc="governed_growth",
+        current_phase="candidate_review",
+        continuity_note="keep identity bounded",
+        source_refs=["trace:trajectory"],
+    )
+    owner.set_continuity_metrics(
+        continuity_score=0.71,
+        growth_pressure=0.58,
+        stagnation_signal=0.22,
+        identity_preservation_confidence=0.9,
+    )
+    proposal = owner.add_proposal(
+        proposal_kind="continuity_gap",
+        summary="review identity-preserving adaptation",
+        proposed_adjustment={"continuity_bias": "elevated"},
+        justification="bounded developmental continuity",
+        promotion_level=PromotionLevel.REVIEW_ONLY,
+    )
+    owner.queue_promotion(source_proposal_id=proposal.proposal_id, summary="review developmental proposal")
+    owner.persist(update_source="owner_bootstrap", trace_reference="trace:developmental_context")
+
+    state = RuntimeV2State(session_id="session:test")
+    state.current_goal = "verify_developmental_bridge"
+    state.ingress_context = {
+        "proto_self_version": "v2",
+        "developmental_context": {
+            "source": "runtime_v2",
+            "continuity_gap": 0.28,
+            "growth_pressure_hint": 0.64,
+            "stagnation_signal_hint": 0.33,
+            "identity_guard": "strict",
+            "replay_debt": 0.2,
+            "promotion_budget": "controlled_axis",
+            "drift_markers": ["marker:trajectory_gap"],
+        },
+    }
+    result = RuntimeV2TurnResult(
+        status="completed_verified",
+        state=state,
+        reply=RuntimeV2Reply(reply_text="已完成", delivery_kind="final", status="completed_verified"),
+    )
+
+    ingress_event = build_proto_self_ingress_event(
+        session_id="session:test",
+        turn_id="turn_dev_ctx_ingress",
+        source="telegram",
+        user_input="帮我整理 developmental continuity bridge",
+        state=state,
+        developmental_self_store=store,
+    )
+    finalized_event = build_finalized_result_event(
+        session_id="session:test",
+        turn_id="turn_dev_ctx_finalized",
+        result=result,
+        state=state,
+        developmental_self_store=store,
+    )
+
+    assert ingress_event["runtime_summary"]["developmental_self_context"]["schema_version"] == "mvp16-owner-v1"
+    assert ingress_event["runtime_summary"]["developmental_self_context"]["owner_revision"] == 1
+    assert ingress_event["runtime_summary"]["developmental_context"]["identity_guard"] == "strict"
+    assert ingress_event["runtime_summary"]["developmental_context"]["promotion_budget"] == "controlled_axis"
+    assert finalized_event is not None
+    assert finalized_event["runtime_summary"]["developmental_self_context"]["owner_revision"] == 1
 
 
 def test_process_ingress_applies_governed_self_model_writeback(tmp_path):
@@ -483,6 +563,134 @@ def test_process_ingress_records_governed_reflection_writeback_without_authority
     assert len(saved.revision_proposals) == 1
     proposal = next(iter(saved.revision_proposals.values()))
     assert proposal.status == "held"
+    assert len(store.load_revision_log("openemotion")) == 2
+
+
+def test_process_ingress_applies_governed_developmental_writeback_without_authority_promotion(tmp_path):
+    store = DevelopmentalSelfStore(base_dir=tmp_path)
+    owner = DevelopmentalSelfOwner(store=store)
+    owner.set_identity_anchor(
+        anchor_summary="bounded developmental continuity",
+        invariant_refs=["self_model:identity"],
+        confidence=0.95,
+    )
+    owner.set_trajectory_summary(
+        current_arc="continuity_first",
+        current_phase="baseline",
+        continuity_note="guard continuity before promotion",
+    )
+    owner.set_continuity_metrics(
+        continuity_score=0.74,
+        growth_pressure=0.52,
+        stagnation_signal=0.16,
+        identity_preservation_confidence=0.92,
+    )
+    owner.persist(update_source="owner_bootstrap", trace_reference="trace:developmental_init")
+
+    class Adapter:
+        def __init__(self):
+            self.last_event = None
+
+        def handle_event(self, event):
+            self.last_event = event
+            return {
+                "event_id": event["event_id"],
+                "subject_profile": event.get("subject_profile"),
+                "policy_hint": {"developmental_continuity_bias": "elevated"},
+                "response_tendency": {"preferred_mode": "respond", "certainty_bound": "bounded"},
+                "reflection_note": None,
+                "candidate_actions": [],
+                "developmental_self_delta": {
+                    "proposal_candidate_count": 1,
+                    "surface_reasons": ["continuity_gap", "replay_debt"],
+                },
+                "developmental_proposal_candidates": [
+                    {
+                        "candidate_id": "developmental_candidate:1:1",
+                        "reason": "developmental_continuity",
+                        "surface_reasons": ["continuity_gap", "replay_debt"],
+                        "continuity_gap": 0.34,
+                        "required_gate": "developmental_writeback_gate",
+                        "proposal_discipline": "proposal_only",
+                        "behavioral_authority": "none",
+                        "promotion_level": "controlled_axis",
+                    }
+                ],
+                "developmental_continuity_snapshot": {
+                    "owner_revision": 1,
+                    "last_revision_id": "developmental_rev_000001",
+                    "continuity_score": 0.66,
+                    "continuity_gap": 0.34,
+                    "growth_pressure": 0.79,
+                    "stagnation_signal": 0.41,
+                    "identity_preservation_confidence": 0.86,
+                    "developmental_risk_index": 0.47,
+                    "trajectory_summary": {
+                        "current_arc": "identity_preserving_adaptation",
+                        "current_phase": "candidate_review",
+                        "recent_shift": "growth pressure up",
+                        "continuity_note": "review before promotion",
+                        "source_refs": ["trace:developmental_writeback"],
+                    },
+                    "promotion_queue_size": 0,
+                    "recent_proposal_count": 0,
+                },
+                "developmental_priority_hints": {
+                    "continuity_priority": "elevated",
+                    "identity_preservation_guard": "strict",
+                    "promotion_budget": "controlled_axis",
+                },
+                "developmental_audit_entries": [
+                    {"kind": "developmental_signal", "reason": "continuity_gap"},
+                    {"kind": "developmental_signal", "reason": "replay_debt"},
+                ],
+                "developmental_writeback_candidate": {
+                    "source": "proto_self_v2",
+                    "required_gate": "developmental_writeback_gate",
+                    "proposal_discipline": "proposal_only",
+                    "behavioral_authority": "none",
+                    "promotion_level": "controlled_axis",
+                    "surface_reasons": ["continuity_gap", "replay_debt"],
+                    "owner_revision": 1,
+                },
+                "trace_payload": {"update_packet_hash": "hash_developmental_bridge"},
+            }
+
+    runtime = RuntimeV2ProtoSelfRuntime(adapter=Adapter(), developmental_self_store=store)
+    state = RuntimeV2State(session_id="session:test")
+    state.ingress_context = {
+        "proto_self_version": "v2",
+        "developmental_context": {
+            "source": "runtime_v2",
+            "continuity_gap": 0.34,
+            "growth_pressure_hint": 0.79,
+            "stagnation_signal_hint": 0.41,
+            "identity_guard": "strict",
+            "replay_debt": 0.2,
+            "promotion_budget": "controlled_axis",
+            "drift_markers": ["marker:trajectory_gap"],
+        },
+    }
+
+    runtime.process_ingress(
+        session_id="session:test",
+        turn_id="turn_developmental_bridge",
+        source="telegram",
+        user_input="把 developmental continuity bridge 接到正式主链",
+        state=state,
+    )
+
+    saved = store.load("openemotion")
+
+    assert runtime.adapter.last_event["runtime_summary"]["developmental_self_context"]["owner_revision"] == 1
+    assert runtime.adapter.last_event["runtime_summary"]["developmental_context"]["promotion_budget"] == "controlled_axis"
+    assert state.proto_self_context["developmental_self_delta"]["proposal_candidate_count"] == 1
+    assert state.proto_self_context["developmental_writeback_candidate"]["behavioral_authority"] == "none"
+    assert state.proto_self_context["developmental_writeback"]["decision"]["gate_verdict"] == "allow_writeback"
+    assert saved is not None
+    assert saved.owner_revision == 2
+    assert len(saved.proposal_history) == 1
+    assert len(saved.promotion_queue) == 1
     assert len(store.load_revision_log("openemotion")) == 2
 
 
@@ -1233,3 +1441,136 @@ def test_process_developmental_tick_writes_formal_owner_revision(tmp_path):
     assert saved.confidence_by_domain["dialogue_frame:continuity_gap"] == 0.81
     assert state.proto_self_context["self_model_writeback"]["decision"]["gate_verdict"] == "allow_writeback"
     assert revisions[-1].trace_reference == "developmental:dev-trace:hash_dev_001"
+
+
+def test_process_developmental_tick_records_formal_developmental_writeback(tmp_path):
+    store = DevelopmentalSelfStore(base_dir=tmp_path)
+    owner = DevelopmentalSelfOwner(store=store)
+    owner.set_identity_anchor(
+        anchor_summary="bounded developmental continuity",
+        invariant_refs=["self_model:identity"],
+        confidence=0.94,
+    )
+    owner.set_trajectory_summary(
+        current_arc="governed_growth",
+        current_phase="observation",
+        continuity_note="preserve identity before promotion",
+    )
+    owner.set_continuity_metrics(
+        continuity_score=0.69,
+        growth_pressure=0.57,
+        stagnation_signal=0.24,
+        identity_preservation_confidence=0.91,
+    )
+    owner.persist(update_source="owner_bootstrap", trace_reference="trace:developmental_tick_init")
+
+    class Adapter:
+        def handle_event(self, event):
+            return {
+                "schema_version": "proto_self.output.v2",
+                "event_id": event["event_id"],
+                "developmental_summary": {
+                    "cycle_id": "cycle_dev_owner",
+                    "trigger": "idle",
+                    "gate_status": "allow",
+                    "observation_source": event["runtime_summary"]["observation_source"],
+                    "shadow_revision": 4,
+                    "background_thought_candidates": [],
+                    "background_thought_candidate_count": 0,
+                },
+                "developmental_self_delta": {
+                    "proposal_candidate_count": 1,
+                    "surface_reasons": ["continuity_gap"],
+                },
+                "developmental_proposal_candidates": [
+                    {
+                        "candidate_id": "developmental_candidate:2:1",
+                        "reason": "developmental_continuity",
+                        "surface_reasons": ["continuity_gap"],
+                        "continuity_gap": 0.29,
+                        "required_gate": "developmental_writeback_gate",
+                        "proposal_discipline": "proposal_only",
+                        "behavioral_authority": "none",
+                        "promotion_level": "review_only",
+                    }
+                ],
+                "developmental_continuity_snapshot": {
+                    "owner_revision": 1,
+                    "last_revision_id": "developmental_rev_000001",
+                    "continuity_score": 0.71,
+                    "continuity_gap": 0.29,
+                    "growth_pressure": 0.68,
+                    "stagnation_signal": 0.35,
+                    "identity_preservation_confidence": 0.89,
+                    "developmental_risk_index": 0.39,
+                    "trajectory_summary": {
+                        "current_arc": "identity_preserving_adaptation",
+                        "current_phase": "review",
+                        "recent_shift": "gap surfaced under growth pressure",
+                        "continuity_note": "hold promotion until review",
+                        "source_refs": ["trace:developmental_tick"],
+                    },
+                    "promotion_queue_size": 0,
+                    "recent_proposal_count": 0,
+                },
+                "developmental_priority_hints": {
+                    "continuity_priority": "elevated",
+                    "identity_preservation_guard": "bounded",
+                    "promotion_budget": "review_only",
+                },
+                "developmental_audit_entries": [
+                    {"kind": "developmental_signal", "reason": "continuity_gap"}
+                ],
+                "developmental_writeback_candidate": {
+                    "source": "proto_self_v2",
+                    "required_gate": "developmental_writeback_gate",
+                    "proposal_discipline": "proposal_only",
+                    "behavioral_authority": "none",
+                    "promotion_level": "review_only",
+                    "surface_reasons": ["continuity_gap"],
+                    "owner_revision": 1,
+                },
+                "trace_payload": {
+                    "schema_version": "proto_self.trace.v2",
+                    "event_id": event["event_id"],
+                    "update_packet_hash": "tracehash_dev_owner_001",
+                    "developmental": {"cycle_id": "cycle_dev_owner"},
+                },
+            }
+
+    runtime = RuntimeV2ProtoSelfRuntime(adapter=Adapter(), developmental_self_store=store)
+    state = RuntimeV2State(session_id="session:test")
+    state.ingress_context = {
+        "proto_self_version": "v2",
+        "developmental_context": {
+            "source": "runtime_v2",
+            "continuity_gap": 0.29,
+            "growth_pressure_hint": 0.68,
+            "stagnation_signal_hint": 0.35,
+            "identity_guard": "bounded",
+            "replay_debt": 0.0,
+            "promotion_budget": "review_only",
+            "drift_markers": [],
+        },
+    }
+
+    result = runtime.process_developmental_tick(
+        session_id="session:test",
+        turn_id="turn_dev_owner",
+        state=state,
+        observation_source="direct_real",
+        force_enable=True,
+    )
+
+    saved = store.load("openemotion")
+    revisions = store.load_revision_log("openemotion")
+
+    assert result is not None
+    assert saved is not None
+    assert state.proto_self_context["developmental_writeback"]["decision"]["gate_verdict"] == "allow_writeback"
+    assert state.proto_self_context["developmental_proposal_candidates"][0]["promotion_level"] == "review_only"
+    assert state.proto_self_context["developmental_continuity_snapshot"]["continuity_gap"] == 0.29
+    assert state.proto_self_context["developmental_priority_hints"]["identity_preservation_guard"] == "bounded"
+    assert saved.owner_revision == 2
+    assert len(saved.proposal_history) == 1
+    assert revisions[-1].trace_reference == "tracehash_dev_owner_001"
