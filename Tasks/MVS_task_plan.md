@@ -13,7 +13,7 @@
 
 ## 当前真实状态
 - 正式核心只有两个：**EgoCore**（对外宿主 / 运行时 / 执行 / 治理）与 **OpenEmotion**（identity / self-model / memory / appraisal / reflection 本体）。
-- 当前主线已从 **MVS** 推进到其后的受治理扩展阶段；当前最新已收口阶段是 `WP11/MVP16`，`WP12/MVP17` 已完成 authority freeze、`T10` formal owner package、`T20` proto-self social contract integration、`T30` EgoCore runtime bridge、`T40` legacy demotion / compat map、`T50` causal proof、`T60` single controlled observation 与 `T70` batch observation / aggregate，当前已进入 `observation_passed`，下一步是 `T80` closeout / QA baseline，不是 live social autonomy。
+- 当前主线已从 **MVS** 推进到其后的受治理扩展阶段；当前最新已收口阶段是 `WP12/MVP17`，其 authority freeze、`T10` formal owner package、`T20` proto-self social contract integration、`T30` EgoCore runtime bridge、`T40` legacy demotion / compat map、`T50` causal proof、`T60` single controlled observation、`T70` batch observation / aggregate 与 `T80` closeout / QA baseline 均已完成，当前已进入 `maintenance_mode`，不是 live social autonomy。
 - 宿主壳已有多轮主链切片真实生效证据；Proto-Self 侧当前正式现实是 **`proto_self.v2 + seed_v0_2`**。
 - 旧 `openemotion/proto_self/` 仍可存在，但从本计划开始只作为 compatibility / deletion inventory，对未来功能不再是正式落点。
 - 所有验收必须遵守 E0-E6 证据分级，结论强度不得高于证据层级。
@@ -810,13 +810,13 @@
 - 证据层级目标：E0 -> E1（authority / contract freeze）
 
 **当前状态（2026-04-04）**
-- `WP12/MVP17` 当前层级是 `observation`
-- 当前状态是 `observation_passed`
+- `WP12/MVP17` 当前层级是 `maintenance`
+- 当前状态是 `maintenance_mode`
 - 当前 formal owner target 固定为 `OpenEmotion/openemotion/social_self/*`
 - 当前正式主链接线目标固定为 `runtime_v2 -> proto_self_runtime -> proto_self_adapter -> proto_self_v2`
 - 当前 phase 1 只冻结 `trust / commitment / repair`，不实现更宽的 social self
-- 当前已证实：`OpenEmotion/openemotion/social_self/*` 的 owner / store / governance / replay 基础、`proto_self_v2` bounded social contract、EgoCore runtime thin bridge、legacy social / relation surfaces 的 reference-only / input-only demotion、trust / commitment / boundary shifts 对 bounded downstream weighting 的 causal proof，以及 repeated controlled mainline social proposal-only writeback `V5/E5` aggregate 已落地
-- 当前 blocker：closeout / QA baseline 尚未完成；下一步是 `T80_CLOSEOUT_AND_QA_BASELINE`
+- 当前已证实：`OpenEmotion/openemotion/social_self/*` 的 owner / store / governance / replay 基础、`proto_self_v2` bounded social contract、EgoCore runtime thin bridge、legacy social / relation surfaces 的 reference-only / input-only demotion、trust / commitment / boundary shifts 对 bounded downstream weighting 的 causal proof、single controlled mainline `V4/E4` 样本、以及 repeated controlled mainline social proposal-only writeback `V5/E5` aggregate 均已落地；`WP12_QA_BASELINE.md` 与 `MVP17_COMPLETION_CURRENT.*` 已冻结
+- 当前 blocker：formal owner + proposal-only social writeback + controlled observation 轴内无主 blocker；后续只做 maintenance verification，不扩 `WP12` scope
 
 ---
 

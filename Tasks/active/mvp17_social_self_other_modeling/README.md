@@ -7,7 +7,7 @@ owner: "Codex"
 layer: 3
 type: dual_repo
 repos: [EgoCore, OpenEmotion]
-status: observation_passed
+status: maintenance_mode
 parent_authority: "Tasks/MVS_task_plan.md"
 phase_authority: "Tasks/MVP17_task_plan.md"
 predecessor: "WP11/MVP16"
@@ -60,8 +60,8 @@ scope: "WP12 / MVP17 Social Self / Other-Modeling"
 - batch controlled observation / aggregate：`T70 completed`
 - 主链接线：`formal_owner_writeback_stable`
 - 启用状态：`controlled_mainline_observation`
-- 当前 blocker：`closeout / QA baseline pending`
-- 当前最小动作：`T80_CLOSEOUT_AND_QA_BASELINE`
+- 当前 blocker：`none on the formal owner + proposal-only social writeback + controlled observation axis`
+- 当前最小动作：`maintenance verification only; do not expand WP12 scope without a new authority package`
 
 ## T10 已证实内容
 
@@ -128,7 +128,15 @@ scope: "WP12 / MVP17 Social Self / Other-Modeling"
   - `OpenEmotion/artifacts/mvp17/mvp17_controlled_observation_batch_current.md`
 - 当前 batch controlled observation report 为 `status = pass`、`verification_level = V5`、`evidence_level = E5`
 - 当前已证明：formal social owner writeback 已在 repeated scenario-bank controlled observation 下达到稳定 aggregate，且全程保持 `proposal_only + behavioral_authority = none`
-- 当前仍未证明：`maintenance_mode`、live autonomy、OpenEmotion direct reply authority、broader transport claims
+- 当前仍未证明：live autonomy、OpenEmotion direct reply authority、broader transport claims
+
+## T80 已证实内容
+
+- `Tasks/active/mvp17_social_self_other_modeling/WP12_QA_BASELINE.md` 已冻结为 `WP12` 维护态 QA 基线
+- `OpenEmotion/artifacts/mvp17/MVP17_COMPLETION_CURRENT.md` 与 `.json` 已记录正式 closeout 口径
+- `Tasks/active/mvp17_social_self_other_modeling/MAINTENANCE_LEDGER.md` 已成为后续新增样本与维护态 intake 的唯一台账
+- 当前正式口径已收平为：`WP12/MVP17` 已在 formal owner + proposal-only social writeback + controlled observation 轴上进入 `maintenance_mode`
+- 当前仍未证明：live autonomy、OpenEmotion direct reply authority、broader transport claims
 
 ## 当前不做
 
@@ -145,5 +153,7 @@ scope: "WP12 / MVP17 Social Self / Other-Modeling"
 - authority：`Tasks/MVP17_task_plan.md`
 - status：`STATUS.md`
 - legacy register：`LEGACY_REFERENCE_REGISTER.md`
+- QA baseline：`WP12_QA_BASELINE.md`
+- maintenance ledger：`MAINTENANCE_LEDGER.md`
 - contracts：`contracts/`
 - task cards：`cards/`
