@@ -26,6 +26,11 @@ from openemotion.embodied_self import (
     EmbodiedSelfOwner,
     EmbodiedSelfStore,
 )
+from openemotion.initiative_self import (
+    InitiativePriority,
+    InitiativeSelfOwner,
+    InitiativeSelfStore,
+)
 from openemotion.endogenous_drives import EndogenousDriveStore
 from openemotion.endogenous_drives.reducers import seed_default_state
 from openemotion.reflective_self import ReflectiveSelfOwner, ReflectiveSelfStore, ReflectionTargetType
@@ -1214,6 +1219,190 @@ def test_process_ingress_applies_governed_embodied_writeback_without_authority_p
     assert saved.owner_revision == 2
     assert len(saved.action_consequence_memory) == 1
     assert len(saved.proposal_history) == 1
+    assert len(store.load_revision_log("openemotion")) == 2
+
+
+def test_process_ingress_applies_gated_initiative_writeback_without_host_execution_promotion(tmp_path):
+    store = InitiativeSelfStore(base_dir=tmp_path)
+    owner = InitiativeSelfOwner(store=store)
+    owner.set_initiative_state(
+        dominant_mode=InitiativePriority.CARRY_FORWARD,
+        initiative_pressure=0.74,
+        commitment_carryover_bias=0.79,
+        recent_delivery_sensitivity=0.42,
+        rationale_summary="keep bounded commitment continuity visible",
+        source_refs=["trace:initiative_init"],
+    )
+    owner.set_initiative_priority_state(
+        selected_priority=InitiativePriority.CARRY_FORWARD,
+        hold_weight=0.2,
+        review_weight=0.4,
+        prepare_weight=0.5,
+        carry_forward_weight=0.9,
+        schedule_weight=0.3,
+        priority_reason="existing commitment continuity",
+        upstream_pressure_sources=["selfhood_integration"],
+        source_refs=["trace:initiative_init"],
+    )
+    owner.set_commitment_continuity_state(
+        status="active",
+        active_commitments_count=1,
+        carried_commitment_refs=["goal:followup"],
+        blocked_commitment_refs=[],
+        continuity_confidence=0.76,
+        carryover_summary="carry forward bounded followup review",
+        source_refs=["trace:initiative_init"],
+    )
+    owner.persist(update_source="owner_bootstrap", trace_reference="trace:initiative_init")
+
+    class Adapter:
+        def __init__(self):
+            self.last_event = None
+
+        def handle_event(self, event):
+            self.last_event = event
+            return {
+                "event_id": event["event_id"],
+                "subject_profile": event.get("subject_profile"),
+                "policy_hint": {"initiative_priority": "review"},
+                "response_tendency": {"preferred_mode": "defer", "certainty_bound": "bounded"},
+                "reflection_note": None,
+                "candidate_actions": [],
+                "initiative_self_delta": {
+                    "proposal_candidate_count": 1,
+                    "selected_priority": "review",
+                    "commitment_mode": "carry_forward",
+                    "host_proactive_mode": "held",
+                    "surface_reasons": ["active_commitments", "idle_window", "integration_guard"],
+                },
+                "initiative_proposal_candidates": [
+                    {
+                        "proposal_id": "initiative:review:1",
+                        "proposal_label": "review_commitment_continuity",
+                        "priority_mode": "review",
+                        "proposed_effects": {
+                            "initiative_bias": "review",
+                            "commitment_mode": "carry_forward",
+                            "host_proactive_mode": "held",
+                        },
+                        "justification": "active commitments under guarded integration",
+                        "required_gate": "initiative_writeback_gate",
+                        "effect_scope": "proposal_only",
+                        "behavioral_authority": "none",
+                        "requested_effects": ["governed_initiative_review"],
+                        "promotion_level": "controlled_axis",
+                    }
+                ],
+                "commitment_execution_snapshot": {
+                    "owner_revision": 1,
+                    "last_revision_id": "initiative_rev_000001",
+                    "selected_priority": "review",
+                    "active_commitments_count": 1,
+                    "blocked_commitments_count": 0,
+                    "continuity_confidence": 0.76,
+                    "commitment_mode": "carry_forward",
+                    "reserve_level": "medium",
+                    "recent_delivery_status": "sent",
+                    "idle_seconds": 1200.0,
+                    "integrated_priority": "review",
+                },
+                "initiative_policy_hints": {
+                    "initiative_bias": "review",
+                    "continuity_mode": "stable",
+                    "commitment_mode": "carry_forward",
+                    "host_proactive_mode": "held",
+                    "reserve_bias": "bounded",
+                    "delivery_bias": "normal",
+                },
+                "host_proactive_candidate": {
+                    "candidate_id": "host_proactive:review:1",
+                    "candidate_label": "governed_host_proactive_followup",
+                    "continuity_basis": "goal:followup",
+                    "host_lane_hint": "host_proactive_outbox",
+                    "required_gate": "initiative_writeback_gate",
+                    "proposal_discipline": "proposal_only",
+                    "behavioral_authority": "none",
+                    "requested_effects": ["governed_host_proactive_review"],
+                    "promotion_level": "controlled_axis",
+                },
+                "initiative_audit_entries": [
+                    {
+                        "entry_type": "initiative_surface",
+                        "selected_priority": "review",
+                        "host_proactive_mode": "held",
+                        "surface_reasons": ["active_commitments", "idle_window", "integration_guard"],
+                    }
+                ],
+                "initiative_writeback_candidate": {
+                    "source": "proto_self_v2",
+                    "required_gate": "initiative_writeback_gate",
+                    "proposal_discipline": "proposal_only",
+                    "behavioral_authority": "none",
+                    "promotion_level": "controlled_axis",
+                    "selected_priority": "review",
+                    "surface_reasons": ["active_commitments", "idle_window", "integration_guard"],
+                    "owner_revision": 1,
+                },
+                "trace_payload": {
+                    "update_packet_hash": "hash_initiative_bridge",
+                    "initiative_context": {
+                        "contract_version": "mvp20.initiative_contract.v1",
+                        "projection_field": "runtime_summary.initiative_self_context",
+                        "host_hint_field": "runtime_summary.initiative_context",
+                        "selected_priority": "carry_forward",
+                        "initiative_trigger": "commitment_followup",
+                    },
+                },
+            }
+
+    runtime = RuntimeV2ProtoSelfRuntime(adapter=Adapter(), initiative_self_store=store)
+    state = RuntimeV2State(session_id="session:test")
+    state.current_goal = "followup"
+    state.ingress_context = {
+        "proto_self_version": "v2",
+        "initiative_context": {
+            "source": "runtime_v2",
+            "initiative_trigger": "commitment_followup",
+            "continuity_ref": "goal:followup",
+            "pending_commitment_refs": ["goal:followup"],
+            "blocked_commitment_refs": [],
+            "reserve_level": "medium",
+            "recent_delivery_status": "sent",
+            "delivery_failure": False,
+            "idle_seconds": 1200.0,
+            "host_lane_hint": "host_proactive_outbox",
+            "promotion_budget": "controlled_axis",
+        },
+    }
+    state.proto_self_context = {
+        "cross_axis_priority_snapshot": {"selected_priority": "review"},
+        "integrated_policy_hints": {"integrated_priority": "review"},
+    }
+
+    runtime.process_ingress(
+        session_id="session:test",
+        turn_id="turn_initiative_bridge",
+        source="telegram",
+        user_input="继续推进之前承诺的后续动作",
+        state=state,
+    )
+
+    saved = store.load("openemotion")
+
+    assert runtime.adapter.last_event["runtime_summary"]["initiative_self_context"]["owner_revision"] == 1
+    assert runtime.adapter.last_event["runtime_summary"]["initiative_context"]["continuity_ref"] == "goal:followup"
+    assert state.proto_self_context["initiative_self_delta"]["proposal_candidate_count"] == 1
+    assert state.proto_self_context["initiative_writeback_candidate"]["behavioral_authority"] == "none"
+    assert state.proto_self_context["initiative_writeback_candidate"]["required_gate"] == "initiative_writeback_gate"
+    assert state.proto_self_context["initiative_context"]["initiative_trigger"] == "commitment_followup"
+    assert state.proto_self_context["initiative_writeback"]["decision"]["gate_verdict"] == "allow_writeback"
+    assert saved is not None
+    assert saved.owner_revision == 2
+    assert saved.initiative_proposal_candidate is not None
+    assert saved.initiative_proposal_candidate.behavioral_authority == "none"
+    assert saved.host_proactive_candidate is not None
+    assert saved.host_proactive_candidate.behavioral_authority == "none"
+    assert saved.host_proactive_candidate.host_lane_hint == "host_proactive_outbox"
     assert len(store.load_revision_log("openemotion")) == 2
 
 

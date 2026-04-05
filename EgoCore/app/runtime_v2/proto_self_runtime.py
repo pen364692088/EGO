@@ -17,6 +17,16 @@ from openemotion.embodied_self import (
     EmbodiedSelfStore,
     EnvironmentCouplingStatus,
 )
+from openemotion.initiative_self import (
+    REQUIRED_WRITEBACK_GATE as INITIATIVE_WRITEBACK_GATE,
+    CommitmentContinuityStatus as InitiativeCommitmentContinuityStatus,
+    HostProactiveCandidateStatus,
+    InitiativePriority,
+    InitiativeProposalStatus,
+    InitiativeSelfOwner,
+    InitiativeSelfState,
+    InitiativeSelfStore,
+)
 from openemotion.developmental_self import (
     REQUIRED_WRITEBACK_GATE as DEVELOPMENTAL_WRITEBACK_GATE,
     ContinuityMarkerType,
@@ -76,6 +86,7 @@ DEFAULT_DEVELOPMENTAL_SELF_IDENTITY_HANDLE = "openemotion"
 DEFAULT_SOCIAL_SELF_IDENTITY_HANDLE = "openemotion"
 DEFAULT_EMBODIED_SELF_IDENTITY_HANDLE = "openemotion"
 DEFAULT_SELFHOOD_INTEGRATION_IDENTITY_HANDLE = "openemotion"
+DEFAULT_INITIATIVE_SELF_IDENTITY_HANDLE = "openemotion"
 
 
 def assess_risk_level(user_input: str) -> str:
@@ -192,6 +203,15 @@ def _resolve_selfhood_integration_identity_handle(state: RuntimeV2State) -> str:
         ingress_context.get("selfhood_integration_identity_handle")
         or ingress_context.get("identity_handle")
         or DEFAULT_SELFHOOD_INTEGRATION_IDENTITY_HANDLE
+    )
+
+
+def _resolve_initiative_self_identity_handle(state: RuntimeV2State) -> str:
+    ingress_context = state.ingress_context or {}
+    return str(
+        ingress_context.get("initiative_self_identity_handle")
+        or ingress_context.get("identity_handle")
+        or DEFAULT_INITIATIVE_SELF_IDENTITY_HANDLE
     )
 
 
@@ -519,6 +539,73 @@ def _build_environment_context(state: RuntimeV2State) -> Dict[str, Any]:
     }
 
 
+def _build_initiative_context(state: RuntimeV2State) -> Dict[str, Any]:
+    ingress_context = state.ingress_context or {}
+    provided = dict(ingress_context.get("initiative_context") or {})
+    proto_self_context = dict(state.proto_self_context or {})
+    resource_budget_hint = _build_resource_budget_hint(state)
+    delivery_outcome = _build_recent_delivery_outcome(state)
+    idle_window = _build_idle_window(state)
+    integration_snapshot = dict(proto_self_context.get("cross_axis_priority_snapshot") or {})
+    selected_priority = str(
+        integration_snapshot.get("selected_priority")
+        or (proto_self_context.get("integrated_policy_hints") or {}).get("integrated_priority")
+        or ""
+    ).strip()
+
+    pending_commitment_refs = list(provided.get("pending_commitment_refs") or [])
+    if not pending_commitment_refs and state.current_goal:
+        pending_commitment_refs = [f"goal:{state.current_goal}"]
+    blocked_commitment_refs = list(provided.get("blocked_commitment_refs") or [])
+    if not blocked_commitment_refs and state.task_status == "blocked" and state.current_goal:
+        blocked_commitment_refs = [f"goal:{state.current_goal}"]
+
+    initiative_trigger = str(provided.get("initiative_trigger") or "").strip()
+    if not initiative_trigger:
+        if state.current_goal and idle_window.get("idle_seconds", 0.0) >= 600.0:
+            initiative_trigger = "commitment_followup"
+        elif delivery_outcome.get("status") in {"failed", "blocked"}:
+            initiative_trigger = "delivery_repair_review"
+        elif selected_priority:
+            initiative_trigger = f"integration_{selected_priority}"
+        else:
+            initiative_trigger = "runtime_review"
+
+    continuity_ref = str(provided.get("continuity_ref") or "").strip()
+    if not continuity_ref and pending_commitment_refs:
+        continuity_ref = str(pending_commitment_refs[0])
+    elif not continuity_ref and blocked_commitment_refs:
+        continuity_ref = str(blocked_commitment_refs[0])
+
+    host_lane_hint = str(provided.get("host_lane_hint") or "").strip()
+    if not host_lane_hint:
+        host_lane_hint = "host_proactive_outbox"
+
+    promotion_budget = str(provided.get("promotion_budget") or "").strip()
+    if not promotion_budget:
+        promotion_budget = "review_only" if selected_priority in {"review", "guard", "stabilize"} else "controlled_axis"
+
+    return {
+        "source": str(provided.get("source") or "runtime_v2"),
+        "initiative_trigger": initiative_trigger,
+        "continuity_ref": continuity_ref,
+        "pending_commitment_refs": pending_commitment_refs,
+        "blocked_commitment_refs": blocked_commitment_refs,
+        "reserve_level": str(provided.get("reserve_level") or resource_budget_hint.get("reserve_level") or "normal"),
+        "recent_delivery_status": str(
+            provided.get("recent_delivery_status")
+            or delivery_outcome.get("status")
+            or ("sent" if delivery_outcome.get("success") else "")
+        ),
+        "delivery_failure": bool(provided.get("delivery_failure"))
+        or delivery_outcome.get("status") in {"failed", "blocked"}
+        or delivery_outcome.get("success") is False,
+        "idle_seconds": float(provided.get("idle_seconds") or idle_window.get("idle_seconds") or 0.0),
+        "host_lane_hint": host_lane_hint,
+        "promotion_budget": promotion_budget,
+    }
+
+
 def _compact_self_model_context(snapshot: Dict[str, Any]) -> Dict[str, Any]:
     context: Dict[str, Any] = {}
     for field_name in PHASE1_AUTHORITATIVE_FIELDS:
@@ -601,6 +688,11 @@ def _compact_selfhood_integration_context(snapshot: Dict[str, Any]) -> Dict[str,
     return state.to_runtime_projection()
 
 
+def _compact_initiative_self_context(snapshot: Dict[str, Any]) -> Dict[str, Any]:
+    state = InitiativeSelfState.model_validate(snapshot)
+    return state.to_runtime_projection()
+
+
 def _inject_developmental_self_context(
     runtime_summary: Dict[str, Any],
     *,
@@ -653,6 +745,19 @@ def _inject_selfhood_integration_context(
     return runtime_summary
 
 
+def _inject_initiative_self_context(
+    runtime_summary: Dict[str, Any],
+    *,
+    state: RuntimeV2State,
+    initiative_self_store: Optional[InitiativeSelfStore] = None,
+) -> Dict[str, Any]:
+    store = initiative_self_store or InitiativeSelfStore()
+    snapshot = store.load_snapshot(_resolve_initiative_self_identity_handle(state))
+    if snapshot:
+        runtime_summary["initiative_self_context"] = _compact_initiative_self_context(snapshot)
+    return runtime_summary
+
+
 def _inject_developmental_context(
     runtime_summary: Dict[str, Any],
     *,
@@ -677,6 +782,15 @@ def _inject_environment_context(
     state: RuntimeV2State,
 ) -> Dict[str, Any]:
     runtime_summary["environment_context"] = _build_environment_context(state)
+    return runtime_summary
+
+
+def _inject_initiative_context(
+    runtime_summary: Dict[str, Any],
+    *,
+    state: RuntimeV2State,
+) -> Dict[str, Any]:
+    runtime_summary["initiative_context"] = _build_initiative_context(state)
     return runtime_summary
 
 
@@ -762,6 +876,7 @@ def build_proto_self_ingress_event(
     social_self_store: Optional[SocialSelfStore] = None,
     embodied_self_store: Optional[EmbodiedSelfStore] = None,
     selfhood_integration_store: Optional[SelfhoodIntegrationStore] = None,
+    initiative_self_store: Optional[InitiativeSelfStore] = None,
 ) -> Dict[str, Any]:
     risk_level = assess_risk_level(user_input)
     restore_observation = (state.ingress_context or {}).get("restore_observation")
@@ -808,6 +923,11 @@ def build_proto_self_ingress_event(
             state=state,
             selfhood_integration_store=selfhood_integration_store,
         )
+        runtime_summary = _inject_initiative_self_context(
+            runtime_summary,
+            state=state,
+            initiative_self_store=initiative_self_store,
+        )
         runtime_summary.update(
             {
                 k: v
@@ -818,6 +938,7 @@ def build_proto_self_ingress_event(
         runtime_summary = _inject_social_context(runtime_summary, state=state)
         runtime_summary = _inject_developmental_context(runtime_summary, state=state)
         runtime_summary = _inject_environment_context(runtime_summary, state=state)
+        runtime_summary = _inject_initiative_context(runtime_summary, state=state)
         payload = {
             "schema_version": schema_version,
             "event_id": f"{session_id}_{turn_id}",
@@ -907,6 +1028,7 @@ def build_external_result_event(
     social_self_store: Optional[SocialSelfStore] = None,
     embodied_self_store: Optional[EmbodiedSelfStore] = None,
     selfhood_integration_store: Optional[SelfhoodIntegrationStore] = None,
+    initiative_self_store: Optional[InitiativeSelfStore] = None,
 ) -> Dict[str, Any]:
     failed = not tool_result.get("success")
     schema_version = resolve_proto_self_schema_version(state)
@@ -984,6 +1106,11 @@ def build_external_result_event(
             state=state,
             selfhood_integration_store=selfhood_integration_store,
         )
+        payload["runtime_summary"] = _inject_initiative_self_context(
+            payload["runtime_summary"],
+            state=state,
+            initiative_self_store=initiative_self_store,
+        )
         payload["runtime_summary"] = _inject_social_context(
             payload["runtime_summary"],
             state=state,
@@ -993,6 +1120,10 @@ def build_external_result_event(
             state=state,
         )
         payload["runtime_summary"] = _inject_environment_context(
+            payload["runtime_summary"],
+            state=state,
+        )
+        payload["runtime_summary"] = _inject_initiative_context(
             payload["runtime_summary"],
             state=state,
         )
@@ -1065,6 +1196,7 @@ def build_finalized_result_event(
     social_self_store: Optional[SocialSelfStore] = None,
     embodied_self_store: Optional[EmbodiedSelfStore] = None,
     selfhood_integration_store: Optional[SelfhoodIntegrationStore] = None,
+    initiative_self_store: Optional[InitiativeSelfStore] = None,
 ) -> Optional[Dict[str, Any]]:
     if resolve_proto_self_schema_version(state) != "proto_self.v2":
         return None
@@ -1142,6 +1274,11 @@ def build_finalized_result_event(
         state=state,
         selfhood_integration_store=selfhood_integration_store,
     )
+    payload["runtime_summary"] = _inject_initiative_self_context(
+        payload["runtime_summary"],
+        state=state,
+        initiative_self_store=initiative_self_store,
+    )
     payload["runtime_summary"] = _inject_social_context(
         payload["runtime_summary"],
         state=state,
@@ -1151,6 +1288,10 @@ def build_finalized_result_event(
         state=state,
     )
     payload["runtime_summary"] = _inject_environment_context(
+        payload["runtime_summary"],
+        state=state,
+    )
+    payload["runtime_summary"] = _inject_initiative_context(
         payload["runtime_summary"],
         state=state,
     )
@@ -1180,6 +1321,7 @@ def build_idle_check_event(
     social_self_store: Optional[SocialSelfStore] = None,
     embodied_self_store: Optional[EmbodiedSelfStore] = None,
     selfhood_integration_store: Optional[SelfhoodIntegrationStore] = None,
+    initiative_self_store: Optional[InitiativeSelfStore] = None,
 ) -> Optional[Dict[str, Any]]:
     if resolve_proto_self_schema_version(state) != "proto_self.v2":
         return None
@@ -1265,6 +1407,11 @@ def build_idle_check_event(
         state=state,
         selfhood_integration_store=selfhood_integration_store,
     )
+    event["runtime_summary"] = _inject_initiative_self_context(
+        event["runtime_summary"],
+        state=state,
+        initiative_self_store=initiative_self_store,
+    )
     event["runtime_summary"] = _inject_social_context(
         event["runtime_summary"],
         state=state,
@@ -1274,6 +1421,10 @@ def build_idle_check_event(
         state=state,
     )
     event["runtime_summary"] = _inject_environment_context(
+        event["runtime_summary"],
+        state=state,
+    )
+    event["runtime_summary"] = _inject_initiative_context(
         event["runtime_summary"],
         state=state,
     )
@@ -1301,6 +1452,7 @@ def build_developmental_tick_event(
     social_self_store: Optional[SocialSelfStore] = None,
     embodied_self_store: Optional[EmbodiedSelfStore] = None,
     selfhood_integration_store: Optional[SelfhoodIntegrationStore] = None,
+    initiative_self_store: Optional[InitiativeSelfStore] = None,
 ) -> Optional[Dict[str, Any]]:
     if resolve_proto_self_schema_version(state) != "proto_self.v2":
         return None
@@ -1352,12 +1504,18 @@ def build_developmental_tick_event(
         state=state,
         selfhood_integration_store=selfhood_integration_store,
     )
+    runtime_summary = _inject_initiative_self_context(
+        runtime_summary,
+        state=state,
+        initiative_self_store=initiative_self_store,
+    )
     runtime_summary = _inject_social_context(runtime_summary, state=state)
     runtime_summary = _inject_developmental_context(
         runtime_summary,
         state=state,
     )
     runtime_summary = _inject_environment_context(runtime_summary, state=state)
+    runtime_summary = _inject_initiative_context(runtime_summary, state=state)
     if replay_seed is not None:
         runtime_summary["replay_seed"] = replay_seed
     return {
@@ -1435,6 +1593,7 @@ class RuntimeV2ProtoSelfRuntime:
     social_self_store: Optional[SocialSelfStore] = None
     embodied_self_store: Optional[EmbodiedSelfStore] = None
     selfhood_integration_store: Optional[SelfhoodIntegrationStore] = None
+    initiative_self_store: Optional[InitiativeSelfStore] = None
 
     def _resolve_collector(self, evidence_collector: Optional[Any]) -> Optional[Any]:
         if evidence_collector is not None:
@@ -2819,6 +2978,347 @@ class RuntimeV2ProtoSelfRuntime:
         proto_self_result["selfhood_integration_writeback"] = writeback
         return writeback
 
+    def _apply_initiative_self_writeback(
+        self,
+        *,
+        proto_self_result: Dict[str, Any],
+        state: RuntimeV2State,
+    ) -> Optional[Dict[str, Any]]:
+        delta = dict(proto_self_result.get("initiative_self_delta") or {})
+        proposal_candidates = list(proto_self_result.get("initiative_proposal_candidates") or [])
+        commitment_snapshot = dict(proto_self_result.get("commitment_execution_snapshot") or {})
+        initiative_policy_hints = dict(proto_self_result.get("initiative_policy_hints") or {})
+        host_candidate = dict(proto_self_result.get("host_proactive_candidate") or {})
+        audit_entries = list(proto_self_result.get("initiative_audit_entries") or [])
+        writeback_candidate = dict(proto_self_result.get("initiative_writeback_candidate") or {})
+        if (
+            not delta
+            and not proposal_candidates
+            and not commitment_snapshot
+            and not host_candidate
+            and not writeback_candidate
+        ):
+            return None
+
+        trace_payload = dict(proto_self_result.get("trace_payload") or {})
+        trace_reference = str(
+            trace_payload.get("update_packet_hash")
+            or f"proto_self:{proto_self_result.get('event_id', 'unknown')}"
+        )
+
+        if writeback_candidate.get("proposal_discipline") not in {None, "proposal_only"}:
+            writeback = {
+                "decision": {
+                    "gate_verdict": "reject",
+                    "reason": "initiative_writeback_requires_proposal_only",
+                },
+                "record": None,
+                "trace_reference": trace_reference,
+            }
+            proto_self_result["initiative_writeback"] = writeback
+            return writeback
+        if writeback_candidate.get("behavioral_authority") not in {None, "none"}:
+            writeback = {
+                "decision": {
+                    "gate_verdict": "reject",
+                    "reason": "initiative_writeback_behavioral_authority_must_remain_none",
+                },
+                "record": None,
+                "trace_reference": trace_reference,
+            }
+            proto_self_result["initiative_writeback"] = writeback
+            return writeback
+        if writeback_candidate.get("required_gate") not in {None, INITIATIVE_WRITEBACK_GATE}:
+            writeback = {
+                "decision": {
+                    "gate_verdict": "reject",
+                    "reason": "initiative_writeback_requires_formal_gate",
+                },
+                "record": None,
+                "trace_reference": trace_reference,
+            }
+            proto_self_result["initiative_writeback"] = writeback
+            return writeback
+
+        for candidate in proposal_candidates[:3]:
+            if candidate.get("effect_scope") not in {None, "proposal_only"}:
+                writeback = {
+                    "decision": {
+                        "gate_verdict": "reject",
+                        "reason": "initiative_candidate_requires_proposal_only_scope",
+                    },
+                    "record": None,
+                    "trace_reference": trace_reference,
+                }
+                proto_self_result["initiative_writeback"] = writeback
+                return writeback
+            if candidate.get("behavioral_authority") not in {None, "none"}:
+                writeback = {
+                    "decision": {
+                        "gate_verdict": "reject",
+                        "reason": "initiative_candidate_behavioral_authority_must_remain_none",
+                    },
+                    "record": None,
+                    "trace_reference": trace_reference,
+                }
+                proto_self_result["initiative_writeback"] = writeback
+                return writeback
+            if candidate.get("required_gate") not in {None, INITIATIVE_WRITEBACK_GATE}:
+                writeback = {
+                    "decision": {
+                        "gate_verdict": "reject",
+                        "reason": "initiative_candidate_requires_formal_gate",
+                    },
+                    "record": None,
+                    "trace_reference": trace_reference,
+                }
+                proto_self_result["initiative_writeback"] = writeback
+                return writeback
+
+        if host_candidate:
+            if host_candidate.get("proposal_discipline") not in {None, "proposal_only"}:
+                writeback = {
+                    "decision": {
+                        "gate_verdict": "reject",
+                        "reason": "host_proactive_candidate_requires_proposal_only",
+                    },
+                    "record": None,
+                    "trace_reference": trace_reference,
+                }
+                proto_self_result["initiative_writeback"] = writeback
+                return writeback
+            if host_candidate.get("behavioral_authority") not in {None, "none"}:
+                writeback = {
+                    "decision": {
+                        "gate_verdict": "reject",
+                        "reason": "host_proactive_candidate_behavioral_authority_must_remain_none",
+                    },
+                    "record": None,
+                    "trace_reference": trace_reference,
+                }
+                proto_self_result["initiative_writeback"] = writeback
+                return writeback
+            if host_candidate.get("required_gate") not in {None, INITIATIVE_WRITEBACK_GATE}:
+                writeback = {
+                    "decision": {
+                        "gate_verdict": "reject",
+                        "reason": "host_proactive_candidate_requires_formal_gate",
+                    },
+                    "record": None,
+                    "trace_reference": trace_reference,
+                }
+                proto_self_result["initiative_writeback"] = writeback
+                return writeback
+
+        identity_handle = _resolve_initiative_self_identity_handle(state)
+        store = self.initiative_self_store or InitiativeSelfStore(default_identity=identity_handle)
+        current_state = store.load(identity_handle) or InitiativeSelfState(identity_handle=identity_handle)
+        current_state.identity_handle = identity_handle
+        owner = InitiativeSelfOwner(initial_state=current_state, store=store)
+
+        selected_priority_raw = str(
+            commitment_snapshot.get("selected_priority")
+            or initiative_policy_hints.get("initiative_bias")
+            or delta.get("selected_priority")
+            or "review"
+        ).strip().lower()
+        try:
+            selected_priority = InitiativePriority(selected_priority_raw)
+        except ValueError:
+            selected_priority = InitiativePriority.REVIEW
+
+        commitment_mode = str(
+            commitment_snapshot.get("commitment_mode")
+            or initiative_policy_hints.get("commitment_mode")
+            or "idle"
+        ).strip().lower()
+        if commitment_mode == "blocked":
+            continuity_status = InitiativeCommitmentContinuityStatus.BLOCKED
+        elif commitment_mode == "carry_forward":
+            continuity_status = InitiativeCommitmentContinuityStatus.ACTIVE
+        elif commitment_mode == "idle":
+            continuity_status = InitiativeCommitmentContinuityStatus.DEFERRED
+        else:
+            continuity_status = InitiativeCommitmentContinuityStatus.ACTIVE
+
+        reserve_bias = str(initiative_policy_hints.get("reserve_bias") or "bounded")
+        recent_delivery_status = str(commitment_snapshot.get("recent_delivery_status") or "")
+        continuity_confidence = float(commitment_snapshot.get("continuity_confidence") or 0.5)
+        active_commitments_count = int(commitment_snapshot.get("active_commitments_count") or 0)
+        blocked_commitments_count = int(commitment_snapshot.get("blocked_commitments_count") or 0)
+        source_refs = list(delta.get("surface_reasons") or [])
+        if trace_reference not in source_refs:
+            source_refs.append(trace_reference)
+
+        initiative_pressure = 0.0
+        if "initiative_pressure" in delta:
+            initiative_pressure = float(delta.get("initiative_pressure") or 0.0)
+        elif active_commitments_count > 0:
+            initiative_pressure = 0.72
+        elif commitment_mode == "blocked":
+            initiative_pressure = 0.58
+        initiative_pressure = max(0.0, min(1.0, initiative_pressure))
+
+        carryover_bias = 0.0
+        if "commitment_carryover_bias" in delta:
+            carryover_bias = float(delta.get("commitment_carryover_bias") or 0.0)
+        elif commitment_mode in {"carry_forward", "blocked"}:
+            carryover_bias = 0.74
+        carryover_bias = max(0.0, min(1.0, carryover_bias))
+
+        delivery_sensitivity = 0.0
+        if "recent_delivery_sensitivity" in delta:
+            delivery_sensitivity = float(delta.get("recent_delivery_sensitivity") or 0.0)
+        elif recent_delivery_status in {"failed", "blocked"}:
+            delivery_sensitivity = 0.68
+        delivery_sensitivity = max(0.0, min(1.0, delivery_sensitivity))
+
+        owner.set_initiative_state(
+            dominant_mode=selected_priority,
+            initiative_pressure=initiative_pressure,
+            commitment_carryover_bias=carryover_bias,
+            recent_delivery_sensitivity=delivery_sensitivity,
+            rationale_summary=str(
+                proposal_candidates[0].get("justification")
+                if proposal_candidates
+                else "bounded_initiative_review"
+            ),
+            source_refs=source_refs,
+        )
+        owner.set_initiative_priority_state(
+            selected_priority=selected_priority,
+            hold_weight=1.0 if selected_priority == InitiativePriority.HOLD else 0.2,
+            review_weight=1.0 if selected_priority == InitiativePriority.REVIEW else 0.35,
+            prepare_weight=1.0 if selected_priority == InitiativePriority.PREPARE else 0.3,
+            carry_forward_weight=1.0 if selected_priority == InitiativePriority.CARRY_FORWARD else 0.25,
+            schedule_weight=1.0 if selected_priority == InitiativePriority.SCHEDULE else 0.2,
+            priority_reason=str(
+                proposal_candidates[0].get("justification")
+                if proposal_candidates
+                else "bounded_initiative_priority"
+            ),
+            upstream_pressure_sources=source_refs,
+            source_refs=source_refs,
+        )
+        owner.set_commitment_continuity_state(
+            status=continuity_status,
+            active_commitments_count=active_commitments_count,
+            carried_commitment_refs=list(commitment_snapshot.get("carried_commitment_refs") or []),
+            blocked_commitment_refs=[f"blocked:{idx}" for idx in range(blocked_commitments_count)],
+            continuity_confidence=continuity_confidence,
+            carryover_summary=str(
+                commitment_snapshot.get("commitment_mode")
+                or initiative_policy_hints.get("continuity_mode")
+                or "bounded_commitment_continuity"
+            ),
+            source_refs=source_refs,
+        )
+
+        proposal_count = 0
+        for candidate in proposal_candidates[:3]:
+            owner.propose_initiative(
+                proposal_id=str(candidate.get("proposal_id") or f"initiative:{selected_priority.value}"),
+                proposal_label=str(candidate.get("proposal_label") or "bounded_initiative_review"),
+                priority_mode=selected_priority,
+                proposed_effects=dict(candidate.get("proposed_effects") or {}),
+                justification=str(candidate.get("justification") or "bounded_initiative_review"),
+                source_refs=list(candidate.get("source_refs") or source_refs),
+                requested_effects=list(candidate.get("requested_effects") or []),
+            )
+            owner.set_initiative_proposal_status(status=InitiativeProposalStatus.HELD)
+            proposal_count += 1
+
+        host_candidate_present = False
+        if host_candidate:
+            owner.set_host_proactive_candidate(
+                candidate_id=str(host_candidate.get("candidate_id") or f"host_candidate:{selected_priority.value}"),
+                candidate_label=str(
+                    host_candidate.get("candidate_label") or "governed_host_proactive_followup"
+                ),
+                continuity_basis=str(
+                    host_candidate.get("continuity_basis")
+                    or commitment_snapshot.get("commitment_mode")
+                    or "bounded_continuity_review"
+                ),
+                host_lane_hint=str(host_candidate.get("host_lane_hint") or "host_proactive_outbox"),
+                source_refs=list(host_candidate.get("source_refs") or source_refs),
+                requested_effects=list(host_candidate.get("requested_effects") or []),
+            )
+            owner.set_host_proactive_candidate_status(status=HostProactiveCandidateStatus.HELD)
+            host_candidate_present = True
+
+        for audit_entry in audit_entries[:10]:
+            owner.record_initiative_event(
+                event_type=str(audit_entry.get("entry_type") or "initiative_signal"),
+                reference_id=str(
+                    audit_entry.get("selected_priority")
+                    or audit_entry.get("host_proactive_mode")
+                    or trace_reference
+                ),
+                gate_verdict="allow_writeback",
+                details={k: v for k, v in audit_entry.items() if k != "entry_type"},
+            )
+        owner.record_initiative_event(
+            event_type="initiative_writeback",
+            reference_id=str(
+                proposal_candidates[0].get("proposal_id")
+                if proposal_candidates
+                else host_candidate.get("candidate_id")
+                if host_candidate
+                else trace_reference
+            ),
+            gate_verdict="allow_writeback",
+            details={
+                "trace_reference": trace_reference,
+                "proposal_only": True,
+                "behavioral_authority": "none",
+                "proposal_count": proposal_count,
+                "host_proactive_candidate_present": host_candidate_present,
+                "selected_priority": selected_priority.value,
+                "reserve_bias": reserve_bias,
+            },
+        )
+
+        changed_fields = [
+            "initiative_state",
+            "initiative_priority_state",
+            "commitment_continuity_state",
+            "initiative_ledger",
+        ]
+        if proposal_count:
+            changed_fields.append("initiative_proposal_candidate")
+        if host_candidate_present:
+            changed_fields.append("host_proactive_candidate")
+
+        try:
+            record = owner.persist(
+                update_source=str(writeback_candidate.get("source") or "proto_self_v2"),
+                trace_reference=trace_reference,
+            )
+            writeback = {
+                "decision": {
+                    "gate_verdict": "allow_writeback",
+                    "changed_fields": sorted(set(changed_fields)),
+                    "proposal_count": proposal_count,
+                    "host_proactive_candidate_present": host_candidate_present,
+                },
+                "record": {
+                    "revision_id": record.revision_id,
+                    "model_version": record.model_version,
+                    "trace_reference": record.trace_reference,
+                    "state_hash": record.state_hash,
+                },
+                "trace_reference": trace_reference,
+            }
+        except Exception as exc:
+            writeback = {
+                "decision": {"gate_verdict": "reject", "reason": str(exc)},
+                "record": None,
+                "trace_reference": trace_reference,
+            }
+        proto_self_result["initiative_writeback"] = writeback
+        return writeback
+
     def process_ingress(
         self,
         *,
@@ -2842,6 +3342,7 @@ class RuntimeV2ProtoSelfRuntime:
             social_self_store=self.social_self_store,
             embodied_self_store=self.embodied_self_store,
             selfhood_integration_store=self.selfhood_integration_store,
+            initiative_self_store=self.initiative_self_store,
         )
         proto_self_result = self.adapter.handle_event(proto_self_event)
         writeback = self._apply_self_model_writeback(proto_self_result=proto_self_result, state=state)
@@ -2866,6 +3367,10 @@ class RuntimeV2ProtoSelfRuntime:
             state=state,
         )
         selfhood_integration_writeback = self._apply_selfhood_integration_writeback(
+            proto_self_result=proto_self_result,
+            state=state,
+        )
+        initiative_writeback = self._apply_initiative_self_writeback(
             proto_self_result=proto_self_result,
             state=state,
         )
@@ -2938,6 +3443,15 @@ class RuntimeV2ProtoSelfRuntime:
             or proto_self_result.get("selfhood_integration_context")
             or {},
             "selfhood_integration_writeback": selfhood_integration_writeback,
+            "initiative_self_delta": proto_self_result.get("initiative_self_delta") or {},
+            "initiative_proposal_candidates": proto_self_result.get("initiative_proposal_candidates") or [],
+            "commitment_execution_snapshot": proto_self_result.get("commitment_execution_snapshot") or {},
+            "initiative_policy_hints": proto_self_result.get("initiative_policy_hints") or {},
+            "host_proactive_candidate": proto_self_result.get("host_proactive_candidate"),
+            "initiative_audit_entries": proto_self_result.get("initiative_audit_entries") or [],
+            "initiative_writeback_candidate": proto_self_result.get("initiative_writeback_candidate"),
+            "initiative_context": (proto_self_result.get("trace_payload") or {}).get("initiative_context") or {},
+            "initiative_writeback": initiative_writeback,
         }
         state.record(
             "proto_self",
@@ -2952,6 +3466,7 @@ class RuntimeV2ProtoSelfRuntime:
                 "social_writeback": social_writeback,
                 "embodied_writeback": embodied_writeback,
                 "selfhood_integration_writeback": selfhood_integration_writeback,
+                "initiative_writeback": initiative_writeback,
                 "reflection_writeback_candidate_present": bool(proto_self_result.get("reflection_writeback_candidate")),
                 "developmental_writeback_candidate_present": bool(
                     proto_self_result.get("developmental_writeback_candidate")
@@ -2960,6 +3475,9 @@ class RuntimeV2ProtoSelfRuntime:
                 "embodied_writeback_candidate_present": bool(proto_self_result.get("embodied_writeback_candidate")),
                 "self_integration_writeback_candidate_present": bool(
                     proto_self_result.get("self_integration_writeback_candidate")
+                ),
+                "initiative_writeback_candidate_present": bool(
+                    proto_self_result.get("initiative_writeback_candidate")
                 ),
                 "reflection_trigger": (
                     proto_self_result.get("reflection_note", {}).get("trigger")
@@ -2993,6 +3511,7 @@ class RuntimeV2ProtoSelfRuntime:
             social_self_store=self.social_self_store,
             embodied_self_store=self.embodied_self_store,
             selfhood_integration_store=self.selfhood_integration_store,
+            initiative_self_store=self.initiative_self_store,
         )
         external_result = self.adapter.handle_event(external_result_event)
         writeback = self._apply_self_model_writeback(proto_self_result=external_result, state=state)
@@ -3017,6 +3536,10 @@ class RuntimeV2ProtoSelfRuntime:
             state=state,
         )
         selfhood_integration_writeback = self._apply_selfhood_integration_writeback(
+            proto_self_result=external_result,
+            state=state,
+        )
+        initiative_writeback = self._apply_initiative_self_writeback(
             proto_self_result=external_result,
             state=state,
         )
@@ -3110,6 +3633,21 @@ class RuntimeV2ProtoSelfRuntime:
             external_result.get("trace_payload") or {}
         ).get("selfhood_integration_context") or external_result.get("selfhood_integration_context") or {}
         state.proto_self_context["selfhood_integration_writeback"] = selfhood_integration_writeback
+        state.proto_self_context["initiative_self_delta"] = external_result.get("initiative_self_delta") or {}
+        state.proto_self_context["initiative_proposal_candidates"] = (
+            external_result.get("initiative_proposal_candidates") or []
+        )
+        state.proto_self_context["commitment_execution_snapshot"] = (
+            external_result.get("commitment_execution_snapshot") or {}
+        )
+        state.proto_self_context["initiative_policy_hints"] = external_result.get("initiative_policy_hints") or {}
+        state.proto_self_context["host_proactive_candidate"] = external_result.get("host_proactive_candidate")
+        state.proto_self_context["initiative_audit_entries"] = external_result.get("initiative_audit_entries") or []
+        state.proto_self_context["initiative_writeback_candidate"] = external_result.get("initiative_writeback_candidate")
+        state.proto_self_context["initiative_context"] = (
+            external_result.get("trace_payload") or {}
+        ).get("initiative_context") or {}
+        state.proto_self_context["initiative_writeback"] = initiative_writeback
         if external_result.get("candidate_actions") is not None:
             state.proto_self_context["candidate_actions"] = external_result.get("candidate_actions") or []
         if external_result.get("policy_hint"):
@@ -3145,6 +3683,7 @@ class RuntimeV2ProtoSelfRuntime:
             social_self_store=self.social_self_store,
             embodied_self_store=self.embodied_self_store,
             selfhood_integration_store=self.selfhood_integration_store,
+            initiative_self_store=self.initiative_self_store,
         )
         if not finalized_event:
             return
@@ -3171,6 +3710,10 @@ class RuntimeV2ProtoSelfRuntime:
             state=state,
         )
         selfhood_integration_writeback = self._apply_selfhood_integration_writeback(
+            proto_self_result=finalized_result,
+            state=state,
+        )
+        initiative_writeback = self._apply_initiative_self_writeback(
             proto_self_result=finalized_result,
             state=state,
         )
@@ -3265,6 +3808,21 @@ class RuntimeV2ProtoSelfRuntime:
             finalized_result.get("trace_payload") or {}
         ).get("selfhood_integration_context") or finalized_result.get("selfhood_integration_context") or {}
         state.proto_self_context["selfhood_integration_writeback"] = selfhood_integration_writeback
+        state.proto_self_context["initiative_self_delta"] = finalized_result.get("initiative_self_delta") or {}
+        state.proto_self_context["initiative_proposal_candidates"] = (
+            finalized_result.get("initiative_proposal_candidates") or []
+        )
+        state.proto_self_context["commitment_execution_snapshot"] = (
+            finalized_result.get("commitment_execution_snapshot") or {}
+        )
+        state.proto_self_context["initiative_policy_hints"] = finalized_result.get("initiative_policy_hints") or {}
+        state.proto_self_context["host_proactive_candidate"] = finalized_result.get("host_proactive_candidate")
+        state.proto_self_context["initiative_audit_entries"] = finalized_result.get("initiative_audit_entries") or []
+        state.proto_self_context["initiative_writeback_candidate"] = finalized_result.get("initiative_writeback_candidate")
+        state.proto_self_context["initiative_context"] = (
+            finalized_result.get("trace_payload") or {}
+        ).get("initiative_context") or {}
+        state.proto_self_context["initiative_writeback"] = initiative_writeback
         if finalized_result.get("policy_hint"):
             state.proto_self_context["policy_hint"] = finalized_result.get("policy_hint")
             state.proto_self_context["governor_hint"] = finalized_result.get("policy_hint", {}).get("governor_hint")
@@ -3288,6 +3846,7 @@ class RuntimeV2ProtoSelfRuntime:
             social_self_store=self.social_self_store,
             embodied_self_store=self.embodied_self_store,
             selfhood_integration_store=self.selfhood_integration_store,
+            initiative_self_store=self.initiative_self_store,
         )
         if not idle_event:
             return
@@ -3314,6 +3873,10 @@ class RuntimeV2ProtoSelfRuntime:
             state=state,
         )
         selfhood_integration_writeback = self._apply_selfhood_integration_writeback(
+            proto_self_result=idle_result,
+            state=state,
+        )
+        initiative_writeback = self._apply_initiative_self_writeback(
             proto_self_result=idle_result,
             state=state,
         )
@@ -3399,6 +3962,21 @@ class RuntimeV2ProtoSelfRuntime:
             idle_result.get("trace_payload") or {}
         ).get("selfhood_integration_context") or idle_result.get("selfhood_integration_context") or {}
         state.proto_self_context["selfhood_integration_writeback"] = selfhood_integration_writeback
+        state.proto_self_context["initiative_self_delta"] = idle_result.get("initiative_self_delta") or {}
+        state.proto_self_context["initiative_proposal_candidates"] = (
+            idle_result.get("initiative_proposal_candidates") or []
+        )
+        state.proto_self_context["commitment_execution_snapshot"] = (
+            idle_result.get("commitment_execution_snapshot") or {}
+        )
+        state.proto_self_context["initiative_policy_hints"] = idle_result.get("initiative_policy_hints") or {}
+        state.proto_self_context["host_proactive_candidate"] = idle_result.get("host_proactive_candidate")
+        state.proto_self_context["initiative_audit_entries"] = idle_result.get("initiative_audit_entries") or []
+        state.proto_self_context["initiative_writeback_candidate"] = idle_result.get("initiative_writeback_candidate")
+        state.proto_self_context["initiative_context"] = (
+            idle_result.get("trace_payload") or {}
+        ).get("initiative_context") or {}
+        state.proto_self_context["initiative_writeback"] = initiative_writeback
         if idle_result.get("policy_hint"):
             state.proto_self_context["policy_hint"] = idle_result.get("policy_hint")
             state.proto_self_context["governor_hint"] = idle_result.get("policy_hint", {}).get("governor_hint")
@@ -3440,6 +4018,7 @@ class RuntimeV2ProtoSelfRuntime:
             social_self_store=self.social_self_store,
             embodied_self_store=self.embodied_self_store,
             selfhood_integration_store=self.selfhood_integration_store,
+            initiative_self_store=self.initiative_self_store,
         )
         if not developmental_event:
             return None
@@ -3466,6 +4045,10 @@ class RuntimeV2ProtoSelfRuntime:
             state=state,
         )
         selfhood_integration_writeback = self._apply_selfhood_integration_writeback(
+            proto_self_result=developmental_result,
+            state=state,
+        )
+        initiative_writeback = self._apply_initiative_self_writeback(
             proto_self_result=developmental_result,
             state=state,
         )
@@ -3571,6 +4154,25 @@ class RuntimeV2ProtoSelfRuntime:
             developmental_result.get("trace_payload") or {}
         ).get("selfhood_integration_context") or developmental_result.get("selfhood_integration_context") or {}
         state.proto_self_context["selfhood_integration_writeback"] = selfhood_integration_writeback
+        state.proto_self_context["initiative_self_delta"] = developmental_result.get("initiative_self_delta") or {}
+        state.proto_self_context["initiative_proposal_candidates"] = (
+            developmental_result.get("initiative_proposal_candidates") or []
+        )
+        state.proto_self_context["commitment_execution_snapshot"] = (
+            developmental_result.get("commitment_execution_snapshot") or {}
+        )
+        state.proto_self_context["initiative_policy_hints"] = developmental_result.get("initiative_policy_hints") or {}
+        state.proto_self_context["host_proactive_candidate"] = developmental_result.get("host_proactive_candidate")
+        state.proto_self_context["initiative_audit_entries"] = (
+            developmental_result.get("initiative_audit_entries") or []
+        )
+        state.proto_self_context["initiative_writeback_candidate"] = (
+            developmental_result.get("initiative_writeback_candidate")
+        )
+        state.proto_self_context["initiative_context"] = (
+            developmental_result.get("trace_payload") or {}
+        ).get("initiative_context") or {}
+        state.proto_self_context["initiative_writeback"] = initiative_writeback
         state.proto_self_context["background_thought_candidates"] = list(
             developmental_summary.get("background_thought_candidates") or []
         )
@@ -3597,6 +4199,12 @@ class RuntimeV2ProtoSelfRuntime:
                 ).get("decision", {}).get("gate_verdict"),
                 "self_integration_writeback_candidate_present": bool(
                     developmental_result.get("self_integration_writeback_candidate")
+                ),
+                "initiative_writeback_gate_verdict": (
+                    initiative_writeback or {}
+                ).get("decision", {}).get("gate_verdict"),
+                "initiative_writeback_candidate_present": bool(
+                    developmental_result.get("initiative_writeback_candidate")
                 ),
             },
         )
