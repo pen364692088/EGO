@@ -180,10 +180,10 @@
 
 ## Current Phase Status
 - 当前层级：`implementation`
-- 当前状态：`T30 completed`
+- 当前状态：`T50 completed`
 - 当前 blocker：`none on the WP15 runtime-bridge axis`
-- 当前最小闭环动作：`T40_LEGACY_DEMOTION_AND_COMPAT_MAP`
-- 当前 claim ceiling：`T30 completed only`
+- 当前最小闭环动作：`T60_CONTROLLED_OBSERVATION_SINGLE`
+- 当前 claim ceiling：`T50 completed only`
 
 ## Success Criteria
 - `Tasks/MVS_task_plan.md` 中已正式出现 `WP15: Host-Governed Self-Directed Initiative / Commitment Continuity`

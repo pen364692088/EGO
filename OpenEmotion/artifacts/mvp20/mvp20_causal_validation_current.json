@@ -1,0 +1,67 @@
+{
+  "evidence_level": "E3",
+  "generated_at": "2026-04-05T00:58:27.038899+00:00",
+  "git_commit_short": "c2dfccd",
+  "pair_count": 5,
+  "pairs": [
+    {
+      "metric": {
+        "control_host_proactive_mode": null,
+        "control_initiative_priority": null,
+        "intervention_host_proactive_mode": "candidate",
+        "intervention_initiative_priority": "carry_forward"
+      },
+      "pair_id": "initiative_carryover_changes_bounded_followup_weighting",
+      "passed": true
+    },
+    {
+      "metric": {
+        "control_delivery_bias": "normal",
+        "control_priority": "carry_forward",
+        "intervention_delivery_bias": "repair_review",
+        "intervention_priority": "hold"
+      },
+      "pair_id": "delivery_failure_holds_initiative_under_guard",
+      "passed": true
+    },
+    {
+      "metric": {
+        "control_continuity_mode": "stable",
+        "control_priority": "carry_forward",
+        "intervention_continuity_mode": "fragile",
+        "intervention_priority": "review"
+      },
+      "pair_id": "continuity_fragility_forces_review_bias",
+      "passed": true
+    },
+    {
+      "metric": {
+        "control_priority": "carry_forward",
+        "intervention_priority": "hold",
+        "intervention_surface_reasons": [
+          "initiative_pressure",
+          "commitment_carryover",
+          "active_commitments",
+          "idle_window",
+          "integration_guard",
+          "integration_conflict"
+        ]
+      },
+      "pair_id": "selfhood_guard_overrides_initiative_growth_bias",
+      "passed": true
+    },
+    {
+      "metric": {
+        "control_priority": "carry_forward",
+        "control_trigger": "bounded_followup",
+        "intervention_priority": "carry_forward",
+        "intervention_trigger": "same metrics, reworded trigger"
+      },
+      "pair_id": "text_only_trigger_change_has_no_structural_effect",
+      "passed": true
+    }
+  ],
+  "passed_count": 5,
+  "status": "pass",
+  "verification_level": "V3"
+}
