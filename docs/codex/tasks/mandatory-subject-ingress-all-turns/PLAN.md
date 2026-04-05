@@ -136,7 +136,7 @@
 ## Progress
 
 - current_status: `in_progress`
-- current_milestone: `Milestone 2: Telegram Runtime_V2 Early-Return Closure`
+- current_milestone: `Milestone 3: Command / Document / Legacy Closure`
 - milestone_state: `ready_to_implement`
 
 ## Decision log
@@ -154,8 +154,11 @@
   - 固定 `SubjectGateVerdict`
   - `_send_host_owned_reply()` 现在必须先过 `finalized_result + response_plan`
   - hooks unavailable/disabled/failure 时，会显式送出 `subject_gate_failed`，而不是继续正常成功回复
+- `M2` 已完成：
+  - `_handle_with_runtime_v2()` 中 authorized early-return cases 现在会先 subject ingress，再进入 host early reply / pre-runtime 早退
+  - `pending task conflict`、`evidence followup reply`、`read_only_preflight`、`force_waiting_input`、`direct_reply_text`、generic hold 现在都在主体知晓之后再早退
+  - subject ingress 失败会显式阻断并返回 `subject_gate_failed`
 - 当前仍未证明：
-  - `runtime_v2 pre_runtime` 全部分支已 subject-aware
   - command/result、document/ingestion、background/proactive 已完成 closure
   - fresh real window 已消除 authorized bypass
 

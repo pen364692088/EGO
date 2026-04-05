@@ -2082,6 +2082,69 @@ class TelegramBot:
             self.subject_gate = MandatorySubjectGate(hooks=hooks)
         return self.subject_gate
 
+    def _build_runtime_v2_subject_turn_id(
+        self,
+        *,
+        session_key: str,
+        ingress_message_id: Optional[int],
+        trace_id: Optional[str],
+    ) -> str:
+        parts = ["runtime_v2", str(session_key or "unknown")]
+        if ingress_message_id is not None:
+            parts.append(f"msg{int(ingress_message_id)}")
+        if trace_id:
+            parts.append(str(trace_id))
+        return ":".join(parts)
+
+    async def _ensure_runtime_v2_subject_ingress(
+        self,
+        *,
+        update: Update,
+        session_key: str,
+        state: RuntimeV2State,
+        text: str,
+        trace_id: Optional[str],
+        ingress_message_id: Optional[int],
+    ) -> bool:
+        subject_gate = self._get_subject_gate()
+        if subject_gate is None:
+            logger.error(
+                "runtime_v2.subject_gate.missing session=%s msg_id=%s trace=%s",
+                session_key,
+                ingress_message_id,
+                trace_id,
+            )
+            await self._send_reply(update, "subject_gate_failed：主体暂时不可用，这一步已阻断，请稍后重试。")
+            return False
+
+        verdict = subject_gate.process_ingress(
+            session_id=session_key,
+            turn_id=self._build_runtime_v2_subject_turn_id(
+                session_key=session_key,
+                ingress_message_id=ingress_message_id,
+                trace_id=trace_id,
+            ),
+            source="telegram",
+            user_input=text,
+            state=state,
+            evidence_collector=get_evidence_collector() if _EVIDENCE_COLLECTOR_AVAILABLE else None,
+        )
+        if verdict.ok:
+            return True
+
+        logger.warning(
+            "runtime_v2.subject_gate.ingress.blocked session=%s msg_id=%s trace=%s reason=%s",
+            session_key,
+            ingress_message_id,
+            trace_id,
+            verdict.reason,
+        )
+        await self._send_reply(
+            update,
+            verdict.reply_text or "subject_gate_failed：主体暂时不可用，这一步已阻断，请稍后重试。",
+        )
+        return False
+
     def _finalize_native_openemotion_turn(
         self,
         *,
@@ -2990,45 +3053,8 @@ class TelegramBot:
         session_key = self._resolve_session_key(update, chat_id, user_id)
         state = self._get_runtime_state(session_key)
         ingress_message_id = update.message.message_id if update.message else None
-        if state.get_pending_task_conflict() is not None:
-            await self._send_host_owned_reply(
-                update,
-                state=state,
-                reply_text=self._build_task_conflict_reply(state),
-                status="task_conflict_pending",
-                delivery_kind="final",
-                authority_source="host_pre_runtime",
-                reply_authority="host_task_conflict",
-                metadata={"conversation_act": "task_conflict"},
-            )
-            return
 
         normalized_turn = normalize_user_turn(text)
-        followup_reply = self._build_recent_read_followup_reply(state, text)
-        if followup_reply is not None:
-            snapshot = getattr(state, "last_delivered_evidence_context", None) or getattr(state, "last_evidence_read_result", None)
-            plan = build_direct_response_plan(
-                followup_reply,
-                kind="evidence_followup",
-                delivery_kind="final",
-                authority_source="response_contract.response_plan",
-                reply_authority="host_evidence",
-                metadata={
-                    "status": "evidence_followup",
-                    "conversation_act": "evidence_followup",
-                    "evidence_payload": dict(snapshot or {}),
-                    "evidence_binding_source_turn": (snapshot or {}).get("source_turn_id"),
-                },
-                state=state,
-            )
-            verdict = apply_output_check(plan, state)
-            if verdict.passed:
-                self._capture_pre_runtime_response_plan(plan, verdict)
-                await self._send_reply(update, verdict.reply_text)
-            state.clear_last_delivered_evidence_context()
-            return
-        if normalized_turn.probe_key not in READ_LIST_FOLLOWUP_PROBE_KEYS:
-            state.clear_last_delivered_evidence_context()
 
         # 记录 ingress 信息
         if ingress_message_id is not None:
@@ -3069,6 +3095,55 @@ class TelegramBot:
             state.ingress_context = dict(state.ingress_context or {})
             state.ingress_context["proto_self_subject_profile"] = state.proto_self_subject_profile_override
             state.ingress_context["proto_self_subject_profile_source"] = "telegram_session_override"
+        if not await self._ensure_runtime_v2_subject_ingress(
+            update=update,
+            session_key=session_key,
+            state=state,
+            text=text,
+            trace_id=trace_id,
+            ingress_message_id=ingress_message_id,
+        ):
+            return
+
+        if state.get_pending_task_conflict() is not None:
+            await self._send_host_owned_reply(
+                update,
+                state=state,
+                reply_text=self._build_task_conflict_reply(state),
+                status="task_conflict_pending",
+                delivery_kind="final",
+                authority_source="host_pre_runtime",
+                reply_authority="host_task_conflict",
+                metadata={"conversation_act": "task_conflict"},
+            )
+            return
+
+        followup_reply = self._build_recent_read_followup_reply(state, text)
+        if followup_reply is not None:
+            snapshot = getattr(state, "last_delivered_evidence_context", None) or getattr(state, "last_evidence_read_result", None)
+            plan = build_direct_response_plan(
+                followup_reply,
+                kind="evidence_followup",
+                delivery_kind="final",
+                authority_source="response_contract.response_plan",
+                reply_authority="host_evidence",
+                metadata={
+                    "status": "evidence_followup",
+                    "conversation_act": "evidence_followup",
+                    "evidence_payload": dict(snapshot or {}),
+                    "evidence_binding_source_turn": (snapshot or {}).get("source_turn_id"),
+                },
+                state=state,
+            )
+            verdict = apply_output_check(plan, state)
+            if verdict.passed:
+                self._capture_pre_runtime_response_plan(plan, verdict)
+                await self._send_reply(update, verdict.reply_text)
+            state.clear_last_delivered_evidence_context()
+            return
+        if normalized_turn.probe_key not in READ_LIST_FOLLOWUP_PROBE_KEYS:
+            state.clear_last_delivered_evidence_context()
+
         pre_runtime = self.telegram_runtime_bridge.plan_pre_runtime(ingress, state)
         runtime_action = getattr(ingress, "_runtime_action", None)
         logger.info("runtime_v2.turn.start session=%s text=%r ingress=%s parser_source=%s",

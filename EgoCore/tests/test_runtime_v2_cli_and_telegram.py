@@ -7,7 +7,7 @@ import pytest
 import app.telegram_bot as telegram_bot_module
 from app.autonomy import AutonomyExecutorKind, AutonomyRun, AutonomyRunStatus, AutonomyStopReason
 from app.openemotion_hooks.subject_gate import SubjectGateVerdict
-from app.runtime_v2.run_items import build_run_items_from_request
+from app.runtime_v2.run_items import RunConflictState, build_run_items_from_request
 from app.runtime_v2.cli import run_cli
 from app.telegram_bot import TelegramBot
 from app.telegram_evidence_collector import TelegramEvidenceCollector
@@ -706,6 +706,310 @@ async def test_telegram_bot_host_owned_reply_blocks_when_subject_gate_fails(monk
     )
 
     assert sent is False
+    assert DummyUpdate.message.sent == ["subject_gate_failed：主体暂时不可用，这一步已阻断，请稍后重试。"]
+
+
+@pytest.mark.asyncio
+async def test_runtime_v2_early_return_pending_conflict_subject_ingress_precedes_host_reply(monkeypatch):
+    bot = TelegramBot(token="test-token", use_runtime_v2=True)
+    state = bot._get_runtime_state("telegram:dm:456")
+    state.set_pending_task_conflict(
+        RunConflictState(
+            existing_run_id="run-1",
+            existing_objective="旧任务",
+            incoming_text="继续",
+            incoming_run_items=[],
+        )
+    )
+    calls = []
+
+    class RecordingGate:
+        enabled = True
+
+        def process_ingress(self, **kwargs):
+            calls.append(("ingress", kwargs["turn_id"], kwargs["user_input"]))
+            return SubjectGateVerdict.allow(stage="ingress")
+
+        def finalize_host_owned_result(self, **kwargs):
+            calls.append(("finalized_result", kwargs["turn_id"], kwargs["result"].status))
+            return SubjectGateVerdict.allow(stage="response_plan")
+
+    class DummyMessage:
+        text = "继续"
+        message_id = 41
+        reply_to_message = None
+        sent = []
+
+        async def reply_text(self, text, parse_mode=None):
+            self.sent.append(text)
+            return SimpleNamespace(
+                chat=SimpleNamespace(id=123),
+                message_id=self.message_id + len(self.sent),
+                date=datetime.now(timezone.utc),
+            )
+
+    class DummyUpdate:
+        message = DummyMessage()
+        effective_chat = SimpleNamespace(id=123, type="private")
+        effective_user = SimpleNamespace(id=456, username="tester")
+
+    gate = RecordingGate()
+
+    async def fake_inspect_ingress_semantic(*args, **kwargs):
+        return SimpleNamespace(
+            _runtime_action="chat",
+            _parsed_intent_graph=SimpleNamespace(parser_source="test"),
+            is_challenge_turn=False,
+            probe_key="plain",
+        )
+
+    monkeypatch.setattr(bot, "_get_subject_gate", lambda: gate)
+    monkeypatch.setattr(bot.telegram_runtime_bridge, "inspect_ingress_semantic", fake_inspect_ingress_semantic)
+    monkeypatch.setattr(
+        bot.telegram_runtime_bridge,
+        "build_ingress_context",
+        lambda ingress, state: {"interaction_kind": "chat"},
+    )
+    monkeypatch.setattr(
+        bot.telegram_runtime_bridge,
+        "plan_pre_runtime",
+        lambda ingress, state: SimpleNamespace(
+            should_return_early=False,
+            remember_challenge_turn=False,
+            busy_notice_text="busy",
+        ),
+    )
+    async def fake_publish_phase1_event(**kwargs):
+        return None
+
+    monkeypatch.setattr(bot, "_publish_phase1_event", fake_publish_phase1_event)
+
+    await bot._handle_with_runtime_v2(
+        DummyUpdate(),
+        text="继续",
+        chat_id=123,
+        user_id=456,
+        username="tester",
+        trace_id="trace-m2-conflict",
+    )
+
+    assert calls[0][0] == "ingress"
+    assert calls[1][0] == "finalized_result"
+    assert len(DummyUpdate.message.sent) == 1
+    assert DummyUpdate.message.sent[0].startswith("当前已有一个活跃任务。")
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize(
+    "pre_runtime_factory, expected_reply, expected_subject_gate_calls",
+    [
+        (
+            lambda: SimpleNamespace(
+                should_return_early=True,
+                remember_challenge_turn=False,
+                busy_notice_text="busy",
+                rule_enforcement={"kind": "read_only_preflight"},
+            ),
+            "预检：请先确认你要执行的操作。",
+            ["ingress"],
+        ),
+        (
+            lambda: SimpleNamespace(
+                should_return_early=True,
+                remember_challenge_turn=False,
+                busy_notice_text="busy",
+                force_waiting_input=True,
+                waiting_input_text="收到文件，请告诉我你要做什么。",
+            ),
+            "收到文件，请告诉我你要做什么。",
+            ["ingress"],
+        ),
+        (
+            lambda: SimpleNamespace(
+                should_return_early=True,
+                remember_challenge_turn=False,
+                busy_notice_text="busy",
+                direct_reply_text="这里是直接回复。",
+            ),
+            "这里是直接回复。",
+            ["ingress"],
+        ),
+        (
+            lambda: SimpleNamespace(
+                should_return_early=True,
+                remember_challenge_turn=False,
+                busy_notice_text="busy",
+            ),
+            None,
+            ["ingress"],
+        ),
+    ],
+)
+async def test_runtime_v2_pre_runtime_early_return_attempts_subject_ingress_first(
+    monkeypatch,
+    pre_runtime_factory,
+    expected_reply,
+    expected_subject_gate_calls,
+):
+    bot = TelegramBot(token="test-token", use_runtime_v2=True)
+    calls = []
+
+    class RecordingGate:
+        enabled = True
+
+        def process_ingress(self, **kwargs):
+            calls.append(("ingress", kwargs["turn_id"], kwargs["user_input"]))
+            return SubjectGateVerdict.allow(stage="ingress")
+
+        def finalize_host_owned_result(self, **kwargs):
+            calls.append(("finalized_result", kwargs["turn_id"], kwargs["result"].status))
+            return SubjectGateVerdict.allow(stage="response_plan")
+
+    class DummyMessage:
+        text = "继续"
+        message_id = 42
+        reply_to_message = None
+        sent = []
+
+        async def reply_text(self, text, parse_mode=None):
+            self.sent.append(text)
+            return SimpleNamespace(
+                chat=SimpleNamespace(id=123),
+                message_id=self.message_id + len(self.sent),
+                date=datetime.now(timezone.utc),
+            )
+
+    class DummyUpdate:
+        message = DummyMessage()
+        effective_chat = SimpleNamespace(id=123, type="private")
+        effective_user = SimpleNamespace(id=456, username="tester")
+
+    gate = RecordingGate()
+
+    async def fake_inspect_ingress_semantic(*args, **kwargs):
+        return SimpleNamespace(
+            _runtime_action="chat",
+            _parsed_intent_graph=SimpleNamespace(parser_source="test"),
+            is_challenge_turn=False,
+            probe_key="plain",
+        )
+
+    monkeypatch.setattr(bot, "_get_subject_gate", lambda: gate)
+    monkeypatch.setattr(bot.telegram_runtime_bridge, "inspect_ingress_semantic", fake_inspect_ingress_semantic)
+    monkeypatch.setattr(
+        bot.telegram_runtime_bridge,
+        "build_ingress_context",
+        lambda ingress, state: {"interaction_kind": "chat"},
+    )
+    monkeypatch.setattr(
+        bot.telegram_runtime_bridge,
+        "plan_pre_runtime",
+        lambda ingress, state: pre_runtime_factory(),
+    )
+    async def fake_publish_phase1_event(**kwargs):
+        return None
+
+    monkeypatch.setattr(bot, "_publish_phase1_event", fake_publish_phase1_event)
+    async def fake_build_profile_rule_preflight_reply(state, rule_enforcement):
+        return "预检：请先确认你要执行的操作。"
+
+    monkeypatch.setattr(bot, "_build_profile_rule_preflight_reply", fake_build_profile_rule_preflight_reply)
+
+    await bot._handle_with_runtime_v2(
+        DummyUpdate(),
+        text="继续",
+        chat_id=123,
+        user_id=456,
+        username="tester",
+        trace_id="trace-m2-pre-runtime",
+    )
+
+    assert calls[0][0] == "ingress"
+    assert [call[0] for call in calls[: len(expected_subject_gate_calls)]] == expected_subject_gate_calls
+    if expected_reply is None:
+        assert DummyUpdate.message.sent == []
+    else:
+        assert DummyUpdate.message.sent == [expected_reply]
+
+
+@pytest.mark.asyncio
+async def test_runtime_v2_early_return_subject_ingress_failure_blocks_host_reply(monkeypatch):
+    bot = TelegramBot(token="test-token", use_runtime_v2=True)
+    calls = []
+
+    class RecordingGate:
+        enabled = True
+
+        def process_ingress(self, **kwargs):
+            calls.append(("ingress", kwargs["turn_id"], kwargs["user_input"]))
+            return SubjectGateVerdict.block(stage="ingress", reason="hooks_disabled")
+
+        def finalize_host_owned_result(self, **kwargs):
+            calls.append(("finalized_result", kwargs["turn_id"], kwargs["result"].status))
+            return SubjectGateVerdict.allow(stage="response_plan")
+
+    class DummyMessage:
+        text = "继续"
+        message_id = 43
+        reply_to_message = None
+        sent = []
+
+        async def reply_text(self, text, parse_mode=None):
+            self.sent.append(text)
+            return SimpleNamespace(
+                chat=SimpleNamespace(id=123),
+                message_id=self.message_id + len(self.sent),
+                date=datetime.now(timezone.utc),
+            )
+
+    class DummyUpdate:
+        message = DummyMessage()
+        effective_chat = SimpleNamespace(id=123, type="private")
+        effective_user = SimpleNamespace(id=456, username="tester")
+
+    gate = RecordingGate()
+
+    async def fake_inspect_ingress_semantic(*args, **kwargs):
+        return SimpleNamespace(
+            _runtime_action="chat",
+            _parsed_intent_graph=SimpleNamespace(parser_source="test"),
+            is_challenge_turn=False,
+            probe_key="plain",
+        )
+
+    async def fake_publish_phase1_event(**kwargs):
+        return None
+
+    monkeypatch.setattr(bot, "_get_subject_gate", lambda: gate)
+    monkeypatch.setattr(bot.telegram_runtime_bridge, "inspect_ingress_semantic", fake_inspect_ingress_semantic)
+    monkeypatch.setattr(
+        bot.telegram_runtime_bridge,
+        "build_ingress_context",
+        lambda ingress, state: {"interaction_kind": "chat"},
+    )
+    monkeypatch.setattr(
+        bot.telegram_runtime_bridge,
+        "plan_pre_runtime",
+        lambda ingress, state: SimpleNamespace(
+            should_return_early=True,
+            remember_challenge_turn=False,
+            busy_notice_text="busy",
+            direct_reply_text="这里不该出现。",
+        ),
+    )
+    monkeypatch.setattr(bot, "_publish_phase1_event", fake_publish_phase1_event)
+
+    await bot._handle_with_runtime_v2(
+        DummyUpdate(),
+        text="继续",
+        chat_id=123,
+        user_id=456,
+        username="tester",
+        trace_id="trace-m2-block",
+    )
+
+    assert calls and calls[0][0] == "ingress"
+    assert all(call[0] != "finalized_result" for call in calls)
     assert DummyUpdate.message.sent == ["subject_gate_failed：主体暂时不可用，这一步已阻断，请稍后重试。"]
 
 
