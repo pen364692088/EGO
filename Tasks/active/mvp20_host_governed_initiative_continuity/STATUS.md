@@ -2,8 +2,8 @@
 
 ```yaml
 phase: WP15
-status: observation_started
-current_layer: implementation
+status: maintenance_mode
+current_layer: maintenance
 main_chain_status: current_runtime_initiative_consumer_present_legacy_reference_only
 enabled_status: repeated_controlled_observation_passed
 trigger_evidence:
@@ -41,16 +41,17 @@ trigger_evidence:
   - OpenEmotion/tools/run_mvp20_controlled_observation_batch.py now emits the current V5/E5 batch artifact under OpenEmotion/artifacts/mvp20/mvp20_controlled_observation_batch_current.*
 verification_level: V5
 evidence_level: E5
-current_blocker: "none on the WP15 batch-observation axis"
-next_minimal_closure_action: "T80_CLOSEOUT_AND_QA_BASELINE"
+current_blocker: "none on the WP15 controlled axis"
+next_minimal_closure_action: "maintenance intake only; do not reopen WP15 without authority breach or regression evidence"
 ```
 
 ## 当前口径
 
-- 可宣称完成：`WP15/MVP20` 已完成 `T70_BATCH_OBSERVATION_AND_AGGREGATE`，当前 initiative formal owner、proto-self contract、EgoCore runtime bridge、legacy demotion、bounded causal proof、single controlled `V4/E4` 样本与 repeated controlled `V5/E5` aggregate 已成立
-- 条件性完成：当前只覆盖 owner 层 + proto-self contract + EgoCore runtime bridge + legacy demotion + bounded causal proof + single/batch controlled observation；不覆盖 closeout 或 maintenance
-- 不可宣称完成：`MVP20` 已进入 `maintenance_mode`、已 closeout、或已放开任何 authority
-- 后续处理：下一步只能进入 `T80_CLOSEOUT_AND_QA_BASELINE`，不能越过 closeout 直接宣称 maintenance
+- 可宣称完成：`WP15/MVP20` 已在 formal owner + proposal-only initiative writeback + controlled observation 轴上收口进入 `maintenance_mode`
+- 条件性完成：当前维护态只覆盖 owner 层 + proto-self contract + EgoCore runtime bridge + legacy demotion + bounded causal proof + single/batch controlled observation 这条 controlled axis
+- 不可宣称完成：`WP15/MVP20` 已放开任何 authority、已具备 live autonomy、已具备 OpenEmotion direct reply authority、已具备 tool authority、或已具备 broader transport claims
+- 后续处理：`WP15` 后续样本、回归与预算层噪声只进入 maintenance ledger；若命中 QA baseline 的 reopen 条件，再单独升级讨论
+- `T90` 结果：`no-op accepted`，因为 `SUBAGENT_ASSIGNMENT.md` 已与 `cards/T00..T90`、write scope 和依赖顺序保持一致，无需再改
 
 ## 边界提醒
 

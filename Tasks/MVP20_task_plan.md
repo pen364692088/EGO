@@ -1,6 +1,6 @@
 # MVP20 / WP15 Host-Governed Self-Directed Initiative / Commitment Continuity
 
-> 状态：authority_frozen / task_package_ready
+> 状态：maintenance_mode on the controlled axis
 > parent_authority: `Tasks/MVS_task_plan.md`
 > phase: `WP15`
 > predecessor: `WP14/MVP19`
@@ -179,11 +179,11 @@
 - `WP15` may not reinterpret `WP8~WP14` maintenance institutionalization or controlled evidence as live authority or broader transport maturity
 
 ## Current Phase Status
-- 当前层级：`implementation`
-- 当前状态：`T70 completed`
-- 当前 blocker：`none on the WP15 batch-observation axis`
-- 当前最小闭环动作：`T80_CLOSEOUT_AND_QA_BASELINE`
-- 当前 claim ceiling：`repeated/batch V5/E5 only`
+- 当前层级：`maintenance`
+- 当前状态：`T80 completed`
+- 当前 blocker：`none on the WP15 controlled axis`
+- 当前最小闭环动作：`maintenance verification / ledger intake only`
+- 当前 claim ceiling：`maintenance_mode on the controlled axis only`
 
 ## Success Criteria
 - `Tasks/MVS_task_plan.md` 中已正式出现 `WP15: Host-Governed Self-Directed Initiative / Commitment Continuity`

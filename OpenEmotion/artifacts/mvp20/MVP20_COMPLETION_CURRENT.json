@@ -1,0 +1,57 @@
+{
+  "schema_version": "mvp20.completion.v1",
+  "generated_at": "2026-04-05T01:24:20.500524+00:00",
+  "phase": "WP15",
+  "mvp": "MVP20",
+  "status": "controlled_pass",
+  "closure_mode": "maintenance_mode",
+  "controlled_axis": "formal owner + proposal-only initiative writeback + controlled observation",
+  "formal_owner": "OpenEmotion/openemotion/initiative_self/*",
+  "formal_runtime_path": [
+    "runtime_v2",
+    "proto_self_runtime",
+    "proto_self_adapter",
+    "proto_self_v2"
+  ],
+  "evidence_stack": {
+    "causal": {
+      "artifact": "OpenEmotion/artifacts/mvp20/mvp20_causal_validation_current.md",
+      "verification_level": "V3",
+      "evidence_level": "E3"
+    },
+    "single_observation": {
+      "artifact": "OpenEmotion/artifacts/mvp20/mvp20_controlled_observation_current.md",
+      "verification_level": "V4",
+      "evidence_level": "E4"
+    },
+    "batch_observation": {
+      "artifact": "OpenEmotion/artifacts/mvp20/mvp20_controlled_observation_batch_current.md",
+      "verification_level": "V5",
+      "evidence_level": "E5"
+    }
+  },
+  "stable_batch_result": {
+    "report_count": 3,
+    "accepted_count": 3,
+    "replay_consistent_count": 3,
+    "initiative_proposal_present_count": 3,
+    "proposal_only_discipline_count": 3,
+    "behavioral_authority_none_count": 3,
+    "bounded_influence_present_count": 3,
+    "distinct_targets": [
+      "continuity_fragility_review",
+      "delivery_failure_hold_review",
+      "initiative_followup_medium_reserve"
+    ],
+    "source_breakdown": {
+      "repo_authored": 3
+    }
+  },
+  "what_it_does_not_prove": [
+    "live autonomy",
+    "direct OpenEmotion reply authority",
+    "tool authority",
+    "broader transport evidence"
+  ],
+  "next_mainline_action": "Keep WP15 in maintenance mode and define the next authority package before expanding scope."
+}

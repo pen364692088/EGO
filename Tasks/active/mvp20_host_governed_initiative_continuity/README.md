@@ -7,14 +7,14 @@ owner: "Codex"
 layer: 3
 type: dual_repo
 repos: [EgoCore, OpenEmotion]
-status: observation_started
+status: maintenance_mode
 parent_authority: "Tasks/MVS_task_plan.md"
 phase_authority: "Tasks/MVP20_task_plan.md"
 predecessor: "WP14/MVP19"
 same_subject_line: true
 not_parallel_track: true
 scope: "WP15 / MVP20 Host-Governed Self-Directed Initiative / Commitment Continuity"
-claim_ceiling: "repeated/batch V5/E5 only"
+claim_ceiling: "maintenance_mode on the controlled axis only"
 ```
 
 ---
@@ -53,7 +53,7 @@ claim_ceiling: "repeated/batch V5/E5 only"
 
 ## 当前状态
 
-- 执行包状态：`observation_started`
+- 执行包状态：`maintenance_mode`
 - authority freeze：`completed`
 - `T00_AUTHORITY_FREEZE`：`completed`
 - `T10` formal owner：`completed`
@@ -63,12 +63,12 @@ claim_ceiling: "repeated/batch V5/E5 only"
 - `T50` causal validation：`completed`
 - `T60` single controlled observation：`completed`
 - `T70` batch controlled observation / aggregate：`completed`
-- `T80` closeout / QA baseline：`pending`
-- `T90` subagent assignment sync：`completed`
+- `T80` closeout / QA baseline：`completed`
+- `T90` subagent assignment sync：`no-op accepted (already in sync)`
 - 主链接线：`current_runtime_initiative_consumer_present_legacy_reference_only`
 - 启用状态：`repeated_controlled_observation_passed`
-- 当前 blocker：`none on the WP15 runtime-bridge axis`
-- 当前最小动作：`T80_CLOSEOUT_AND_QA_BASELINE`
+- 当前 blocker：`none on the WP15 controlled axis`
+- 当前最小动作：`maintenance verification / ledger intake only`
 
 ## 当前已证实内容
 
@@ -104,7 +104,15 @@ claim_ceiling: "repeated/batch V5/E5 only"
   - `accepted_count = 3`
   - `proposal_only_discipline_count = 3`
   - `behavioral_authority_none_count = 3`
-- 这证明当前 formal owner + current runtime mainline 已在 repeated controlled observation 轴上拿到 initiative proposal-only writeback 的 `V5/E5` aggregate；这仍不证明 closeout、`maintenance_mode`、或 authority 放开
+- 这证明当前 formal owner + current runtime mainline 已在 repeated controlled observation 轴上拿到 initiative proposal-only writeback 的 `V5/E5` aggregate；当前 closeout、`maintenance_mode`、QA baseline 与 completion artifact 现已冻结，但这仍不证明 authority 放开
+
+## 维护态入口
+
+- QA baseline：`WP15_QA_BASELINE.md`
+- maintenance ledger：`MAINTENANCE_LEDGER.md`
+- completion artifact：`OpenEmotion/artifacts/mvp20/MVP20_COMPLETION_CURRENT.md`
+
+后续任何 `WP15` maintenance 结论，都必须引用当前 completion artifact 与 QA baseline，不能重新把 `WP15` 写回 implementation / observation_started。
 
 ## 当前不做
 
