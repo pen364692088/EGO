@@ -3121,24 +3121,20 @@ class TelegramBot:
         followup_reply = self._build_recent_read_followup_reply(state, text)
         if followup_reply is not None:
             snapshot = getattr(state, "last_delivered_evidence_context", None) or getattr(state, "last_evidence_read_result", None)
-            plan = build_direct_response_plan(
-                followup_reply,
-                kind="evidence_followup",
+            await self._send_host_owned_reply(
+                update,
+                state=state,
+                reply_text=followup_reply,
+                status="evidence_followup",
                 delivery_kind="final",
                 authority_source="response_contract.response_plan",
                 reply_authority="host_evidence",
                 metadata={
-                    "status": "evidence_followup",
                     "conversation_act": "evidence_followup",
                     "evidence_payload": dict(snapshot or {}),
                     "evidence_binding_source_turn": (snapshot or {}).get("source_turn_id"),
                 },
-                state=state,
             )
-            verdict = apply_output_check(plan, state)
-            if verdict.passed:
-                self._capture_pre_runtime_response_plan(plan, verdict)
-                await self._send_reply(update, verdict.reply_text)
             state.clear_last_delivered_evidence_context()
             return
         if normalized_turn.probe_key not in READ_LIST_FOLLOWUP_PROBE_KEYS:
@@ -3244,8 +3240,19 @@ class TelegramBot:
             state.task_status = "waiting_input"
             state.waiting_for_user_input = True
             waiting_text = await self._build_profile_rule_preflight_reply(state, pre_runtime.rule_enforcement)
-            self._capture_pre_runtime_response_plan(waiting_text, pre_runtime)
-            await self._send_reply(update, waiting_text)
+            await self._send_host_owned_reply(
+                update,
+                state=state,
+                reply_text=waiting_text,
+                status="read_only_preflight",
+                delivery_kind="final",
+                authority_source="response_contract.response_plan",
+                reply_authority="host_pre_runtime",
+                metadata={
+                    "conversation_act": "read_only_preflight",
+                    "rule_enforcement": dict(getattr(pre_runtime, "rule_enforcement", {}) or {}),
+                },
+            )
             return True
 
         # 文件-only：强制 waiting_input，不进入 runtime
@@ -3253,19 +3260,29 @@ class TelegramBot:
             state.task_status = "waiting_input"
             state.waiting_for_user_input = True
             waiting_text = getattr(pre_runtime, 'waiting_input_text', '收到文件，请告诉我你要做什么。')
-            plan = self._build_pre_runtime_response_plan(waiting_text, pre_runtime, state)
-            verdict = apply_output_check(plan, state)
-            if verdict.passed:
-                self._capture_pre_runtime_response_plan(plan, verdict)
-                await self._send_reply(update, verdict.reply_text)
+            await self._send_host_owned_reply(
+                update,
+                state=state,
+                reply_text=waiting_text,
+                status="force_waiting_input",
+                delivery_kind="final",
+                authority_source="response_contract.response_plan",
+                reply_authority="host_pre_runtime",
+                metadata={"conversation_act": "force_waiting_input"},
+            )
             return True
 
         if getattr(pre_runtime, "direct_reply_text", None):
-            plan = self._build_pre_runtime_response_plan(pre_runtime.direct_reply_text, pre_runtime, state)
-            verdict = apply_output_check(plan, state)
-            if verdict.passed:
-                self._capture_pre_runtime_response_plan(plan, verdict)
-                await self._send_reply(update, verdict.reply_text)
+            await self._send_host_owned_reply(
+                update,
+                state=state,
+                reply_text=pre_runtime.direct_reply_text,
+                status="direct_reply_text",
+                delivery_kind="final",
+                authority_source="response_contract.response_plan",
+                reply_authority="host_pre_runtime",
+                metadata={"conversation_act": "direct_reply_text"},
+            )
             return True
 
         # 不再发送 generic busy notice

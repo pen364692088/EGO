@@ -2,9 +2,9 @@
 
 ## Current milestone
 
-- name: `Milestone 3: Command / Document / Legacy Closure`
+- name: `Milestone 2: Telegram Runtime_V2 Early-Return Closure`
 - owner: `Codex`
-- state: ready_to_implement
+- state: in_progress
 
 ## Current state
 
@@ -27,10 +27,10 @@
 - 新增/更新 Telegram 定向 tests，验证：
   - host-owned helper 成功路径会经过 gate
   - gate 失败会显式返回 `subject_gate_failed`
-- `M2` 已完成：
-  - `_handle_with_runtime_v2()` 中 authorized early-return cases 现在会先 subject ingress，再进入 host early reply / pre-runtime 早退
-  - `pending task conflict`、`evidence followup reply`、`read_only_preflight`、`force_waiting_input`、`direct_reply_text`、generic hold 现在都在主体知晓之后再早退
-  - subject ingress 失败会显式阻断并返回 `subject_gate_failed`
+- `M2` 当前仍在收口：
+  - `_handle_with_runtime_v2()` 中 authorized early-return cases 已先 subject ingress
+  - `pending task conflict` 已通过 subject-gated finalize path
+  - `evidence followup reply` 与 `read_only_preflight` / `force_waiting_input` / `direct_reply_text` 仍需补齐 subject-gated finalize / response-plan 强制路径
 
 ## Open risks
 
@@ -40,8 +40,8 @@
 
 ## Next step
 
-- 进入 `Milestone 3: Command / Document / Legacy Closure`
-- 把 `handle_command()`、document/ingestion wrapper、`_handle_with_new_runtime()` 接入 mandatory subject ingress/finalize
+- 补齐 `evidence_followup` 与 `pre_runtime` host-visible replies 的 finalize / response-plan 强制路径
+- 重新跑定向验证，确认 M2 真的可接受
 
 ## Last validation results
 
@@ -79,7 +79,7 @@
 
 - 当前只能宣称：
   - `M1 Subject Gate Skeleton` 已完成
-  - `M2 Telegram Runtime_V2 Early-Return Closure` 已完成
+  - `M2 Telegram Runtime_V2 Early-Return Closure` 还未完全接受
   - 统一 gate abstraction 已建立
   - `_send_host_owned_reply()` 已成为第一条 enforced host-owned path
 - 当前不能宣称：

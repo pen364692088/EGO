@@ -811,7 +811,7 @@ async def test_runtime_v2_early_return_pending_conflict_subject_ingress_precedes
                 rule_enforcement={"kind": "read_only_preflight"},
             ),
             "预检：请先确认你要执行的操作。",
-            ["ingress"],
+            ["ingress", "finalized_result"],
         ),
         (
             lambda: SimpleNamespace(
@@ -822,7 +822,7 @@ async def test_runtime_v2_early_return_pending_conflict_subject_ingress_precedes
                 waiting_input_text="收到文件，请告诉我你要做什么。",
             ),
             "收到文件，请告诉我你要做什么。",
-            ["ingress"],
+            ["ingress", "finalized_result"],
         ),
         (
             lambda: SimpleNamespace(
@@ -832,7 +832,7 @@ async def test_runtime_v2_early_return_pending_conflict_subject_ingress_precedes
                 direct_reply_text="这里是直接回复。",
             ),
             "这里是直接回复。",
-            ["ingress"],
+            ["ingress", "finalized_result"],
         ),
         (
             lambda: SimpleNamespace(
@@ -930,6 +930,88 @@ async def test_runtime_v2_pre_runtime_early_return_attempts_subject_ingress_firs
         assert DummyUpdate.message.sent == []
     else:
         assert DummyUpdate.message.sent == [expected_reply]
+
+
+@pytest.mark.asyncio
+async def test_runtime_v2_evidence_followup_uses_subject_gated_finalize(monkeypatch):
+    bot = TelegramBot(token="test-token", use_runtime_v2=True)
+    state = bot._get_runtime_state("telegram:dm:456")
+    state.last_delivered_evidence_context = {"source_turn_id": "turn-1", "note": "evidence"}
+    calls = []
+
+    class RecordingGate:
+        enabled = True
+
+        def process_ingress(self, **kwargs):
+            calls.append(("ingress", kwargs["turn_id"], kwargs["user_input"]))
+            return SubjectGateVerdict.allow(stage="ingress")
+
+        def finalize_host_owned_result(self, **kwargs):
+            calls.append(("finalized_result", kwargs["turn_id"], kwargs["result"].status))
+            return SubjectGateVerdict.allow(stage="response_plan")
+
+    class DummyMessage:
+        text = "什么意思"
+        message_id = 44
+        reply_to_message = None
+        sent = []
+
+        async def reply_text(self, text, parse_mode=None):
+            self.sent.append(text)
+            return SimpleNamespace(
+                chat=SimpleNamespace(id=123),
+                message_id=self.message_id + len(self.sent),
+                date=datetime.now(timezone.utc),
+            )
+
+    class DummyUpdate:
+        message = DummyMessage()
+        effective_chat = SimpleNamespace(id=123, type="private")
+        effective_user = SimpleNamespace(id=456, username="tester")
+
+    gate = RecordingGate()
+
+    async def fake_inspect_ingress_semantic(*args, **kwargs):
+        return SimpleNamespace(
+            _runtime_action="chat",
+            _parsed_intent_graph=SimpleNamespace(parser_source="test"),
+            is_challenge_turn=False,
+            probe_key="plain",
+        )
+
+    async def fake_publish_phase1_event(**kwargs):
+        return None
+
+    monkeypatch.setattr(bot, "_get_subject_gate", lambda: gate)
+    monkeypatch.setattr(bot.telegram_runtime_bridge, "inspect_ingress_semantic", fake_inspect_ingress_semantic)
+    monkeypatch.setattr(
+        bot.telegram_runtime_bridge,
+        "build_ingress_context",
+        lambda ingress, state: {"interaction_kind": "chat"},
+    )
+    monkeypatch.setattr(
+        bot.telegram_runtime_bridge,
+        "plan_pre_runtime",
+        lambda ingress, state: SimpleNamespace(
+            should_return_early=False,
+            remember_challenge_turn=False,
+            busy_notice_text="busy",
+        ),
+    )
+    monkeypatch.setattr(bot, "_publish_phase1_event", fake_publish_phase1_event)
+    monkeypatch.setattr(bot, "_build_recent_read_followup_reply", lambda state, text: "这里是证据跟进回复。")
+
+    await bot._handle_with_runtime_v2(
+        DummyUpdate(),
+        text="什么意思",
+        chat_id=123,
+        user_id=456,
+        username="tester",
+        trace_id="trace-m2-evidence",
+    )
+
+    assert [call[0] for call in calls[:2]] == ["ingress", "finalized_result"]
+    assert DummyUpdate.message.sent == ["这里是证据跟进回复。"]
 
 
 @pytest.mark.asyncio
