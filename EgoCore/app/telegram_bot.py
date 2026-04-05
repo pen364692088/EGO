@@ -129,7 +129,6 @@ EXPLICIT_OUTPUT_FILENAME_RE = re.compile(r"(?<![A-Za-z0-9_.\\/\\-])([A-Za-z0-9][
 TELEGRAM_TEXT_CHUNK_LIMIT = 3500
 RECENT_EVIDENCE_RESULT_TTL_SECONDS = 600
 READ_LIST_FOLLOWUP_PROBE_KEYS = {
-    "什么意思",
     "空的吗",
     "什么意思空的吗",
     "没看到",
@@ -440,6 +439,44 @@ class TelegramBot:
             metadata=metadata,
             state=state,
         )
+
+    async def _send_host_owned_reply(
+        self,
+        update: Update,
+        *,
+        state: RuntimeV2State,
+        reply_text: str,
+        status: str,
+        delivery_kind: str = "final",
+        authority_source: str = "host_pre_runtime",
+        reply_authority: str = "host_response_contract",
+        metadata: Optional[dict[str, Any]] = None,
+        use_markdown: bool = False,
+        finalize_evidence: bool = True,
+    ) -> bool:
+        plan_metadata = {"status": status}
+        if metadata:
+            plan_metadata.update(metadata)
+        plan = build_direct_response_plan(
+            reply_text,
+            kind=status,
+            delivery_kind=delivery_kind,
+            authority_source=authority_source,
+            reply_authority=reply_authority,
+            metadata=plan_metadata,
+            state=state,
+        )
+        verdict = apply_output_check(plan, state)
+        if not verdict.passed:
+            return False
+        self._capture_pre_runtime_response_plan(plan, verdict)
+        await self._send_reply(
+            update,
+            verdict.reply_text,
+            use_markdown=use_markdown,
+            finalize_evidence=finalize_evidence,
+        )
+        return True
 
     def _activate_pending_restore_observation(self, state: RuntimeV2State) -> Optional[dict]:
         if self._pending_restore_observation is None:
@@ -822,7 +859,16 @@ class TelegramBot:
         if conflict is None:
             return None
 
-        await self._send_reply(update, self._build_task_conflict_reply(state))
+        await self._send_host_owned_reply(
+            update,
+            state=state,
+            reply_text=self._build_task_conflict_reply(state),
+            status="task_conflict_pending",
+            delivery_kind="final",
+            authority_source="host_pre_runtime",
+            reply_authority="host_task_conflict",
+            metadata={"conversation_act": "task_conflict"},
+        )
         return ""
 
     async def _maybe_create_task_conflict(
@@ -861,7 +907,16 @@ class TelegramBot:
                 "status": "task_conflict_pending",
             },
         )
-        await self._send_reply(update, self._build_task_conflict_reply(state))
+        await self._send_host_owned_reply(
+            update,
+            state=state,
+            reply_text=self._build_task_conflict_reply(state),
+            status="task_conflict_pending",
+            delivery_kind="final",
+            authority_source="host_pre_runtime",
+            reply_authority="host_task_conflict",
+            metadata={"conversation_act": "task_conflict"},
+        )
         return True
 
     def _build_run_item_started_text(self, item: RunItem) -> str:
@@ -2893,7 +2948,16 @@ class TelegramBot:
         state = self._get_runtime_state(session_key)
         ingress_message_id = update.message.message_id if update.message else None
         if state.get_pending_task_conflict() is not None:
-            await self._send_reply(update, self._build_task_conflict_reply(state))
+            await self._send_host_owned_reply(
+                update,
+                state=state,
+                reply_text=self._build_task_conflict_reply(state),
+                status="task_conflict_pending",
+                delivery_kind="final",
+                authority_source="host_pre_runtime",
+                reply_authority="host_task_conflict",
+                metadata={"conversation_act": "task_conflict"},
+            )
             return
 
         normalized_turn = normalize_user_turn(text)
@@ -4189,11 +4253,29 @@ class TelegramBot:
             )
         except asyncio.TimeoutError:
             logger.error(f"[trace={trace_id}] run_agent timeout: session={session_key} text={text[:120]}")
-            await self._send_reply(update, "我收到了这条请求，但处理超时了。我马上重试，你也可以再发一次。")
+            await self._send_host_owned_reply(
+                update,
+                state=self._get_runtime_state(session_key),
+                reply_text="我收到了这条请求，但处理超时了。我马上重试，你也可以再发一次。",
+                status="new_runtime_timeout",
+                delivery_kind="final",
+                authority_source="host_runtime_fallback",
+                reply_authority="host_runtime_timeout",
+                metadata={"conversation_act": "runtime_timeout"},
+            )
             return
         except Exception as e:
             logger.exception(f"[trace={trace_id}] run_agent crashed: session={session_key} text={text[:120]} err={e}")
-            await self._send_reply(update, "我这一步中断了，但请求已经收到。请再发一次，我继续处理。")
+            await self._send_host_owned_reply(
+                update,
+                state=self._get_runtime_state(session_key),
+                reply_text="我这一步中断了，但请求已经收到。请再发一次，我继续处理。",
+                status="new_runtime_error",
+                delivery_kind="final",
+                authority_source="host_runtime_fallback",
+                reply_authority="host_runtime_error",
+                metadata={"conversation_act": "runtime_error"},
+            )
             return
 
         logger.info(
@@ -4225,7 +4307,16 @@ class TelegramBot:
             context_store.add_turn(session_key, "assistant", result.reply_text)
             self._delivery_dedupe_policy.mark_sent(delivery_identity)
             logger.info(f"[trace={trace_id}] sending final reply")
-            await self._send_reply(update, result.reply_text)
+            await self._send_host_owned_reply(
+                update,
+                state=self._get_runtime_state(session_key),
+                reply_text=result.reply_text,
+                status=str(getattr(result, "status", None).value if hasattr(getattr(result, "status", None), "value") else getattr(result, "status", "completed")),
+                delivery_kind="final",
+                authority_source="host_runtime_result",
+                reply_authority="host_runtime",
+                metadata={"conversation_act": "runtime_result"},
+            )
         else:
             logger.warning(f"[trace={trace_id}] result.reply_text is empty")
 

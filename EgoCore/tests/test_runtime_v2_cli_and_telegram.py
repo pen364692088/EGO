@@ -1,11 +1,15 @@
+from datetime import datetime, timezone
+from types import SimpleNamespace
 import time
 
 import pytest
 
+import app.telegram_bot as telegram_bot_module
 from app.autonomy import AutonomyExecutorKind, AutonomyRun, AutonomyRunStatus, AutonomyStopReason
 from app.runtime_v2.run_items import build_run_items_from_request
 from app.runtime_v2.cli import run_cli
 from app.telegram_bot import TelegramBot
+from app.telegram_evidence_collector import TelegramEvidenceCollector
 from app.telegram_runtime_result import TelegramTurnReply, TelegramTurnResult
 
 
@@ -484,6 +488,25 @@ def test_telegram_bot_recent_directory_followup_uses_host_grounded_reply():
     assert "截断" not in reply
 
 
+def test_telegram_bot_plain_meaning_probe_after_evidence_skips_host_followup():
+    bot = TelegramBot(token="test-token", use_runtime_v2=True)
+    state = bot._get_runtime_state("telegram:dm:456")
+    state.set_last_delivered_evidence_context(
+        {
+            "request_kind": "directory_listing",
+            "body": " Directory of D:\\Project\\AIProject\\MyProject\\Test2\n03/31/2026  04:18 PM               12 demo.txt",
+            "truncated": False,
+            "delivery_was_chunked": False,
+            "delivered_at": time.time(),
+            "source_turn_id": "turn_test",
+        }
+    )
+
+    reply = bot._build_recent_read_followup_reply(state, "什么意思")
+
+    assert reply is None
+
+
 @pytest.mark.asyncio
 async def test_telegram_bot_presence_probe_after_evidence_stays_model_chat(monkeypatch):
     bot = TelegramBot(token="test-token", use_runtime_v2=True)
@@ -547,6 +570,169 @@ async def test_telegram_bot_presence_probe_after_evidence_stays_model_chat(monke
 
     assert DummyUpdate.message.last_text == "在的，请说。"
     assert state.last_delivered_evidence_context is None
+
+
+@pytest.mark.asyncio
+async def test_telegram_bot_host_owned_reply_captures_explicit_response_plan(monkeypatch, tmp_path):
+    collector = TelegramEvidenceCollector(
+        artifacts_dir=tmp_path,
+        source_type="simulated_external_entry",
+        channel="telegram",
+        evidence_level="E4",
+    )
+    monkeypatch.setattr(telegram_bot_module, "_EVIDENCE_COLLECTOR_AVAILABLE", True)
+    monkeypatch.setattr(telegram_bot_module, "get_evidence_collector", lambda: collector)
+
+    bot = TelegramBot(token="test-token", use_runtime_v2=True)
+    state = bot._get_runtime_state("telegram:dm:456")
+
+    class DummyMessage:
+        text = "继续"
+        message_id = 11
+        reply_to_message = None
+        sent = []
+        date = datetime.now(timezone.utc)
+
+        async def reply_text(self, text, parse_mode=None):
+            self.sent.append(text)
+            return SimpleNamespace(
+                chat=SimpleNamespace(id=123),
+                message_id=self.message_id + len(self.sent),
+                date=datetime.now(timezone.utc),
+            )
+
+    class DummyUpdate:
+        message = DummyMessage()
+        effective_chat = SimpleNamespace(id=123, type="private")
+        effective_user = SimpleNamespace(id=456, username="tester")
+        update_id = 9011
+
+        def to_dict(self):
+            return {
+                "update_id": self.update_id,
+                "message": {
+                    "message_id": self.message.message_id,
+                    "date": self.message.date.isoformat(),
+                    "chat": {"id": self.effective_chat.id, "type": self.effective_chat.type},
+                    "from": {
+                        "id": self.effective_user.id,
+                        "is_bot": False,
+                        "username": self.effective_user.username,
+                    },
+                    "text": self.message.text,
+                },
+            }
+
+    update = DummyUpdate()
+    collector.start_sample(update.to_dict())
+
+    sent = await bot._send_host_owned_reply(
+        update,
+        state=state,
+        reply_text="当前已有一个活跃任务。",
+        status="task_conflict_pending",
+        delivery_kind="final",
+        authority_source="host_pre_runtime",
+        reply_authority="host_degraded_fallback",
+        metadata={"conversation_act": "task_conflict"},
+    )
+    samples = collector.get_samples()
+
+    assert sent is True
+    assert len(samples) == 1
+    sample = samples[0]
+    assert sample.response_plan is not None
+    assert sample.response_plan["status"] == "task_conflict_pending"
+    assert sample.response_plan.get("inferred") is not True
+    assert update.message.sent == ["当前已有一个活跃任务。"]
+
+
+@pytest.mark.asyncio
+async def test_telegram_bot_new_runtime_direct_reply_uses_runtime_authority_metadata(monkeypatch, tmp_path):
+    collector = TelegramEvidenceCollector(
+        artifacts_dir=tmp_path,
+        source_type="simulated_external_entry",
+        channel="telegram",
+        evidence_level="E4",
+    )
+    monkeypatch.setattr(telegram_bot_module, "_EVIDENCE_COLLECTOR_AVAILABLE", True)
+    monkeypatch.setattr(telegram_bot_module, "get_evidence_collector", lambda: collector)
+
+    async def fake_run_agent(**kwargs):
+        return SimpleNamespace(
+            status=SimpleNamespace(value="completed"),
+            duration_ms=1,
+            reply_text="这是宿主层的正常回复。",
+            request_id="req_runtime_direct",
+        )
+
+    monkeypatch.setattr(telegram_bot_module, "run_agent", fake_run_agent)
+
+    bot = TelegramBot(token="test-token", use_runtime_v2=True)
+
+    class DummyBot:
+        async def send_chat_action(self, chat_id, action):
+            return None
+
+    class DummyMessage:
+        text = "你好"
+        message_id = 12
+        reply_to_message = None
+        sent = []
+        date = datetime.now(timezone.utc)
+
+        async def reply_text(self, text, parse_mode=None):
+            self.sent.append(text)
+            return SimpleNamespace(
+                chat=SimpleNamespace(id=123),
+                message_id=self.message_id + len(self.sent),
+                date=datetime.now(timezone.utc),
+            )
+
+    class DummyUpdate:
+        message = DummyMessage()
+        effective_chat = SimpleNamespace(id=123, type="private")
+        effective_user = SimpleNamespace(id=456, username="tester")
+        update_id = 9012
+
+        def to_dict(self):
+            return {
+                "update_id": self.update_id,
+                "message": {
+                    "message_id": self.message.message_id,
+                    "date": self.message.date.isoformat(),
+                    "chat": {"id": self.effective_chat.id, "type": self.effective_chat.type},
+                    "from": {
+                        "id": self.effective_user.id,
+                        "is_bot": False,
+                        "username": self.effective_user.username,
+                    },
+                    "text": self.message.text,
+                },
+            }
+
+    bot.app = type("A", (), {"bot": DummyBot()})()
+    update = DummyUpdate()
+    collector.start_sample(update.to_dict())
+
+    await bot._handle_with_new_runtime(
+        update,
+        text="你好",
+        chat_id=123,
+        user_id=456,
+        username="tester",
+        trace_id="trace_runtime_direct",
+    )
+
+    samples = collector.get_samples()
+    assert len(samples) == 1
+    sample = samples[0]
+    assert sample.response_plan is not None
+    assert sample.response_plan["status"] == "completed"
+    assert sample.response_plan["authority_source"] == "host_runtime_result"
+    assert sample.response_plan["reply_authority"] == "host_runtime"
+    assert sample.response_plan.get("inferred") is not True
+    assert update.message.sent == ["这是宿主层的正常回复。"]
 
 
 @pytest.mark.asyncio
