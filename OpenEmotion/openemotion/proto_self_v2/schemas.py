@@ -198,6 +198,14 @@ class KernelOutputV2:
     host_proactive_candidate: Optional[Dict[str, Any]] = None
     initiative_audit_entries: List[Dict[str, Any]] = field(default_factory=list)
     initiative_writeback_candidate: Optional[Dict[str, Any]] = None
+    initiative_realization_context: Dict[str, Any] = field(default_factory=dict)
+    initiative_realization_delta: Dict[str, Any] = field(default_factory=dict)
+    commitment_fulfillment_candidates: List[Dict[str, Any]] = field(default_factory=list)
+    delivery_readiness_snapshot: Dict[str, Any] = field(default_factory=dict)
+    host_lane_hints: List[str] = field(default_factory=list)
+    controlled_delivery_candidate: Optional[Dict[str, Any]] = None
+    initiative_realization_audit_entries: List[Dict[str, Any]] = field(default_factory=list)
+    initiative_realization_writeback_candidate: Optional[Dict[str, Any]] = None
     endogenous_drive_delta: Dict[str, Any] = field(default_factory=dict)
     drive_state_snapshot: Dict[str, Any] = field(default_factory=dict)
     priority_snapshot: Dict[str, Any] = field(default_factory=dict)
@@ -264,6 +272,14 @@ class KernelOutputV2:
             "host_proactive_candidate": self.host_proactive_candidate,
             "initiative_audit_entries": self.initiative_audit_entries,
             "initiative_writeback_candidate": self.initiative_writeback_candidate,
+            "initiative_realization_context": self.initiative_realization_context,
+            "initiative_realization_delta": self.initiative_realization_delta,
+            "commitment_fulfillment_candidates": self.commitment_fulfillment_candidates,
+            "delivery_readiness_snapshot": self.delivery_readiness_snapshot,
+            "host_lane_hints": self.host_lane_hints,
+            "controlled_delivery_candidate": self.controlled_delivery_candidate,
+            "initiative_realization_audit_entries": self.initiative_realization_audit_entries,
+            "initiative_realization_writeback_candidate": self.initiative_realization_writeback_candidate,
             "endogenous_drive_delta": self.endogenous_drive_delta,
             "drive_state_snapshot": self.drive_state_snapshot,
             "priority_snapshot": self.priority_snapshot,

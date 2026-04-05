@@ -158,7 +158,7 @@ def summarize_runtime_selfhood_integration_context(
     )
 
     return {
-        "present": bool(projection or _upstream_axes_present(runtime)),
+        "present": bool(projection),
         "contract_version": CONTRACT_VERSION,
         "projection_field": PROJECTION_FIELD,
         "projection_semantics": RUNTIME_LOCAL_PROJECTION_SEMANTICS,

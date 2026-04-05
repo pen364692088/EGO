@@ -7,21 +7,21 @@ owner: "Codex"
 layer: 3
 type: dual_repo
 repos: [EgoCore, OpenEmotion]
-status: formal_owner_package_complete
+status: proto_self_contract_complete
 parent_authority: "Tasks/MVS_task_plan.md"
 phase_authority: "Tasks/MVP21_task_plan.md"
 predecessor: "WP15/MVP20"
 same_subject_line: true
 not_parallel_track: true
 scope: "WP16 / MVP21 Host-Governed Initiative Realization / Proactive Delivery Mediation"
-claim_ceiling: "T10 complete only"
+claim_ceiling: "T20 complete only"
 ```
 
 ---
 
 ## 真实目标
 
-在不放开 authority 边界的前提下，把 `WP16/MVP21` 的 formal owner target 冻结到 `OpenEmotion/openemotion/initiative_realization/*`，并把 `WP15` 的 initiative proposal outputs、`WP7` 的 proactive runtime substrate、以及 `WP8~WP15` 的 frozen read surfaces 全部收成可执行 authority package。当前已完成 formal owner package 本身，下一步是把它接到 `proto_self_v2` bounded contract。
+在不放开 authority 边界的前提下，把 `WP16/MVP21` 的 formal owner target 冻结到 `OpenEmotion/openemotion/initiative_realization/*`，并把 `WP15` 的 initiative proposal outputs、`WP7` 的 proactive runtime substrate、以及 `WP8~WP15` 的 frozen read surfaces 全部收成可执行 authority package。当前已完成 formal owner package与 `proto_self_v2` bounded contract，下一步是把它接到 EgoCore runtime 主链。
 
 ## 当前正式 owner target
 
@@ -53,11 +53,11 @@ claim_ceiling: "T10 complete only"
 
 ## 当前状态
 
-- 执行包状态：`formal_owner_package_complete`
+- 执行包状态：`proto_self_contract_complete`
 - authority freeze：`completed`
 - `T00_AUTHORITY_FREEZE`：`completed`
 - `T10` formal owner：`completed`
-- `T20` proto_self_v2 contract：`pending`
+- `T20` proto_self_v2 contract：`completed`
 - `T30` EgoCore runtime bridge：`pending`
 - `T40` legacy demotion / compat map：`pending`
 - `T50` causal validation：`pending`
@@ -65,10 +65,10 @@ claim_ceiling: "T10 complete only"
 - `T70` batch controlled observation / aggregate：`pending`
 - `T80` closeout / QA baseline：`pending`
 - `T90` subagent assignment sync：`completed`
-- 主链接线：`not_implemented`
-- 启用状态：`authority_and_owner_only`
-- 当前 blocker：`none on the WP16 formal-owner axis`
-- 当前最小动作：`T20_PROTO_SELF_CONTRACT_INTEGRATION`
+- 主链接线：`openemotion_proto_self_contract_only`
+- 启用状态：`authority_owner_and_proto_self_only`
+- 当前 blocker：`none on the WP16 proto-self-contract axis`
+- 当前最小动作：`T30_EGOCORE_RUNTIME_BRIDGE`
 
 ## 当前已证实内容
 
@@ -82,6 +82,9 @@ claim_ceiling: "T10 complete only"
 - `SUBAGENT_ASSIGNMENT.md` 与 `cards/T00..T90` 已把 worker mapping、write scope 与后续实现顺序收成可执行 package
 - `OpenEmotion/openemotion/initiative_realization/*` 已形成 formal owner package，覆盖 realization state、delivery readiness state、commitment fulfillment state、initiative realization candidate、controlled delivery candidate、realization ledger，以及 store / replay / governance / updater / bounded projection
 - `OpenEmotion/tests/mvp21/test_realization_owner_infra.py` 已通过 `6 passed` 的定向 owner infra 验证
+- `OpenEmotion/openemotion/proto_self_v2/initiative_realization_context.py` 已形成唯一 realization contract consumer 路径
+- `OpenEmotion/openemotion/proto_self_v2/kernel.py`、`schemas.py` 与 `trace_types.py` 已发出 bounded realization outputs / trace mirror
+- `OpenEmotion/tests/mvp21/test_realization_proto_self_integration.py` 与回归套件已通过 `8 passed` 的定向 proto-self contract 验证
 
 ## 当前不做
 

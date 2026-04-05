@@ -98,6 +98,28 @@ def derive_developmental_outputs(runtime_summary: Dict[str, Any] | None) -> Dict
             "policy_hint_patch": {},
             "response_tendency": None,
         }
+    if not context:
+        has_host_signal = any(
+            (
+                "continuity_gap" in host_context,
+                float(host_context.get("growth_pressure_hint") or 0.0) > 0.0,
+                float(host_context.get("stagnation_signal_hint") or 0.0) > 0.0,
+                float(host_context.get("replay_debt") or 0.0) > 0.0,
+                bool(host_context.get("drift_markers") or []),
+            )
+        )
+        if not has_host_signal:
+            return {
+                "developmental_context": {},
+                "developmental_self_delta": {},
+                "developmental_proposal_candidates": [],
+                "developmental_continuity_snapshot": {},
+                "developmental_priority_hints": {},
+                "developmental_audit_entries": [],
+                "developmental_writeback_candidate": None,
+                "policy_hint_patch": {},
+                "response_tendency": None,
+            }
 
     continuity_score = float(context.get("continuity_score") or 0.0)
     growth_pressure = max(

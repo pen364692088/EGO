@@ -151,6 +151,30 @@ def derive_initiative_outputs(
             "policy_hint_patch": {},
             "response_tendency": None,
         }
+    if not context:
+        has_host_signal = any(
+            (
+                bool(host_context.get("continuity_ref")),
+                bool(host_context.get("pending_commitment_refs") or []),
+                bool(host_context.get("blocked_commitment_refs") or []),
+                float(host_context.get("idle_seconds") or 0.0) >= 600.0,
+                str(host_context.get("recent_delivery_status") or "").strip() in FAILURE_STATUSES,
+                bool(host_context.get("delivery_failure")),
+            )
+        )
+        if not has_host_signal:
+            return {
+                "initiative_context": {},
+                "initiative_self_delta": {},
+                "initiative_proposal_candidates": [],
+                "commitment_execution_snapshot": {},
+                "initiative_policy_hints": {},
+                "host_proactive_candidate": None,
+                "initiative_audit_entries": [],
+                "initiative_writeback_candidate": None,
+                "policy_hint_patch": {},
+                "response_tendency": None,
+            }
 
     context_summary = summarize_runtime_initiative_context(runtime)
     initiative_pressure = context_summary["initiative_pressure"]

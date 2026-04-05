@@ -129,6 +129,29 @@ def derive_embodied_outputs(runtime_summary: Dict[str, Any] | None) -> Dict[str,
             "policy_hint_patch": {},
             "response_tendency": None,
         }
+    if not context:
+        has_host_signal = any(
+            (
+                bool(str(host_context.get("action_ref") or "").strip()),
+                float(host_context.get("resource_pressure_hint") or 0.0) >= 0.6,
+                float(host_context.get("boundary_pressure_hint") or 0.0) >= 0.45,
+                bool(host_context.get("stabilization_needed")),
+                str(host_context.get("outcome_type") or "").strip() in FAILURE_OUTCOMES,
+                str(host_context.get("coupling_event") or "").strip() not in {"", "runtime_observe"},
+            )
+        )
+        if not has_host_signal:
+            return {
+                "environment_context": {},
+                "embodied_self_delta": {},
+                "consequence_update_candidates": [],
+                "resource_boundary_snapshot": {},
+                "embodied_policy_hints": {},
+                "repair_or_stabilize_proposal_candidates": [],
+                "embodied_writeback_candidate": None,
+                "policy_hint_patch": {},
+                "response_tendency": None,
+            }
 
     resource_slack = float(context.get("resource_slack") or 0.0)
     perceived_load = float(context.get("perceived_load") or 0.0)
@@ -137,7 +160,13 @@ def derive_embodied_outputs(runtime_summary: Dict[str, Any] | None) -> Dict[str,
         float(context.get("max_resource_pressure") or 0.0),
         float(host_context.get("resource_pressure_hint") or 0.0),
     )
-    min_resource_slack = float(context.get("min_resource_slack") or resource_slack)
+    min_resource_slack = float(
+        context.get("min_resource_slack")
+        if "min_resource_slack" in context
+        else host_context.get("slack_hint")
+        if not context and "slack_hint" in host_context
+        else resource_slack
+    )
     if "slack_hint" in host_context:
         min_resource_slack = min(min_resource_slack, float(host_context.get("slack_hint") or 0.0))
     max_boundary_pressure = max(

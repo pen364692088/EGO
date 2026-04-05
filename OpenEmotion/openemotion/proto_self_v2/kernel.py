@@ -35,6 +35,11 @@ from openemotion.proto_self_v2.initiative_self_context import (
     extract_runtime_initiative_self_context,
     summarize_runtime_initiative_context,
 )
+from openemotion.proto_self_v2.initiative_realization_context import (
+    derive_initiative_realization_outputs,
+    extract_runtime_initiative_realization_context,
+    summarize_runtime_initiative_realization_context,
+)
 from openemotion.proto_self_v2.social_self_context import (
     derive_social_outputs,
     extract_runtime_social_context,
@@ -87,6 +92,7 @@ def _build_constraint_summary(
         "selfhood_integration_context": selfhood_integration_summary
         or summarize_runtime_selfhood_integration_context(runtime_summary),
         "initiative_self_context": summarize_runtime_initiative_context(runtime_summary),
+        "initiative_realization_context": summarize_runtime_initiative_realization_context(runtime_summary),
     }
 
 
@@ -120,6 +126,9 @@ def _build_retrieval_summary(state: ProtoSelfStateV2, packet: UpdatePacketV2) ->
             extract_runtime_initiative_self_context(packet.runtime_summary)
         ),
         "initiative_context_present": bool(extract_runtime_initiative_context(packet.runtime_summary)),
+        "initiative_realization_context_present": bool(
+            extract_runtime_initiative_realization_context(packet.runtime_summary)
+        ),
     }
 
 
@@ -220,6 +229,7 @@ def _process_default_v2(state_v2: ProtoSelfStateV2, packet: UpdatePacketV2) -> K
     endogenous_drive_outputs = derive_endogenous_drive_outputs(packet.runtime_summary)
     reflective_outputs = derive_reflective_self_outputs(packet.runtime_summary)
     social_outputs = derive_social_outputs(packet.runtime_summary)
+    initiative_realization_outputs = derive_initiative_realization_outputs(packet.runtime_summary)
     selfhood_outputs = derive_selfhood_integration_outputs(
         packet.runtime_summary,
         endogenous_drive_outputs=endogenous_drive_outputs,
@@ -319,52 +329,14 @@ def _process_default_v2(state_v2: ProtoSelfStateV2, packet: UpdatePacketV2) -> K
         host_proactive_candidate=initiative_outputs["host_proactive_candidate"],
         initiative_audit_entries=initiative_outputs["initiative_audit_entries"],
         initiative_writeback_candidate=initiative_outputs["initiative_writeback_candidate"],
-        reflection_note=reflection_dict,
-        policy_hint={
-            **v1_output.policy_hint,
-            **developmental_outputs["policy_hint_patch"],
-            **embodied_outputs["policy_hint_patch"],
-            **endogenous_drive_outputs["policy_hint_patch"],
-            **reflective_outputs["policy_hint_patch"],
-            **social_outputs["policy_hint_patch"],
-            **selfhood_outputs["policy_hint_patch"],
-            **initiative_outputs["policy_hint_patch"],
-        },
-        response_tendency=(
-            initiative_outputs["response_tendency"].to_dict()
-            if initiative_outputs["response_tendency"]
-            else (
-                selfhood_outputs["response_tendency"].to_dict()
-                if selfhood_outputs["response_tendency"]
-                else (
-                    reflective_outputs["response_tendency"].to_dict()
-                    if reflective_outputs["response_tendency"]
-                    else (
-                        endogenous_drive_outputs["response_tendency"].to_dict()
-                        if endogenous_drive_outputs["response_tendency"]
-                        else (
-                            social_outputs["response_tendency"].to_dict()
-                            if social_outputs["response_tendency"]
-                            else (
-                                embodied_outputs["response_tendency"].to_dict()
-                                if embodied_outputs["response_tendency"]
-                                else (
-                                    developmental_outputs["response_tendency"].to_dict()
-                                    if developmental_outputs["response_tendency"]
-                                    else (
-                                        v1_output.response_tendency.to_dict()
-                                        if v1_output.response_tendency
-                                        else None
-                                    )
-                                )
-                            )
-                        )
-                    )
-                )
-            )
-        ),
-        timestamp=packet.timestamp,
-        legacy_trace_payload=v1_output.trace_payload,
+        initiative_realization_context=initiative_realization_outputs["initiative_realization_context"],
+        initiative_realization_delta=initiative_realization_outputs["initiative_realization_delta"],
+        commitment_fulfillment_candidates=initiative_realization_outputs["commitment_fulfillment_candidates"],
+        delivery_readiness_snapshot=initiative_realization_outputs["delivery_readiness_snapshot"],
+        host_lane_hints=initiative_realization_outputs["host_lane_hints"],
+        controlled_delivery_candidate=initiative_realization_outputs["controlled_delivery_candidate"],
+        initiative_realization_audit_entries=initiative_realization_outputs["initiative_realization_audit_entries"],
+        initiative_realization_writeback_candidate=initiative_realization_outputs["initiative_realization_writeback_candidate"],
     )
     merged_policy_hint = {
         **v1_output.policy_hint,
@@ -375,9 +347,11 @@ def _process_default_v2(state_v2: ProtoSelfStateV2, packet: UpdatePacketV2) -> K
         **social_outputs["policy_hint_patch"],
         **selfhood_outputs["policy_hint_patch"],
         **initiative_outputs["policy_hint_patch"],
+        **initiative_realization_outputs["policy_hint_patch"],
     }
     merged_response_tendency = (
-        initiative_outputs["response_tendency"]
+        initiative_realization_outputs["response_tendency"]
+        or initiative_outputs["response_tendency"]
         or selfhood_outputs["response_tendency"]
         or reflective_outputs["response_tendency"]
         or endogenous_drive_outputs["response_tendency"]
@@ -434,6 +408,14 @@ def _process_default_v2(state_v2: ProtoSelfStateV2, packet: UpdatePacketV2) -> K
         host_proactive_candidate=initiative_outputs["host_proactive_candidate"],
         initiative_audit_entries=initiative_outputs["initiative_audit_entries"],
         initiative_writeback_candidate=initiative_outputs["initiative_writeback_candidate"],
+        initiative_realization_context=initiative_realization_outputs["initiative_realization_context"],
+        initiative_realization_delta=initiative_realization_outputs["initiative_realization_delta"],
+        commitment_fulfillment_candidates=initiative_realization_outputs["commitment_fulfillment_candidates"],
+        delivery_readiness_snapshot=initiative_realization_outputs["delivery_readiness_snapshot"],
+        host_lane_hints=initiative_realization_outputs["host_lane_hints"],
+        controlled_delivery_candidate=initiative_realization_outputs["controlled_delivery_candidate"],
+        initiative_realization_audit_entries=initiative_realization_outputs["initiative_realization_audit_entries"],
+        initiative_realization_writeback_candidate=initiative_realization_outputs["initiative_realization_writeback_candidate"],
         endogenous_drive_delta=endogenous_drive_outputs["endogenous_drive_delta"],
         drive_state_snapshot=endogenous_drive_outputs["drive_state_snapshot"],
         priority_snapshot=endogenous_drive_outputs["priority_snapshot"],
