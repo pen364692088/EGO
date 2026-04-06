@@ -647,6 +647,9 @@ class TelegramBot:
             state.set_last_delivered_evidence_context(output_verdict.evidence_snapshot)
         else:
             state.clear_last_delivered_evidence_context()
+        recent_result_context = dict(getattr(response_plan, "metadata", None) or {}).get("recent_result_context")
+        if isinstance(recent_result_context, dict) and recent_result_context:
+            state.set_recent_delivered_result_context(recent_result_context)
         await self._publish_tool_delivery_bridge_event(
             session_key=session_key,
             tool_result=state.last_tool_result,
@@ -4618,6 +4621,12 @@ class TelegramBot:
                     delivery_was_chunked=bool((send_result or {}).get("was_chunked")),
                     source_assistant_message_id=(send_result or {}).get("last_message_id"),
                 )
+            recent_result_context = dict(getattr(response_plan, "metadata", None) or {}).get("recent_result_context")
+            if isinstance(recent_result_context, dict) and recent_result_context:
+                state.update_recent_delivered_result_context(
+                    delivery_was_chunked=bool((send_result or {}).get("was_chunked")),
+                    source_assistant_message_id=(send_result or {}).get("last_message_id"),
+                )
             if getattr(result, "delivery_kind", "final") in {"final", "chat"} or result.status in {
                 "chat",
                 "completed_verified",
@@ -4638,8 +4647,13 @@ class TelegramBot:
                     and getattr(output_verdict, "fidelity_mode", None) == "verbatim"
                     and getattr(output_verdict, "fidelity_gap", None) is False
                 )
+                preserve_recent_result_context = bool(
+                    isinstance(dict(getattr(response_plan, "metadata", None) or {}).get("recent_result_context"), dict)
+                    and dict(getattr(response_plan, "metadata", None) or {}).get("recent_result_context")
+                )
                 state.clear_terminal_execution_residue(
                     preserve_evidence_context=preserve_evidence_context,
+                    preserve_recent_result_context=preserve_recent_result_context,
                 )
 
     async def _handle_with_new_runtime(

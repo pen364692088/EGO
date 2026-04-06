@@ -264,6 +264,74 @@ async def test_telegram_bot_delivery_applies_output_check_host_completion_fallba
 
 
 @pytest.mark.asyncio
+async def test_telegram_bot_task_delivery_persists_recent_result_context_for_chat_followup(tmp_path):
+    bot = TelegramBot(token="test-token", use_runtime_v2=True)
+
+    class DummyMessage:
+        last_text = None
+
+        async def reply_text(self, text, parse_mode=None):
+            self.last_text = text
+
+    class DummyUpdate:
+        message = DummyMessage()
+
+    async def fake_publish_phase1_event(**kwargs):
+        return None
+
+    bot._publish_phase1_event = fake_publish_phase1_event
+
+    state = bot._get_runtime_state("telegram:dm:456")
+    state.start_turn()
+    target_path = str(tmp_path / "bilili_lookalike.html")
+    state.ingress_context = {
+        "runtime_action": "execute_task",
+        "requested_output": {"effective_path": target_path},
+    }
+    run_items = build_run_items_from_request(
+        f"在 {tmp_path} 目录下创建 bilili_lookalike.html。",
+        ingress_context=state.ingress_context,
+    )
+    for item in run_items:
+        item.status = "verified"
+    state.set_run_items(run_items)
+    state.last_tool_result = {
+        "success": True,
+        "tool": "file",
+        "stdout": "created bilili_lookalike.html",
+        "metadata": {"operation": "write", "path": target_path},
+    }
+
+    result = TelegramTurnResult(
+        status="completed_verified",
+        state=state,
+        reply=TelegramTurnReply(
+            reply_text="",
+            delivery_kind="final",
+            status="completed_verified",
+        ),
+    )
+
+    await bot._deliver_runtime_v2_result(
+        DummyUpdate(),
+        state,
+        result,
+        is_challenge_turn=False,
+        ingress_message_id=1,
+        trace_id="trace-followup-context",
+    )
+
+    recent = state.recent_delivered_result_context
+    assert recent is not None
+    assert recent["binding_kind"] == "recent_delivered_result"
+    assert recent["target_path"] == target_path
+    assert recent["target_name"] == "bilili_lookalike.html"
+    assert recent["tool_result_summary"]["operation"] == "write"
+    assert recent["delivery_was_chunked"] is False
+    assert state.task_status == "idle"
+
+
+@pytest.mark.asyncio
 async def test_telegram_bot_chat_hold_for_followup_queues_outbox_without_immediate_send(monkeypatch):
     bot = TelegramBot(token="test-token", use_runtime_v2=True)
     bot._mvp12_proactive_telegram_autodrain_enabled = True

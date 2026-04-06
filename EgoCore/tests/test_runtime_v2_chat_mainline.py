@@ -215,6 +215,39 @@ def test_chat_reply_engine_build_messages_marks_hold_for_non_question_light_chit
     assert proto_self_context["chat_cadence_mode"] == "hold_for_followup"
 
 
+def test_chat_reply_engine_build_messages_include_recent_delivered_result_context_for_followup_chat() -> None:
+    engine = ChatReplyEngine()
+    state = RuntimeV2State(session_id="chat:recent-result-followup")
+    state.ingress_context = {
+        "interaction_kind": "chat",
+        "conversation_act": "light_chitchat",
+    }
+    state.last_user_turn = "你觉得你做的这个页面怎么样呀"
+    state.recent_delivered_result_context = {
+        "binding_kind": "recent_delivered_result",
+        "runtime_status": "completed_verified",
+        "reply_origin": "task_mainline",
+        "target_name": "bilili_lookalike.html",
+        "target_path": r"D:\Project\AIProject\MyProject\Test2\bilili_lookalike.html",
+        "reply_preview": "已完成这些任务：1. 已验证 bilili_lookalike.html",
+        "tool_result_summary": {
+            "tool": "file",
+            "success": True,
+            "operation": "write",
+            "path": r"D:\Project\AIProject\MyProject\Test2\bilili_lookalike.html",
+        },
+    }
+
+    messages = engine._build_messages(state)
+    payload_text = messages[1]["content"].split("\n\n", 1)[1]
+    payload = json.loads(payload_text)
+
+    recent = payload["recent_delivered_result_context"]
+    assert recent["target_name"] == "bilili_lookalike.html"
+    assert recent["target_path"] == r"D:\Project\AIProject\MyProject\Test2\bilili_lookalike.html"
+    assert recent["tool_result_summary"]["operation"] == "write"
+
+
 @pytest.mark.asyncio
 async def test_chat_reply_engine_applies_expression_hint_and_records_metadata() -> None:
     engine = ChatReplyEngine()

@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, field
+from pathlib import PurePosixPath, PureWindowsPath
 import re
 from typing import Any, Dict, Optional, Sequence
 
@@ -166,6 +167,16 @@ def build_runtime_result_response_plan(result: Any, state: Any) -> ResponsePlan:
     if evidence_payload is not None:
         metadata["evidence_payload"] = evidence_payload
         metadata["evidence_binding_source_turn"] = evidence_payload.get("source_turn_id")
+    recent_result_context = _build_current_turn_recent_result_context(
+        state,
+        runtime_status=runtime_status,
+        reply_origin=reply_origin,
+        delivery_kind=delivery_kind,
+        reply_text=gated_reply_text,
+    )
+    if recent_result_context is not None:
+        metadata["recent_result_context"] = recent_result_context
+        metadata["result_binding_source_turn"] = recent_result_context.get("source_turn_id")
     if "chat_expression_hint" in reply_metadata:
         metadata["chat_expression_hint"] = dict(reply_metadata.get("chat_expression_hint") or {})
     if "response_tendency_summary" in reply_metadata:
@@ -360,6 +371,105 @@ def _build_current_turn_evidence_payload(state: Any) -> Optional[Dict[str, Any]]
         "source_assistant_message_id": None,
         "delivered_at": None,
         "conversation_act": _build_conversation_act(state),
+    }
+
+
+def _looks_like_windows_path(value: str) -> bool:
+    return bool(re.match(r"^[A-Za-z]:[\\/]", value or ""))
+
+
+def _basename_from_path(path: Optional[str]) -> Optional[str]:
+    text = str(path or "").strip()
+    if not text:
+        return None
+    if _looks_like_windows_path(text):
+        return PureWindowsPath(text).name or text
+    return PurePosixPath(text).name or text
+
+
+def _build_tool_result_summary(state: Any) -> Optional[Dict[str, Any]]:
+    payload = dict(getattr(state, "last_tool_result", None) or {})
+    if not payload:
+        return None
+
+    metadata = dict(payload.get("metadata") or {})
+    summary: Dict[str, Any] = {
+        "tool": payload.get("tool") or payload.get("tool_name"),
+        "success": payload.get("success"),
+        "exit_code": payload.get("exit_code"),
+        "operation": metadata.get("operation"),
+        "path": metadata.get("path"),
+        "working_directory": metadata.get("working_directory"),
+    }
+    command = str(metadata.get("command") or "").strip()
+    if command:
+        summary["command_preview"] = command[:160]
+    stdout = str(payload.get("stdout") or payload.get("output") or "").strip()
+    if stdout:
+        summary["stdout_preview"] = stdout[:200]
+    summary = {key: value for key, value in summary.items() if value not in (None, "", [], {})}
+    return summary or None
+
+
+def _resolve_recent_result_target_path(state: Any) -> Optional[str]:
+    tool_result = dict(getattr(state, "last_tool_result", None) or {})
+    metadata = dict(tool_result.get("metadata") or {})
+    for key in ("path", "target_path", "effective_path", "working_directory"):
+        value = str(metadata.get(key) or "").strip()
+        if value:
+            return value
+
+    run_items = list(getattr(state, "get_run_items", lambda: [])() or [])
+    verified_items = [item for item in run_items if getattr(item, "status", None) == "verified"]
+    candidate_items = verified_items or run_items[-1:]
+    for item in reversed(candidate_items):
+        canonical_path = str(getattr(item, "canonical_path", None) or "").strip()
+        if canonical_path:
+            return canonical_path
+
+    ingress_context = dict(getattr(state, "ingress_context", None) or {})
+    resolved_target = dict(ingress_context.get("resolved_target") or {})
+    requested_output = dict(ingress_context.get("requested_output") or {})
+    for value in (
+        resolved_target.get("path"),
+        requested_output.get("effective_path"),
+        requested_output.get("target_path"),
+    ):
+        text = str(value or "").strip()
+        if text:
+            return text
+    return None
+
+
+def _build_current_turn_recent_result_context(
+    state: Any,
+    *,
+    runtime_status: Any,
+    reply_origin: str,
+    delivery_kind: str,
+    reply_text: str,
+) -> Optional[Dict[str, Any]]:
+    if str(reply_origin or "").strip() != "task_mainline":
+        return None
+    if str(runtime_status or "").strip() not in {"completed_verified", "completed", "blocked", "failed"}:
+        return None
+
+    target_path = _resolve_recent_result_target_path(state)
+    tool_result_summary = _build_tool_result_summary(state)
+    if not target_path and not tool_result_summary and not str(reply_text or "").strip():
+        return None
+
+    return {
+        "authority_source": "response_contract.response_plan",
+        "binding_kind": "recent_delivered_result",
+        "source_turn_id": str(getattr(state, "active_turn_id", None) or "").strip() or None,
+        "runtime_status": str(runtime_status or "").strip() or None,
+        "reply_origin": "task_mainline",
+        "delivery_kind": str(delivery_kind or "").strip() or None,
+        "target_path": target_path,
+        "target_name": _basename_from_path(target_path),
+        "tool_result_summary": tool_result_summary or {},
+        "reply_preview": str(reply_text or "").strip()[:200] or None,
     }
 
 

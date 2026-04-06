@@ -283,6 +283,7 @@ class RuntimeV2State:
     pending_run_events: List[Dict[str, Any]] = field(default_factory=list)
     last_delivered_evidence_context: Optional[Dict[str, Any]] = None
     last_evidence_read_result: Optional[Dict[str, Any]] = None
+    recent_delivered_result_context: Optional[Dict[str, Any]] = None
     chat_state: ChatState = field(default_factory=ChatState)
 
     def to_prompt_context(self) -> Dict[str, Any]:
@@ -352,6 +353,7 @@ class RuntimeV2State:
             "pending_proactive_outbox_events_count": len(self.pending_proactive_outbox_events),
             "active_item_id": self.active_item_id,
             "pending_run_events_count": len(self.pending_run_events),
+            "recent_delivered_result_context": self.recent_delivered_result_context,
             "chat_state": self.get_chat_state().to_dict(),
         }
 
@@ -463,6 +465,7 @@ class RuntimeV2State:
             "style_profile": dict(chat_state.style_profile or {}),
             "active_task_summary": self.build_active_task_summary(),
             "proto_self_context": dict(self.proto_self_context or {}),
+            "recent_delivered_result_context": dict(self.recent_delivered_result_context or {}),
             "ingress_context": _summarize_ingress_context(self.ingress_context),
         }
 
@@ -579,8 +582,14 @@ class RuntimeV2State:
         self.pending_run_events = []
         self.last_delivered_evidence_context = None
         self.last_evidence_read_result = None
+        self.recent_delivered_result_context = None
 
-    def clear_terminal_execution_residue(self, *, preserve_evidence_context: bool = False) -> None:
+    def clear_terminal_execution_residue(
+        self,
+        *,
+        preserve_evidence_context: bool = False,
+        preserve_recent_result_context: bool = False,
+    ) -> None:
         evidence_context = (
             dict(self.last_delivered_evidence_context or {})
             if preserve_evidence_context and isinstance(self.last_delivered_evidence_context, dict)
@@ -590,6 +599,11 @@ class RuntimeV2State:
             dict(self.last_evidence_read_result or {})
             if preserve_evidence_context and isinstance(self.last_evidence_read_result, dict)
             else evidence_context
+        )
+        recent_result_context = (
+            dict(self.recent_delivered_result_context or {})
+            if preserve_recent_result_context and isinstance(self.recent_delivered_result_context, dict)
+            else None
         )
 
         self.task_status = "idle"
@@ -615,6 +629,7 @@ class RuntimeV2State:
 
         self.last_delivered_evidence_context = evidence_context
         self.last_evidence_read_result = evidence_compat
+        self.recent_delivered_result_context = recent_result_context
 
     def begin_execute_task(
         self,
@@ -653,6 +668,7 @@ class RuntimeV2State:
         self.autonomy_context = None
         self.last_delivered_evidence_context = None
         self.last_evidence_read_result = None
+        self.recent_delivered_result_context = None
         if ingress_context is not None:
             self.ingress_context = ingress_context
         self.set_run_items(run_items)
@@ -717,6 +733,7 @@ class RuntimeV2State:
         self.pending_run_events = []
         self.last_delivered_evidence_context = None
         self.last_evidence_read_result = None
+        self.recent_delivered_result_context = None
         self.chat_state = ChatState(session_id=self.session_id)
         # 保留 pending_artifacts，因为用户可能在 reset 后继续用同一批文件
         return self.generation_id
@@ -1408,6 +1425,25 @@ class RuntimeV2State:
     def update_last_evidence_read_delivery(self, *, delivery_was_chunked: bool) -> None:
         self.update_last_delivered_evidence_context(delivery_was_chunked=delivery_was_chunked)
 
+    def clear_recent_delivered_result_context(self) -> None:
+        self.recent_delivered_result_context = None
+
+    def set_recent_delivered_result_context(self, snapshot: Optional[Dict[str, Any]]) -> None:
+        self.recent_delivered_result_context = dict(snapshot or {}) if snapshot else None
+
+    def update_recent_delivered_result_context(
+        self,
+        *,
+        delivery_was_chunked: bool,
+        source_assistant_message_id: Optional[int] = None,
+    ) -> None:
+        if not isinstance(self.recent_delivered_result_context, dict):
+            return
+        self.recent_delivered_result_context["delivery_was_chunked"] = bool(delivery_was_chunked)
+        self.recent_delivered_result_context["delivered_at"] = time.time()
+        if source_assistant_message_id is not None:
+            self.recent_delivered_result_context["source_assistant_message_id"] = int(source_assistant_message_id)
+
     def to_snapshot(self) -> Dict[str, Any]:
         return {
             "session_id": self.session_id,
@@ -1465,6 +1501,7 @@ class RuntimeV2State:
             "pending_run_events": list(self.pending_run_events),
             "last_delivered_evidence_context": self.last_delivered_evidence_context,
             "last_evidence_read_result": self.last_evidence_read_result,
+            "recent_delivered_result_context": self.recent_delivered_result_context,
             "chat_state": self.get_chat_state().to_dict(),
         }
 
@@ -1532,6 +1569,7 @@ class RuntimeV2State:
             or snapshot.get("last_evidence_read_result")
         )
         state.last_evidence_read_result = state.last_delivered_evidence_context
+        state.recent_delivered_result_context = snapshot.get("recent_delivered_result_context")
         state.chat_state = ChatState.from_dict(snapshot.get("chat_state"), session_id=state.session_id)
         return state
 

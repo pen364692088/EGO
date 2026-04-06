@@ -39,6 +39,7 @@ CHAT_MAINLINE_SYSTEM_PROMPT = """你是 EgoCore runtime_v2 的 chat mainline。
 13. 如果结构化上下文里带有 `chat_expression_hint`，在不违背其它规则时按它控制展开程度、语气和下一步偏向。
 14. `reply_mode=short` 时尽量 1 句；`reply_mode=normal` 时 1 到 2 句；`reply_mode=expand` 时最多 4 句。
 15. `reply_mode=hold` 时，把回复写成一条可独立发送的后续补充，不要写“我先不回/稍后再说”这类控制面说明。
+16. 如果结构化上下文里带有 `recent_delivered_result_context`，且用户显然在追问刚刚交付的页面、文件或结果，优先基于这个上下文自然回应，不要说自己没有这段上下文。
 """
 
 
@@ -148,6 +149,7 @@ class ChatReplyEngine:
         relationship = dict(context.get("relationship_context") or {})
         style = dict(context.get("style_profile") or {})
         proto_self = dict(context.get("proto_self_context") or {})
+        recent_result_context = dict(context.get("recent_delivered_result_context") or {})
         tendency = dict(proto_self.get("response_tendency") or {})
         policy_hint = dict(proto_self.get("policy_hint") or {})
         reflection_note = dict(proto_self.get("reflection_note") or {})
@@ -180,6 +182,15 @@ class ChatReplyEngine:
                 "dimensions": style.get("dimensions") or {},
                 "preferred_markers": style.get("preferred_markers") or [],
                 "avoid_markers": style.get("avoid_markers") or [],
+            },
+            "recent_delivered_result_context": {
+                "binding_kind": recent_result_context.get("binding_kind"),
+                "runtime_status": recent_result_context.get("runtime_status"),
+                "reply_origin": recent_result_context.get("reply_origin"),
+                "target_name": recent_result_context.get("target_name"),
+                "target_path": recent_result_context.get("target_path"),
+                "reply_preview": recent_result_context.get("reply_preview"),
+                "tool_result_summary": dict(recent_result_context.get("tool_result_summary") or {}),
             },
             "proto_self_context": {
                 "subject_profile": proto_self.get("subject_profile"),
