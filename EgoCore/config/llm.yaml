@@ -1,11 +1,25 @@
 # LLM Configuration
 
-# Default settings - using Baidu Qianfan
+# Default settings
 default_provider: qianfan
 default_model: glm-5
 
 # Provider configurations
 providers:
+  openrouter:
+    enabled: true
+    base_url: "https://openrouter.ai/api/v1"
+    api_key_env: OPENROUTER_API_KEY
+    models:
+      - id: openai/gpt-oss-20b:free
+        name: GPT OSS 20B Free
+        max_tokens: 131072
+        supports_vision: false
+      - id: qwen/qwen3.6-plus:free
+        name: Qwen 3.6 Plus Free
+        max_tokens: 64000
+        supports_vision: false
+
   qianfan:
     enabled: true
     base_url: "https://qianfan.baidubce.com/v2/coding"
@@ -88,8 +102,8 @@ use_cases:
     max_tokens: 2000
   
   chat:
-    provider: qianfan
-    model: glm-5
+    provider: openrouter
+    model: openai/gpt-oss-20b:free
     temperature: 0.8
     max_tokens: 2000
 

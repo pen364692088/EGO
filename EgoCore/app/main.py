@@ -108,6 +108,9 @@ def show_status(config, logger) -> None:
     qianfan_key = config.get_env('QIANFAN_API_KEY')
     print(f"  QIANFAN_API_KEY: {'✓ Set' if qianfan_key else '✗ Not set'}")
 
+    openrouter_key = config.get_env('OPENROUTER_API_KEY')
+    print(f"  OPENROUTER_API_KEY: {'✓ Set' if openrouter_key else '✗ Not set'}")
+
     openai_key = config.get_env('OPENAI_API_KEY')
     print(f"  OPENAI_API_KEY: {'✓ Set' if openai_key else '✗ Not set'}")
 

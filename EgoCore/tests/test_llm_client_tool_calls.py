@@ -1,6 +1,6 @@
 import json
 
-from app.llm_client import QianfanClient
+from app.llm_client import OpenRouterClient, QianfanClient
 
 
 class _FakeHTTPResponse:
@@ -63,3 +63,36 @@ def test_qianfan_client_chat_with_tools_parses_tool_calls(monkeypatch):
     assert response.has_tool_calls is True
     assert response.tool_calls[0]["name"] == "file"
     assert response.tool_calls[0]["arguments"]["operation"] == "exists"
+
+
+def test_openrouter_client_uses_openai_compatible_endpoint(monkeypatch):
+    payload = {
+        "model": "qwen/qwen3.6-plus:free",
+        "choices": [
+            {
+                "finish_reason": "stop",
+                "message": {
+                    "content": "ok",
+                },
+            }
+        ],
+        "usage": {"prompt_tokens": 9, "completion_tokens": 3},
+    }
+    calls = {}
+
+    class _RecordingHTTPClient(_FakeHTTPClient):
+        def post(self, url, headers=None, json=None):
+            calls["url"] = url
+            calls["headers"] = headers
+            calls["json"] = json
+            return _FakeHTTPResponse(self.payload)
+
+    monkeypatch.setattr("app.llm_client.httpx.Client", lambda timeout=60: _RecordingHTTPClient(payload))
+
+    client = OpenRouterClient(api_key="test-openrouter", model="qwen/qwen3.6-plus:free")
+    response = client.generate_with_messages([{"role": "user", "content": "hi"}])
+
+    assert calls["url"] == "https://openrouter.ai/api/v1/chat/completions"
+    assert calls["headers"]["Authorization"] == "Bearer test-openrouter"
+    assert response.provider == "openrouter"
+    assert response.content == "ok"

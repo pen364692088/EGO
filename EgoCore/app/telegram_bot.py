@@ -2805,12 +2805,21 @@ class TelegramBot:
         prompt_k = format_tokens(prompt_tokens)
         completion_k = format_tokens(completion_tokens)
 
-        # Estimate cost (qianfan pricing: ~$0.001/1K tokens for input, ~$0.002/1K tokens for output)
+        try:
+            config = get_config()
+            chat_cfg = config.get_llm_config_for_use_case("chat")
+            chat_provider = str(chat_cfg.get("provider") or config.llm.get("default_provider") or "unknown")
+            chat_model = str(chat_cfg.get("model") or config.llm.get("default_model") or "unknown")
+        except ConfigError:
+            chat_provider = "unknown"
+            chat_model = "unknown"
+
+        # Rough cost estimate retained as a coarse status hint.
         cost = (prompt_tokens * 0.000001 + completion_tokens * 0.000002)
 
         lines = [
             "🦞 *EgoCore Runtime*",
-            "🧠 Model: `qianfan/glm-5` · 🔑 `api-key` (llm.yaml)",
+            f"🧠 Model: `{chat_provider}/{chat_model}` · 🔑 `api-key` (llm.yaml)",
             f"🧮 Tokens: `{prompt_k}` in / `{completion_k}` out · 💵 Cost: `${cost:.4f}`",
             f"📚 Context: `{context_k}k/200k ({context_pct}%)` · 🧹 Compactions: `{compactions}`",
             f"Session ID: `{session_key}`",

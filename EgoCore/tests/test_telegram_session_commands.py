@@ -1,5 +1,6 @@
 import sys
 from datetime import datetime, timezone
+from pathlib import Path
 from types import SimpleNamespace
 
 import pytest
@@ -15,11 +16,14 @@ if "requests" not in sys.modules:
     )
 
 import app.telegram_bot as telegram_bot_module
+from app.config import load_config
 from app.autonomy import AutonomyExecutorKind, AutonomyRun, AutonomyRunStatus
 from app.openemotion_hooks.subject_gate import SubjectGateVerdict
 from app.runtime_v2.run_items import RunConflictState, RunItem
 from app.telegram_bot import TelegramBot
 from app.interaction.session_context_store import get_session_context_store
+
+EGOCORE_ROOT = Path(__file__).resolve().parents[1]
 
 
 class _AllowingSubjectGate:
@@ -139,6 +143,11 @@ async def test_new_command_supersedes_active_durable_runs(monkeypatch):
 
 @pytest.mark.asyncio
 async def test_status_command_returns_runtime_style_card(monkeypatch):
+    load_config(
+        config_dir=str(EGOCORE_ROOT / "config"),
+        env_file=str(EGOCORE_ROOT / ".env"),
+        validate=False,
+    )
     bot = TelegramBot(token="test-token", use_runtime_v2=True)
     _install_allowing_subject_gate(monkeypatch, bot)
 
@@ -174,7 +183,7 @@ async def test_status_command_returns_runtime_style_card(monkeypatch):
     text = DummyUpdate.message.last_text
     assert bot.runtime_v2_loop is None
     assert "EgoCore Runtime" in text
-    assert "qianfan/glm-5" in text
+    assert "openrouter/openai/gpt-oss-20b:free" in text
     assert "Session ID:" in text
     assert "native\\_loop" in text
     assert "task\\_status" in text and "running" in text
@@ -279,6 +288,11 @@ async def test_new_command_captures_real_command_ingress(monkeypatch):
     ],
 )
 async def test_command_results_use_subject_gate(monkeypatch, command_text, expected_fragment):
+    load_config(
+        config_dir=str(EGOCORE_ROOT / "config"),
+        env_file=str(EGOCORE_ROOT / ".env"),
+        validate=False,
+    )
     bot = TelegramBot(token="test-token", use_runtime_v2=True)
     calls = []
 

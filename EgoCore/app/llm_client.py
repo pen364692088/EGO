@@ -36,12 +36,16 @@ class LLMResponse:
 
 class BaseLLMClient(ABC):
     """Base class for LLM clients."""
-    
+    BASE_URL = ""
+    PROVIDER_NAME = "unknown"
+
     def __init__(self, api_key: str, model: str, **kwargs):
         self.api_key = api_key
         self.model = model
         self.config = kwargs
-    
+        self.base_url = str(kwargs.get("base_url") or self.BASE_URL).rstrip("/")
+        self.provider_name = str(kwargs.get("provider_name") or self.PROVIDER_NAME)
+
     @abstractmethod
     def generate(
         self,
@@ -51,7 +55,7 @@ class BaseLLMClient(ABC):
     ) -> LLMResponse:
         """Generate response from LLM."""
         pass
-    
+
     @abstractmethod
     def generate_with_messages(
         self,
@@ -102,9 +106,10 @@ def _extract_openai_tool_calls(message: Dict[str, Any]) -> List[Dict[str, Any]]:
 
 class OpenAIClient(BaseLLMClient):
     """OpenAI API client."""
-    
+
     BASE_URL = "https://api.openai.com/v1"
-    
+    PROVIDER_NAME = "openai"
+
     def generate(
         self,
         prompt: str,
@@ -116,29 +121,29 @@ class OpenAIClient(BaseLLMClient):
         if system_prompt:
             messages.append({"role": "system", "content": system_prompt})
         messages.append({"role": "user", "content": prompt})
-        
+
         return self.generate_with_messages(messages, **kwargs)
-    
+
     def generate_with_messages(
         self,
         messages: List[Dict[str, str]],
         **kwargs
     ) -> LLMResponse:
         """Generate response from message list."""
-        url = f"{self.BASE_URL}/chat/completions"
-        
+        url = f"{self.base_url}/chat/completions"
+
         headers = {
             "Authorization": f"Bearer {self.api_key}",
             "Content-Type": "application/json"
         }
-        
+
         data = {
             "model": self.model,
             "messages": messages,
             "temperature": kwargs.get("temperature", self.config.get("temperature", 0.7)),
             "max_tokens": kwargs.get("max_tokens", self.config.get("max_tokens", 4096)),
         }
-        
+
         # Add optional parameters
         if "top_p" in self.config:
             data["top_p"] = self.config["top_p"]
@@ -146,19 +151,19 @@ class OpenAIClient(BaseLLMClient):
             data["frequency_penalty"] = self.config["frequency_penalty"]
         if "presence_penalty" in self.config:
             data["presence_penalty"] = self.config["presence_penalty"]
-        
+
         with httpx.Client(timeout=kwargs.get("timeout", 60)) as client:
             response = client.post(url, headers=headers, json=data)
             response.raise_for_status()
             result = response.json()
-        
+
         choice = result["choices"][0]
         message = choice.get("message", {})
-        
+
         return LLMResponse(
             content=message.get("content") or "",
             model=result["model"],
-            provider="openai",
+            provider=self.provider_name,
             usage=result.get("usage"),
             finish_reason=choice.get("finish_reason"),
             raw_response=result,
@@ -171,7 +176,7 @@ class OpenAIClient(BaseLLMClient):
         tools: List[Dict[str, Any]],
         **kwargs
     ) -> LLMResponse:
-        url = f"{self.BASE_URL}/chat/completions"
+        url = f"{self.base_url}/chat/completions"
         headers = {
             "Authorization": f"Bearer {self.api_key}",
             "Content-Type": "application/json"
@@ -193,7 +198,7 @@ class OpenAIClient(BaseLLMClient):
         return LLMResponse(
             content=message.get("content") or "",
             model=result.get("model", self.model),
-            provider="openai",
+            provider=self.provider_name,
             usage=result.get("usage"),
             finish_reason=choice.get("finish_reason"),
             raw_response=result,
@@ -203,9 +208,9 @@ class OpenAIClient(BaseLLMClient):
 
 class AnthropicClient(BaseLLMClient):
     """Anthropic API client."""
-    
+
     BASE_URL = "https://api.anthropic.com/v1"
-    
+
     def generate(
         self,
         prompt: str,
@@ -213,33 +218,33 @@ class AnthropicClient(BaseLLMClient):
         **kwargs
     ) -> LLMResponse:
         """Generate response using messages API."""
-        url = f"{self.BASE_URL}/messages"
-        
+        url = f"{self.base_url}/messages"
+
         headers = {
             "x-api-key": self.api_key,
             "anthropic-version": "2023-06-01",
             "Content-Type": "application/json"
         }
-        
+
         data = {
             "model": self.model,
             "max_tokens": kwargs.get("max_tokens", self.config.get("max_tokens", 4096)),
             "messages": [{"role": "user", "content": prompt}],
         }
-        
+
         if system_prompt:
             data["system"] = system_prompt
-        
+
         with httpx.Client(timeout=kwargs.get("timeout", 60)) as client:
             response = client.post(url, headers=headers, json=data)
             response.raise_for_status()
             result = response.json()
-        
+
         content = ""
         for block in result.get("content", []):
             if block.get("type") == "text":
                 content += block.get("text", "")
-        
+
         return LLMResponse(
             content=content,
             model=result["model"],
@@ -251,7 +256,7 @@ class AnthropicClient(BaseLLMClient):
             finish_reason=result.get("stop_reason"),
             raw_response=result
         )
-    
+
     def generate_with_messages(
         self,
         messages: List[Dict[str, str]],
@@ -262,13 +267,13 @@ class AnthropicClient(BaseLLMClient):
         # Convert and call generate
         system_prompt = None
         converted_messages = []
-        
+
         for msg in messages:
             if msg["role"] == "system":
                 system_prompt = msg["content"]
             else:
                 converted_messages.append(msg)
-        
+
         # For simplicity, concatenate messages
         prompt = "\n".join([f"{m['role']}: {m['content']}" for m in converted_messages])
         return self.generate(prompt, system_prompt=system_prompt, **kwargs)
@@ -284,9 +289,10 @@ class AnthropicClient(BaseLLMClient):
 
 class DeepSeekClient(BaseLLMClient):
     """DeepSeek API client (OpenAI-compatible)."""
-    
+
     BASE_URL = "https://api.deepseek.com/v1"
-    
+    PROVIDER_NAME = "deepseek"
+
     def generate(
         self,
         prompt: str,
@@ -298,41 +304,41 @@ class DeepSeekClient(BaseLLMClient):
         if system_prompt:
             messages.append({"role": "system", "content": system_prompt})
         messages.append({"role": "user", "content": prompt})
-        
+
         return self.generate_with_messages(messages, **kwargs)
-    
+
     def generate_with_messages(
         self,
         messages: List[Dict[str, str]],
         **kwargs
     ) -> LLMResponse:
         """Generate response from message list."""
-        url = f"{self.BASE_URL}/chat/completions"
-        
+        url = f"{self.base_url}/chat/completions"
+
         headers = {
             "Authorization": f"Bearer {self.api_key}",
             "Content-Type": "application/json"
         }
-        
+
         data = {
             "model": self.model,
             "messages": messages,
             "temperature": kwargs.get("temperature", self.config.get("temperature", 0.7)),
             "max_tokens": kwargs.get("max_tokens", self.config.get("max_tokens", 4096)),
         }
-        
+
         with httpx.Client(timeout=kwargs.get("timeout", 60)) as client:
             response = client.post(url, headers=headers, json=data)
             response.raise_for_status()
             result = response.json()
-        
+
         choice = result["choices"][0]
         message = choice.get("message", {})
-        
+
         return LLMResponse(
             content=message.get("content") or "",
             model=result["model"],
-            provider="deepseek",
+            provider=self.provider_name,
             usage=result.get("usage"),
             finish_reason=choice.get("finish_reason"),
             raw_response=result,
@@ -345,7 +351,7 @@ class DeepSeekClient(BaseLLMClient):
         tools: List[Dict[str, Any]],
         **kwargs
     ) -> LLMResponse:
-        url = f"{self.BASE_URL}/chat/completions"
+        url = f"{self.base_url}/chat/completions"
         headers = {
             "Authorization": f"Bearer {self.api_key}",
             "Content-Type": "application/json"
@@ -367,20 +373,28 @@ class DeepSeekClient(BaseLLMClient):
         return LLMResponse(
             content=message.get("content") or "",
             model=result.get("model", self.model),
-            provider="deepseek",
+            provider=self.provider_name,
             usage=result.get("usage"),
             finish_reason=choice.get("finish_reason"),
             raw_response=result,
             tool_calls=_extract_openai_tool_calls(message),
         )
+
+
+class OpenRouterClient(OpenAIClient):
+    """OpenRouter client (OpenAI-compatible)."""
+
+    BASE_URL = "https://openrouter.ai/api/v1"
+    PROVIDER_NAME = "openrouter"
 
 
 class QianfanClient(BaseLLMClient):
     """Baidu Qianfan Coding API client."""
-    
+
     # 百度千帆 Coding Plan API endpoint
     BASE_URL = "https://qianfan.baidubce.com/v2/coding"
-    
+    PROVIDER_NAME = "qianfan"
+
     def generate(
         self,
         prompt: str,
@@ -392,41 +406,41 @@ class QianfanClient(BaseLLMClient):
         if system_prompt:
             messages.append({"role": "system", "content": system_prompt})
         messages.append({"role": "user", "content": prompt})
-        
+
         return self.generate_with_messages(messages, **kwargs)
-    
+
     def generate_with_messages(
         self,
         messages: List[Dict[str, str]],
         **kwargs
     ) -> LLMResponse:
         """Generate response from message list."""
-        url = f"{self.BASE_URL}/chat/completions"
-        
+        url = f"{self.base_url}/chat/completions"
+
         headers = {
             "Authorization": f"Bearer {self.api_key}",
             "Content-Type": "application/json"
         }
-        
+
         data = {
             "model": self.model,
             "messages": messages,
             "temperature": kwargs.get("temperature", self.config.get("temperature", 0.7)),
             "max_tokens": kwargs.get("max_tokens", self.config.get("max_tokens", 4096)),
         }
-        
+
         with httpx.Client(timeout=kwargs.get("timeout", 60)) as client:
             response = client.post(url, headers=headers, json=data)
             response.raise_for_status()
             result = response.json()
-        
+
         choice = result["choices"][0]
         message = choice.get("message", {})
-        
+
         return LLMResponse(
             content=message.get("content") or "",
             model=result.get("model", self.model),
-            provider="qianfan",
+            provider=self.provider_name,
             usage=result.get("usage"),
             finish_reason=choice.get("finish_reason"),
             raw_response=result,
@@ -439,7 +453,7 @@ class QianfanClient(BaseLLMClient):
         tools: List[Dict[str, Any]],
         **kwargs
     ) -> LLMResponse:
-        url = f"{self.BASE_URL}/chat/completions"
+        url = f"{self.base_url}/chat/completions"
         headers = {
             "Authorization": f"Bearer {self.api_key}",
             "Content-Type": "application/json"
@@ -461,7 +475,7 @@ class QianfanClient(BaseLLMClient):
         return LLMResponse(
             content=message.get("content") or "",
             model=result.get("model", self.model),
-            provider="qianfan",
+            provider=self.provider_name,
             usage=result.get("usage"),
             finish_reason=choice.get("finish_reason"),
             raw_response=result,
@@ -472,67 +486,78 @@ class QianfanClient(BaseLLMClient):
 class LLMClient:
     """
     Unified LLM client.
-    
+
     Supports multiple providers:
-    - Baidu Qianfan (default)
+    - Baidu Qianfan
+    - OpenRouter
     - OpenAI
     - Anthropic
     - DeepSeek
-    
+
     Configuration-driven via llm.yaml.
     """
-    
+
     PROVIDERS = {
         "qianfan": QianfanClient,
+        "openrouter": OpenRouterClient,
         "openai": OpenAIClient,
         "anthropic": AnthropicClient,
         "deepseek": DeepSeekClient,
     }
-    
+
     ENV_KEY_MAP = {
         "qianfan": "QIANFAN_API_KEY",
+        "openrouter": "OPENROUTER_API_KEY",
         "openai": "OPENAI_API_KEY",
         "anthropic": "ANTHROPIC_API_KEY",
         "deepseek": "DEEPSEEK_API_KEY",
     }
-    
+
     def __init__(self, provider: Optional[str] = None, model: Optional[str] = None):
         """
         Initialize LLM client.
-        
+
         Args:
             provider: Provider name (default from config)
             model: Model name (default from config)
         """
         config = get_config()
-        
+
         self.provider = provider or config.llm.get("default_provider", "openai")
         self.model = model or config.llm.get("default_model", "gpt-4o-mini")
-        
+
+        provider_cfg = (config.llm.get("providers") or {}).get(self.provider) or {}
+
         # Get API key
-        env_key = self.ENV_KEY_MAP.get(self.provider)
+        env_key = provider_cfg.get("api_key_env") or self.ENV_KEY_MAP.get(self.provider)
         if not env_key:
             raise ValueError(f"Unknown provider: {self.provider}")
-        
+
         self.api_key = config.get_env(env_key)
         if not self.api_key:
             raise ValueError(f"API key not set: {env_key}")
-        
+
         # Get model config
-        models = config.llm.get("models", {})
-        model_config = models.get(self.model, {})
-        
+        model_config: Dict[str, Any] = {}
+        for item in provider_cfg.get("models") or []:
+            if str(item.get("id") or "") == self.model:
+                model_config = dict(item)
+                break
+        if provider_cfg.get("base_url"):
+            model_config.setdefault("base_url", provider_cfg.get("base_url"))
+        model_config.setdefault("provider_name", self.provider)
+
         # Create client
         client_class = self.PROVIDERS.get(self.provider)
         if not client_class:
             raise ValueError(f"Unsupported provider: {self.provider}")
-        
+
         self.client = client_class(
             api_key=self.api_key,
             model=self.model,
             **model_config
         )
-    
+
     def generate(
         self,
         prompt: str,
@@ -541,17 +566,17 @@ class LLMClient:
     ) -> LLMResponse:
         """
         Generate response from prompt.
-        
+
         Args:
             prompt: User prompt
             system_prompt: Optional system prompt
             **kwargs: Additional parameters
-        
+
         Returns:
             LLMResponse
         """
         return self.client.generate(prompt, system_prompt=system_prompt, **kwargs)
-    
+
     def generate_with_messages(
         self,
         messages: List[Dict[str, str]],
@@ -559,11 +584,11 @@ class LLMClient:
     ) -> LLMResponse:
         """
         Generate response from message list.
-        
+
         Args:
             messages: List of message dicts
             **kwargs: Additional parameters
-        
+
         Returns:
             LLMResponse
         """
@@ -576,14 +601,14 @@ class LLMClient:
         **kwargs
     ) -> LLMResponse:
         return self.client.chat_with_tools(messages, tools, **kwargs)
-    
+
     def get_prompt(self, prompt_name: str) -> str:
         """
         Get a prompt template from config.
-        
+
         Args:
             prompt_name: Name of the prompt
-        
+
         Returns:
             Prompt template string
         """
@@ -599,16 +624,16 @@ _llm_client_overrides: Dict[tuple[Optional[str], Optional[str]], LLMClient] = {}
 def get_llm_client(provider: Optional[str] = None, model: Optional[str] = None) -> LLMClient:
     """
     Get LLM client instance.
-    
+
     Args:
         provider: Provider override
         model: Model override
-    
+
     Returns:
         LLMClient instance
     """
     global _llm_client
-    
+
     if provider or model:
         key = (provider, model)
         cached = _llm_client_overrides.get(key)
@@ -616,8 +641,8 @@ def get_llm_client(provider: Optional[str] = None, model: Optional[str] = None) 
             cached = LLMClient(provider=provider, model=model)
             _llm_client_overrides[key] = cached
         return cached
-    
+
     if _llm_client is None:
         _llm_client = LLMClient()
-    
+
     return _llm_client
