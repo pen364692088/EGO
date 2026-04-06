@@ -35,10 +35,25 @@ class NativeToolCallingLoop:
         llm_client: Optional[LLMClient] = None,
         context_builder: Optional[NativeContextBuilder] = None,
     ) -> None:
-        self.llm_client = llm_client or get_llm_client(provider="qianfan", model="glm-5")
+        self.llm_client = llm_client or self._build_default_llm_client()
         self.context_builder = context_builder or NativeContextBuilder()
         self.contract_runtime = ContractRuntimeEngine()
         self._ensure_tools_ready()
+
+    def _build_default_llm_client(self) -> LLMClient:
+        repo_root = Path(__file__).resolve().parents[2]
+        try:
+            cfg = get_config()
+        except Exception:
+            cfg = load_config(
+                config_dir=str(repo_root / "config"),
+                env_file=str(repo_root / ".env"),
+                validate=False,
+            )
+        use_case = cfg.get_llm_config_for_use_case("execution") if hasattr(cfg, "get_llm_config_for_use_case") else {}
+        provider = use_case.get("provider") or getattr(cfg, "llm", {}).get("default_provider") or "openrouter"
+        model = use_case.get("model") or getattr(cfg, "llm", {}).get("default_model") or "stepfun/step-3.5-flash:free"
+        return get_llm_client(provider=str(provider), model=str(model))
 
     def _ensure_tools_ready(self) -> None:
         repo_root = Path(__file__).resolve().parents[2]

@@ -55,3 +55,28 @@ async def test_native_loop_runs_tool_call_and_returns_reply(monkeypatch):
 
     assert result.reply_text == "已检查完成。"
     assert result.tool_results[0]["tool_name"] == "file"
+
+
+def test_native_loop_default_client_uses_execution_use_case(monkeypatch):
+    captured = {}
+
+    class DummyConfig:
+        llm = {
+            "default_provider": "openrouter",
+            "default_model": "stepfun/step-3.5-flash:free",
+        }
+
+        def get_llm_config_for_use_case(self, use_case):
+            assert use_case == "execution"
+            return {
+                "provider": "openrouter",
+                "model": "stepfun/step-3.5-flash:free",
+            }
+
+    monkeypatch.setattr("app.agent_core.native_loop.get_config", lambda: DummyConfig())
+    monkeypatch.setattr("app.agent_core.native_loop.get_llm_client", lambda provider=None, model=None: captured.setdefault("client", (provider, model)) or object())
+    monkeypatch.setattr(NativeToolCallingLoop, "_ensure_tools_ready", lambda self: None)
+
+    loop = NativeToolCallingLoop()
+
+    assert loop.llm_client == ("openrouter", "stepfun/step-3.5-flash:free")

@@ -1,8 +1,8 @@
 # LLM Configuration
 
 # Default settings
-default_provider: qianfan
-default_model: glm-5
+default_provider: openrouter
+default_model: stepfun/step-3.5-flash:free
 
 # Provider configurations
 providers:
@@ -11,6 +11,10 @@ providers:
     base_url: "https://openrouter.ai/api/v1"
     api_key_env: OPENROUTER_API_KEY
     models:
+      - id: stepfun/step-3.5-flash:free
+        name: StepFun 3.5 Flash Free
+        max_tokens: 64000
+        supports_vision: false
       - id: openai/gpt-oss-20b:free
         name: GPT OSS 20B Free
         max_tokens: 131072
@@ -78,26 +82,26 @@ providers:
 # Model selection by use case
 use_cases:
   planning:
-    provider: qianfan
-    model: glm-5
+    provider: openrouter
+    model: stepfun/step-3.5-flash:free
     temperature: 0.7
     max_tokens: 4000
   
   execution:
-    provider: qianfan
-    model: deepseek-v3.2
+    provider: openrouter
+    model: stepfun/step-3.5-flash:free
     temperature: 0.3
     max_tokens: 8000
   
   reporting:
-    provider: qianfan
-    model: glm-5
+    provider: openrouter
+    model: stepfun/step-3.5-flash:free
     temperature: 0.5
     max_tokens: 4000
   
   memory_summary:
-    provider: qianfan
-    model: glm-5
+    provider: openrouter
+    model: stepfun/step-3.5-flash:free
     temperature: 0.3
     max_tokens: 2000
   
@@ -115,7 +119,7 @@ request:
   
 # Fallback configuration
 fallback:
-  enabled: true
+  enabled: false
   providers:
     - openai
     - anthropic
