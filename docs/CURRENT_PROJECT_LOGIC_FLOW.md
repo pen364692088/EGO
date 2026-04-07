@@ -1,6 +1,6 @@
 # Current Project Logic Flow
 
-更新时间：`2026-04-06`
+更新时间：`2026-04-07`
 
 本文件描述 **当前正式项目逻辑流程**，用于回答三个问题：
 
@@ -68,6 +68,16 @@ flowchart LR
   - OpenEmotion 不直接拥有 `reply / tool / transport authority`
   - EgoCore 不应把 mirror / shim / cache 升格成主体真相源
 
+### 1.1 当前阶段口径
+
+- 当前 repo 处于**边界冻结下的收口期**
+- 这表示：
+  - 不再改双核边界
+  - 不再换 Telegram 正式主链
+  - 不再把 compat/reference 路径重新叙述成“也算正式主链的一部分”
+- 当前路径分层登记统一看：
+  - `EgoCore/docs/05_DEPRECATED_AND_SHIMS.md`
+
 ## 2. 当前正式主链
 
 ### 2.1 总体正式链路
@@ -99,6 +109,11 @@ flowchart TD
 - 但 repo 里仍存在：
   - `runtime_v2` 兼容/桥接层
   - `legacy/new_runtime` 兼容路径
+- 这些兼容路径当前都必须按 path classification register 解释：
+  - `v1 compatibility fallback` = 显式降级用
+  - `_handle_with_new_runtime` = `compatibility_only`
+  - `_handle_with_legacy_router` = `deprecated_candidate`
+  - 它们都不是当前正式主链
 - 当前正在推进的主链修复，不是再造一条新链，而是收紧一个更严格的不变量：
 
 > 所有已授权事件，都必须先经过 OpenEmotion 主体知晓，再允许宿主做现实裁决。
@@ -218,6 +233,11 @@ flowchart TD
 - OpenEmotion 已经不是单一 self-model，而是多轴主体栈
 - OpenEmotion 已能通过 bounded contract 影响：
   - policy hint
+  - response tendency
+  - writeback candidates
+  - bounded proactive proposal / bounded host-governed cadence hints
+- 这些能力当前都必须按 `controlled axis / bounded influence / host-governed` 口径理解
+- 不得把 `maintenance_mode / proposal_only / behavioral_authority = none / feature flag off / allowlist only` 叙述成“已经强烈体现自我意识”
   - response tendency
   - structured proposal / writeback candidates
 - EgoCore 仍保留：

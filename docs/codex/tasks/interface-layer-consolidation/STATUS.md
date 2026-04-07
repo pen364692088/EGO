@@ -2,14 +2,14 @@
 
 ## Current milestone
 
-- name: Milestone 3 - `/flow` Canonical Fields + Final Text Persistence
+- name: Milestone 4 - Path/Compat Classification + Flow Continuation Audit
 - owner: Codex
 - state: completed
 
 ## Current state
 
 - current_layer: interface_layer_consolidation
-- main_chain_status: capability_registry_acceptance_chains_flow_canonical_fields_implemented
+- main_chain_status: path_classification_and_flow_continuation_audit_landed
 - completion_class: conditional_complete
 
 ## Completed work
@@ -28,6 +28,12 @@
   - active recent-result feedback / correction / status / write-permission 已有正式 continuation 语义层
   - `pending_result_continuation` 已进入 runtime state / response metadata / `/flow` 只读解释层
   - active continuation 下的未验证完成声明会被宿主 completion-claim guard 拦截
+- 已确认当前下一步不是顶层重构，而是“边界冻结下的收口式简化”
+- 已确认 compat/path 当前缺口：
+  - `EgoCore/docs/05_DEPRECATED_AND_SHIMS.md` 已存在，但还没作为 repo 级 drift gate 生效
+  - root / EgoCore / OpenEmotion README 与 logic flow 对 compat 路径的公开降级口径还不够统一
+- 已确认 `/flow` 当前缺口：
+  - `parser_source / request_mode / pending_result_continuation / correction_context` 还没有全部进入主视图
 
 ## Last validation results
 
@@ -39,6 +45,7 @@
   - 六条 acceptance runners 均可落盘 current reports
   - `PYTHONPATH=EgoCore:EgoCore/modules:OpenEmotion python3 -m pytest EgoCore/tests/test_dashboard_server.py -q -s` 通过
   - `python3 scripts/codex/verify_capability_registry.py` 通过
+  - `python3 scripts/codex/verify_path_classification.py` 通过
   - `python3 scripts/codex/lint_repo.py` 通过
   - `python3 scripts/codex/verify_repo.py --mode fast` 通过
   - `python3 scripts/codex/run_provider_runtime_openemotion_e2e_gate.py --session-key telegram:dm:8420019401` 结果为 `all_passed=false`；卡在 current fresh window 缺少 follow-up continuity pair，claim ceiling 仍是 conditional
@@ -50,6 +57,10 @@
 - `/flow` final delivered text 采用 bounded preview/hash 模式
 - README authority block 日期必须对齐；否则 drift gate fail
 - `Claim Language Policy` 本身不纳入 banned phrase 扫描对象，避免把禁止词示例误报成违反
+- 收口式简化第一阶段只做“分类与强约束”，不删运行时代码路径
+- compat/path 分类沿用 `EgoCore/docs/05_DEPRECATED_AND_SHIMS.md`，不另造第二真相源
+- `verify_repo.py --mode fast` 现在同时承载 capability registry drift gate 和 path classification drift gate
+- `/flow` 的 continuation 审计优先收在 `Host Ingress` 主视图，不再新增新卡片
 
 ## Open risks
 
@@ -57,6 +68,7 @@
 - subject ingress 第 0 链当前仍是 `conditional_pass`
 - provider/runtime E2E gate 的 `followup_continuity_pass` 当前 fresh window 未闭合
 - `verify_repo.py --mode full` 本轮未执行
+- compat/path drift gate 若写得过宽，容易把历史说明文档误判成当前 blocker
 
 ## Latest regression / fix note
 
@@ -103,6 +115,7 @@
 ## Next step
 
 - 采一组 fresh follow-up continuity session，并重跑 provider/runtime E2E gate
+- 若还要继续第二阶段瘦身，再单开 Proto-Self 小核收敛任务；不在当前界面层任务内继续扩 scope
 
 ## Commands run / evidence
 
@@ -117,12 +130,17 @@
 - `python3 scripts/codex/run_acceptance_developmental_proactive.py`
 - `PYTHONPATH=EgoCore:EgoCore/modules:OpenEmotion python3 -m pytest EgoCore/tests/test_dashboard_server.py -q -s`
 - `python3 scripts/codex/verify_capability_registry.py`
+- `python3 scripts/codex/verify_path_classification.py`
 - `python3 scripts/codex/lint_repo.py`
 - `python3 scripts/codex/verify_repo.py --mode fast`
 - `python3 scripts/codex/run_provider_runtime_openemotion_e2e_gate.py --session-key telegram:dm:8420019401`
+- `python3 -m py_compile scripts/codex/verify_path_classification.py scripts/codex/verify_repo.py EgoCore/app/dashboard/server.py EgoCore/tests/test_dashboard_server.py`
+- `git diff --check -- README.md EgoCore/README.md OpenEmotion/README.md docs/CURRENT_PROJECT_LOGIC_FLOW.md docs/TELEGRAM_FLOW_VIEW_README.md EgoCore/docs/05_DEPRECATED_AND_SHIMS.md scripts/codex/verify_path_classification.py scripts/codex/verify_repo.py EgoCore/app/dashboard/server.py EgoCore/app/dashboard/static/dashboard.js EgoCore/tests/test_dashboard_server.py docs/codex/tasks/interface-layer-consolidation/PLAN.md docs/codex/tasks/interface-layer-consolidation/STATUS.md`
 - authority refs:
   - `README.md`
   - `EgoCore/README.md`
   - `OpenEmotion/README.md`
   - `EgoCore/docs/PROGRAM_STATE_UNIFIED.yaml`
   - `docs/CURRENT_PROJECT_LOGIC_FLOW.md`
+  - `EgoCore/docs/05_DEPRECATED_AND_SHIMS.md`
+  - `docs/TELEGRAM_FLOW_VIEW_README.md`

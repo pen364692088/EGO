@@ -502,6 +502,32 @@ class DashboardDataStore:
         policy_hint = result.get("policy_hint") or {}
         response_metadata = response_plan.get("metadata") or {}
         recent_result_context = response_metadata.get("recent_result_context") or {}
+        parser_source = _first_non_empty(
+            response_metadata.get("parser_source"),
+            runtime_summary.get("parser_source"),
+        )
+        request_mode = _first_non_empty(
+            response_metadata.get("request_mode"),
+            runtime_summary.get("request_mode"),
+        )
+        pending_result_continuation = (
+            response_metadata.get("pending_result_continuation") or runtime_summary.get("pending_result_continuation") or {}
+        )
+        continuation_mode = (
+            str(pending_result_continuation.get("requested_mode") or "").strip() or None
+            if isinstance(pending_result_continuation, dict)
+            else None
+        )
+        continuation_status = (
+            str(pending_result_continuation.get("status") or "").strip() or None
+            if isinstance(pending_result_continuation, dict)
+            else None
+        )
+        correction_context = _boolish(
+            response_metadata.get("correction_context")
+            if response_metadata.get("correction_context") is not None
+            else runtime_summary.get("correction_context")
+        )
         reflection_trigger = _first_non_empty(
             _deep_get(result, "reflection_note.trigger"),
             trace.get("reflection_trigger"),
@@ -621,25 +647,26 @@ class DashboardDataStore:
             "status": "host_only" if host_only else ("pass" if ingress_ok else "broken"),
             "headline": "Host ingress passed" if ingress_ok else ("Host-only interception" if host_only else "Host ingress incomplete"),
             "sentence": (
-                f"宿主解析出 runtime_path={response_plan.get('reply_origin') or runtime_summary.get('runtime_action') or 'unknown'}，并在进入主体前完成 session/task resolve。"
+                f"宿主解析出 runtime_path={response_plan.get('reply_origin') or runtime_summary.get('runtime_action') or 'unknown'}，"
+                f" parser_source={parser_source or 'unknown'}，request_mode={request_mode or 'none'}，并在进入主体前完成 session/task resolve。"
                 if not host_only
                 else "这轮样本停在宿主层，没有形成主体处理证据。"
             ),
             "authorized": True,
             "subject_gate_ingress_ok": ingress_ok,
             "runtime_path": _first_non_empty(response_plan.get("reply_origin"), runtime_summary.get("runtime_action")),
+            "parser_source": parser_source,
+            "request_mode": request_mode,
+            "recent_result_binding": bool(recent_result_context),
+            "continuation_mode": continuation_mode,
+            "continuation_status": continuation_status,
+            "correction_context": correction_context,
+            "pending_result_continuation": pending_result_continuation,
             "session_key": _first_non_empty(conversation_summary.get("session_id"), conversation_summary.get("thread_id")),
             "active_task": _boolish(runtime_summary.get("active_task")),
             "waiting_input": _boolish(runtime_summary.get("confirm_pending")),
             "task_conflict": _boolish(_deep_get(runtime_summary, "task_conflict.active")),
-            "recent_result_binding": bool(recent_result_context),
             "recent_result_source_turn": response_metadata.get("result_binding_source_turn"),
-            "pending_result_continuation": response_metadata.get("pending_result_continuation") or runtime_summary.get("pending_result_continuation"),
-            "correction_context": _boolish(
-                response_metadata.get("correction_context")
-                if response_metadata.get("correction_context") is not None
-                else runtime_summary.get("correction_context")
-            ),
             "artifacts": ["normalized_event.json", "ledger.json", "timeline.json"],
             "engineering_fields": [
                 _flow_field("authorized", "normalized_event.json", "runtime_summary.primary_intent", True),
@@ -649,6 +676,18 @@ class DashboardDataStore:
                     "response_plan.json",
                     "reply_origin",
                     _first_non_empty(response_plan.get("reply_origin"), runtime_summary.get("runtime_action")),
+                ),
+                _flow_field(
+                    "parser_source",
+                    "response_plan.json | normalized_event.json",
+                    "metadata.parser_source | runtime_summary.parser_source",
+                    parser_source,
+                ),
+                _flow_field(
+                    "request_mode",
+                    "response_plan.json | normalized_event.json",
+                    "metadata.request_mode | runtime_summary.request_mode",
+                    request_mode,
                 ),
                 _flow_field(
                     "session_key",
@@ -665,6 +704,18 @@ class DashboardDataStore:
                     recent_result_context,
                 ),
                 _flow_field(
+                    "continuation_mode",
+                    "response_plan.json | normalized_event.json",
+                    "metadata.pending_result_continuation.requested_mode | runtime_summary.pending_result_continuation.requested_mode",
+                    continuation_mode,
+                ),
+                _flow_field(
+                    "continuation_status",
+                    "response_plan.json | normalized_event.json",
+                    "metadata.pending_result_continuation.status | runtime_summary.pending_result_continuation.status",
+                    continuation_status,
+                ),
+                _flow_field(
                     "recent_result_source_turn",
                     "response_plan.json",
                     "metadata.result_binding_source_turn",
@@ -674,15 +725,13 @@ class DashboardDataStore:
                     "pending_result_continuation",
                     "response_plan.json | normalized_event.json",
                     "metadata.pending_result_continuation | runtime_summary.pending_result_continuation",
-                    response_metadata.get("pending_result_continuation") or runtime_summary.get("pending_result_continuation"),
+                    pending_result_continuation,
                 ),
                 _flow_field(
                     "correction_context",
                     "response_plan.json | normalized_event.json",
                     "metadata.correction_context | runtime_summary.correction_context",
-                    response_metadata.get("correction_context")
-                    if response_metadata.get("correction_context") is not None
-                    else runtime_summary.get("correction_context"),
+                    correction_context,
                 ),
             ],
         }

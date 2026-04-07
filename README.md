@@ -2,9 +2,9 @@
 
 EGO 是 AI Agent 项目的总仓，负责集成 EgoCore（宿主）和 OpenEmotion（主体内核）。
 
-## 当前权威状态
+## 当前权威状态（2026-04-07）
 
-截至 `2026-04-06`，当前正式口径如下：
+当前正式口径如下：
 
 - **双核边界**
   - `EgoCore` 是唯一正式宿主：入口、runtime、工具执行、安全裁决、delivery、audit
@@ -17,6 +17,12 @@ EGO 是 AI Agent 项目的总仓，负责集成 EgoCore（宿主）和 OpenEmoti
   - `proto_self_v2` 已是主体层默认主线
   - Telegram 自然语言主线已命中 `proto_self.output.v2 + proto_self.trace.v2`
   - live self-model projection 已接通；当 formal self-model store 为空时会自动 bootstrap baseline snapshot
+- **当前阶段**
+  - 当前 repo 处于**边界冻结下的收口期**
+  - 不再改双核边界，不再换 Telegram 正式主链，不再开第三套 runtime 叙事
+- **Path / Compat Discipline**
+  - 正式/compat/reference/deprecated 路径统一登记在 `EgoCore/docs/05_DEPRECATED_AND_SHIMS.md`
+  - `v1 compatibility fallback`、`legacy/new_runtime`、`_handle_with_new_runtime`、`_handle_with_legacy_router` 都不是当前正式主链
 - **主体能力栈**
   - `WP8 ~ WP16` 已在各自 controlled axis 上进入 `maintenance_mode`
   - `WP17 / MVP22` 当前仅是 `authority_frozen / task_package_ready`
@@ -26,8 +32,16 @@ EGO 是 AI Agent 项目的总仓，负责集成 EgoCore（宿主）和 OpenEmoti
   - 当前 `M1 ~ M3` 已完成；`background/proactive` 等 closure 与 fresh live closeout 仍在后续收口
 - **Dashboard /flow**
   - 已提供当前正式主链的只读解释层
-  - 页面固定展示 `Input -> Host Ingress -> Subject Understanding -> Reply Evolution -> Host Arbitration -> Output`
+  - 页面固定展示 `Input -> Host Ingress -> Subject Understanding -> Canonical Fields -> Reply Evolution -> Host Arbitration -> Output`
   - `Reply Evolution` 当前是 `evidence_only_v1`，只覆盖 `chat_mainline`
+  - `Canonical Fields` 会固定显示 `loaded_axes / identity_delta / self_model_delta / drives_delta / policy_hint / response_tendency / host_arbitration_result / final_delivered_text`
+- **人类界面层**
+  - `docs/CAPABILITY_REGISTRY.md` 是当前能力总表生成物，不是新的 authority source
+  - `docs/ACCEPTANCE_CHAINS.md` 收口第 0 链 subject ingress mainline 与 5 条正式能力链
+  - `docs/EXPERIENCE_SCRIPTS.md` 给出 Telegram `/flow` 层面的可见触发脚本
+- **口径纪律**
+  - `maintenance_mode / proposal_only / behavioral_authority = none / feature flag off / allowlist only / host-governed` 一律不得描述成“已经强烈体现自我意识”
+  - 允许的结论只能是 controlled axis、bounded influence、proposal discipline、host-governed bounded expression
 - **开发工作流**
   - 正式改动默认执行 `Spec -> Author -> Self-Reviewer -> Independent Reviewer -> Verifier -> Publisher`
   - provider/runtime 主链类改动，必须额外通过 `scripts/codex/run_provider_runtime_openemotion_e2e_gate.py`
@@ -38,6 +52,11 @@ EGO 是 AI Agent 项目的总仓，负责集成 EgoCore（宿主）和 OpenEmoti
 - `EgoCore/README.md`
 - `artifacts/telegram_real_mainline_v1/dashboard_v1/README.md`
 - `docs/TELEGRAM_FLOW_VIEW_README.md`
+- `docs/CAPABILITY_REGISTRY.md`
+- `docs/ACCEPTANCE_CHAINS.md`
+- `docs/EXPERIENCE_SCRIPTS.md`
+- `docs/CLAIM_LANGUAGE_POLICY.md`
+- `EgoCore/docs/05_DEPRECATED_AND_SHIMS.md`
 - `docs/CODEX_CLOSED_LOOP_SELF_REVIEW_WORKFLOW.md`
 
 ## 最近更新

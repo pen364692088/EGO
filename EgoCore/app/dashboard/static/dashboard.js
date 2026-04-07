@@ -127,6 +127,7 @@ const I18N = {
         input: "Input",
         ingress: "Host Ingress",
         subject: "Subject Understanding",
+        canonicalFields: "Canonical Fields",
         replyEvolution: "Reply Evolution",
         availability: "Availability",
         subjectInfluence: "Subject Influence",
@@ -392,6 +393,7 @@ const I18N = {
         input: "Input",
         ingress: "Host Ingress",
         subject: "Subject Understanding",
+        canonicalFields: "Canonical Fields",
         replyEvolution: "Reply Evolution",
         availability: "Availability",
         subjectInfluence: "Subject Influence",
@@ -1432,7 +1434,7 @@ function renderFlowSection(title, section, sectionKey) {
   ];
   const summaryEntries = Object.entries(section || {})
     .filter(([key, value]) => !["status", "headline", "sentence", "artifacts", "engineering_fields"].includes(key) && value !== null && value !== undefined && value !== "")
-    .slice(0, 8);
+    .slice(0, 10);
   return `
     <article class="panel flow-card">
       <div class="section-head">
@@ -1549,6 +1551,44 @@ function renderReplyEvolution(section) {
   `;
 }
 
+function renderCanonicalFields(section) {
+  const host = section?.host_arbitration_result || {};
+  const finalText = section?.final_delivered_text || {};
+  const chips = [
+    `<span class="pill ${flowStatusClass(section?.status)}">${escapeHtml(section?.status || t("common.unknown"))}</span>`,
+    ...((section?.artifacts || []).map((artifact) => `<span class="pill">${escapeHtml(artifactLabel(artifact))}</span>`)),
+  ];
+  const finalTextValue = finalText.preview || finalText.capture_reason || t("pages.flow.finalTextMissing");
+  return `
+    <article class="panel flow-card">
+      <div class="section-head">
+        <div>
+          <h3>${escapeHtml(t("pages.flow.canonicalFields"))}</h3>
+          <strong class="flow-headline">${escapeHtml(section?.headline || t("common.unknown"))}</strong>
+          <p class="muted">${escapeHtml(section?.sentence || t("common.no_data"))}</p>
+        </div>
+        <div class="pill-row">${chips.join("")}</div>
+      </div>
+      <div class="detail-block">
+        ${renderMetricGrid([
+          { label: "loaded_axes", value: section?.loaded_axes || null },
+          { label: "identity_delta", value: section?.identity_delta || null },
+          { label: "self_model_delta", value: section?.self_model_delta || null },
+          { label: "drives_delta", value: section?.drives_delta || null },
+          { label: "policy_hint", value: section?.policy_hint || null },
+          { label: "response_tendency", value: section?.response_tendency || null },
+          { label: "host_arbitration_result", value: host || null },
+          { label: "final_delivered_text", value: finalTextValue },
+          { label: "final_text_hash", value: finalText.hash || null },
+          { label: "final_text_length", value: finalText.length ?? null },
+          { label: "final_text_capture_status", value: finalText.capture_status || null },
+        ])}
+      </div>
+      ${renderEngineeringFields("canonical-fields", section?.engineering_fields || [])}
+    </article>
+  `;
+}
+
 function renderFlow(payload) {
   if (!payload?.sample_id) {
     app.innerHTML = `
@@ -1571,6 +1611,11 @@ function renderFlow(payload) {
           <h2>${escapeHtml(t("pages.flow.verdict"))}</h2>
           <div class="story-headline">${escapeHtml(verdict.verdict_headline || t("common.unknown"))}</div>
           <p class="muted">${escapeHtml(verdict.verdict_sentence || t("common.no_data"))}</p>
+          ${
+            verdict.verdict_subsentence
+              ? `<p class="muted">${escapeHtml(verdict.verdict_subsentence)}</p>`
+              : ""
+          }
         </div>
         <div class="pill-row">
           <span class="pill ${statusClass}">${escapeHtml(verdict.overall_status || t("common.unknown"))}</span>
@@ -1585,6 +1630,7 @@ function renderFlow(payload) {
       ${renderFlowSection(t("pages.flow.input"), payload.input_summary || {}, "input")}
       ${renderFlowSection(t("pages.flow.ingress"), payload.host_ingress_summary || {}, "ingress")}
       ${renderFlowSection(t("pages.flow.subject"), payload.subject_summary || {}, "subject")}
+      ${renderCanonicalFields(payload.canonical_fields_summary || {})}
       ${renderReplyEvolution(payload.reply_evolution_summary || {})}
       ${renderFlowSection(t("pages.flow.arbitration"), payload.host_arbitration_summary || {}, "arbitration")}
       ${renderFlowSection(t("pages.flow.output"), payload.output_summary || {}, "output")}

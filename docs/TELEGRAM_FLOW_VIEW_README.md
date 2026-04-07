@@ -4,7 +4,7 @@
 
 目标只有两个：
 
-- 把单轮样本重组为 `Input -> Host Ingress -> Subject Understanding -> Host Arbitration -> Output`
+- 把单轮样本重组为 `Input -> Host Ingress -> Subject Understanding -> Canonical Fields -> Reply Evolution -> Host Arbitration -> Output`
 - 让人一眼看出这条链有没有通、哪里降级、主体到底基于什么上下文和倾向在工作
 
 ## 权威边界
@@ -51,8 +51,10 @@ PYTHONPATH=. python3 -m app.main --dashboard --host 127.0.0.1 --port 8787
 1. 输入是什么，宿主怎么理解
 2. 宿主是否把它送进了主体
 3. 主体看到了哪些上下文、当前主要倾向是什么
-4. 宿主最后如何裁决和输出
-5. 这条链是否贯通、是否 degraded、是否仍是 host-only
+4. 主体关键字段到底是什么：`loaded_axes / identity_delta / self_model_delta / drives_delta / policy_hint / response_tendency`
+5. 宿主最后如何裁决和输出
+6. 这轮是不是 recent-result continuation，`parser_source / request_mode / pending continuation / correction_context` 是什么
+7. 这条链是否贯通、是否 degraded、是否仍是 host-only
 
 ## Reply Evolution
 
@@ -86,3 +88,49 @@ PYTHONPATH=. python3 -m app.main --dashboard --host 127.0.0.1 --port 8787
 - `command/status/evidence` 等非 chat 主线
 
 如果后续需要真正显示 `base_draft -> final_output`，必须先在主链新增 repo-tracked draft capture，再升级这个视图。
+
+## Canonical Fields
+
+`Canonical Fields` 是 `/flow` 的固定审计层，用来把最关键的主体与宿主字段直接摆到主视图里，而不是埋在 engineering fields。
+
+固定字段：
+
+- `loaded_axes`
+- `identity_delta`
+- `self_model_delta`
+- `drives_delta`
+- `policy_hint`
+- `response_tendency`
+- `host_arbitration_result`
+- `final_delivered_text`
+
+`final_delivered_text` 当前使用 bounded persistence：
+
+- 优先显示 `response_plan.reply_text`
+- 否则显示 `response_plan.metadata.final_text_preview`
+- 再否则显示 `outbox_record.final_text_preview`
+- 若仍不存在，才显示 `missing_but_delivered`
+
+这表示：
+
+- “链路贯通”
+- 和“最终文本是否被 bounded 持久化”
+
+是两个不同检查项。
+
+## Host Ingress 审计字段
+
+当前 `/flow` 的 `Host Ingress` 主视图会直接显示：
+
+- `runtime_path`
+- `parser_source`
+- `request_mode`
+- `recent_result_binding`
+- `pending_result_continuation`
+- `correction_context`
+
+这一层是为了回答：
+
+- 这轮是 semantic parser 还是 heuristic fallback 判的
+- 这轮是普通 chat、`analyze`、`write` 还是 status continuation
+- 宿主为什么把它当成 recent-result continuation，而不是普通聊天

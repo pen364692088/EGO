@@ -38,6 +38,9 @@ def _make_sample(
         },
         "openemotion": {
             "result": {
+                "identity_delta": {"identity_confidence_delta": 0.05},
+                "self_model_delta": {"current_mode": "review"},
+                "drives_delta": {"caution": 0.3},
                 "memory_update": {"append_episode": True},
                 "appraisal_state_delta": {"caution": 0.3},
                 "reflection_note": {
@@ -232,6 +235,9 @@ def test_dashboard_server_exposes_read_only_api(tmp_path: Path) -> None:
     assert flow["chain_status"]["overall_status"] == "host_only"
     assert sample_flow["sample_id"] == "sample_20260327_100000_aaaaaaaa"
     assert sample_flow["subject_summary"]["oe_available"] is True
+    assert sample_flow["canonical_fields_summary"]["loaded_axes"] == []
+    assert sample_flow["canonical_fields_summary"]["self_model_delta"]["current_mode"] == "review"
+    assert sample_flow["canonical_fields_summary"]["final_delivered_text"]["preview"] == "hello"
     assert sample_flow["reply_evolution_summary"]["available"] is False
     assert sample_flow["reply_evolution_summary"]["reason"] == "chat_metadata_missing"
     assert sample_flow["host_arbitration_summary"]["reply_authority"] == "model_chat"
@@ -258,11 +264,19 @@ def test_dashboard_flow_detail_surfaces_degraded_and_recent_result_binding(tmp_p
             "reply_authority": "host_degraded_fallback",
             "reply_origin": "chat_mainline",
             "metadata": {
+                "parser_source": "semantic_parser",
+                "request_mode": "analyze",
                 "recent_result_context": {
                     "target_name": "bilili_lookalike.html",
                     "target_path": "D:/Project/AIProject/MyProject/Test2/bilili_lookalike.html",
                 },
                 "result_binding_source_turn": "turn_prev",
+                "pending_result_continuation": {
+                    "target_name": "bilili_lookalike.html",
+                    "requested_mode": "analyze",
+                    "status": "pending",
+                },
+                "correction_context": True,
             },
         },
         normalized_runtime_summary={
@@ -282,6 +296,11 @@ def test_dashboard_flow_detail_surfaces_degraded_and_recent_result_binding(tmp_p
     assert detail["chain_status"]["overall_status"] == "degraded"
     assert detail["host_arbitration_summary"]["degraded"] is True
     assert detail["host_ingress_summary"]["recent_result_binding"] is True
+    assert detail["host_ingress_summary"]["parser_source"] == "semantic_parser"
+    assert detail["host_ingress_summary"]["request_mode"] == "analyze"
+    assert detail["host_ingress_summary"]["continuation_mode"] == "analyze"
+    assert detail["host_ingress_summary"]["continuation_status"] == "pending"
+    assert detail["host_ingress_summary"]["correction_context"] is True
     assert detail["host_ingress_summary"]["recent_result_source_turn"] == "turn_prev"
     assert detail["reply_evolution_summary"]["available"] is False
     assert detail["reply_evolution_summary"]["reason"] == "degraded_chat_no_comparable_evolution"
@@ -389,6 +408,9 @@ def test_dashboard_flow_detail_surfaces_chat_reply_evolution_when_metadata_prese
     assert detail["reply_evolution_summary"]["subject_influence"]["response_tendency_summary"]["preferred_tone"] == "supportive"
     assert detail["reply_evolution_summary"]["host_arbitration"]["reply_origin"] == "chat_mainline"
     assert detail["reply_evolution_summary"]["final_output"]["final_text_preview"] == "我觉得这轮回复更偏收束一些。"
+    assert detail["canonical_fields_summary"]["host_arbitration_result"]["chat_cadence_mode"] == "reply_now_normal"
+    assert detail["canonical_fields_summary"]["final_delivered_text"]["preview"] == "我觉得这轮回复更偏收束一些。"
+    assert detail["canonical_fields_summary"]["final_delivered_text"]["capture_status"] == "captured"
 
 
 def test_dashboard_flow_detail_keeps_reply_evolution_useful_when_text_preview_missing(tmp_path: Path) -> None:
@@ -431,6 +453,7 @@ def test_dashboard_flow_detail_keeps_reply_evolution_useful_when_text_preview_mi
     assert detail["reply_evolution_summary"]["final_output"]["final_text_capture_status"] == "missing_but_delivered"
     assert detail["reply_evolution_summary"]["final_output"]["reply_length"] == 4
     assert detail["output_summary"]["final_text_capture_status"] == "missing_but_delivered"
+    assert detail["canonical_fields_summary"]["final_delivered_text"]["capture_status"] == "missing_but_delivered"
 
 
 def test_dashboard_flow_detail_marks_task_mainline_reply_evolution_not_available(tmp_path: Path) -> None:

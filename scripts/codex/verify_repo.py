@@ -406,6 +406,34 @@ def detect_checks(open_runtime: OpenEmotionRuntime) -> List[Check]:
             )
         )
 
+    capability_registry_verify = ROOT / "scripts" / "codex" / "verify_capability_registry.py"
+    if capability_registry_verify.exists():
+        checks.append(
+            Check(
+                category="governance",
+                name="Capability registry drift gate",
+                command=["python3", "scripts/codex/verify_capability_registry.py"],
+                cwd=ROOT,
+                source="scripts/codex/verify_capability_registry.py",
+                run_in_fast=True,
+                run_in_full=True,
+            )
+        )
+
+    path_classification_verify = ROOT / "scripts" / "codex" / "verify_path_classification.py"
+    if path_classification_verify.exists():
+        checks.append(
+            Check(
+                category="governance",
+                name="Path classification drift gate",
+                command=["python3", "scripts/codex/verify_path_classification.py"],
+                cwd=ROOT,
+                source="scripts/codex/verify_path_classification.py",
+                run_in_fast=True,
+                run_in_full=True,
+            )
+        )
+
     if open_typecheck_simple.exists():
         simple_reason = None
         if open_runtime_missing:
