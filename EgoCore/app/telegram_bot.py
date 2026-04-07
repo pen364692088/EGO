@@ -467,6 +467,12 @@ class TelegramBot:
             }
         if source.get("result_binding_source_turn"):
             compact["result_binding_source_turn"] = source.get("result_binding_source_turn")
+        if source.get("recent_result_binding") is not None:
+            compact["recent_result_binding"] = bool(source.get("recent_result_binding"))
+        if source.get("correction_context") is not None:
+            compact["correction_context"] = bool(source.get("correction_context"))
+        if source.get("pending_result_continuation"):
+            compact["pending_result_continuation"] = dict(source.get("pending_result_continuation") or {})
         if source.get("chat_expression_hint"):
             compact["chat_expression_hint"] = dict(source.get("chat_expression_hint") or {})
         if source.get("response_tendency_summary"):
@@ -478,6 +484,86 @@ class TelegramBot:
         if source.get("final_text_length") is not None:
             compact["final_text_length"] = source.get("final_text_length")
         return compact
+
+    def _sync_pending_result_continuation_from_ingress(self, state: RuntimeV2State, *, user_text: str) -> None:
+        ingress_context = dict(getattr(state, "ingress_context", None) or {})
+        recent_result_binding = bool(ingress_context.get("recent_result_binding"))
+        runtime_action = str(ingress_context.get("runtime_action") or "").strip()
+        request_mode = str(ingress_context.get("request_mode") or "").strip() or None
+        resolved_target = dict(ingress_context.get("resolved_target") or {})
+        pending_existing = dict(getattr(state, "pending_result_continuation", None) or {})
+        correction_context = bool(ingress_context.get("correction_context"))
+
+        if recent_result_binding and request_mode in {"analyze", "write"}:
+            target_path = str(
+                resolved_target.get("path")
+                or pending_existing.get("target_path")
+                or ((state.recent_delivered_result_context or {}).get("target_path") if isinstance(state.recent_delivered_result_context, dict) else "")
+                or ""
+            ).strip() or None
+            target_name = str(
+                resolved_target.get("filename")
+                or pending_existing.get("target_name")
+                or ((state.recent_delivered_result_context or {}).get("target_name") if isinstance(state.recent_delivered_result_context, dict) else "")
+                or ""
+            ).strip() or None
+            source_turn_id = str(
+                pending_existing.get("source_turn_id")
+                or ((state.recent_delivered_result_context or {}).get("source_turn_id") if isinstance(state.recent_delivered_result_context, dict) else "")
+                or ""
+            ).strip() or None
+            status = str(pending_existing.get("status") or "").strip() or "pending"
+            if correction_context or str(pending_existing.get("requested_mode") or "").strip() != request_mode:
+                status = "pending"
+            state.set_pending_result_continuation(
+                {
+                    "target_path": target_path,
+                    "target_name": target_name,
+                    "source_turn_id": source_turn_id,
+                    "requested_mode": request_mode,
+                    "status": status,
+                    "last_user_request": user_text[:300],
+                    "needs_clarification": bool(pending_existing.get("needs_clarification")) if pending_existing else False,
+                    "clarification_question": pending_existing.get("clarification_question") if pending_existing else None,
+                    "correction_context": correction_context,
+                    "bound_to_recent_result": True,
+                }
+            )
+            return
+
+        if runtime_action == "return_runtime_status" and pending_existing:
+            state.update_pending_result_continuation(last_user_request=user_text[:300])
+            return
+
+        if runtime_action == "execute_task" and not recent_result_binding:
+            state.clear_pending_result_continuation()
+
+    def _mark_pending_result_continuation_running_if_needed(self, state: RuntimeV2State) -> None:
+        pending = dict(getattr(state, "pending_result_continuation", None) or {})
+        ingress_context = dict(getattr(state, "ingress_context", None) or {})
+        if not pending or not ingress_context.get("recent_result_binding"):
+            return
+        request_mode = str(ingress_context.get("request_mode") or pending.get("requested_mode") or "").strip()
+        if request_mode not in {"analyze", "write"}:
+            return
+        state.update_pending_result_continuation(
+            requested_mode=request_mode,
+            status="running",
+            correction_context=bool(ingress_context.get("correction_context")),
+        )
+
+    def _finalize_pending_result_continuation_after_response(self, state: RuntimeV2State, response_plan: Any, result_status: Optional[str]) -> None:
+        metadata = dict(getattr(response_plan, "metadata", None) or {})
+        pending = dict(getattr(state, "pending_result_continuation", None) or {})
+        if not pending:
+            return
+        if isinstance(metadata.get("recent_result_context"), dict) and metadata.get("recent_result_context"):
+            state.clear_pending_result_continuation()
+            return
+        if str(result_status or "").strip() in {"completed_verified", "completed", "blocked", "failed"}:
+            ingress_context = dict(getattr(state, "ingress_context", None) or {})
+            if ingress_context.get("recent_result_binding"):
+                state.clear_pending_result_continuation()
 
     def _build_pre_runtime_response_plan(self, reply_text: str, pre_runtime, state: RuntimeV2State):
         metadata = getattr(pre_runtime, "response_plan_metadata", None) or {}
@@ -688,6 +774,7 @@ class TelegramBot:
         recent_result_context = dict(getattr(response_plan, "metadata", None) or {}).get("recent_result_context")
         if isinstance(recent_result_context, dict) and recent_result_context:
             state.set_recent_delivered_result_context(recent_result_context)
+        self._finalize_pending_result_continuation_after_response(state, response_plan, result.status)
         await self._publish_tool_delivery_bridge_event(
             session_key=session_key,
             tool_result=state.last_tool_result,
@@ -3425,6 +3512,7 @@ class TelegramBot:
             state.ingress_context = dict(state.ingress_context or {})
             state.ingress_context["proto_self_subject_profile"] = state.proto_self_subject_profile_override
             state.ingress_context["proto_self_subject_profile_source"] = "telegram_session_override"
+        self._sync_pending_result_continuation_from_ingress(state, user_text=text)
         if not await self._ensure_runtime_v2_subject_ingress(
             update=update,
             session_key=session_key,
@@ -3501,6 +3589,7 @@ class TelegramBot:
         self._activate_pending_restore_observation(state)
 
         if runtime_action == "execute_task":
+            self._mark_pending_result_continuation_running_if_needed(state)
             if await self._maybe_create_task_conflict(
                 update=update,
                 state=state,
@@ -4705,6 +4794,7 @@ class TelegramBot:
                     delivery_was_chunked=bool((send_result or {}).get("was_chunked")),
                     source_assistant_message_id=(send_result or {}).get("last_message_id"),
                 )
+            self._finalize_pending_result_continuation_after_response(state, response_plan, result.status)
             if getattr(result, "delivery_kind", "final") in {"final", "chat"} or result.status in {
                 "chat",
                 "completed_verified",

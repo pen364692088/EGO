@@ -327,6 +327,40 @@ class TelegramRuntimeBridge:
         "嗯",
         "嗯嗯",
     }
+    CONTINUATION_WRITE_PERMISSION_PATTERNS = (
+        "你先换个你觉得好看的",
+        "你先换个你觉得顺眼的",
+        "你看着改",
+        "你来定",
+        "按你的想法改",
+        "按你的感觉改",
+        "你觉得好看就行",
+        "你先改一个你觉得好看的",
+    )
+    CONTINUATION_CORRECTION_PATTERNS = (
+        "没变化",
+        "没有变化",
+        "没修改",
+        "没有修改",
+        "没生效",
+        "还是没改",
+        "还是没有改",
+        "没改啊",
+        "没有改啊",
+        "跑到下面",
+        "跑到搜索框下面",
+    )
+    RECENT_RESULT_MODIFY_PATTERNS = (
+        "换一下",
+        "换个",
+        "改一下",
+        "调一下",
+        "调整一下",
+        "优化一下",
+        "图标换",
+        "图标改",
+        "顶部导航栏",
+    )
     WINDOWS_PATH_RE = re.compile(r"[A-Za-z]:[\\/](?:[A-Za-z0-9._() -]+[\\/])*[A-Za-z0-9._() -]+")
     UNIX_PATH_RE = re.compile(r"(?:/mnt|/home|/tmp|/Users)(?:/[A-Za-z0-9._() -]+)+")
 
@@ -540,6 +574,8 @@ class TelegramRuntimeBridge:
             return "presence_check"
         if self._looks_like_tone_feedback(text):
             return "tone_feedback"
+        if self._looks_like_natural_status_phrase(text) and getattr(state, "pending_result_continuation", None):
+            return "status_probe"
         if self._looks_like_thread_continue_phrase(text):
             return "thread_continue"
         if self._looks_like_bare_continue(text):
@@ -566,6 +602,8 @@ class TelegramRuntimeBridge:
     ) -> Optional[str]:
         if decision.interaction_kind != "chat":
             return None
+        if getattr(decision, "_runtime_action", None) == "return_runtime_status":
+            return "status_probe"
         return self._infer_chat_act(decision.source_text, state)
 
     def _looks_like_execution_confirmation(self, text: str, state: RuntimeV2State) -> bool:
@@ -660,11 +698,15 @@ class TelegramRuntimeBridge:
         return promoted
 
     def _looks_like_recent_result_review_followup(self, text: str, state: RuntimeV2State) -> bool:
-        recent_result = dict(getattr(state, "recent_delivered_result_context", None) or {})
-        target_path = str(recent_result.get("target_path") or "").strip()
-        target_name = str(recent_result.get("target_name") or "").strip().lower()
-        if not target_path:
+        if not self._has_recent_result_binding(state):
             return False
+        recent_result = dict(getattr(state, "recent_delivered_result_context", None) or {})
+        pending = dict(getattr(state, "pending_result_continuation", None) or {})
+        target_name = str(
+            pending.get("target_name")
+            or recent_result.get("target_name")
+            or ""
+        ).strip().lower()
 
         normalized_turn = normalize_user_turn(text)
         normalized = normalized_turn.lower_text
@@ -690,9 +732,7 @@ class TelegramRuntimeBridge:
         return any(marker in normalized_turn.text or marker in normalized for marker in recent_ref_markers)
 
     def _looks_like_recent_result_issue_followup(self, text: str, state: RuntimeV2State) -> bool:
-        recent_result = dict(getattr(state, "recent_delivered_result_context", None) or {})
-        target_path = str(recent_result.get("target_path") or "").strip()
-        if not target_path:
+        if not self._has_recent_result_binding(state):
             return False
 
         normalized_turn = normalize_user_turn(text)
@@ -703,11 +743,15 @@ class TelegramRuntimeBridge:
         return any(marker in normalized_turn.text or marker in normalized for marker in self.RECENT_RESULT_ISSUE_PATTERNS)
 
     def _looks_like_recent_result_clarification_confirmation(self, text: str, state: RuntimeV2State) -> bool:
-        recent_result = dict(getattr(state, "recent_delivered_result_context", None) or {})
-        target_path = str(recent_result.get("target_path") or "").strip()
-        target_name = str(recent_result.get("target_name") or "").strip().lower()
-        if not target_path:
+        if not self._has_recent_result_binding(state):
             return False
+        recent_result = dict(getattr(state, "recent_delivered_result_context", None) or {})
+        pending = dict(getattr(state, "pending_result_continuation", None) or {})
+        target_name = str(
+            pending.get("target_name")
+            or recent_result.get("target_name")
+            or ""
+        ).strip().lower()
 
         normalized_turn = normalize_user_turn(text)
         normalized = normalized_turn.lower_text
@@ -768,6 +812,169 @@ class TelegramRuntimeBridge:
             promoted.actionable_targets.append(target_ref)
         return promoted
 
+    def _has_recent_result_binding(self, state: RuntimeV2State) -> bool:
+        if isinstance(getattr(state, "pending_result_continuation", None), dict) and state.pending_result_continuation:
+            return True
+        recent_result = dict(getattr(state, "recent_delivered_result_context", None) or {})
+        return bool(str(recent_result.get("target_path") or "").strip())
+
+    def _resolve_continuation_target_ref(self, state: RuntimeV2State) -> Optional[str]:
+        pending = dict(getattr(state, "pending_result_continuation", None) or {})
+        recent_result = dict(getattr(state, "recent_delivered_result_context", None) or {})
+        target = (
+            str(pending.get("target_path") or "").strip()
+            or str(recent_result.get("target_path") or "").strip()
+        )
+        return target or None
+
+    def _looks_like_pending_continuation_write_permission(self, text: str, state: RuntimeV2State) -> bool:
+        pending = dict(getattr(state, "pending_result_continuation", None) or {})
+        if not pending:
+            return False
+        normalized_turn = normalize_user_turn(text)
+        normalized = normalized_turn.lower_text
+        if not normalized:
+            return False
+        return any(marker in normalized_turn.text or marker in normalized for marker in self.CONTINUATION_WRITE_PERMISSION_PATTERNS)
+
+    def _looks_like_recent_result_correction_followup(self, text: str, state: RuntimeV2State) -> bool:
+        if not self._has_recent_result_binding(state):
+            return False
+        normalized_turn = normalize_user_turn(text)
+        normalized = normalized_turn.lower_text
+        if not normalized:
+            return False
+        return any(marker in normalized_turn.text or marker in normalized for marker in self.CONTINUATION_CORRECTION_PATTERNS)
+
+    def _looks_like_recent_result_modify_request(self, text: str, state: RuntimeV2State) -> bool:
+        if not self._has_recent_result_binding(state):
+            return False
+        normalized_turn = normalize_user_turn(text)
+        normalized = normalized_turn.lower_text
+        if not normalized:
+            return False
+        return any(marker in normalized_turn.text or marker in normalized for marker in self.RECENT_RESULT_MODIFY_PATTERNS)
+
+    def _build_recent_result_task_graph(
+        self,
+        *,
+        text: str,
+        graph: ParsedIntentGraph,
+        request_mode: str,
+        target_ref: Optional[str],
+        correction_context: bool = False,
+    ) -> ParsedIntentGraph:
+        segment = SemanticSegment(
+            text=text,
+            kind="task_request",
+            confidence=0.98,
+            refers_to_previous=True,
+            target_ref=target_ref,
+            request_mode=request_mode,
+            priority=0,
+        )
+        promoted = ParsedIntentGraph(
+            segments=[segment],
+            primary_intent="task_request",
+            secondary_intents=["correction"] if correction_context else [],
+            graph_version=graph.graph_version,
+            parser_source="semantic_parser" if graph.parser_source == "semantic_parser" else "heuristic_parser",
+        )
+        if target_ref:
+            promoted.actionable_targets.append(target_ref)
+        return promoted
+
+    def _promote_recent_result_continuation(
+        self,
+        text: str,
+        graph: ParsedIntentGraph,
+        state: RuntimeV2State,
+    ) -> ParsedIntentGraph:
+        if not self._has_recent_result_binding(state):
+            return graph
+
+        target_ref = self._resolve_continuation_target_ref(state)
+        pending = dict(getattr(state, "pending_result_continuation", None) or {})
+
+        if self._looks_like_pending_continuation_write_permission(text, state):
+            return self._build_recent_result_task_graph(
+                text=text,
+                graph=graph,
+                request_mode="write",
+                target_ref=target_ref,
+            )
+
+        if self._looks_like_recent_result_clarification_confirmation(text, state):
+            requested_mode = str(pending.get("requested_mode") or "analyze").strip() or "analyze"
+            if requested_mode == "write":
+                requested_mode = "analyze"
+            return self._build_recent_result_task_graph(
+                text=text,
+                graph=graph,
+                request_mode=requested_mode,
+                target_ref=target_ref,
+            )
+
+        if graph.has_status_query and pending:
+            promoted = ParsedIntentGraph(
+                segments=list(graph.segments),
+                primary_intent="status_query",
+                secondary_intents=list(graph.secondary_intents or []),
+                has_status_query=True,
+                graph_version=graph.graph_version,
+                parser_source=graph.parser_source,
+            )
+            return promoted
+
+        if self._looks_like_natural_status_phrase(text) and pending:
+            segment = SemanticSegment(
+                text=text,
+                kind="status_query",
+                confidence=0.97,
+                refers_to_previous=True,
+                target_ref=target_ref,
+                request_mode=None,
+                priority=0,
+            )
+            promoted = ParsedIntentGraph(
+                segments=[segment],
+                primary_intent="status_query",
+                secondary_intents=[],
+                has_status_query=True,
+                graph_version=graph.graph_version,
+                parser_source="semantic_parser" if graph.parser_source == "semantic_parser" else "heuristic_parser",
+            )
+            if target_ref:
+                promoted.actionable_targets.append(target_ref)
+            return promoted
+
+        if graph.has_correction or self._looks_like_recent_result_correction_followup(text, state):
+            return self._build_recent_result_task_graph(
+                text=text,
+                graph=graph,
+                request_mode="analyze",
+                target_ref=target_ref,
+                correction_context=True,
+            )
+
+        if self._looks_like_recent_result_issue_followup(text, state):
+            return self._build_recent_result_task_graph(
+                text=text,
+                graph=graph,
+                request_mode="analyze",
+                target_ref=target_ref,
+            )
+
+        if self._looks_like_recent_result_modify_request(text, state):
+            return self._build_recent_result_task_graph(
+                text=text,
+                graph=graph,
+                request_mode="analyze",
+                target_ref=target_ref,
+            )
+
+        return graph
+
     def _resolve_request_mode(self, decision: TelegramIngressDecision) -> Optional[str]:
         graph = decision._parsed_intent_graph
         if graph is not None:
@@ -802,7 +1009,7 @@ class TelegramRuntimeBridge:
             state.last_explicit_target = explicit_target_ref
             return self._build_explicit_path_target(explicit_target_ref)
 
-        resolved_target = state.resolve_target(target_action) if target_action in {"execute", "compare", "analyze"} else None
+        resolved_target = state.resolve_target(target_action) if target_action in {"execute", "compare", "analyze", "write"} else None
         if resolved_target is not None:
             explicit_ref = resolved_target.get("path") or resolved_target.get("artifact_id") or resolved_target.get("filename")
             if resolved_target.get("source") == "explicit_target" and self._looks_like_explicit_path(explicit_ref):
@@ -939,6 +1146,12 @@ class TelegramRuntimeBridge:
             request_mode=request_mode,
         )
         conversation_act = self._resolve_conversation_act(decision, state)
+        pending_result_continuation = state.build_pending_result_continuation_summary()
+        correction_context = bool((graph.has_correction if graph else False) or ("correction" in list(graph.secondary_intents or []) if graph else False))
+        recent_result_binding = bool(
+            pending_result_continuation
+            or dict(getattr(state, "recent_delivered_result_context", None) or {})
+        )
         return {
             "normalized_user_turn": normalized_turn.to_dict() if normalized_turn is not None else None,
             "interaction_kind": decision.interaction_kind,
@@ -958,6 +1171,9 @@ class TelegramRuntimeBridge:
             "last_uploaded_artifact": state.last_uploaded_artifact,
             "resolved_target": resolved_target,
             "requested_output": decision.requested_output,
+            "recent_result_binding": recent_result_binding,
+            "pending_result_continuation": pending_result_continuation,
+            "correction_context": correction_context,
             "resume_hint_eligible": decision.resume_hint_eligible,
             "profile_scope": decision.profile_scope,
             "active_profile_rules": decision.active_profile_rules,
@@ -984,6 +1200,7 @@ class TelegramRuntimeBridge:
         graph = self._normalize_ambiguous_probe(normalized_turn.text, graph, state)
         graph = self._promote_execution_confirmation(normalized_turn.text, graph, state)
         graph = self._promote_recent_result_review_followup(normalized_turn.text, graph, state)
+        graph = self._promote_recent_result_continuation(normalized_turn.text, graph, state)
         graph = self._promote_explicit_target_analyze_followup(normalized_turn.text, graph, state)
 
         logger.info(
@@ -1087,6 +1304,7 @@ class TelegramRuntimeBridge:
         graph = self._normalize_ambiguous_probe(normalized_turn.text, heuristic_parse(normalized_turn.text), state)
         graph = self._promote_execution_confirmation(normalized_turn.text, graph, state)
         graph = self._promote_recent_result_review_followup(normalized_turn.text, graph, state)
+        graph = self._promote_recent_result_continuation(normalized_turn.text, graph, state)
         graph = self._promote_explicit_target_analyze_followup(normalized_turn.text, graph, state)
         requested_output = self._extract_requested_output(normalized_turn.text)
         runtime_action = decide_runtime_action(graph, state)

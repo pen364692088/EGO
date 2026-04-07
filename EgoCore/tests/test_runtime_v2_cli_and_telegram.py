@@ -387,6 +387,59 @@ async def test_telegram_bot_task_delivery_persists_recent_result_context_for_cha
     assert state.task_status == "idle"
 
 
+def test_telegram_bot_syncs_pending_result_continuation_from_recent_result_ingress() -> None:
+    bot = TelegramBot(token="test-token", use_runtime_v2=True)
+    state = bot._get_runtime_state("telegram:dm:continuation-sync")
+    state.recent_delivered_result_context = {
+        "binding_kind": "recent_delivered_result",
+        "target_name": "bilili_lookalike.html",
+        "target_path": r"D:\Project\AIProject\MyProject\Test2\bilili_lookalike.html",
+        "source_turn_id": "turn_recent",
+        "runtime_status": "completed_verified",
+    }
+    state.ingress_context = {
+        "runtime_action": "execute_task",
+        "request_mode": "analyze",
+        "recent_result_binding": True,
+        "correction_context": False,
+        "resolved_target": {
+            "path": r"D:\Project\AIProject\MyProject\Test2\bilili_lookalike.html",
+            "filename": "bilili_lookalike.html",
+            "source": "recent_delivered_result",
+        },
+    }
+
+    bot._sync_pending_result_continuation_from_ingress(state, user_text="顶部导航栏右边的图标换一下")
+
+    pending = state.pending_result_continuation
+    assert pending is not None
+    assert pending["requested_mode"] == "analyze"
+    assert pending["status"] == "pending"
+    assert pending["target_name"] == "bilili_lookalike.html"
+    assert pending["bound_to_recent_result"] is True
+
+
+def test_telegram_bot_compact_response_metadata_includes_pending_result_continuation() -> None:
+    bot = TelegramBot(token="test-token", use_runtime_v2=True)
+
+    compact = bot._build_compact_response_plan_metadata(
+        {
+            "recent_result_binding": True,
+            "correction_context": True,
+            "pending_result_continuation": {
+                "target_name": "bilili_lookalike.html",
+                "requested_mode": "write",
+                "status": "running",
+            },
+            "final_text_preview": "我还没完成这次修改并验证结果。",
+        }
+    )
+
+    assert compact["recent_result_binding"] is True
+    assert compact["correction_context"] is True
+    assert compact["pending_result_continuation"]["requested_mode"] == "write"
+
+
 @pytest.mark.asyncio
 async def test_telegram_bot_task_delivery_captures_compact_response_plan_metadata_for_followup_debug(monkeypatch, tmp_path):
     collector = TelegramEvidenceCollector(

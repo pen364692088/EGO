@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, field
+import hashlib
 from pathlib import PurePosixPath, PureWindowsPath
 import re
 from typing import Any, Dict, Optional, Sequence
@@ -32,6 +33,38 @@ class ResponsePlan:
     tone_bounds: Dict[str, Any] = field(default_factory=dict)
     memory_claim_verdict: Optional[MemoryClaimVerdict] = None
     metadata: Dict[str, Any] = field(default_factory=dict)
+
+
+def _apply_final_text_metadata(metadata: Dict[str, Any], reply_text: str, *, limit: int = 200) -> Dict[str, Any]:
+    preview = str(reply_text or "").strip()
+    metadata["final_text_length"] = len(preview)
+    if not preview:
+        return metadata
+    metadata["final_text_preview"] = preview[:limit]
+    metadata["final_text_hash"] = hashlib.sha256(preview.encode("utf-8")).hexdigest()[:16]
+    return metadata
+
+
+def _build_pending_result_continuation_metadata(state: Any) -> Optional[Dict[str, Any]]:
+    if state is None or not hasattr(state, "build_pending_result_continuation_summary"):
+        return None
+    try:
+        summary = state.build_pending_result_continuation_summary()
+    except Exception:
+        return None
+    return dict(summary or {}) if summary else None
+
+
+def _apply_continuation_metadata(metadata: Dict[str, Any], state: Any) -> Dict[str, Any]:
+    ingress_context = dict(getattr(state, "ingress_context", None) or {}) if state is not None else {}
+    if "recent_result_binding" not in metadata and "recent_result_binding" in ingress_context:
+        metadata["recent_result_binding"] = bool(ingress_context.get("recent_result_binding"))
+    if "correction_context" not in metadata and "correction_context" in ingress_context:
+        metadata["correction_context"] = bool(ingress_context.get("correction_context"))
+    pending_result_continuation = _build_pending_result_continuation_metadata(state)
+    if pending_result_continuation and "pending_result_continuation" not in metadata:
+        metadata["pending_result_continuation"] = pending_result_continuation
+    return metadata
 
 
 def build_direct_response_plan(
@@ -79,6 +112,8 @@ def build_direct_response_plan(
     metadata_dict["memory_claim_grounding_source"] = (
         current_session_grounding.authority_source if current_session_grounding is not None else None
     )
+    _apply_continuation_metadata(metadata_dict, state)
+    _apply_final_text_metadata(metadata_dict, gated_reply_text)
     intent_contract_source = _build_intent_contract_source(
         state,
         reply_authority=final_authority,
@@ -181,6 +216,8 @@ def build_runtime_result_response_plan(result: Any, state: Any) -> ResponsePlan:
         metadata["chat_expression_hint"] = dict(reply_metadata.get("chat_expression_hint") or {})
     if "response_tendency_summary" in reply_metadata:
         metadata["response_tendency_summary"] = dict(reply_metadata.get("response_tendency_summary") or {})
+    _apply_continuation_metadata(metadata, state)
+    _apply_final_text_metadata(metadata, gated_reply_text)
     intent_contract_source = _build_intent_contract_source(
         state,
         reply_authority=final_authority,
@@ -239,6 +276,7 @@ def build_status_response_plan(
         "conversation_act": "status_probe",
         "reply_origin": "status_mainline",
     }
+    _apply_final_text_metadata(metadata, gated_reply_text)
     intent_contract_source = _build_intent_contract_source(
         state,
         reply_authority=final_authority,

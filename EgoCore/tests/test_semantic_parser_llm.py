@@ -156,6 +156,23 @@ class TestRuntimeActionDecision:
         action = decide_runtime_action(graph, MockState())
         assert action == "chat"
 
+    def test_status_query_with_pending_result_continuation_uses_runtime_status(self):
+        from app.runtime_v2.semantic_parser import decide_runtime_action
+
+        graph = ParsedIntentGraph(
+            has_status_query=True,
+            primary_intent="status_query",
+        )
+
+        class MockState:
+            pending_result_continuation = {"requested_mode": "write", "status": "pending"}
+
+            def is_busy(self):
+                return False
+
+        action = decide_runtime_action(graph, MockState())
+        assert action == "return_runtime_status"
+
     def test_correction_priority(self):
         from app.runtime_v2.semantic_parser import decide_runtime_action
 

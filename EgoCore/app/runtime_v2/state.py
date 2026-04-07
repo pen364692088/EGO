@@ -284,6 +284,7 @@ class RuntimeV2State:
     last_delivered_evidence_context: Optional[Dict[str, Any]] = None
     last_evidence_read_result: Optional[Dict[str, Any]] = None
     recent_delivered_result_context: Optional[Dict[str, Any]] = None
+    pending_result_continuation: Optional[Dict[str, Any]] = None
     chat_state: ChatState = field(default_factory=ChatState)
 
     def to_prompt_context(self) -> Dict[str, Any]:
@@ -354,6 +355,7 @@ class RuntimeV2State:
             "active_item_id": self.active_item_id,
             "pending_run_events_count": len(self.pending_run_events),
             "recent_delivered_result_context": self.recent_delivered_result_context,
+            "pending_result_continuation": self.build_pending_result_continuation_summary(),
             "chat_state": self.get_chat_state().to_dict(),
         }
 
@@ -407,6 +409,7 @@ class RuntimeV2State:
             "pending_proactive_outbox_events_count": len(self.pending_proactive_outbox_events),
             "active_item_id": self.active_item_id,
             "pending_run_events_count": len(self.pending_run_events),
+            "pending_result_continuation": self.build_pending_result_continuation_summary(),
             "chat_state": {
                 "last_user_tone_feedback": self.get_chat_state().last_user_tone_feedback,
                 "recent_assistant_replies": list(self.get_chat_state().recent_assistant_replies[-3:]),
@@ -466,6 +469,7 @@ class RuntimeV2State:
             "active_task_summary": self.build_active_task_summary(),
             "proto_self_context": dict(self.proto_self_context or {}),
             "recent_delivered_result_context": dict(self.recent_delivered_result_context or {}),
+            "pending_result_continuation": self.build_pending_result_continuation_summary(),
             "ingress_context": _summarize_ingress_context(self.ingress_context),
         }
 
@@ -530,10 +534,12 @@ class RuntimeV2State:
         return self.total_prompt_tokens + self.total_completion_tokens
 
     def is_busy(self) -> bool:
+        pending_continuation = dict(self.pending_result_continuation or {})
         return (
             self.task_status in {"running", "waiting_input", "resumable_pause", "blocked"}
             or bool(self.current_goal)
             or bool(self.pending_task_conflict)
+            or str(pending_continuation.get("status") or "").strip() in {"pending", "running", "blocked"}
         )
 
     def mark_task_started(self, goal: Optional[str] = None) -> None:
@@ -583,6 +589,7 @@ class RuntimeV2State:
         self.last_delivered_evidence_context = None
         self.last_evidence_read_result = None
         self.recent_delivered_result_context = None
+        self.pending_result_continuation = None
 
     def clear_terminal_execution_residue(
         self,
@@ -603,6 +610,11 @@ class RuntimeV2State:
         recent_result_context = (
             dict(self.recent_delivered_result_context or {})
             if preserve_recent_result_context and isinstance(self.recent_delivered_result_context, dict)
+            else None
+        )
+        pending_result_continuation = (
+            dict(self.pending_result_continuation or {})
+            if preserve_recent_result_context and isinstance(self.pending_result_continuation, dict)
             else None
         )
 
@@ -630,6 +642,7 @@ class RuntimeV2State:
         self.last_delivered_evidence_context = evidence_context
         self.last_evidence_read_result = evidence_compat
         self.recent_delivered_result_context = recent_result_context
+        self.pending_result_continuation = pending_result_continuation
 
     def begin_execute_task(
         self,
@@ -669,6 +682,13 @@ class RuntimeV2State:
         self.last_delivered_evidence_context = None
         self.last_evidence_read_result = None
         self.recent_delivered_result_context = None
+        preserve_continuation = bool(
+            isinstance(ingress_context, dict)
+            and ingress_context.get("recent_result_binding")
+            and isinstance(self.pending_result_continuation, dict)
+        )
+        if not preserve_continuation:
+            self.pending_result_continuation = None
         if ingress_context is not None:
             self.ingress_context = ingress_context
         self.set_run_items(run_items)
@@ -734,6 +754,7 @@ class RuntimeV2State:
         self.last_delivered_evidence_context = None
         self.last_evidence_read_result = None
         self.recent_delivered_result_context = None
+        self.pending_result_continuation = None
         self.chat_state = ChatState(session_id=self.session_id)
         # 保留 pending_artifacts，因为用户可能在 reset 后继续用同一批文件
         return self.generation_id
@@ -1444,6 +1465,45 @@ class RuntimeV2State:
         if source_assistant_message_id is not None:
             self.recent_delivered_result_context["source_assistant_message_id"] = int(source_assistant_message_id)
 
+    def clear_pending_result_continuation(self) -> None:
+        self.pending_result_continuation = None
+
+    def set_pending_result_continuation(self, snapshot: Optional[Dict[str, Any]]) -> None:
+        self.pending_result_continuation = dict(snapshot or {}) if snapshot else None
+
+    def update_pending_result_continuation(self, **updates: Any) -> None:
+        if not isinstance(self.pending_result_continuation, dict):
+            self.pending_result_continuation = {}
+        for key, value in updates.items():
+            if value is None:
+                continue
+            self.pending_result_continuation[key] = value
+        self.pending_result_continuation["updated_at"] = time.time()
+
+    def build_pending_result_continuation_summary(self) -> Optional[Dict[str, Any]]:
+        payload = dict(self.pending_result_continuation or {})
+        if not payload:
+            return None
+
+        summary: Dict[str, Any] = {}
+        for key in (
+            "target_path",
+            "target_name",
+            "source_turn_id",
+            "requested_mode",
+            "status",
+            "last_user_request",
+            "needs_clarification",
+            "clarification_question",
+            "correction_context",
+            "bound_to_recent_result",
+            "updated_at",
+        ):
+            value = payload.get(key)
+            if value not in (None, "", [], {}):
+                summary[key] = value
+        return summary or None
+
     def to_snapshot(self) -> Dict[str, Any]:
         return {
             "session_id": self.session_id,
@@ -1502,6 +1562,7 @@ class RuntimeV2State:
             "last_delivered_evidence_context": self.last_delivered_evidence_context,
             "last_evidence_read_result": self.last_evidence_read_result,
             "recent_delivered_result_context": self.recent_delivered_result_context,
+            "pending_result_continuation": self.pending_result_continuation,
             "chat_state": self.get_chat_state().to_dict(),
         }
 
@@ -1570,6 +1631,7 @@ class RuntimeV2State:
         )
         state.last_evidence_read_result = state.last_delivered_evidence_context
         state.recent_delivered_result_context = snapshot.get("recent_delivered_result_context")
+        state.pending_result_continuation = snapshot.get("pending_result_continuation")
         state.chat_state = ChatState.from_dict(snapshot.get("chat_state"), session_id=state.session_id)
         return state
 
@@ -1673,7 +1735,7 @@ class RuntimeV2State:
             return self._resolve_target_for_execute()
         elif action == "compare":
             return self._resolve_target_for_compare()
-        elif action == "analyze":
+        elif action in {"analyze", "write"}:
             return self._resolve_target_for_analyze()
 
         # 默认：返回 last_uploaded_artifact
@@ -1755,10 +1817,27 @@ class RuntimeV2State:
         分析动作的目标绑定。
 
         优先级：
-        1. 最近刚交付的结果
-        2. last_uploaded_artifact
-        3. pending_bundle
+        1. active pending continuation
+        2. 最近刚交付的结果
+        3. last_uploaded_artifact
+        4. pending_bundle
         """
+        pending_continuation = dict(self.pending_result_continuation or {})
+        continuation_path = str(pending_continuation.get("target_path") or "").strip()
+        if continuation_path:
+            if WINDOWS_PATH_RE.match(continuation_path):
+                return {
+                    "path": continuation_path,
+                    "filename": PureWindowsPath(continuation_path).name or continuation_path,
+                    "source": "pending_result_continuation",
+                }
+            if continuation_path.startswith(("/", "/mnt/", "/home/", "/tmp/", "/Users/")):
+                return {
+                    "path": continuation_path,
+                    "filename": PurePosixPath(continuation_path).name or continuation_path,
+                    "source": "pending_result_continuation",
+                }
+
         recent_result = dict(self.recent_delivered_result_context or {})
         recent_path = str(recent_result.get("target_path") or "").strip()
         if recent_path:

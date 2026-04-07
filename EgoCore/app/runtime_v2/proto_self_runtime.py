@@ -750,7 +750,40 @@ def _inject_self_model_context(
     self_model_store: Optional[SelfModelStore] = None,
 ) -> Dict[str, Any]:
     store = self_model_store or SelfModelStore()
-    snapshot = store.load_snapshot(_resolve_self_model_identity_handle(state))
+    identity_handle = _resolve_self_model_identity_handle(state)
+    snapshot = store.load_snapshot(identity_handle)
+    source = "loaded" if snapshot else "missing"
+    if not snapshot:
+        try:
+            store.save(
+                create_default_self_model(identity_handle),
+                update_source="owner_bootstrap_live",
+                trace_reference="runtime_v2:self_model_bootstrap",
+                confidence_class="high",
+            )
+            snapshot = store.load_snapshot(identity_handle)
+            source = "bootstrapped_live" if snapshot else "bootstrap_failed"
+            if snapshot:
+                logger.info(
+                    "runtime_v2.self_model_bootstrap identity_handle=%s store_path=%s source=%s",
+                    identity_handle,
+                    store.state_file(identity_handle),
+                    source,
+                )
+            else:
+                logger.error(
+                    "runtime_v2.self_model_bootstrap_failed identity_handle=%s store_path=%s reason=no_snapshot_after_save",
+                    identity_handle,
+                    store.state_file(identity_handle),
+                )
+        except Exception:
+            source = "bootstrap_failed"
+            logger.exception(
+                "runtime_v2.self_model_bootstrap_failed identity_handle=%s store_path=%s",
+                identity_handle,
+                store.state_file(identity_handle),
+            )
+    runtime_summary["self_model_context_source"] = source
     if snapshot:
         runtime_summary["self_model_context"] = _compact_self_model_context(snapshot)
     return runtime_summary
@@ -1755,11 +1788,49 @@ def build_developmental_tick_event(
 
 
 def build_response_plan_payload(*, result: Any) -> Dict[str, Any]:
+    reply = getattr(result, "reply", None)
+    reply_metadata = dict(getattr(reply, "metadata", None) or {})
+    final_text = str(getattr(result, "reply_text", "") or "").strip()
+    final_text_preview = str(reply_metadata.get("final_text_preview") or "").strip() or None
+    final_text_hash = str(reply_metadata.get("final_text_hash") or "").strip() or None
+    final_text_length = reply_metadata.get("final_text_length")
     payload = {
         "status": result.status,
-        "delivery_kind": result.delivery_kind if result.reply else None,
-        "reply_length": len(result.reply_text) if result.reply_text else 0,
+        "delivery_kind": result.delivery_kind if reply else None,
+        "reply_length": len(final_text) if final_text else 0,
+        "reply_authority": reply_metadata.get("reply_authority"),
+        "reply_origin": reply_metadata.get("reply_origin"),
+        "chat_cadence_mode": reply_metadata.get("chat_cadence_mode"),
+        "output_check_reason": reply_metadata.get("output_check_reason"),
+        "intent_gate_reason": reply_metadata.get("intent_gate_reason"),
     }
+    metadata: Dict[str, Any] = {}
+    if reply_metadata.get("chat_expression_hint"):
+        metadata["chat_expression_hint"] = dict(reply_metadata.get("chat_expression_hint") or {})
+    if reply_metadata.get("response_tendency_summary"):
+        metadata["response_tendency_summary"] = dict(reply_metadata.get("response_tendency_summary") or {})
+    if reply_metadata.get("recent_result_context"):
+        metadata["recent_result_context"] = dict(reply_metadata.get("recent_result_context") or {})
+    if reply_metadata.get("result_binding_source_turn"):
+        metadata["result_binding_source_turn"] = reply_metadata.get("result_binding_source_turn")
+    if reply_metadata.get("recent_result_binding") is not None:
+        metadata["recent_result_binding"] = bool(reply_metadata.get("recent_result_binding"))
+    if reply_metadata.get("correction_context") is not None:
+        metadata["correction_context"] = bool(reply_metadata.get("correction_context"))
+    if reply_metadata.get("pending_result_continuation"):
+        metadata["pending_result_continuation"] = dict(reply_metadata.get("pending_result_continuation") or {})
+    if final_text_preview:
+        metadata["final_text_preview"] = final_text_preview
+    elif final_text:
+        metadata["final_text_preview"] = final_text[:200]
+    if final_text_hash:
+        metadata["final_text_hash"] = final_text_hash
+    if final_text_length is not None:
+        metadata["final_text_length"] = final_text_length
+    elif final_text:
+        metadata["final_text_length"] = len(final_text)
+    if metadata:
+        payload["metadata"] = metadata
     state = getattr(result, "state", None)
     ingress_context = getattr(state, "ingress_context", None) or {}
     restore_observation = ingress_context.get("restore_observation")

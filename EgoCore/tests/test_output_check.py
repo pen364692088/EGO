@@ -306,3 +306,79 @@ def test_output_check_blocks_unverified_completion_claim_for_active_recent_resul
     assert verdict.reason == "completion_claim_guard_applied"
     assert verdict.applied_authority == "host_degraded_fallback"
     assert "我还没实际改动并重新验证 bilili_lookalike.html" in verdict.reply_text
+
+
+def test_output_check_blocks_unverified_completion_claim_for_pending_analyze_continuation() -> None:
+    state = RuntimeV2State(session_id="telegram:dm:1")
+    state.ingress_context = {
+        "runtime_action": "chat",
+        "interaction_kind": "chat",
+        "conversation_act": "social_keepalive",
+        "recent_result_binding": True,
+    }
+    state.set_pending_result_continuation(
+        {
+            "target_name": "bilili_lookalike.html",
+            "target_path": r"D:\Project\AIProject\MyProject\Test2\bilili_lookalike.html",
+            "requested_mode": "analyze",
+            "status": "pending",
+            "bound_to_recent_result": True,
+        }
+    )
+
+    plan = build_direct_response_plan(
+        "问题解决了，我刚保存过了。",
+        kind="chat",
+        delivery_kind="chat",
+        authority_source="test",
+        reply_authority="model_chat",
+        metadata={
+            "conversation_act": "social_keepalive",
+            "reply_origin": "chat_mainline",
+        },
+        state=state,
+    )
+
+    verdict = apply_output_check(plan, state)
+
+    assert verdict.reason == "completion_claim_guard_applied"
+    assert verdict.applied_authority == "host_degraded_fallback"
+    assert verdict.reply_text == "我还在检查 bilili_lookalike.html 这个改动点，还没实际改完并重新验证。"
+
+
+def test_output_check_blocks_cache_excuse_for_pending_write_continuation() -> None:
+    state = RuntimeV2State(session_id="telegram:dm:1")
+    state.ingress_context = {
+        "runtime_action": "chat",
+        "interaction_kind": "chat",
+        "conversation_act": "social_keepalive",
+        "recent_result_binding": True,
+    }
+    state.set_pending_result_continuation(
+        {
+            "target_name": "bilili_lookalike.html",
+            "target_path": r"D:\Project\AIProject\MyProject\Test2\bilili_lookalike.html",
+            "requested_mode": "write",
+            "status": "running",
+            "bound_to_recent_result": True,
+        }
+    )
+
+    plan = build_direct_response_plan(
+        "改好啦，可能是缓存问题，你强制刷新一下试试。",
+        kind="chat",
+        delivery_kind="chat",
+        authority_source="test",
+        reply_authority="model_chat",
+        metadata={
+            "conversation_act": "social_keepalive",
+            "reply_origin": "chat_mainline",
+        },
+        state=state,
+    )
+
+    verdict = apply_output_check(plan, state)
+
+    assert verdict.reason == "completion_claim_guard_applied"
+    assert verdict.applied_authority == "host_degraded_fallback"
+    assert verdict.reply_text == "我还没完成这次对 bilili_lookalike.html 的修改并验证结果。"

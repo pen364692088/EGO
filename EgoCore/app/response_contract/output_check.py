@@ -39,11 +39,15 @@ _INTENT_GATE_ALLOWED_AUTHORITIES = {"model_chat"}
 _INTENT_GATE_ALLOWED_REPLY_ORIGINS = {"chat_mainline"}
 _COMPLETION_CLAIM_GUARD_PATTERNS = (
     re.compile(r"已(经)?(改好|修好|修复|解决|处理好|保存)", re.IGNORECASE),
+    re.compile(r"改好啦", re.IGNORECASE),
+    re.compile(r"已经换好了", re.IGNORECASE),
     re.compile(r"问题解决了", re.IGNORECASE),
     re.compile(r"刚保存", re.IGNORECASE),
     re.compile(r"缓存问题", re.IGNORECASE),
     re.compile(r"显示延迟", re.IGNORECASE),
     re.compile(r"文件确实是刚保存的", re.IGNORECASE),
+    re.compile(r"重新打开.*看看", re.IGNORECASE),
+    re.compile(r"强制刷新", re.IGNORECASE),
 )
 
 
@@ -434,8 +438,11 @@ def _has_active_continuity_context(state: Any) -> bool:
     if state is None:
         return False
     ingress_context = dict(getattr(state, "ingress_context", None) or {})
-    if str(ingress_context.get("runtime_action") or "").strip() != "chat":
+    if str(ingress_context.get("runtime_action") or "").strip() not in {"chat", "return_runtime_status", "execute_task"}:
         return False
+    pending_result_continuation = dict(getattr(state, "pending_result_continuation", None) or {})
+    if pending_result_continuation:
+        return True
     recent_result_context = dict(getattr(state, "recent_delivered_result_context", None) or {})
     active_task_summary = {}
     if hasattr(state, "build_active_task_summary"):
@@ -454,6 +461,19 @@ def _looks_like_unverified_completion_claim(reply_text: str) -> bool:
 
 
 def _build_completion_claim_guard_fallback(state: Any) -> str:
+    pending_result_continuation = dict(getattr(state, "pending_result_continuation", None) or {})
+    if pending_result_continuation:
+        target_name = str(pending_result_continuation.get("target_name") or "").strip()
+        requested_mode = str(pending_result_continuation.get("requested_mode") or "analyze").strip() or "analyze"
+        status = str(pending_result_continuation.get("status") or "pending").strip() or "pending"
+        if requested_mode == "write" or status == "running":
+            if target_name:
+                return f"我还没完成这次对 {target_name} 的修改并验证结果。"
+            return "我还没完成这次修改并验证结果。"
+        if target_name:
+            return f"我还在检查 {target_name} 这个改动点，还没实际改完并重新验证。"
+        return "我还在检查这个改动点，还没实际改完并重新验证。"
+
     recent_result_context = dict(getattr(state, "recent_delivered_result_context", None) or {})
     target_name = str(recent_result_context.get("target_name") or "").strip()
     if target_name:

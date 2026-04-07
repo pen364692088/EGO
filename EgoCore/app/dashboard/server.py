@@ -263,6 +263,46 @@ def _build_reply_evolution_summary(
     }
 
 
+def _build_final_text_surface(
+    *,
+    response_plan: Dict[str, Any],
+    response_metadata: Dict[str, Any],
+    outbox_record: Dict[str, Any],
+    delivered: bool,
+) -> Dict[str, Any]:
+    preview = (
+        str(response_plan.get("reply_text") or "").strip()
+        or str(response_metadata.get("final_text_preview") or "").strip()
+        or str(outbox_record.get("final_text_preview") or "").strip()
+        or None
+    )
+    final_text_hash = _first_non_empty(
+        response_metadata.get("final_text_hash"),
+        outbox_record.get("final_text_hash"),
+    )
+    final_text_length = _first_non_empty(
+        response_metadata.get("final_text_length"),
+        outbox_record.get("text_length"),
+        response_plan.get("reply_length"),
+    )
+    capture_status = "captured" if preview else ("missing_but_delivered" if delivered else "not_delivered")
+    return {
+        "final_text_preview": preview,
+        "final_text_hash": final_text_hash,
+        "final_text_length": final_text_length,
+        "final_text_capture_status": capture_status,
+        "final_text_capture_reason": (
+            None
+            if preview
+            else (
+                "final text not persisted in current evidence bundle"
+                if delivered
+                else "message not delivered, no final text available"
+            )
+        ),
+    }
+
+
 def _asset_version() -> int:
     candidates = [
         STATIC_DIR / "dashboard.js",
@@ -594,6 +634,12 @@ class DashboardDataStore:
             "task_conflict": _boolish(_deep_get(runtime_summary, "task_conflict.active")),
             "recent_result_binding": bool(recent_result_context),
             "recent_result_source_turn": response_metadata.get("result_binding_source_turn"),
+            "pending_result_continuation": response_metadata.get("pending_result_continuation") or runtime_summary.get("pending_result_continuation"),
+            "correction_context": _boolish(
+                response_metadata.get("correction_context")
+                if response_metadata.get("correction_context") is not None
+                else runtime_summary.get("correction_context")
+            ),
             "artifacts": ["normalized_event.json", "ledger.json", "timeline.json"],
             "engineering_fields": [
                 _flow_field("authorized", "normalized_event.json", "runtime_summary.primary_intent", True),
@@ -623,6 +669,20 @@ class DashboardDataStore:
                     "response_plan.json",
                     "metadata.result_binding_source_turn",
                     response_metadata.get("result_binding_source_turn"),
+                ),
+                _flow_field(
+                    "pending_result_continuation",
+                    "response_plan.json | normalized_event.json",
+                    "metadata.pending_result_continuation | runtime_summary.pending_result_continuation",
+                    response_metadata.get("pending_result_continuation") or runtime_summary.get("pending_result_continuation"),
+                ),
+                _flow_field(
+                    "correction_context",
+                    "response_plan.json | normalized_event.json",
+                    "metadata.correction_context | runtime_summary.correction_context",
+                    response_metadata.get("correction_context")
+                    if response_metadata.get("correction_context") is not None
+                    else runtime_summary.get("correction_context"),
                 ),
             ],
         }
@@ -745,6 +805,13 @@ class DashboardDataStore:
             ],
         }
 
+        final_text_surface = _build_final_text_surface(
+            response_plan=response_plan,
+            response_metadata=response_metadata,
+            outbox_record=outbox_record,
+            delivered=delivered,
+        )
+
         output_summary = {
             "status": "pass" if delivered else ("host_only" if host_only else "broken"),
             "headline": "Output delivered" if delivered else ("No final delivery" if not host_only else "Host-only output"),
@@ -755,20 +822,11 @@ class DashboardDataStore:
             ),
             "delivered": delivered,
             "delivery_kind": response_plan.get("delivery_kind"),
-            "final_text_preview": (
-                str(response_plan.get("reply_text") or "").strip()
-                or str(response_metadata.get("final_text_preview") or "").strip()
-                or None
-            ),
-            "final_text_capture_status": (
-                "captured"
-                if (
-                    str(response_plan.get("reply_text") or "").strip()
-                    or str(response_metadata.get("final_text_preview") or "").strip()
-                )
-                else ("missing_but_delivered" if delivered else "not_delivered")
-            ),
-            "reply_length": _first_non_empty(outbox_record.get("text_length"), response_plan.get("reply_length")),
+            "final_text_preview": final_text_surface.get("final_text_preview"),
+            "final_text_hash": final_text_surface.get("final_text_hash"),
+            "final_text_capture_status": final_text_surface.get("final_text_capture_status"),
+            "final_text_capture_reason": final_text_surface.get("final_text_capture_reason"),
+            "reply_length": final_text_surface.get("final_text_length"),
             "message_sent": _timeline_has_stage(timeline, "message_sent"),
             "bundle_complete": bundle_complete,
             "artifacts": ["outbox_record.json", "timeline.json", "response_plan.json"],
@@ -778,29 +836,74 @@ class DashboardDataStore:
                 _flow_field(
                     "final_text_preview",
                     "response_plan.json",
-                    "reply_text",
-                    (
-                        str(response_plan.get("reply_text") or "").strip()
-                        or str(response_metadata.get("final_text_preview") or "").strip()
-                        or None
-                    ),
+                    "reply_text | metadata.final_text_preview | outbox_record.final_text_preview",
+                    final_text_surface.get("final_text_preview"),
                 ),
                 _flow_field(
                     "final_text_capture_status",
                     "outbox_record.json",
-                    "text_length + response_plan.reply_text",
-                    (
-                        "captured"
-                        if (
-                            str(response_plan.get("reply_text") or "").strip()
-                            or str(response_metadata.get("final_text_preview") or "").strip()
-                        )
-                        else ("missing_but_delivered" if delivered else "not_delivered")
-                    ),
+                    "text_length + response_plan.reply_text + metadata.final_text_preview",
+                    final_text_surface.get("final_text_capture_status"),
                 ),
-                _flow_field("reply_length", "outbox_record.json", "text_length", _first_non_empty(outbox_record.get("text_length"), response_plan.get("reply_length"))),
+                _flow_field("final_text_hash", "response_plan.json", "metadata.final_text_hash | outbox_record.final_text_hash", final_text_surface.get("final_text_hash")),
+                _flow_field("reply_length", "outbox_record.json", "text_length", final_text_surface.get("final_text_length")),
                 _flow_field("message_sent", "timeline.json", "stage=message_sent", _timeline_has_stage(timeline, "message_sent")),
                 _flow_field("bundle_complete", "runs.jsonl", "bundle_complete", bundle_complete),
+            ],
+        }
+
+        drives_delta = _first_non_empty(result.get("drives_delta"), result.get("endogenous_drive_delta"), {}) or {}
+        canonical_fields_summary = {
+            "status": "pass" if oe_available else ("host_only" if host_only else "broken"),
+            "headline": "Canonical fields extracted" if oe_available else "Canonical fields unavailable",
+            "sentence": (
+                "把主体关键输出、宿主裁决和最终送出文本收成固定审计字段。"
+                if oe_available
+                else "主体结果缺失时，canonical fields 只能部分解释宿主与输出层。"
+            ),
+            "loaded_axes": active_contexts,
+            "identity_delta": result.get("identity_delta") or {},
+            "self_model_delta": result.get("self_model_delta") or {},
+            "drives_delta": drives_delta,
+            "policy_hint": policy_hint,
+            "response_tendency": response_tendency,
+            "host_arbitration_result": {
+                "reply_authority": response_plan.get("reply_authority"),
+                "reply_origin": response_plan.get("reply_origin"),
+                "response_plan_status": response_plan.get("status"),
+                "chat_cadence_mode": response_plan.get("chat_cadence_mode"),
+                "output_check_reason": response_plan.get("output_check_reason"),
+                "intent_gate_reason": response_plan.get("intent_gate_reason"),
+            },
+            "final_delivered_text": {
+                "preview": final_text_surface.get("final_text_preview"),
+                "hash": final_text_surface.get("final_text_hash"),
+                "length": final_text_surface.get("final_text_length"),
+                "capture_status": final_text_surface.get("final_text_capture_status"),
+                "capture_reason": final_text_surface.get("final_text_capture_reason"),
+            },
+            "artifacts": ["openemotion_result.json", "response_plan.json", "outbox_record.json"],
+            "engineering_fields": [
+                _flow_field("loaded_axes", "openemotion_trace.json", "constraint_summary.*.present", active_contexts),
+                _flow_field("identity_delta", "openemotion_result.json", "identity_delta", result.get("identity_delta") or {}),
+                _flow_field("self_model_delta", "openemotion_result.json", "self_model_delta", result.get("self_model_delta") or {}),
+                _flow_field("drives_delta", "openemotion_result.json", "drives_delta | endogenous_drive_delta", drives_delta),
+                _flow_field("policy_hint", "openemotion_result.json", "policy_hint", policy_hint),
+                _flow_field("response_tendency", "openemotion_result.json", "response_tendency", response_tendency),
+                _flow_field(
+                    "host_arbitration_result",
+                    "response_plan.json",
+                    "reply_authority + reply_origin + status + chat_cadence_mode + output_check_reason + intent_gate_reason",
+                    {
+                        "reply_authority": response_plan.get("reply_authority"),
+                        "reply_origin": response_plan.get("reply_origin"),
+                        "response_plan_status": response_plan.get("status"),
+                        "chat_cadence_mode": response_plan.get("chat_cadence_mode"),
+                        "output_check_reason": response_plan.get("output_check_reason"),
+                        "intent_gate_reason": response_plan.get("intent_gate_reason"),
+                    },
+                ),
+                _flow_field("final_delivered_text", "response_plan.json", "reply_text | metadata.final_text_preview | outbox_record.final_text_preview", final_text_surface),
             ],
         }
         reply_evolution_summary = _build_reply_evolution_summary(
@@ -840,6 +943,7 @@ class DashboardDataStore:
                 "host_only": "这轮没有形成 OpenEmotion 结构化结果，无法把它当成主体处理过的样本。",
                 "broken": "这轮缺少关键 artifact 或阶段性状态，当前不能视为主链正常通过。",
             }[overall_status],
+            "verdict_subsentence": "链路是否贯通，与最终文本是否被 bounded 持久化，是两件不同的检查项。",
         }
 
         failure_or_gap_summary = {
@@ -870,6 +974,7 @@ class DashboardDataStore:
             input_summary=input_summary,
             host_ingress_summary=host_ingress_summary,
             subject_summary=subject_summary,
+            canonical_fields_summary=canonical_fields_summary,
             reply_evolution_summary=reply_evolution_summary,
             host_arbitration_summary=host_arbitration_summary,
             output_summary=output_summary,
