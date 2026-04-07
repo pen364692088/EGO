@@ -1,7 +1,7 @@
 # PROJECT_MEMORY.md
 
 > AIProject 核心记忆 - Claude Code 持续更新
-> 最后更新: 2026-04-04
+> 最后更新: 2026-04-06
 
 ---
 
@@ -256,6 +256,9 @@
 | 2026-04-04 | `WP15/MVP20` 已完成 `T20_PROTO_SELF_CONTRACT_INTEGRATION`：新增 `OpenEmotion/openemotion/proto_self_v2/initiative_self_context.py`，并把 `initiative_self` 通过结构化、版本化、proposal-only contract 接到 `proto_self_v2`。当前 `KernelOutputV2` 与 trace 已新增 `initiative_self_delta / initiative_proposal_candidates / commitment_execution_snapshot / initiative_policy_hints / host_proactive_candidate / initiative_audit_entries / initiative_writeback_candidate / initiative_context`，并由 `OpenEmotion/tests/mvp20/test_initiative_proto_self_integration.py` 验证 bounded consumer、legacy-not-consumed、proposal-only 与 kernel contract 回归。当前证据强度可提升到 `V3/E3`，但仍不证明 EgoCore runtime 主链已消费，也不证明 `E4/E5` 行为证据 |
 | 2026-04-04 | `WP15/MVP20` 已完成 `T30_EGOCORE_RUNTIME_BRIDGE`：`EgoCore/app/runtime_v2/proto_self_runtime.py` 已把 `initiative_self_context / initiative_context` 接入正式 runtime 主链，并把 `initiative_self_delta / initiative_proposal_candidates / commitment_execution_snapshot / initiative_policy_hints / host_proactive_candidate / initiative_audit_entries / initiative_writeback_candidate / initiative_context / initiative_writeback` 以 bounded host context 的形式挂回宿主。当前约束仍是 `proposal_only + behavioral_authority = none + required_gate = initiative_writeback_gate`，并由 `EgoCore/tests/test_runtime_v2_proto_self_runtime.py -k initiative` 验证。当前证据强度维持 `V3/E3`；这不证明 controlled observation、`E4/E5`、observation started、或 maintenance mode |
 | 2026-04-05 | `WP17/MVP22` 已完成 docs-only `T00_AUTHORITY_FREEZE`：新增 `Tasks/MVP22_task_plan.md` 与 `Tasks/active/mvp22_long_horizon_self_continuity/` 执行包，当前正式口径是 `Long-Horizon Self-Continuity / Realized Consequence Persistence`。formal owner target 固定为 `OpenEmotion/openemotion/self_continuity/*`，formal intake 固定为 `initiative_realization_context + selfhood_integration_context + self_model_context + reflective_self_context + developmental_self_context + social_self_context + embodied_self_context + maintenance_context + recent_delivery_outcome + restart_restore_observation_context` 这些结构化 surfaces，formal outputs 固定为 proposal-only 的 continuity / persistence candidates。当前 claim ceiling 只到 `authority_frozen / task_package_ready`；这不证明实现、主链接线、`E4/E5`、observation、或 maintenance mode，且 `WP16` 继续保持 `maintenance_mode` 未被 reopen |
+| 2026-04-06 | provider/runtime 主链改动的 repo 级强制验收 gate 已冻结并接入自动化 harness：新增 `docs/codex/tasks/provider-runtime-openemotion-e2e-gate/` 与 `scripts/codex/run_provider_runtime_openemotion_e2e_gate.py`，要求任何影响 live mainline 的 provider/runtime 改动，在对外宣称“已切换/已恢复/已生效”前，必须同时通过 `config consistency + chat smoke + execution tool-calling smoke + fresh Telegram task flow + OpenEmotion evidence + follow-up continuity + artifact/dashboard consistency` 七个 gate。当前该 gate 已能产出 current admission report，并已回写到 repo workflow 文档，避免再出现“只测 chat、不测 execution/OpenEmotion 全链”的伪完成 |
+| 2026-04-06 | dashboard `/flow` 已升级为当前正式单轮主链解释层：后端新增 `FlowViewRecord`，可把单条真实样本重组为 `Input -> Host Ingress -> Subject Understanding -> Host Arbitration -> Output`；其中 `Subject Understanding` 已明确拆分 `subject_chain_connected` 与 `context_load_summary`，不会再把 `self_model=false` 误读成 `proto_self_v2` 断线。同时 `runtime_v2` 已在 live self-model store 为空时自动 bootstrap baseline formal self-model snapshot，使后续新样本可稳定投影 `runtime_summary.self_model_context` |
+| 2026-04-06 | dashboard `/flow` 已新增 `Reply Evolution` evidence-only 解释层视图（`chat_mainline` only）：当前展示的是 `subject hints + host arbitration + final output`，不是“原始 LLM 草稿 vs 修正后文本”的 diff。对于真实样本里常见的“消息已送出但最终文本未在 artifacts 持久化”场景，页面现在会显式标记 `final_text_capture_status = missing_but_delivered` 与 `reply_length`，以区分“证据包未保存文本”与“页面渲染为空/主链没通” |
 
 ---
 

@@ -5,6 +5,7 @@ const app = document.getElementById("app");
 const POLL_MS = 5000;
 const VIEW_ROUTES = {
   runs: "/runs",
+  flow: "/flow",
   agency: "/agency",
   growth: "/growth",
   failures: "/failures",
@@ -25,6 +26,7 @@ const I18N = {
     },
     nav: {
       runs: "Live Runs",
+      flow: "Flow",
       agency: "Agency",
       growth: "Growth Signals",
       failures: "Failures & Replay",
@@ -67,9 +69,16 @@ const I18N = {
       auto_refresh: "5 秒自动刷新",
       continuity: "连续性",
       sample: "样本",
+      flow: "流程",
       focus: "关注点",
       candidate: "候选动作",
       host: "宿主态度",
+      ingress: "入口",
+      subject: "主体",
+      arbitration: "裁决",
+      output: "输出",
+      engineering: "工程字段",
+      open_flow: "查看流程",
       result: "结果",
       evidence: "证据",
       growth: "变化",
@@ -109,6 +118,24 @@ const I18N = {
         gap_dist: "证据缺口分布",
         continuity: "continuity 状态",
         recent: "最近样本",
+      },
+      flow: {
+        title: "主链流程图",
+        subtitle: "按 Input → Host → Subject → Host → Output 查看单轮因果链，先看解释层，再展开到底层证据字段。",
+        verdict: "Flow Verdict",
+        latest: "最新样本流程",
+        input: "Input",
+        ingress: "Host Ingress",
+        subject: "Subject Understanding",
+        replyEvolution: "Reply Evolution",
+        availability: "Availability",
+        subjectInfluence: "Subject Influence",
+        hostArbitration: "Host Arbitration",
+        finalOutput: "Final Output",
+        finalTextMissing: "最终文本未被当前证据包持久化",
+        arbitration: "Host Arbitration",
+        output: "Output",
+        gaps: "Blockers & Gaps",
       },
       growth: {
         title: "Growth Signals",
@@ -264,6 +291,7 @@ const I18N = {
     },
     nav: {
       runs: "Live Runs",
+      flow: "Flow",
       agency: "Agency",
       growth: "Growth Signals",
       failures: "Failures & Replay",
@@ -306,9 +334,16 @@ const I18N = {
       auto_refresh: "Auto-refresh every 5s",
       continuity: "Continuity",
       sample: "Sample",
+      flow: "Flow",
       focus: "Focus",
       candidate: "Candidate",
       host: "Host",
+      ingress: "Ingress",
+      subject: "Subject",
+      arbitration: "Arbitration",
+      output: "Output",
+      engineering: "Engineering fields",
+      open_flow: "Open flow",
       result: "Result",
       evidence: "Evidence",
       growth: "Change",
@@ -348,6 +383,24 @@ const I18N = {
         gap_dist: "Evidence gap distribution",
         continuity: "Continuity status",
         recent: "Recent runs",
+      },
+      flow: {
+        title: "Mainline Flow",
+        subtitle: "Read one turn as Input → Host → Subject → Host → Output. Start with the explanation layer, then expand into raw field paths.",
+        verdict: "Flow Verdict",
+        latest: "Latest sample flow",
+        input: "Input",
+        ingress: "Host Ingress",
+        subject: "Subject Understanding",
+        replyEvolution: "Reply Evolution",
+        availability: "Availability",
+        subjectInfluence: "Subject Influence",
+        hostArbitration: "Host Arbitration",
+        finalOutput: "Final Output",
+        finalTextMissing: "Final text was not persisted in the current evidence bundle",
+        arbitration: "Host Arbitration",
+        output: "Output",
+        gaps: "Blockers & Gaps",
       },
       growth: {
         title: "Growth Signals",
@@ -748,6 +801,7 @@ function applyChrome() {
   document.getElementById("hero-title").textContent = t("hero.title");
   document.getElementById("hero-copy").textContent = t("hero.copy");
   document.getElementById("nav-runs").textContent = t("nav.runs");
+  document.getElementById("nav-flow").textContent = t("nav.flow");
   document.getElementById("nav-agency").textContent = t("nav.agency");
   document.getElementById("nav-growth").textContent = t("nav.growth");
   document.getElementById("nav-failures").textContent = t("nav.failures");
@@ -1328,6 +1382,232 @@ function artifactSummary(name, value, detail) {
   return `<p class="muted">${escapeHtml(String(value).slice(0, 220) || t("common.none"))}</p>`;
 }
 
+function flowStatusClass(status) {
+  if (status === "pass") return "ok";
+  if (status === "degraded") return "warning";
+  if (status === "host_only" || status === "broken") return "danger";
+  return "";
+}
+
+function renderEngineeringFields(sectionKey, fields = []) {
+  const open = UI_STATE.detailOpen.has(`flow:${sectionKey}`);
+  return `
+    <div class="button-row">
+      <button class="subtle-button ${open ? "active" : ""}" type="button" data-detail-key="flow:${escapeHtml(sectionKey)}">${escapeHtml(
+        open ? t("common.details_hidden") : t("common.view_details"),
+      )}</button>
+    </div>
+    ${
+      open
+        ? `
+      <div class="detail-block">
+        <div class="field-list">
+          ${fields
+            .map(
+              (field) => `
+                <article class="field-card">
+                  <strong>${escapeHtml(field.label || t("common.unknown"))}</strong>
+                  <span>${escapeHtml(field.artifact || t("common.unknown"))}</span>
+                  <code>${escapeHtml(field.path || t("common.unknown"))}</code>
+                  <pre>${escapeHtml(
+                    typeof field.value === "string" ? field.value : JSON.stringify(field.value, null, 2),
+                  )}</pre>
+                </article>
+              `,
+            )
+            .join("")}
+        </div>
+      </div>
+    `
+        : ""
+    }
+  `;
+}
+
+function renderFlowSection(title, section, sectionKey) {
+  const artifacts = section?.artifacts || [];
+  const chips = [
+    `<span class="pill ${flowStatusClass(section?.status)}">${escapeHtml(section?.status || t("common.unknown"))}</span>`,
+    ...artifacts.map((artifact) => `<span class="pill">${escapeHtml(artifactLabel(artifact))}</span>`),
+  ];
+  const summaryEntries = Object.entries(section || {})
+    .filter(([key, value]) => !["status", "headline", "sentence", "artifacts", "engineering_fields"].includes(key) && value !== null && value !== undefined && value !== "")
+    .slice(0, 8);
+  return `
+    <article class="panel flow-card">
+      <div class="section-head">
+        <div>
+          <h3>${escapeHtml(title)}</h3>
+          <strong class="flow-headline">${escapeHtml(section?.headline || t("common.unknown"))}</strong>
+          <p class="muted">${escapeHtml(section?.sentence || t("common.no_data"))}</p>
+        </div>
+        <div class="pill-row">${chips.join("")}</div>
+      </div>
+      <div class="detail-grid">
+        ${summaryEntries
+          .map(
+            ([label, value]) => `
+              <article class="metric-card">
+                <strong>${escapeHtml(typeof value === "string" ? value : JSON.stringify(value))}</strong>
+                <span>${escapeHtml(label)}</span>
+              </article>
+            `,
+          )
+          .join("")}
+      </div>
+      ${renderEngineeringFields(sectionKey, section?.engineering_fields || [])}
+    </article>
+  `;
+}
+
+function renderMetricGrid(entries) {
+  const filtered = entries.filter((entry) => entry && entry.value !== null && entry.value !== undefined && entry.value !== "");
+  if (!filtered.length) {
+    return `<div class="empty">${escapeHtml(t("common.no_data"))}</div>`;
+  }
+  return `
+    <div class="detail-grid">
+      ${filtered
+        .map(
+          (entry) => `
+            <article class="metric-card">
+              <strong>${escapeHtml(typeof entry.value === "string" ? entry.value : JSON.stringify(entry.value))}</strong>
+              <span>${escapeHtml(entry.label)}</span>
+            </article>
+          `,
+        )
+        .join("")}
+    </div>
+  `;
+}
+
+function renderReplyEvolution(section) {
+  const subject = section?.subject_influence || {};
+  const host = section?.host_arbitration || {};
+  const finalOutput = section?.final_output || {};
+  const chips = [
+    `<span class="pill ${flowStatusClass(section?.status)}">${escapeHtml(section?.status || t("common.unknown"))}</span>`,
+    `<span class="pill">${escapeHtml(section?.mode || "unknown")}</span>`,
+    `<span class="pill">${escapeHtml(section?.scope || "unknown")}</span>`,
+  ];
+  const finalTextValue =
+    finalOutput.final_text_preview || finalOutput.final_text_capture_reason || t("pages.flow.finalTextMissing");
+
+  return `
+    <article class="panel flow-card">
+      <div class="section-head">
+        <div>
+          <h3>${escapeHtml(t("pages.flow.replyEvolution"))}</h3>
+          <strong class="flow-headline">${escapeHtml(section?.headline || t("common.unknown"))}</strong>
+          <p class="muted">${escapeHtml(section?.sentence || t("common.no_data"))}</p>
+        </div>
+        <div class="pill-row">${chips.join("")}</div>
+      </div>
+      <div class="detail-block">
+        <h4>${escapeHtml(t("pages.flow.availability"))}</h4>
+        ${renderMetricGrid([
+          { label: "available", value: section?.available === true ? "true" : "false" },
+          { label: "reason", value: section?.reason || null },
+        ])}
+      </div>
+      <div class="detail-block">
+        <h4>${escapeHtml(t("pages.flow.subjectInfluence"))}</h4>
+        ${renderMetricGrid([
+          { label: "preferred_mode", value: subject?.response_tendency_summary?.preferred_mode || null },
+          { label: "preferred_tone", value: subject?.response_tendency_summary?.preferred_tone || null },
+          { label: "suggested_next_step", value: subject?.response_tendency_summary?.suggested_next_step || null },
+          { label: "reply_mode", value: subject?.chat_expression_hint?.reply_mode || null },
+          { label: "tone_profile", value: subject?.chat_expression_hint?.tone_profile || null },
+          { label: "next_step_bias", value: subject?.chat_expression_hint?.next_step_bias || null },
+          { label: "policy_hint_preview", value: subject?.policy_hint_preview || null },
+          { label: "memory_claim_reason", value: subject?.memory_claim_reason || null },
+        ])}
+      </div>
+      <div class="detail-block">
+        <h4>${escapeHtml(t("pages.flow.hostArbitration"))}</h4>
+        ${renderMetricGrid([
+          { label: "reply_authority", value: host?.reply_authority || null },
+          { label: "reply_origin", value: host?.reply_origin || null },
+          { label: "chat_cadence_mode", value: host?.chat_cadence_mode || null },
+          { label: "output_check_reason", value: host?.output_check_reason || null },
+          { label: "intent_gate_reason", value: host?.intent_gate_reason || null },
+          { label: "applied_authority", value: host?.applied_authority || null },
+        ])}
+      </div>
+      <div class="detail-block">
+        <h4>${escapeHtml(t("pages.flow.finalOutput"))}</h4>
+        ${renderMetricGrid([
+          { label: "final_text", value: finalTextValue },
+          { label: "final_text_capture_status", value: finalOutput?.final_text_capture_status || null },
+          { label: "reply_length", value: finalOutput?.reply_length ?? null },
+          { label: "delivery_kind", value: finalOutput?.delivery_kind || null },
+          { label: "message_sent", value: finalOutput?.message_sent === true ? "true" : finalOutput?.message_sent === false ? "false" : null },
+        ])}
+      </div>
+      ${renderEngineeringFields("reply-evolution", section?.engineering_fields || [])}
+    </article>
+  `;
+}
+
+function renderFlow(payload) {
+  if (!payload?.sample_id) {
+    app.innerHTML = `
+      ${pageIntro(t("pages.flow.title"), t("pages.flow.subtitle"))}
+      <section class="panel"><div class="empty">${escapeHtml(t("common.no_sample"))}</div></section>
+    `;
+    return;
+  }
+
+  const verdict = payload.chain_status || {};
+  const statusClass = flowStatusClass(verdict.overall_status);
+  app.innerHTML = `
+    ${pageIntro(t("pages.flow.title"), t("pages.flow.subtitle"), [
+      `<span class="pill ${statusClass}">${escapeHtml(`${t("common.sample")}: ${payload.sample_id}`)}</span>`,
+      `<a class="subtle-link" href="/samples/${encodeURIComponent(payload.sample_id)}">${escapeHtml(t("common.view_sample"))}</a>`,
+    ])}
+    <section class="panel story-panel">
+      <div class="section-head">
+        <div>
+          <h2>${escapeHtml(t("pages.flow.verdict"))}</h2>
+          <div class="story-headline">${escapeHtml(verdict.verdict_headline || t("common.unknown"))}</div>
+          <p class="muted">${escapeHtml(verdict.verdict_sentence || t("common.no_data"))}</p>
+        </div>
+        <div class="pill-row">
+          <span class="pill ${statusClass}">${escapeHtml(verdict.overall_status || t("common.unknown"))}</span>
+          <span class="pill ${flowStatusClass(verdict.ingress_status)}">${escapeHtml(`${t("common.ingress")}: ${verdict.ingress_status || t("common.unknown")}`)}</span>
+          <span class="pill ${flowStatusClass(verdict.subject_status)}">${escapeHtml(`${t("common.subject")}: ${verdict.subject_status || t("common.unknown")}`)}</span>
+          <span class="pill ${flowStatusClass(verdict.arbitration_status)}">${escapeHtml(`${t("common.arbitration")}: ${verdict.arbitration_status || t("common.unknown")}`)}</span>
+          <span class="pill ${flowStatusClass(verdict.delivery_status)}">${escapeHtml(`${t("common.output")}: ${verdict.delivery_status || t("common.unknown")}`)}</span>
+        </div>
+      </div>
+    </section>
+    <section class="flow-grid">
+      ${renderFlowSection(t("pages.flow.input"), payload.input_summary || {}, "input")}
+      ${renderFlowSection(t("pages.flow.ingress"), payload.host_ingress_summary || {}, "ingress")}
+      ${renderFlowSection(t("pages.flow.subject"), payload.subject_summary || {}, "subject")}
+      ${renderReplyEvolution(payload.reply_evolution_summary || {})}
+      ${renderFlowSection(t("pages.flow.arbitration"), payload.host_arbitration_summary || {}, "arbitration")}
+      ${renderFlowSection(t("pages.flow.output"), payload.output_summary || {}, "output")}
+    </section>
+    <section class="panel">
+      <h2>${escapeHtml(t("pages.flow.gaps"))}</h2>
+      <div class="detail-grid">
+        ${Object.entries(payload.failure_or_gap_summary || {})
+          .filter(([, value]) => value !== null && value !== undefined && value !== "")
+          .map(
+            ([label, value]) => `
+              <article class="metric-card">
+                <strong>${escapeHtml(typeof value === "string" ? value : JSON.stringify(value))}</strong>
+                <span>${escapeHtml(label)}</span>
+              </article>
+            `,
+          )
+          .join("")}
+      </div>
+    </section>
+  `;
+}
+
 function renderSample(detail) {
   if (!detail?.sample_id) {
     app.innerHTML = `
@@ -1368,6 +1648,7 @@ function renderSample(detail) {
       `${t("common.sample")}: ${detail.sample_id}`,
       `${t("common.focus")}: ${summary.focus_goal || t("common.none")}`,
     ], [
+      `<a class="subtle-link" href="/samples/${encodeURIComponent(detail.sample_id)}/flow">${escapeHtml(t("common.open_flow"))}</a>`,
       semanticPills(semantic),
       whyPills(summary.why_codes || []),
     ])}
@@ -1386,6 +1667,13 @@ async function refresh() {
   const health = await fetchJson("/api/dashboard/health");
   renderMeta(health.build_meta || {}, health.gap_summary || {});
 
+  if (view === "flow") {
+    const path = sampleId
+      ? `/api/dashboard/samples/${encodeURIComponent(sampleId)}/flow`
+      : "/api/dashboard/flow";
+    renderFlow(await fetchJson(path));
+    return;
+  }
   if (view === "growth") {
     renderGrowth(await fetchJson("/api/dashboard/growth"));
     return;
@@ -1436,7 +1724,7 @@ async function start() {
       return;
     }
   }
-  if (view !== "sample" && VIEW_ROUTES[view]) {
+  if (!sampleId && VIEW_ROUTES[view]) {
     window.localStorage.setItem("dashboard:lastView", view);
   }
   try {

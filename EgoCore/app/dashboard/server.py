@@ -24,8 +24,243 @@ from app.dashboard.index_builder import (
     dashboard_source_last_modified,
     load_jsonl,
 )
+from app.dashboard.types import FlowViewRecord
 
 STATIC_DIR = Path(__file__).with_name("static")
+
+
+def _deep_get(data: Dict[str, Any], path: str) -> Any:
+    current: Any = data
+    for part in path.split("."):
+        if isinstance(current, dict) and part in current:
+            current = current[part]
+        else:
+            return None
+    return current
+
+
+def _timeline_has_stage(timeline: Any, stage: str) -> bool:
+    if not isinstance(timeline, list):
+        return False
+    return any(isinstance(item, dict) and item.get("stage") == stage for item in timeline)
+
+
+def _first_non_empty(*values: Any) -> Any:
+    for value in values:
+        if value not in (None, "", [], {}):
+            return value
+    return None
+
+
+def _boolish(value: Any) -> Optional[bool]:
+    if isinstance(value, bool):
+        return value
+    if value is None:
+        return None
+    if isinstance(value, (int, float)):
+        return bool(value)
+    if isinstance(value, str):
+        lowered = value.strip().lower()
+        if lowered in {"true", "1", "yes", "y", "on"}:
+            return True
+        if lowered in {"false", "0", "no", "n", "off"}:
+            return False
+    return None
+
+
+def _present_context(trace: Dict[str, Any], key: str) -> bool:
+    present = _deep_get(trace, f"constraint_summary.{key}.present")
+    return bool(present)
+
+
+def _resolve_self_model_context_source(
+    runtime_summary: Dict[str, Any],
+    *,
+    contexts_seen: Dict[str, bool],
+    oe_available: bool,
+    openemotion_processed: bool,
+    host_only: bool,
+) -> str:
+    explicit = runtime_summary.get("self_model_context_source")
+    if explicit in {"loaded", "bootstrapped_live", "missing", "bootstrap_failed"}:
+        return explicit
+    if host_only or not oe_available or not openemotion_processed:
+        return "not_applicable"
+    if contexts_seen.get("self_model"):
+        return "loaded"
+    return "missing"
+
+
+def _stringify_value(value: Any) -> str:
+    if value is None:
+        return "none"
+    if isinstance(value, bool):
+        return "true" if value else "false"
+    if isinstance(value, (int, float, str)):
+        return str(value)
+    if isinstance(value, list):
+        return ", ".join(_stringify_value(item) for item in value[:6]) or "none"
+    if isinstance(value, dict):
+        preview = ", ".join(f"{key}={_stringify_value(val)}" for key, val in list(value.items())[:4])
+        return preview or "none"
+    return str(value)
+
+
+def _flow_field(label: str, artifact: str, path: str, value: Any) -> Dict[str, Any]:
+    return {
+        "label": label,
+        "artifact": artifact,
+        "path": path,
+        "value": value,
+        "display_value": _stringify_value(value),
+    }
+
+
+def _build_subject_one_sentence(
+    *,
+    contexts_seen: Dict[str, bool],
+    response_tendency: Dict[str, Any],
+    policy_hint: Dict[str, Any],
+    top_candidate: Optional[Dict[str, Any]],
+) -> str:
+    active_contexts = [name for name, present in contexts_seen.items() if present]
+    context_phrase = " + ".join(active_contexts[:3]) if active_contexts else "minimal context"
+    next_step = _first_non_empty(
+        response_tendency.get("suggested_next_step"),
+        (top_candidate or {}).get("action_type"),
+        "hold",
+    )
+    mode = _first_non_empty(response_tendency.get("preferred_mode"), "unknown")
+    tone = _first_non_empty(response_tendency.get("preferred_tone"), "unknown")
+    closure_bias = policy_hint.get("closure_bias")
+    if closure_bias is True:
+        bias_phrase = "以 closure 为主"
+    elif policy_hint.get("risk_bias"):
+        bias_phrase = f"当前 risk_bias={policy_hint.get('risk_bias')}"
+    else:
+        bias_phrase = "当前没有明显额外偏置"
+    return f"主体读到了 {context_phrase}，当前 {bias_phrase}，倾向以 {mode}/{tone} 的方式推进到 {next_step}。"
+
+
+def _build_reply_evolution_summary(
+    *,
+    response_plan: Dict[str, Any],
+    response_metadata: Dict[str, Any],
+    policy_hint: Dict[str, Any],
+    outbox_record: Dict[str, Any],
+    delivered: bool,
+    host_only: bool,
+    degraded: bool,
+    output_summary: Dict[str, Any],
+) -> Dict[str, Any]:
+    reply_origin = str(response_plan.get("reply_origin") or "").strip()
+    reply_authority = str(response_plan.get("reply_authority") or "").strip()
+    status = str(response_plan.get("status") or "").strip()
+    chat_expression_hint = dict(response_metadata.get("chat_expression_hint") or {})
+    response_tendency_summary = dict(response_metadata.get("response_tendency_summary") or {})
+    final_text_preview = (
+        str(response_plan.get("reply_text") or "").strip()
+        or str(response_metadata.get("final_text_preview") or "").strip()
+        or str(output_summary.get("final_text_preview") or "").strip()
+        or None
+    )
+    reply_length = _first_non_empty(outbox_record.get("text_length"), response_plan.get("reply_length"))
+    final_text_capture_status = (
+        "captured"
+        if final_text_preview
+        else ("missing_but_delivered" if delivered else "not_delivered")
+    )
+    final_text_capture_reason = (
+        None
+        if final_text_preview
+        else (
+            "final text not persisted in current evidence bundle"
+            if delivered
+            else "message not delivered, no final text available"
+        )
+    )
+
+    available = (
+        bool(response_plan)
+        and reply_origin == "chat_mainline"
+        and not host_only
+        and not degraded
+        and bool(chat_expression_hint or response_tendency_summary or policy_hint)
+        and bool(final_text_preview or delivered)
+    )
+
+    reason: Optional[str] = None
+    if not available:
+        if host_only:
+            reason = "host_only_no_subject_chat_evolution"
+        elif degraded or reply_authority == "host_degraded_fallback":
+            reason = "degraded_chat_no_comparable_evolution"
+        elif reply_origin == "task_mainline":
+            reason = "task_mainline_not_in_v1"
+        elif reply_origin in {"status_mainline", "evidence_mainline"} or status in {"command_result", "status_probe"}:
+            reason = "non_chat_mainline_not_in_v1"
+        elif not response_plan:
+            reason = "response_plan_missing"
+        else:
+            reason = "chat_metadata_missing"
+
+    return {
+        "status": "pass" if available else "not_applicable",
+        "headline": "Reply evolution available" if available else "Reply evolution not available",
+        "sentence": (
+            (
+                "主体给了表达/节奏/下一步倾向，宿主据此完成 chat_mainline 裁决并形成最终输出。"
+                if final_text_preview
+                else "主体给了表达/节奏/下一步倾向，宿主完成了 chat_mainline 裁决并确认消息已送出，但当前证据包未持久化最终文本。"
+            )
+            if available
+            else f"Reply evolution unavailable: {reason}."
+        ),
+        "available": available,
+        "reason": reason,
+        "mode": "evidence_only_v1",
+        "scope": "chat_mainline_only",
+        "subject_influence": {
+            "response_tendency_summary": response_tendency_summary,
+            "chat_expression_hint": chat_expression_hint,
+            "policy_hint_preview": {
+                "ask_preferred": policy_hint.get("ask_preferred"),
+                "closure_bias": policy_hint.get("closure_bias"),
+                "risk_bias": policy_hint.get("risk_bias"),
+            },
+            "memory_claim_reason": response_metadata.get("memory_claim_reason"),
+        },
+        "host_arbitration": {
+            "reply_authority": reply_authority or None,
+            "reply_origin": reply_origin or None,
+            "chat_cadence_mode": response_plan.get("chat_cadence_mode"),
+            "output_check_reason": response_plan.get("output_check_reason"),
+            "intent_gate_reason": response_plan.get("intent_gate_reason"),
+            "applied_authority": response_plan.get("applied_authority") or response_metadata.get("applied_authority"),
+        },
+        "final_output": {
+            "final_text_preview": final_text_preview,
+            "final_text_capture_status": final_text_capture_status,
+            "final_text_capture_reason": final_text_capture_reason,
+            "reply_length": reply_length,
+            "delivery_kind": response_plan.get("delivery_kind"),
+            "message_sent": output_summary.get("message_sent"),
+        },
+        "artifacts": ["response_plan.json", "outbox_record.json", "timeline.json"],
+        "engineering_fields": [
+            _flow_field("response_tendency_summary", "response_plan.json", "metadata.response_tendency_summary", response_tendency_summary),
+            _flow_field("chat_expression_hint", "response_plan.json", "metadata.chat_expression_hint", chat_expression_hint),
+            _flow_field("reply_authority", "response_plan.json", "reply_authority", reply_authority or None),
+            _flow_field("reply_origin", "response_plan.json", "reply_origin", reply_origin or None),
+            _flow_field("chat_cadence_mode", "response_plan.json", "chat_cadence_mode", response_plan.get("chat_cadence_mode")),
+            _flow_field("output_check_reason", "response_plan.json", "output_check_reason", response_plan.get("output_check_reason")),
+            _flow_field("intent_gate_reason", "response_plan.json", "intent_gate_reason", response_plan.get("intent_gate_reason")),
+            _flow_field("final_text_preview", "response_plan.json", "reply_text", final_text_preview),
+            _flow_field("final_text_capture_status", "outbox_record.json", "text_length + response_plan.reply_text", final_text_capture_status),
+            _flow_field("reply_length", "outbox_record.json", "text_length", reply_length),
+            _flow_field("message_sent", "timeline.json", "stage=message_sent", output_summary.get("message_sent")),
+        ],
+    }
 
 
 def _asset_version() -> int:
@@ -176,6 +411,473 @@ class DashboardDataStore:
         }
         return detail
 
+    def latest_sample_id(self) -> Optional[str]:
+        runs_rollup = self.load_runs_rollup()
+        recent_runs = runs_rollup.get("recent_runs") or []
+        if recent_runs:
+            return recent_runs[0].get("sample_id")
+        records = runs_rollup.get("records") or []
+        if not records:
+            return None
+        latest = max(records, key=lambda item: item.get("timestamp") or "")
+        return latest.get("sample_id")
+
+    def flow_detail(self, sample_id: Optional[str] = None) -> Optional[Dict[str, Any]]:
+        resolved_sample_id = sample_id or self.latest_sample_id()
+        if not resolved_sample_id:
+            return None
+        detail = self.sample_detail(resolved_sample_id)
+        if detail is None:
+            return None
+
+        artifacts = detail.get("artifacts") or {}
+        artifact_refs = detail.get("artifact_refs") or {}
+        ledger = artifacts.get("ledger.json") or {}
+        normalized_event = artifacts.get("normalized_event.json") or {}
+        result = artifacts.get("openemotion_result.json") or {}
+        trace = artifacts.get("openemotion_trace.json") or {}
+        response_plan = artifacts.get("response_plan.json") or {}
+        outbox_record = artifacts.get("outbox_record.json") or {}
+        timeline = artifacts.get("timeline.json") or []
+        run_record = detail.get("run_record") or {}
+        failure_record = (detail.get("related_records") or {}).get("failure") or {}
+
+        runtime_summary = _deep_get(normalized_event, "runtime_summary") or _deep_get(
+            ledger, "inputs.normalized_event.runtime_summary"
+        ) or {}
+        conversation_summary = _deep_get(normalized_event, "conversation_summary") or _deep_get(
+            normalized_event, "conversation_context"
+        ) or _deep_get(ledger, "inputs.normalized_event.conversation_summary") or {}
+        raw_text = _first_non_empty(
+            _deep_get(ledger, "inputs.raw_update.message.text"),
+            _deep_get(normalized_event, "event.raw_text"),
+            _deep_get(ledger, "inputs.normalized_event.event.raw_text"),
+        )
+
+        top_candidate = _first_non_empty(
+            _deep_get(result, "policy_hint.top_candidate_action"),
+            (result.get("candidate_actions") or [None])[0],
+        )
+        response_tendency = result.get("response_tendency") or {}
+        policy_hint = result.get("policy_hint") or {}
+        response_metadata = response_plan.get("metadata") or {}
+        recent_result_context = response_metadata.get("recent_result_context") or {}
+        reflection_trigger = _first_non_empty(
+            _deep_get(result, "reflection_note.trigger"),
+            trace.get("reflection_trigger"),
+            _deep_get(policy_hint, "reflection_trigger"),
+        )
+        oe_available = bool(
+            _first_non_empty(
+                run_record.get("oe_available"),
+                bool(artifacts.get("openemotion_result.json") or artifacts.get("openemotion_trace.json")),
+            )
+        )
+        host_only = bool(
+            _first_non_empty(
+                run_record.get("host_only"),
+                not oe_available,
+            )
+        )
+        bundle_complete = bool(
+            _first_non_empty(
+                run_record.get("bundle_complete"),
+                all(
+                    name in artifacts
+                    for name in [
+                        "raw_update.json",
+                        "normalized_event.json",
+                        "openemotion_result.json",
+                        "openemotion_trace.json",
+                        "response_plan.json",
+                        "outbox_record.json",
+                        "timeline.json",
+                        "tape.json",
+                        "replay.json",
+                    ]
+                ),
+            )
+        )
+        openemotion_processed = _timeline_has_stage(timeline, "openemotion_processed")
+        delivered = bool(_boolish(outbox_record.get("success")) or _timeline_has_stage(timeline, "message_sent"))
+        degraded = response_plan.get("reply_authority") == "host_degraded_fallback"
+        contexts_seen = {
+            "self_model": _present_context(trace, "self_model_context"),
+            "developmental": _present_context(trace, "developmental_self_context"),
+            "social": _present_context(trace, "social_self_context"),
+            "embodied": _present_context(trace, "embodied_self_context"),
+            "integration": _present_context(trace, "selfhood_integration_context"),
+            "initiative": _present_context(trace, "initiative_self_context"),
+            "initiative_realization": _present_context(trace, "initiative_realization_context"),
+        }
+        active_contexts = [name for name, present in contexts_seen.items() if present]
+        missing_contexts = [name for name, present in contexts_seen.items() if not present]
+        writeback_keys = [
+            key
+            for key in result.keys()
+            if key.endswith("_candidate") and result.get(key) not in (None, {}, [], "")
+        ]
+        non_empty_delta_keys = [
+            key for key in result.keys() if key.endswith("_delta") and result.get(key) not in ({}, [], None)
+        ]
+        subject_chain_connected = bool(oe_available and openemotion_processed and not host_only)
+        self_model_context_source = _resolve_self_model_context_source(
+            runtime_summary,
+            contexts_seen=contexts_seen,
+            oe_available=oe_available,
+            openemotion_processed=openemotion_processed,
+            host_only=host_only,
+        )
+
+        input_summary = {
+            "status": "pass" if raw_text else "broken",
+            "headline": "Input captured" if raw_text else "Input missing",
+            "sentence": f"输入文本已标准化为 {runtime_summary.get('primary_intent') or 'unknown'} / {runtime_summary.get('interaction_kind') or 'unknown'}。"
+            if raw_text
+            else "缺少 raw input，当前样本无法解释输入层。",
+            "raw_text": raw_text,
+            "event_type": _first_non_empty(
+                _deep_get(normalized_event, "event.event_type"),
+                _deep_get(ledger, "inputs.normalized_event.event.event_type"),
+            ),
+            "primary_intent": runtime_summary.get("primary_intent"),
+            "interaction_kind": runtime_summary.get("interaction_kind"),
+            "conversation_act": runtime_summary.get("conversation_act"),
+            "artifacts": ["ledger.json", "normalized_event.json", "raw_update.json"],
+            "engineering_fields": [
+                _flow_field("raw_text", "ledger.json", "inputs.raw_update.message.text", raw_text),
+                _flow_field(
+                    "event_type",
+                    "normalized_event.json",
+                    "event.event_type",
+                    _first_non_empty(
+                        _deep_get(normalized_event, "event.event_type"),
+                        _deep_get(ledger, "inputs.normalized_event.event.event_type"),
+                    ),
+                ),
+                _flow_field(
+                    "primary_intent",
+                    "normalized_event.json",
+                    "runtime_summary.primary_intent",
+                    runtime_summary.get("primary_intent"),
+                ),
+                _flow_field(
+                    "interaction_kind",
+                    "normalized_event.json",
+                    "runtime_summary.interaction_kind",
+                    runtime_summary.get("interaction_kind"),
+                ),
+                _flow_field(
+                    "conversation_act",
+                    "normalized_event.json",
+                    "runtime_summary.conversation_act",
+                    runtime_summary.get("conversation_act"),
+                ),
+            ],
+        }
+
+        ingress_ok = oe_available and openemotion_processed and not host_only
+        host_ingress_summary = {
+            "status": "host_only" if host_only else ("pass" if ingress_ok else "broken"),
+            "headline": "Host ingress passed" if ingress_ok else ("Host-only interception" if host_only else "Host ingress incomplete"),
+            "sentence": (
+                f"宿主解析出 runtime_path={response_plan.get('reply_origin') or runtime_summary.get('runtime_action') or 'unknown'}，并在进入主体前完成 session/task resolve。"
+                if not host_only
+                else "这轮样本停在宿主层，没有形成主体处理证据。"
+            ),
+            "authorized": True,
+            "subject_gate_ingress_ok": ingress_ok,
+            "runtime_path": _first_non_empty(response_plan.get("reply_origin"), runtime_summary.get("runtime_action")),
+            "session_key": _first_non_empty(conversation_summary.get("session_id"), conversation_summary.get("thread_id")),
+            "active_task": _boolish(runtime_summary.get("active_task")),
+            "waiting_input": _boolish(runtime_summary.get("confirm_pending")),
+            "task_conflict": _boolish(_deep_get(runtime_summary, "task_conflict.active")),
+            "recent_result_binding": bool(recent_result_context),
+            "recent_result_source_turn": response_metadata.get("result_binding_source_turn"),
+            "artifacts": ["normalized_event.json", "ledger.json", "timeline.json"],
+            "engineering_fields": [
+                _flow_field("authorized", "normalized_event.json", "runtime_summary.primary_intent", True),
+                _flow_field("subject_gate_ingress_ok", "timeline.json", "stage=openemotion_processed", ingress_ok),
+                _flow_field(
+                    "runtime_path",
+                    "response_plan.json",
+                    "reply_origin",
+                    _first_non_empty(response_plan.get("reply_origin"), runtime_summary.get("runtime_action")),
+                ),
+                _flow_field(
+                    "session_key",
+                    "normalized_event.json",
+                    "conversation_summary.session_id",
+                    _first_non_empty(conversation_summary.get("session_id"), conversation_summary.get("thread_id")),
+                ),
+                _flow_field("active_task", "normalized_event.json", "runtime_summary.active_task", runtime_summary.get("active_task")),
+                _flow_field("waiting_input", "normalized_event.json", "runtime_summary.confirm_pending", runtime_summary.get("confirm_pending")),
+                _flow_field(
+                    "recent_result_binding",
+                    "response_plan.json",
+                    "metadata.recent_result_context",
+                    recent_result_context,
+                ),
+                _flow_field(
+                    "recent_result_source_turn",
+                    "response_plan.json",
+                    "metadata.result_binding_source_turn",
+                    response_metadata.get("result_binding_source_turn"),
+                ),
+            ],
+        }
+
+        subject_summary = {
+            "status": "host_only" if host_only else ("pass" if oe_available else "broken"),
+            "headline": "Subject processed turn" if oe_available else ("Subject unavailable" if host_only else "Subject evidence missing"),
+            "sentence": _build_subject_one_sentence(
+                contexts_seen=contexts_seen,
+                response_tendency=response_tendency,
+                policy_hint=policy_hint,
+                top_candidate=top_candidate if isinstance(top_candidate, dict) else None,
+            )
+            if oe_available
+            else "这轮没有形成可用的 OpenEmotion result/trace，无法解释主体理解层。",
+            "oe_available": oe_available,
+            "openemotion_processed": openemotion_processed,
+            "subject_chain_connected": subject_chain_connected,
+            "context_load_summary": {
+                "loaded": active_contexts,
+                "missing": missing_contexts,
+            },
+            "contexts_seen": contexts_seen,
+            "self_model_context_source": self_model_context_source,
+            "dominant_tendency": {
+                "preferred_mode": response_tendency.get("preferred_mode"),
+                "preferred_tone": response_tendency.get("preferred_tone"),
+                "suggested_next_step": response_tendency.get("suggested_next_step"),
+            },
+            "policy_hint_summary": {
+                "urge_score": policy_hint.get("urge_score"),
+                "risk_bias": policy_hint.get("risk_bias"),
+                "closure_bias": policy_hint.get("closure_bias"),
+                "ask_preferred": policy_hint.get("ask_preferred"),
+            },
+            "candidate_action_summary": {
+                "action_type": (top_candidate or {}).get("action_type") if isinstance(top_candidate, dict) else None,
+                "target": (top_candidate or {}).get("target") if isinstance(top_candidate, dict) else None,
+                "reason": (top_candidate or {}).get("reason") if isinstance(top_candidate, dict) else None,
+            },
+            "reflection_trigger": reflection_trigger,
+            "subject_one_sentence": _build_subject_one_sentence(
+                contexts_seen=contexts_seen,
+                response_tendency=response_tendency,
+                policy_hint=policy_hint,
+                top_candidate=top_candidate if isinstance(top_candidate, dict) else None,
+            )
+            if oe_available
+            else "主体理解层不可用。",
+            "what_it_saw": " + ".join(active_contexts) if active_contexts else "minimal context",
+            "what_it_cared_about": _first_non_empty(
+                response_tendency.get("suggested_next_step"),
+                policy_hint.get("risk_bias"),
+                "no strong bounded tendency",
+            ),
+            "what_it_suggested": _first_non_empty(
+                response_tendency.get("suggested_next_step"),
+                (top_candidate or {}).get("action_type") if isinstance(top_candidate, dict) else None,
+                "none",
+            ),
+            "state_change_summary": {
+                "non_empty_delta_keys": non_empty_delta_keys,
+                "writeback_candidates": writeback_keys,
+            },
+            "artifacts": ["openemotion_result.json", "openemotion_trace.json", "ledger.json"],
+            "engineering_fields": [
+                _flow_field("oe_available", "runs.jsonl", "oe_available", oe_available),
+                _flow_field("openemotion_processed", "timeline.json", "stage=openemotion_processed", openemotion_processed),
+                _flow_field("subject_chain_connected", "timeline.json", "oe_available + openemotion_processed + !host_only", subject_chain_connected),
+                _flow_field("context_load_summary", "openemotion_trace.json", "constraint_summary.*.present", {"loaded": active_contexts, "missing": missing_contexts}),
+                _flow_field("contexts_seen", "openemotion_trace.json", "constraint_summary.*.present", contexts_seen),
+                _flow_field("self_model_context_source", "normalized_event.json", "runtime_summary.self_model_context_source", self_model_context_source),
+                _flow_field("response_tendency", "openemotion_result.json", "response_tendency", response_tendency),
+                _flow_field("policy_hint", "openemotion_result.json", "policy_hint", policy_hint),
+                _flow_field("top_candidate_action", "openemotion_result.json", "policy_hint.top_candidate_action", top_candidate),
+                _flow_field("reflection_trigger", "openemotion_trace.json", "reflection_trigger", reflection_trigger),
+                _flow_field("state_changes", "openemotion_result.json", "*_delta / *_candidate", {"non_empty_delta_keys": non_empty_delta_keys, "writeback_candidates": writeback_keys}),
+            ],
+        }
+
+        host_arbitration_summary = {
+            "status": "degraded" if degraded else ("pass" if response_plan else "broken"),
+            "headline": "Host degraded reply" if degraded else ("Host arbitration complete" if response_plan else "Host arbitration missing"),
+            "sentence": (
+                f"宿主以 {response_plan.get('reply_authority') or 'unknown'} / {response_plan.get('reply_origin') or 'unknown'} 裁决这轮输出。"
+                if response_plan
+                else "缺少 response plan，当前无法解释宿主裁决层。"
+            ),
+            "reply_authority": response_plan.get("reply_authority"),
+            "reply_origin": response_plan.get("reply_origin"),
+            "response_plan_status": response_plan.get("status"),
+            "degraded": degraded,
+            "tool_selected": _first_non_empty(
+                (response_plan.get("candidate_action_types") or [None])[0],
+                (top_candidate or {}).get("action_type") if isinstance(top_candidate, dict) else None,
+            ),
+            "host_override_reason": _first_non_empty(
+                response_plan.get("output_check_reason"),
+                response_plan.get("intent_gate_reason"),
+                failure_record.get("cause_type"),
+            ),
+            "chat_cadence_mode": response_plan.get("chat_cadence_mode"),
+            "subject_gate_finalize_ok": bool(response_plan) and not host_only,
+            "artifacts": ["response_plan.json", "ledger.json"],
+            "engineering_fields": [
+                _flow_field("reply_authority", "response_plan.json", "reply_authority", response_plan.get("reply_authority")),
+                _flow_field("reply_origin", "response_plan.json", "reply_origin", response_plan.get("reply_origin")),
+                _flow_field("response_plan_status", "response_plan.json", "status", response_plan.get("status")),
+                _flow_field("degraded", "response_plan.json", "reply_authority", degraded),
+                _flow_field("tool_selected", "response_plan.json", "candidate_action_types[0]", _first_non_empty(
+                    (response_plan.get("candidate_action_types") or [None])[0],
+                    (top_candidate or {}).get("action_type") if isinstance(top_candidate, dict) else None,
+                )),
+                _flow_field("host_override_reason", "response_plan.json", "output_check_reason", _first_non_empty(
+                    response_plan.get("output_check_reason"),
+                    response_plan.get("intent_gate_reason"),
+                    failure_record.get("cause_type"),
+                )),
+                _flow_field("chat_cadence_mode", "response_plan.json", "chat_cadence_mode", response_plan.get("chat_cadence_mode")),
+            ],
+        }
+
+        output_summary = {
+            "status": "pass" if delivered else ("host_only" if host_only else "broken"),
+            "headline": "Output delivered" if delivered else ("No final delivery" if not host_only else "Host-only output"),
+            "sentence": (
+                f"最终以 {response_plan.get('delivery_kind') or 'unknown'} 形式送出，message_sent={delivered}。"
+                if response_plan
+                else "缺少 delivery contract，当前无法解释输出层。"
+            ),
+            "delivered": delivered,
+            "delivery_kind": response_plan.get("delivery_kind"),
+            "final_text_preview": (
+                str(response_plan.get("reply_text") or "").strip()
+                or str(response_metadata.get("final_text_preview") or "").strip()
+                or None
+            ),
+            "final_text_capture_status": (
+                "captured"
+                if (
+                    str(response_plan.get("reply_text") or "").strip()
+                    or str(response_metadata.get("final_text_preview") or "").strip()
+                )
+                else ("missing_but_delivered" if delivered else "not_delivered")
+            ),
+            "reply_length": _first_non_empty(outbox_record.get("text_length"), response_plan.get("reply_length")),
+            "message_sent": _timeline_has_stage(timeline, "message_sent"),
+            "bundle_complete": bundle_complete,
+            "artifacts": ["outbox_record.json", "timeline.json", "response_plan.json"],
+            "engineering_fields": [
+                _flow_field("delivered", "outbox_record.json", "success", delivered),
+                _flow_field("delivery_kind", "response_plan.json", "delivery_kind", response_plan.get("delivery_kind")),
+                _flow_field(
+                    "final_text_preview",
+                    "response_plan.json",
+                    "reply_text",
+                    (
+                        str(response_plan.get("reply_text") or "").strip()
+                        or str(response_metadata.get("final_text_preview") or "").strip()
+                        or None
+                    ),
+                ),
+                _flow_field(
+                    "final_text_capture_status",
+                    "outbox_record.json",
+                    "text_length + response_plan.reply_text",
+                    (
+                        "captured"
+                        if (
+                            str(response_plan.get("reply_text") or "").strip()
+                            or str(response_metadata.get("final_text_preview") or "").strip()
+                        )
+                        else ("missing_but_delivered" if delivered else "not_delivered")
+                    ),
+                ),
+                _flow_field("reply_length", "outbox_record.json", "text_length", _first_non_empty(outbox_record.get("text_length"), response_plan.get("reply_length"))),
+                _flow_field("message_sent", "timeline.json", "stage=message_sent", _timeline_has_stage(timeline, "message_sent")),
+                _flow_field("bundle_complete", "runs.jsonl", "bundle_complete", bundle_complete),
+            ],
+        }
+        reply_evolution_summary = _build_reply_evolution_summary(
+            response_plan=response_plan,
+            response_metadata=response_metadata,
+            policy_hint=policy_hint,
+            outbox_record=outbox_record,
+            delivered=delivered,
+            host_only=host_only,
+            degraded=degraded,
+            output_summary=output_summary,
+        )
+
+        overall_status = "pass"
+        if host_only:
+            overall_status = "host_only"
+        elif not oe_available or not response_plan:
+            overall_status = "broken"
+        elif degraded or not delivered or not bundle_complete:
+            overall_status = "degraded"
+
+        chain_status = {
+            "ingress_status": host_ingress_summary["status"],
+            "subject_status": subject_summary["status"],
+            "arbitration_status": host_arbitration_summary["status"],
+            "delivery_status": output_summary["status"],
+            "overall_status": overall_status,
+            "verdict_headline": {
+                "pass": "主链已贯通，证据完整",
+                "degraded": "主链贯通，但结果有降级或不一致",
+                "host_only": "这轮停在宿主层，没有进入主体",
+                "broken": "主链有缺口，当前证据不足以证明贯通",
+            }[overall_status],
+            "verdict_sentence": {
+                "pass": "输入、主体理解、宿主裁决和输出都能在同一条样本里回指到正式证据。",
+                "degraded": "链路基本贯通，但宿主降级、证据缺口或输出异常仍需要继续排查。",
+                "host_only": "这轮没有形成 OpenEmotion 结构化结果，无法把它当成主体处理过的样本。",
+                "broken": "这轮缺少关键 artifact 或阶段性状态，当前不能视为主链正常通过。",
+            }[overall_status],
+        }
+
+        failure_or_gap_summary = {
+            "gap_types": run_record.get("gap_types") or [],
+            "semantic_why_codes": ((run_record.get("semantic") or {}).get("why_codes") or []),
+            "failure_id": failure_record.get("failure_id"),
+            "failure_cause": failure_record.get("cause_type"),
+            "source": failure_record.get("source"),
+            "headline": "No explicit blocker"
+            if not (run_record.get("gap_types") or failure_record)
+            else "Current blockers or evidence gaps are present",
+            "sentence": " / ".join(
+                str(item)
+                for item in [
+                    ", ".join(run_record.get("gap_types") or []),
+                    failure_record.get("cause_type"),
+                    ", ".join(((run_record.get("semantic") or {}).get("why_codes") or [])),
+                ]
+                if item
+            )
+            or "当前没有显式 gap type 或 failure record。",
+        }
+
+        return FlowViewRecord(
+            sample_id=resolved_sample_id,
+            channel=_first_non_empty(ledger.get("channel"), "telegram"),
+            timestamp=_first_non_empty(ledger.get("timestamp"), run_record.get("timestamp")),
+            input_summary=input_summary,
+            host_ingress_summary=host_ingress_summary,
+            subject_summary=subject_summary,
+            reply_evolution_summary=reply_evolution_summary,
+            host_arbitration_summary=host_arbitration_summary,
+            output_summary=output_summary,
+            chain_status=chain_status,
+            failure_or_gap_summary=failure_or_gap_summary,
+            artifact_refs=artifact_refs,
+        ).to_dict()
+
 
 class DashboardRequestHandler(BaseHTTPRequestHandler):
     store: DashboardDataStore
@@ -195,7 +897,7 @@ class DashboardRequestHandler(BaseHTTPRequestHandler):
             self._serve_static(parsed.path.removeprefix("/static/"))
             return
 
-        if parsed.path in {"/", "/runs", "/growth", "/failures", "/agency"} or parsed.path.startswith("/samples/"):
+        if parsed.path in {"/", "/runs", "/flow", "/growth", "/failures", "/agency"} or parsed.path.startswith("/samples/"):
             self._serve_html_shell(parsed.path)
             return
 
@@ -221,6 +923,15 @@ class DashboardRequestHandler(BaseHTTPRequestHandler):
             self._send_json(payload)
             return
 
+        if parsed.path == "/api/dashboard/flow":
+            sample_id = (query.get("sample_id") or [None])[0]
+            payload = self.store.flow_detail(sample_id)
+            if payload is None:
+                self.send_error(HTTPStatus.NOT_FOUND, "No flow sample available")
+                return
+            self._send_json(payload)
+            return
+
         if parsed.path == "/api/dashboard/growth":
             payload = self.store.load_growth_rollup()
             limit = int((query.get("limit") or ["200"])[0])
@@ -235,6 +946,15 @@ class DashboardRequestHandler(BaseHTTPRequestHandler):
 
         if parsed.path == "/api/dashboard/agency":
             self._send_json(self.store.load_agency_rollup())
+            return
+
+        if parsed.path.startswith("/api/dashboard/samples/") and parsed.path.endswith("/flow"):
+            sample_id = parsed.path.split("/")[-2]
+            payload = self.store.flow_detail(sample_id)
+            if payload is None:
+                self.send_error(HTTPStatus.NOT_FOUND, "Unknown sample_id")
+                return
+            self._send_json(payload)
             return
 
         if parsed.path.startswith("/api/dashboard/samples/"):
@@ -274,8 +994,13 @@ class DashboardRequestHandler(BaseHTTPRequestHandler):
         sample_id = ""
         if path == "/":
             view = "runs"
-        elif path in {"/runs", "/growth", "/failures", "/agency"}:
+        elif path in {"/runs", "/flow", "/growth", "/failures", "/agency"}:
             view = path.removeprefix("/")
+        elif path.startswith("/samples/") and path.endswith("/flow"):
+            view = "flow"
+            parts = [part for part in path.split("/") if part]
+            if len(parts) >= 3:
+                sample_id = parts[1]
         elif path.startswith("/samples/"):
             view = "sample"
             sample_id = path.rsplit("/", 1)[-1]
@@ -298,9 +1023,10 @@ class DashboardRequestHandler(BaseHTTPRequestHandler):
         <h1 id="hero-title"></h1>
         <p class="hero-copy" id="hero-copy"></p>
       </div>
-      <div class="hero-side">
+        <div class="hero-side">
         <nav class="nav">
           <a href="/runs" id="nav-runs"></a>
+          <a href="/flow" id="nav-flow"></a>
           <a href="/agency" id="nav-agency"></a>
           <a href="/growth" id="nav-growth"></a>
           <a href="/failures" id="nav-failures"></a>

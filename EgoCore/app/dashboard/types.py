@@ -251,3 +251,22 @@ class DashboardBuildSummary:
 
     def to_dict(self) -> Dict[str, Any]:
         return asdict(self)
+
+
+@dataclass
+class FlowViewRecord:
+    sample_id: str
+    channel: str
+    timestamp: Optional[str]
+    input_summary: Dict[str, Any]
+    host_ingress_summary: Dict[str, Any]
+    subject_summary: Dict[str, Any]
+    reply_evolution_summary: Dict[str, Any]
+    host_arbitration_summary: Dict[str, Any]
+    output_summary: Dict[str, Any]
+    chain_status: Dict[str, Any]
+    failure_or_gap_summary: Dict[str, Any]
+    artifact_refs: Dict[str, str]
+
+    def to_dict(self) -> Dict[str, Any]:
+        return asdict(self)

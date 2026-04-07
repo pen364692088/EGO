@@ -22,6 +22,8 @@ def _make_sample(
     *,
     oe_available: bool,
     events: list[dict] | None = None,
+    response_plan_override: dict | None = None,
+    normalized_runtime_summary: dict | None = None,
 ) -> None:
     sample_dir = real_dir / sample_id
     sample_dir.mkdir(parents=True, exist_ok=True)
@@ -68,7 +70,14 @@ def _make_sample(
             "events": events or [],
         },
         "host": {
-            "response_plan": {"status": "complete", "delivery_kind": "final", "reply_length": 4},
+            "response_plan": {
+                "status": "chat",
+                "delivery_kind": "chat",
+                "reply_length": 4,
+                "reply_authority": "model_chat",
+                "reply_origin": "chat_mainline",
+                "reply_text": "hello",
+            },
             "outbox_record": {"chat_id": 1, "message_id": 2, "text_length": 4, "success": True},
             "timeline": [{"stage": "message_sent", "timestamp": "2026-03-27T10:00:01+00:00"}],
         },
@@ -85,12 +94,33 @@ def _make_sample(
         },
     }
     _write_json(sample_dir / "ledger.json", ledger)
-    _write_json(sample_dir / "raw_update.json", {"update_id": 1})
+    _write_json(sample_dir / "raw_update.json", {"update_id": 1, "message": {"text": "hello"}})
     if oe_available:
-        _write_json(sample_dir / "normalized_event.json", {"event_id": f"evt_{sample_id}"})
+        _write_json(
+            sample_dir / "normalized_event.json",
+            {
+                "event_id": f"evt_{sample_id}",
+                "event": {"event_type": "user_message", "raw_text": "hello"},
+                "conversation_summary": {"session_id": "telegram:dm:1", "thread_id": "telegram:dm:1"},
+                "runtime_summary": normalized_runtime_summary
+                or {
+                    "primary_intent": "chat",
+                    "interaction_kind": "chat",
+                    "conversation_act": "light_chitchat",
+                    "runtime_action": "chat",
+                    "active_task": False,
+                    "confirm_pending": False,
+                },
+            },
+        )
         _write_json(sample_dir / "openemotion_result.json", ledger["openemotion"]["result"])
         _write_json(sample_dir / "openemotion_trace.json", ledger["openemotion"]["trace_payload"])
-    _write_json(sample_dir / "response_plan.json", ledger["host"]["response_plan"])
+    response_plan = dict(ledger["host"]["response_plan"])
+    if response_plan_override:
+        response_plan.update(response_plan_override)
+        ledger["host"]["response_plan"] = response_plan
+        _write_json(sample_dir / "ledger.json", ledger)
+    _write_json(sample_dir / "response_plan.json", response_plan)
     _write_json(sample_dir / "outbox_record.json", ledger["host"]["outbox_record"])
     _write_json(sample_dir / "timeline.json", ledger["host"]["timeline"])
     _write_json(sample_dir / "tape.json", {"tape_id": f"tape_{sample_id}"})
@@ -167,10 +197,16 @@ def test_dashboard_server_exposes_read_only_api(tmp_path: Path) -> None:
         growth = json.loads(urlopen(f"{base}/api/dashboard/growth").read().decode("utf-8"))
         failures = json.loads(urlopen(f"{base}/api/dashboard/failures").read().decode("utf-8"))
         agency = json.loads(urlopen(f"{base}/api/dashboard/agency").read().decode("utf-8"))
+        flow = json.loads(urlopen(f"{base}/api/dashboard/flow").read().decode("utf-8"))
+        sample_flow = json.loads(
+            urlopen(f"{base}/api/dashboard/samples/sample_20260327_100000_aaaaaaaa/flow").read().decode("utf-8")
+        )
         sample = json.loads(
             urlopen(f"{base}/api/dashboard/samples/sample_20260327_100000_aaaaaaaa").read().decode("utf-8")
         )
         html = urlopen(f"{base}/runs").read().decode("utf-8")
+        flow_html = urlopen(f"{base}/flow").read().decode("utf-8")
+        sample_flow_html = urlopen(f"{base}/samples/sample_20260327_100000_aaaaaaaa/flow").read().decode("utf-8")
         agency_html = urlopen(f"{base}/agency").read().decode("utf-8")
     finally:
         server.shutdown()
@@ -192,9 +228,249 @@ def test_dashboard_server_exposes_read_only_api(tmp_path: Path) -> None:
     assert agency["latest_state"]["final_host_action"] == "file"
     assert agency["headline_code"] == "changed_after_result"
     assert agency["story_cards"]
+    assert flow["sample_id"] == "sample_20260327_100100_bbbbbbbb"
+    assert flow["chain_status"]["overall_status"] == "host_only"
+    assert sample_flow["sample_id"] == "sample_20260327_100000_aaaaaaaa"
+    assert sample_flow["subject_summary"]["oe_available"] is True
+    assert sample_flow["reply_evolution_summary"]["available"] is False
+    assert sample_flow["reply_evolution_summary"]["reason"] == "chat_metadata_missing"
+    assert sample_flow["host_arbitration_summary"]["reply_authority"] == "model_chat"
     assert sample["sample_id"] == "sample_20260327_100000_aaaaaaaa"
     assert "ledger.json" in sample["artifacts"]
     assert sample["semantic_summary"]["headline_code"] == "changed_after_result"
     assert sample["translated_summary"]["focus_goal"] == "inspect_target"
     assert 'id="locale-switch"' in html
+    assert 'data-view="flow"' in flow_html
+    assert 'data-view="flow"' in sample_flow_html
     assert 'data-view="agency"' in agency_html
+
+
+def test_dashboard_flow_detail_surfaces_degraded_and_recent_result_binding(tmp_path: Path) -> None:
+    real_dir = tmp_path / "artifacts" / "telegram_real_mainline_v1" / "real_telegram"
+    output_dir = tmp_path / "artifacts" / "telegram_real_mainline_v1" / "dashboard_v1"
+
+    _make_sample(
+        real_dir,
+        "sample_20260327_100500_eeeeeeee",
+        oe_available=True,
+        response_plan_override={
+            "status": "chat",
+            "reply_authority": "host_degraded_fallback",
+            "reply_origin": "chat_mainline",
+            "metadata": {
+                "recent_result_context": {
+                    "target_name": "bilili_lookalike.html",
+                    "target_path": "D:/Project/AIProject/MyProject/Test2/bilili_lookalike.html",
+                },
+                "result_binding_source_turn": "turn_prev",
+            },
+        },
+        normalized_runtime_summary={
+            "primary_intent": "chat",
+            "interaction_kind": "chat",
+            "conversation_act": "followup_reflection",
+            "runtime_action": "chat",
+            "active_task": False,
+            "confirm_pending": False,
+        },
+    )
+
+    store = DashboardDataStore(dashboard_dir=output_dir)
+    detail = store.flow_detail("sample_20260327_100500_eeeeeeee")
+
+    assert detail is not None
+    assert detail["chain_status"]["overall_status"] == "degraded"
+    assert detail["host_arbitration_summary"]["degraded"] is True
+    assert detail["host_ingress_summary"]["recent_result_binding"] is True
+    assert detail["host_ingress_summary"]["recent_result_source_turn"] == "turn_prev"
+    assert detail["reply_evolution_summary"]["available"] is False
+    assert detail["reply_evolution_summary"]["reason"] == "degraded_chat_no_comparable_evolution"
+
+
+def test_dashboard_flow_detail_distinguishes_subject_chain_from_self_model_gap(tmp_path: Path) -> None:
+    real_dir = tmp_path / "artifacts" / "telegram_real_mainline_v1" / "real_telegram"
+    output_dir = tmp_path / "artifacts" / "telegram_real_mainline_v1" / "dashboard_v1"
+
+    _make_sample(
+        real_dir,
+        "sample_20260327_101000_gapgap01",
+        oe_available=True,
+        events=[],
+        normalized_runtime_summary={
+            "primary_intent": "chat",
+            "interaction_kind": "chat",
+            "conversation_act": "light_chitchat",
+            "runtime_action": "chat",
+            "active_task": False,
+            "confirm_pending": False,
+            "self_model_context_source": "missing",
+        },
+    )
+
+    sample_dir = real_dir / "sample_20260327_101000_gapgap01"
+    trace_payload = json.loads((sample_dir / "openemotion_trace.json").read_text(encoding="utf-8"))
+    trace_payload["constraint_summary"] = {
+        "self_model_context": {"present": False},
+        "developmental_self_context": {"present": True},
+        "social_self_context": {"present": True},
+        "embodied_self_context": {"present": True},
+        "selfhood_integration_context": {"present": True},
+        "initiative_self_context": {"present": True},
+        "initiative_realization_context": {"present": True},
+    }
+    _write_json(sample_dir / "openemotion_trace.json", trace_payload)
+
+    ledger = json.loads((sample_dir / "ledger.json").read_text(encoding="utf-8"))
+    ledger["openemotion"]["trace_payload"] = trace_payload
+    ledger["host"]["timeline"] = [
+        {"stage": "openemotion_processed", "timestamp": "2026-03-27T10:10:01+00:00"},
+        {"stage": "message_sent", "timestamp": "2026-03-27T10:10:02+00:00"},
+    ]
+    _write_json(sample_dir / "ledger.json", ledger)
+    _write_json(sample_dir / "timeline.json", ledger["host"]["timeline"])
+
+    store = DashboardDataStore(dashboard_dir=output_dir)
+    detail = store.flow_detail("sample_20260327_101000_gapgap01")
+
+    assert detail is not None
+    assert detail["chain_status"]["overall_status"] == "pass"
+    assert detail["subject_summary"]["subject_chain_connected"] is True
+    assert detail["subject_summary"]["contexts_seen"]["self_model"] is False
+    assert detail["subject_summary"]["self_model_context_source"] == "missing"
+    assert detail["subject_summary"]["context_load_summary"]["loaded"] == [
+        "developmental",
+        "social",
+        "embodied",
+        "integration",
+        "initiative",
+        "initiative_realization",
+    ]
+    assert "self_model" in detail["subject_summary"]["context_load_summary"]["missing"]
+
+
+def test_dashboard_flow_detail_surfaces_chat_reply_evolution_when_metadata_present(tmp_path: Path) -> None:
+    real_dir = tmp_path / "artifacts" / "telegram_real_mainline_v1" / "real_telegram"
+    output_dir = tmp_path / "artifacts" / "telegram_real_mainline_v1" / "dashboard_v1"
+
+    _make_sample(
+        real_dir,
+        "sample_20260327_101500_chatmeta",
+        oe_available=True,
+        response_plan_override={
+            "status": "chat",
+            "reply_authority": "model_chat",
+            "reply_origin": "chat_mainline",
+            "reply_text": "我觉得这轮回复更偏收束一些。",
+            "chat_cadence_mode": "reply_now_normal",
+            "metadata": {
+                "chat_expression_hint": {
+                    "reply_mode": "normal",
+                    "tone_profile": "supportive",
+                    "next_step_bias": "continue_thread",
+                    "why": "recent reflective followup",
+                },
+                "response_tendency_summary": {
+                    "preferred_mode": "ask",
+                    "preferred_tone": "supportive",
+                    "suggested_next_step": "continue_thread",
+                },
+                "memory_claim_reason": "current_session_grounded",
+            },
+        },
+    )
+
+    store = DashboardDataStore(dashboard_dir=output_dir)
+    detail = store.flow_detail("sample_20260327_101500_chatmeta")
+
+    assert detail is not None
+    assert detail["reply_evolution_summary"]["available"] is True
+    assert detail["reply_evolution_summary"]["reason"] is None
+    assert detail["reply_evolution_summary"]["subject_influence"]["chat_expression_hint"]["reply_mode"] == "normal"
+    assert detail["reply_evolution_summary"]["subject_influence"]["response_tendency_summary"]["preferred_tone"] == "supportive"
+    assert detail["reply_evolution_summary"]["host_arbitration"]["reply_origin"] == "chat_mainline"
+    assert detail["reply_evolution_summary"]["final_output"]["final_text_preview"] == "我觉得这轮回复更偏收束一些。"
+
+
+def test_dashboard_flow_detail_keeps_reply_evolution_useful_when_text_preview_missing(tmp_path: Path) -> None:
+    real_dir = tmp_path / "artifacts" / "telegram_real_mainline_v1" / "real_telegram"
+    output_dir = tmp_path / "artifacts" / "telegram_real_mainline_v1" / "dashboard_v1"
+
+    _make_sample(
+        real_dir,
+        "sample_20260327_101520_chatmeta2",
+        oe_available=True,
+        response_plan_override={
+            "status": "chat",
+            "reply_authority": "model_chat",
+            "reply_origin": "chat_mainline",
+            "reply_text": None,
+            "reply_length": 59,
+            "chat_cadence_mode": "reply_now_normal",
+            "metadata": {
+                "chat_expression_hint": {
+                    "reply_mode": "normal",
+                    "tone_profile": "repairing",
+                    "next_step_bias": "clarify_or_repair",
+                    "why": "light_chitchat with elevated repair bias",
+                },
+                "response_tendency_summary": {
+                    "preferred_mode": "defer",
+                    "preferred_tone": "cautious",
+                    "suggested_next_step": "clarify_or_repair",
+                },
+            },
+        },
+    )
+
+    store = DashboardDataStore(dashboard_dir=output_dir)
+    detail = store.flow_detail("sample_20260327_101520_chatmeta2")
+
+    assert detail is not None
+    assert detail["reply_evolution_summary"]["available"] is True
+    assert detail["reply_evolution_summary"]["final_output"]["final_text_preview"] is None
+    assert detail["reply_evolution_summary"]["final_output"]["final_text_capture_status"] == "missing_but_delivered"
+    assert detail["reply_evolution_summary"]["final_output"]["reply_length"] == 4
+    assert detail["output_summary"]["final_text_capture_status"] == "missing_but_delivered"
+
+
+def test_dashboard_flow_detail_marks_task_mainline_reply_evolution_not_available(tmp_path: Path) -> None:
+    real_dir = tmp_path / "artifacts" / "telegram_real_mainline_v1" / "real_telegram"
+    output_dir = tmp_path / "artifacts" / "telegram_real_mainline_v1" / "dashboard_v1"
+
+    _make_sample(
+        real_dir,
+        "sample_20260327_101700_taskflow",
+        oe_available=True,
+        response_plan_override={
+            "status": "completed_verified",
+            "reply_authority": "host_terminal",
+            "reply_origin": "task_mainline",
+            "reply_text": "已完成 bilili_lookalike.html。",
+            "metadata": {
+                "response_tendency_summary": {
+                    "preferred_mode": "ask",
+                },
+            },
+        },
+    )
+
+    store = DashboardDataStore(dashboard_dir=output_dir)
+    detail = store.flow_detail("sample_20260327_101700_taskflow")
+
+    assert detail is not None
+    assert detail["reply_evolution_summary"]["available"] is False
+    assert detail["reply_evolution_summary"]["reason"] == "task_mainline_not_in_v1"
+
+
+def test_dashboard_flow_detail_marks_host_only_reply_evolution_not_available(tmp_path: Path) -> None:
+    real_dir = tmp_path / "artifacts" / "telegram_real_mainline_v1" / "real_telegram"
+    output_dir = tmp_path / "artifacts" / "telegram_real_mainline_v1" / "dashboard_v1"
+
+    _make_sample(real_dir, "sample_20260327_101900_hostonly", oe_available=False)
+
+    store = DashboardDataStore(dashboard_dir=output_dir)
+    detail = store.flow_detail("sample_20260327_101900_hostonly")
+
+    assert detail is not None
+    assert detail["reply_evolution_summary"]["available"] is False
+    assert detail["reply_evolution_summary"]["reason"] == "host_only_no_subject_chat_evolution"
