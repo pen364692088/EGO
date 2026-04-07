@@ -21,6 +21,7 @@ from app.runtime_v2.semantic_parser import (
     heuristic_parse,
     is_presence_probe_text,
     parse_session_control_intent,
+    safe_semantic_parse,
 )
 from app.runtime_v2.state import RuntimeV2State
 
@@ -295,6 +296,37 @@ class TelegramRuntimeBridge:
         "take a look",
         "inspect it",
     )
+    RECENT_RESULT_ISSUE_PATTERNS = (
+        "有问题",
+        "排版有问题",
+        "排版",
+        "样式",
+        "布局",
+        "错位",
+        "跑到",
+        "没改",
+        "没有改",
+        "没变化",
+        "没有变化",
+        "没生效",
+        "不对",
+        "不太对",
+        "检查一下",
+        "检查",
+        "看下问题",
+        "修一下",
+        "改一下",
+        "调整一下",
+    )
+    RECENT_RESULT_CONFIRM_KEYS = {
+        "对",
+        "对的",
+        "是",
+        "是的",
+        "没错",
+        "嗯",
+        "嗯嗯",
+    }
     WINDOWS_PATH_RE = re.compile(r"[A-Za-z]:[\\/](?:[A-Za-z0-9._() -]+[\\/])*[A-Za-z0-9._() -]+")
     UNIX_PATH_RE = re.compile(r"(?:/mnt|/home|/tmp|/Users)(?:/[A-Za-z0-9._() -]+)+")
 
@@ -426,6 +458,28 @@ class TelegramRuntimeBridge:
     ) -> ParsedIntentGraph:
         return graph
 
+    def _build_recent_turns_for_semantic_parse(self, state: RuntimeV2State) -> List[Dict[str, str]]:
+        try:
+            chat_context = dict(state.to_chat_prompt_context() or {})
+        except Exception:
+            return []
+
+        recent_user_turns = [str(text or "").strip() for text in list(chat_context.get("recent_user_turns") or []) if str(text or "").strip()]
+        recent_assistant_replies = [str(text or "").strip() for text in list(chat_context.get("recent_assistant_replies") or []) if str(text or "").strip()]
+        if not recent_user_turns and not recent_assistant_replies:
+            return []
+
+        merged: List[Dict[str, str]] = []
+        max_len = max(len(recent_user_turns), len(recent_assistant_replies))
+        user_slice = recent_user_turns[-max_len:]
+        assistant_slice = recent_assistant_replies[-max_len:]
+        for idx in range(max_len):
+            if idx < len(user_slice):
+                merged.append({"role": "user", "text": user_slice[idx][:200]})
+            if idx < len(assistant_slice):
+                merged.append({"role": "assistant", "text": assistant_slice[idx][:200]})
+        return merged[-6:]
+
     def _looks_like_tone_feedback(self, text: str) -> bool:
         normalized = normalize_user_turn(text)
         lowered = normalized.lower_text
@@ -555,7 +609,7 @@ class TelegramRuntimeBridge:
             segments=[segment],
             primary_intent="task_request",
             secondary_intents=[],
-            parser_source="heuristic_parser",
+            parser_source="semantic_parser" if graph.parser_source == "semantic_parser" else "heuristic_parser",
             graph_version=graph.graph_version,
         )
         if target_ref:
@@ -598,7 +652,7 @@ class TelegramRuntimeBridge:
             segments=[segment],
             primary_intent="task_request",
             secondary_intents=[],
-            parser_source="heuristic_parser",
+            parser_source="semantic_parser" if graph.parser_source == "semantic_parser" else "heuristic_parser",
             graph_version=graph.graph_version,
         )
         if target_ref:
@@ -635,13 +689,61 @@ class TelegramRuntimeBridge:
                 recent_ref_markers.add("页面")
         return any(marker in normalized_turn.text or marker in normalized for marker in recent_ref_markers)
 
+    def _looks_like_recent_result_issue_followup(self, text: str, state: RuntimeV2State) -> bool:
+        recent_result = dict(getattr(state, "recent_delivered_result_context", None) or {})
+        target_path = str(recent_result.get("target_path") or "").strip()
+        if not target_path:
+            return False
+
+        normalized_turn = normalize_user_turn(text)
+        normalized = normalized_turn.lower_text
+        if not normalized:
+            return False
+
+        return any(marker in normalized_turn.text or marker in normalized for marker in self.RECENT_RESULT_ISSUE_PATTERNS)
+
+    def _looks_like_recent_result_clarification_confirmation(self, text: str, state: RuntimeV2State) -> bool:
+        recent_result = dict(getattr(state, "recent_delivered_result_context", None) or {})
+        target_path = str(recent_result.get("target_path") or "").strip()
+        target_name = str(recent_result.get("target_name") or "").strip().lower()
+        if not target_path:
+            return False
+
+        normalized_turn = normalize_user_turn(text)
+        normalized = normalized_turn.lower_text
+        if not normalized or normalized not in self.RECENT_RESULT_CONFIRM_KEYS:
+            return False
+
+        recent_assistant_replies = list(state.get_chat_state().recent_assistant_replies or [])
+        if not recent_assistant_replies:
+            return False
+
+        last_reply = str(recent_assistant_replies[-1] or "").strip().lower()
+        if not last_reply:
+            return False
+
+        clarification_markers = {"你是指", "你说的是", "刚才那个页面", "刚才那个文件", "这个页面", "这个文件"}
+        if target_name:
+            clarification_markers.add(target_name)
+            stem = target_name.rsplit(".", 1)[0].strip()
+            if stem:
+                clarification_markers.add(stem)
+            if target_name.endswith(".html"):
+                clarification_markers.add("页面")
+
+        return any(marker in last_reply for marker in clarification_markers)
+
     def _promote_recent_result_review_followup(
         self,
         text: str,
         graph: ParsedIntentGraph,
         state: RuntimeV2State,
     ) -> ParsedIntentGraph:
-        if not self._looks_like_recent_result_review_followup(text, state):
+        if not (
+            self._looks_like_recent_result_review_followup(text, state)
+            or self._looks_like_recent_result_issue_followup(text, state)
+            or self._looks_like_recent_result_clarification_confirmation(text, state)
+        ):
             return graph
 
         recent_result = dict(getattr(state, "recent_delivered_result_context", None) or {})
@@ -659,7 +761,7 @@ class TelegramRuntimeBridge:
             segments=[segment],
             primary_intent="task_request",
             secondary_intents=[],
-            parser_source="heuristic_parser",
+            parser_source="semantic_parser" if graph.parser_source == "semantic_parser" else "heuristic_parser",
             graph_version=graph.graph_version,
         )
         if target_ref:
@@ -872,7 +974,14 @@ class TelegramRuntimeBridge:
         llm_client: Any = None,
     ) -> TelegramIngressDecision:
         normalized_turn = normalize_user_turn(text)
-        graph = self._normalize_ambiguous_probe(normalized_turn.text, heuristic_parse(normalized_turn.text), state)
+        recent_turns = self._build_recent_turns_for_semantic_parse(state)
+        graph = await safe_semantic_parse(
+            normalized_turn.text,
+            recent_turns=recent_turns,
+            state=state,
+            llm_client=llm_client,
+        )
+        graph = self._normalize_ambiguous_probe(normalized_turn.text, graph, state)
         graph = self._promote_execution_confirmation(normalized_turn.text, graph, state)
         graph = self._promote_recent_result_review_followup(normalized_turn.text, graph, state)
         graph = self._promote_explicit_target_analyze_followup(normalized_turn.text, graph, state)

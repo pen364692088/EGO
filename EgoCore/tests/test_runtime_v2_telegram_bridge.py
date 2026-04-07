@@ -1,3 +1,5 @@
+import pytest
+
 from app.runtime_v2 import RuntimeV2TelegramBridge
 from app.runtime_v2.state import RuntimeV2State
 
@@ -248,3 +250,160 @@ def test_telegram_bridge_promotes_recent_result_review_followup_to_analyze():
     assert decision._runtime_action == "execute_task"
     assert ingress["request_mode"] == "analyze"
     assert ingress["resolved_target"]["path"] == r"D:\Project\AIProject\MyProject\Test2\bilili_lookalike.html"
+
+
+def test_telegram_bridge_promotes_recent_result_issue_feedback_to_analyze():
+    bridge = RuntimeV2TelegramBridge()
+    state = RuntimeV2State(session_id="telegram:dm:1")
+    state.recent_delivered_result_context = {
+        "binding_kind": "recent_delivered_result",
+        "target_name": "bilili_lookalike.html",
+        "target_path": r"D:\Project\AIProject\MyProject\Test2\bilili_lookalike.html",
+        "runtime_status": "completed_verified",
+    }
+
+    decision = bridge.inspect_ingress("排版有些问题 你检查一下", state)
+    ingress = bridge.build_ingress_context(decision, state)
+
+    assert decision._parsed_intent_graph.primary_intent == "task_request"
+    assert decision._runtime_action == "execute_task"
+    assert ingress["request_mode"] == "analyze"
+    assert ingress["resolved_target"]["path"] == r"D:\Project\AIProject\MyProject\Test2\bilili_lookalike.html"
+
+
+def test_telegram_bridge_promotes_recent_result_confirmation_after_clarification_to_analyze():
+    bridge = RuntimeV2TelegramBridge()
+    state = RuntimeV2State(session_id="telegram:dm:1")
+    state.recent_delivered_result_context = {
+        "binding_kind": "recent_delivered_result",
+        "target_name": "bilili_lookalike.html",
+        "target_path": r"D:\Project\AIProject\MyProject\Test2\bilili_lookalike.html",
+        "runtime_status": "completed_verified",
+    }
+    state.get_chat_state().recent_assistant_replies.append("好的，你是指刚才那个页面排版吗？")
+
+    decision = bridge.inspect_ingress("对", state)
+    ingress = bridge.build_ingress_context(decision, state)
+
+    assert decision._parsed_intent_graph.primary_intent == "task_request"
+    assert decision._runtime_action == "execute_task"
+    assert ingress["request_mode"] == "analyze"
+    assert ingress["resolved_target"]["path"] == r"D:\Project\AIProject\MyProject\Test2\bilili_lookalike.html"
+
+
+@pytest.mark.asyncio
+async def test_telegram_bridge_semantic_parser_handles_ordinary_discussion_question():
+    bridge = RuntimeV2TelegramBridge()
+    state = RuntimeV2State(session_id="telegram:dm:1")
+
+    class MockLLMClient:
+        async def complete(self, prompt):
+            class Response:
+                content = '{"segments": [{"text": "你觉得什么才是构建一个有自我意识的AI最核心的框架?", "kind": "small_talk", "confidence": 0.92}]}'
+            return Response()
+
+    decision = await bridge.inspect_ingress_semantic(
+        "你觉得什么才是构建一个有自我意识的AI最核心的框架?",
+        state,
+        llm_client=MockLLMClient(),
+    )
+
+    assert decision._parsed_intent_graph.parser_source == "semantic_parser"
+    assert decision.interaction_kind == "chat"
+    assert decision._runtime_action == "chat"
+
+
+@pytest.mark.asyncio
+async def test_telegram_bridge_semantic_parser_prefers_recent_result_issue_feedback():
+    bridge = RuntimeV2TelegramBridge()
+    state = RuntimeV2State(session_id="telegram:dm:1")
+    state.recent_delivered_result_context = {
+        "binding_kind": "recent_delivered_result",
+        "target_name": "bilili_lookalike.html",
+        "target_path": r"D:\Project\AIProject\MyProject\Test2\bilili_lookalike.html",
+        "runtime_status": "completed_verified",
+    }
+
+    class MockLLMClient:
+        async def complete(self, prompt):
+            assert "recent_delivered_result_context" in prompt
+            class Response:
+                content = '{"segments": [{"text": "排版有些问题 你检查一下", "kind": "task_request", "confidence": 0.95, "refers_to_previous": true, "target_ref": "D:\\\\Project\\\\AIProject\\\\MyProject\\\\Test2\\\\bilili_lookalike.html", "request_mode": "analyze"}]}'
+            return Response()
+
+    decision = await bridge.inspect_ingress_semantic("排版有些问题 你检查一下", state, llm_client=MockLLMClient())
+    ingress = bridge.build_ingress_context(decision, state)
+
+    assert decision._parsed_intent_graph.parser_source == "semantic_parser"
+    assert decision._runtime_action == "execute_task"
+    assert ingress["request_mode"] == "analyze"
+
+
+@pytest.mark.asyncio
+async def test_telegram_bridge_semantic_parser_handles_recent_result_confirmation():
+    bridge = RuntimeV2TelegramBridge()
+    state = RuntimeV2State(session_id="telegram:dm:1")
+    state.recent_delivered_result_context = {
+        "binding_kind": "recent_delivered_result",
+        "target_name": "bilili_lookalike.html",
+        "target_path": r"D:\Project\AIProject\MyProject\Test2\bilili_lookalike.html",
+        "runtime_status": "completed_verified",
+    }
+    state.get_chat_state().recent_assistant_replies.append("好的，你是指刚才那个页面排版吗？")
+
+    class MockLLMClient:
+        async def complete(self, prompt):
+            assert "last_assistant_reply" in prompt
+            class Response:
+                content = '{"segments": [{"text": "对", "kind": "task_request", "confidence": 0.94, "refers_to_previous": true, "target_ref": "D:\\\\Project\\\\AIProject\\\\MyProject\\\\Test2\\\\bilili_lookalike.html", "request_mode": "analyze"}]}'
+            return Response()
+
+    decision = await bridge.inspect_ingress_semantic("对", state, llm_client=MockLLMClient())
+    ingress = bridge.build_ingress_context(decision, state)
+
+    assert decision._parsed_intent_graph.parser_source == "semantic_parser"
+    assert decision._runtime_action == "execute_task"
+    assert ingress["request_mode"] == "analyze"
+
+
+@pytest.mark.asyncio
+async def test_telegram_bridge_semantic_parser_handles_recent_result_correction_without_chat_fallback():
+    bridge = RuntimeV2TelegramBridge()
+    state = RuntimeV2State(session_id="telegram:dm:1")
+    state.recent_delivered_result_context = {
+        "binding_kind": "recent_delivered_result",
+        "target_name": "bilili_lookalike.html",
+        "target_path": r"D:\Project\AIProject\MyProject\Test2\bilili_lookalike.html",
+        "runtime_status": "completed_verified",
+    }
+
+    class MockLLMClient:
+        async def complete(self, prompt):
+            class Response:
+                content = '{"segments": [{"text": "没有改啊 搜索按钮跑到搜索框下面了", "kind": "correction", "confidence": 0.96, "refers_to_previous": true, "target_ref": "D:\\\\Project\\\\AIProject\\\\MyProject\\\\Test2\\\\bilili_lookalike.html"}]}'
+            return Response()
+
+    decision = await bridge.inspect_ingress_semantic(
+        "没有改啊 搜索按钮跑到搜索框下面了",
+        state,
+        llm_client=MockLLMClient(),
+    )
+
+    assert decision._parsed_intent_graph.parser_source == "semantic_parser"
+    assert decision._runtime_action != "chat"
+    assert decision._parsed_intent_graph.primary_intent in {"correction", "task_request"}
+
+
+@pytest.mark.asyncio
+async def test_telegram_bridge_semantic_parser_falls_back_cleanly_on_llm_error():
+    bridge = RuntimeV2TelegramBridge()
+    state = RuntimeV2State(session_id="telegram:dm:1")
+
+    class FailingLLMClient:
+        async def complete(self, prompt):
+            raise RuntimeError("provider transient failure")
+
+    decision = await bridge.inspect_ingress_semantic("你好", state, llm_client=FailingLLMClient())
+
+    assert decision._parsed_intent_graph.parser_source == "chat_default"
+    assert decision._runtime_action == "chat"

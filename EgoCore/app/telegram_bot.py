@@ -13,6 +13,7 @@ v2.0.0 (2026-03-19):
 import sys
 
 import asyncio
+import hashlib
 import logging
 import os
 import re
@@ -106,6 +107,7 @@ from app.response_contract import (
     build_runtime_result_response_plan,
     build_status_response_plan,
 )
+from app.llm_client import get_llm_client
 from app.restore_runtime import PendingRestoreObservation
 
 # Ingestion Layer
@@ -317,6 +319,7 @@ class TelegramBot:
         self._session_log_manager = SessionLogManager()
         self._phase1_bus_ready = False
         self._runtime_states: dict[str, RuntimeV2State] = {}
+        self._semantic_parse_client: Optional[Any] = None
         self._manual_resume_tasks: dict[str, asyncio.Task] = {}
         self.autonomy_orchestrator = AutonomyOrchestrator() if use_runtime_v2 else None
         self.autonomy_transient_retry_limit = 3
@@ -468,6 +471,12 @@ class TelegramBot:
             compact["chat_expression_hint"] = dict(source.get("chat_expression_hint") or {})
         if source.get("response_tendency_summary"):
             compact["response_tendency_summary"] = dict(source.get("response_tendency_summary") or {})
+        if source.get("final_text_preview"):
+            compact["final_text_preview"] = source.get("final_text_preview")
+        if source.get("final_text_hash"):
+            compact["final_text_hash"] = source.get("final_text_hash")
+        if source.get("final_text_length") is not None:
+            compact["final_text_length"] = source.get("final_text_length")
         return compact
 
     def _build_pre_runtime_response_plan(self, reply_text: str, pre_runtime, state: RuntimeV2State):
@@ -1333,6 +1342,22 @@ class TelegramBot:
             self.runtime_v2_loop = self.telegram_runtime_fallback_runner.get_loop()
         return self.runtime_v2_loop
 
+    def _get_semantic_parse_client(self) -> Optional[Any]:
+        if self._semantic_parse_client is not None:
+            return self._semantic_parse_client
+        try:
+            config = get_config()
+            chat_cfg = config.get_llm_config_for_use_case("chat")
+            provider = str(chat_cfg.get("provider") or config.llm.get("default_provider") or "").strip() or None
+            model = str(chat_cfg.get("model") or config.llm.get("default_model") or "").strip() or None
+            if not provider and not model:
+                return None
+            self._semantic_parse_client = get_llm_client(provider=provider, model=model)
+        except Exception as exc:
+            logger.warning("runtime_v2.semantic_parse_client_unavailable err=%s", exc)
+            self._semantic_parse_client = None
+        return self._semantic_parse_client
+
     def _get_runtime_state(self, session_key: str) -> RuntimeV2State:
         state = self._runtime_states.get(session_key)
         runtime_loop = self.runtime_v2_loop
@@ -1382,10 +1407,18 @@ class TelegramBot:
             remaining = remaining[split_at:].lstrip("\n")
         return chunks
 
-    def _capture_telegram_outbox_record(self, sent_message: Any, *, text_length: int, finalize_evidence: bool) -> None:
+    def _capture_telegram_outbox_record(
+        self,
+        sent_message: Any,
+        *,
+        text_length: int,
+        text_preview: Optional[str] = None,
+        finalize_evidence: bool,
+    ) -> None:
         if not sent_message or not _EVIDENCE_COLLECTOR_AVAILABLE:
             return
         try:
+            preview = str(text_preview or "").strip()
             collector = get_evidence_collector()
             collector.capture_outbox_record(
                 {
@@ -1393,6 +1426,8 @@ class TelegramBot:
                     "message_id": sent_message.message_id,
                     "date": sent_message.date.isoformat() if sent_message.date else None,
                     "text_length": text_length,
+                    "final_text_preview": preview[:200] or None,
+                    "final_text_hash": hashlib.sha256(preview.encode("utf-8")).hexdigest()[:16] if preview else None,
                     "success": True,
                 }
             )
@@ -1610,6 +1645,7 @@ class TelegramBot:
             self._capture_telegram_outbox_record(
                 sent_message,
                 text_length=len(chunk),
+                text_preview=chunk,
                 finalize_evidence=finalize_evidence and index == len(chunks) - 1,
             )
 
@@ -3375,7 +3411,11 @@ class TelegramBot:
         if extra_context:
             text = f"{text}\n\n{extra_context}"
 
-        ingress = await self.telegram_runtime_bridge.inspect_ingress_semantic(text, state, llm_client=None)
+        ingress = await self.telegram_runtime_bridge.inspect_ingress_semantic(
+            text,
+            state,
+            llm_client=self._get_semantic_parse_client(),
+        )
         state.ingress_context = self.telegram_runtime_bridge.build_ingress_context(ingress, state)
         if state.proto_self_version_override:
             state.ingress_context = dict(state.ingress_context or {})
@@ -4912,6 +4952,7 @@ class TelegramBot:
             self._capture_telegram_outbox_record(
                 sent_message,
                 text_length=len(chunk),
+                text_preview=chunk,
                 finalize_evidence=finalize_evidence and index == len(chunks) - 1,
             )
 

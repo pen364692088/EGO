@@ -208,6 +208,10 @@ SEGMENTATION_PROMPT = """你是语义解析器。把用户输入拆成多个语�
 5. 纠错/反驳（不是这个意思/我说的不是）必须标记为 correction
 6. 路径/附件/材料默认可作为 reference_material
 7. 你只负责理解，不负责执行或判断真实状态
+8. 如果运行时状态里有 recent_delivered_result_context / active_task_summary / last_assistant_reply：
+   - 用户在反馈刚交付结果的问题、确认澄清、要求再检查、要求继续修改时，优先识别成 task_request
+   - request_mode 优先用 analyze；如果用户明确要求继续改，再用 write/execute
+   - 不要把这类上下文敏感 follow-up 误判成 small_talk
 
 用户文本：
 {text}
@@ -236,18 +240,19 @@ def build_parser_context(
     - 当前任务状态
     - 挂起的 artifacts
     """
-    # 处理 recent_turns 可能是对象而不是字典的情况
-    turns_summary = []
-    for t in recent_turns[-6:]:
-        if isinstance(t, dict):
-            text_val = t.get("text") or t.get("content") or ""
-        else:
-            # 可能是对象
-            text_val = getattr(t, "text", None) or getattr(t, "content", "") or ""
-        turns_summary.append({
-            "role": t.get("role") if isinstance(t, dict) else getattr(t, "role", "user"),
-            "text": str(text_val)[:200] if text_val else "",
-        })
+    turns_summary = _build_recent_turns_summary(recent_turns, state)
+    chat_prompt_context = {}
+    if state is not None and hasattr(state, "to_chat_prompt_context"):
+        try:
+            chat_prompt_context = dict(state.to_chat_prompt_context() or {})
+        except Exception:
+            chat_prompt_context = {}
+
+    recent_user_turns = list(chat_prompt_context.get("recent_user_turns") or [])
+    recent_assistant_replies = list(chat_prompt_context.get("recent_assistant_replies") or [])
+    active_task_summary = dict(chat_prompt_context.get("active_task_summary") or {})
+    recent_delivered_result_context = dict(chat_prompt_context.get("recent_delivered_result_context") or {})
+    last_assistant_reply = str(recent_assistant_replies[-1] or "").strip() if recent_assistant_replies else ""
 
     return {
         "recent_turns_summary": turns_summary,
@@ -259,12 +264,64 @@ def build_parser_context(
             "waiting_for_user_input": getattr(state, "waiting_for_user_input", False),
             "last_delivery_type": getattr(state, "last_delivery_type", None),
             "has_pending_artifacts": len(getattr(state, "pending_artifacts", [])) > 0,
+            "active_task_summary": active_task_summary,
+            "recent_delivered_result_context": recent_delivered_result_context,
+            "recent_user_turns": recent_user_turns[-4:],
+            "recent_assistant_replies": recent_assistant_replies[-4:],
+            "last_assistant_reply": last_assistant_reply or None,
         },
         "pending_artifacts": [
             {"filename": a.get("filename") if isinstance(a, dict) else getattr(a, "filename", None)}
             for a in getattr(state, "pending_artifacts", [])[-3:]
         ],
     }
+
+
+def _build_recent_turns_summary(
+    recent_turns: List[Dict[str, Any]],
+    state: Any,
+) -> List[Dict[str, str]]:
+    turns_summary = []
+    for t in recent_turns[-6:]:
+        if isinstance(t, dict):
+            text_val = t.get("text") or t.get("content") or ""
+            role_val = t.get("role") or "user"
+        else:
+            text_val = getattr(t, "text", None) or getattr(t, "content", "") or ""
+            role_val = getattr(t, "role", "user")
+        if not text_val:
+            continue
+        turns_summary.append({
+            "role": str(role_val or "user"),
+            "text": str(text_val)[:200],
+        })
+
+    if turns_summary:
+        return turns_summary[-6:]
+
+    if state is None or not hasattr(state, "to_chat_prompt_context"):
+        return []
+
+    try:
+        chat_context = dict(state.to_chat_prompt_context() or {})
+    except Exception:
+        return []
+
+    recent_user_turns = [str(text or "").strip() for text in list(chat_context.get("recent_user_turns") or []) if str(text or "").strip()]
+    recent_assistant_replies = [str(text or "").strip() for text in list(chat_context.get("recent_assistant_replies") or []) if str(text or "").strip()]
+    if not recent_user_turns and not recent_assistant_replies:
+        return []
+
+    merged: List[Dict[str, str]] = []
+    max_len = max(len(recent_user_turns), len(recent_assistant_replies))
+    user_slice = recent_user_turns[-max_len:]
+    assistant_slice = recent_assistant_replies[-max_len:]
+    for idx in range(max_len):
+        if idx < len(user_slice):
+            merged.append({"role": "user", "text": user_slice[idx][:200]})
+        if idx < len(assistant_slice):
+            merged.append({"role": "assistant", "text": assistant_slice[idx][:200]})
+    return merged[-6:]
 
 
 # =============================================================================
@@ -506,7 +563,7 @@ async def semantic_parse_message(
         return heuristic_parse(text)
 
     heuristic_graph = heuristic_parse(text)
-    if heuristic_graph.parser_source == "heuristic_parser":
+    if _should_use_fast_heuristic_without_llm(text, heuristic_graph):
         logger.info(
             "semantic_parse: fast heuristic hit, parser_source=%s, primary_intent=%s",
             heuristic_graph.parser_source,
@@ -556,6 +613,27 @@ async def semantic_parse_message(
         graph = heuristic_parse(text)
         logger.info(f"semantic_parse: error fallback parser_source={graph.parser_source}")
         return graph
+
+
+def _should_use_fast_heuristic_without_llm(text: str, heuristic_graph: ParsedIntentGraph) -> bool:
+    if heuristic_graph.parser_source != "heuristic_parser":
+        return False
+
+    normalized = _normalize_short_probe(text)
+    if normalized in SHORT_CORRECTION_PATTERNS:
+        return True
+
+    stripped = str(text or "").strip()
+    if stripped.startswith("/"):
+        return True
+
+    if _extract_explicit_paths(stripped):
+        return True
+
+    if "[用户发送了文件:" in stripped or "[附件:" in stripped:
+        return True
+
+    return False
 
 
 async def _call_llm(llm_client: Any, prompt: str) -> Dict[str, Any]:
@@ -859,6 +937,7 @@ async def safe_semantic_parse(
     """
     context = build_parser_context(recent_turns, state)
     runtime_snapshot = context["runtime_snapshot"]
+    context_recent_turns = list(context.get("recent_turns_summary") or [])
 
     # 日志：输入
     logger.info(f"safe_semantic_parse: input text[:100]={text[:100]}, has_llm={llm_client is not None}")
@@ -866,7 +945,7 @@ async def safe_semantic_parse(
     try:
         graph = await semantic_parse_message(
             text=text,
-            recent_turns=recent_turns,
+            recent_turns=context_recent_turns,
             runtime_snapshot=runtime_snapshot,
             llm_client=llm_client,
         )

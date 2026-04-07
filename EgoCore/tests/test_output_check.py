@@ -270,3 +270,39 @@ def test_output_check_uses_intent_contract_source_for_forbidden_patterns() -> No
     assert verdict.applied_authority == "host_degraded_fallback"
     assert verdict.intent_gate_status == "violation"
     assert "forbidden_internalization" in verdict.intent_gate_violation_types
+
+
+def test_output_check_blocks_unverified_completion_claim_for_active_recent_result() -> None:
+    state = RuntimeV2State(session_id="telegram:dm:1")
+    state.current_goal = "检查并修正 bilili_lookalike.html 排版"
+    state.ingress_context = {
+        "runtime_action": "chat",
+        "interaction_kind": "chat",
+        "conversation_act": "light_chitchat",
+    }
+    state.recent_delivered_result_context = {
+        "binding_kind": "recent_delivered_result",
+        "target_name": "bilili_lookalike.html",
+        "target_path": r"D:\Project\AIProject\MyProject\Test2\bilili_lookalike.html",
+        "runtime_status": "completed_verified",
+    }
+
+    plan = build_direct_response_plan(
+        "排版问题解决了，文件确实是刚保存的，可能只是缓存问题。",
+        kind="chat",
+        delivery_kind="chat",
+        authority_source="test",
+        reply_authority="model_chat",
+        metadata={
+            "conversation_act": "light_chitchat",
+            "reply_origin": "chat_mainline",
+        },
+        state=state,
+    )
+
+    verdict = apply_output_check(plan, state)
+
+    assert verdict.passed is True
+    assert verdict.reason == "completion_claim_guard_applied"
+    assert verdict.applied_authority == "host_degraded_fallback"
+    assert "我还没实际改动并重新验证 bilili_lookalike.html" in verdict.reply_text

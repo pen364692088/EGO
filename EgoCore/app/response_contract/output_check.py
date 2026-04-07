@@ -2,8 +2,10 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 import os
+import re
 from typing import Any, Dict, List, Optional
 
+from app.runtime_v2.semantic_parser import build_runtime_status_reply
 from app.runtime_v2.run_items import build_run_item_summary_text
 
 from .response_plan import ResponsePlan
@@ -35,6 +37,14 @@ class OutputCheckVerdict:
 _TERMINAL_KINDS = {"completed_verified", "completed", "blocked", "failed", "status_probe"}
 _INTENT_GATE_ALLOWED_AUTHORITIES = {"model_chat"}
 _INTENT_GATE_ALLOWED_REPLY_ORIGINS = {"chat_mainline"}
+_COMPLETION_CLAIM_GUARD_PATTERNS = (
+    re.compile(r"已(经)?(改好|修好|修复|解决|处理好|保存)", re.IGNORECASE),
+    re.compile(r"问题解决了", re.IGNORECASE),
+    re.compile(r"刚保存", re.IGNORECASE),
+    re.compile(r"缓存问题", re.IGNORECASE),
+    re.compile(r"显示延迟", re.IGNORECASE),
+    re.compile(r"文件确实是刚保存的", re.IGNORECASE),
+)
 
 
 def apply_output_check(plan: ResponsePlan, state: Any) -> OutputCheckVerdict:
@@ -84,6 +94,20 @@ def apply_output_check(plan: ResponsePlan, state: Any) -> OutputCheckVerdict:
             if not is_evidence_bearing:
                 fidelity_mode = "fallback"
 
+    completion_claim_guard = evaluate_completion_claim_guard(
+        plan,
+        state,
+        reply_text=reply_text,
+        delivery_kind=delivery_kind,
+        applied_authority=applied_authority,
+        reply_origin=reply_origin,
+        is_evidence_bearing=is_evidence_bearing,
+    )
+    if completion_claim_guard["applied"]:
+        reply_text = completion_claim_guard["reply_text"]
+        applied_authority = completion_claim_guard["applied_authority"]
+        used_host_fallback = True
+
     intent_gate_verdict = evaluate_response_intent_gate(
         plan,
         state,
@@ -107,7 +131,9 @@ def apply_output_check(plan: ResponsePlan, state: Any) -> OutputCheckVerdict:
 
     passed = bool(reply_text)
     reason = "ok"
-    if used_intent_gate_fallback:
+    if completion_claim_guard["applied"]:
+        reason = completion_claim_guard["reason"]
+    elif used_intent_gate_fallback:
         reason = "intent_gate_fallback_applied"
     elif used_host_verbatim:
         reason = "host_verbatim_applied"
@@ -154,11 +180,23 @@ def _build_fallback_reply(kind: str, state: Any) -> str:
     if kind in {"blocked", "failed"}:
         return _build_blocked_summary(state)
     if kind in {"waiting_input", "ask"}:
+        if _should_render_active_status_reply(state):
+            return build_runtime_status_reply(state)
         current_step = str(getattr(state, "current_step", "") or "").strip()
         if current_step:
             return f"当前需要你确认后继续。当前步骤：{current_step}"
         return "当前需要你确认后继续。"
     return ""
+
+
+def _should_render_active_status_reply(state: Any) -> bool:
+    if bool(getattr(state, "waiting_for_user_input", False)):
+        return False
+    return str(getattr(state, "task_status", "") or "").strip() in {
+        "running",
+        "resumable_pause",
+        "blocked",
+    }
 
 
 def _build_completion_summary(state: Any) -> str:
@@ -317,6 +355,48 @@ def _build_response_intent_contract(plan: ResponsePlan, state: Any) -> Dict[str,
     }
 
 
+def evaluate_completion_claim_guard(
+    plan: ResponsePlan,
+    state: Any,
+    *,
+    reply_text: str,
+    delivery_kind: str,
+    applied_authority: str,
+    reply_origin: str,
+    is_evidence_bearing: bool,
+) -> Dict[str, Any]:
+    result = {
+        "applied": False,
+        "reply_text": reply_text,
+        "applied_authority": applied_authority,
+        "reason": "not_applicable",
+    }
+
+    if (
+        not reply_text
+        or is_evidence_bearing
+        or delivery_kind != "chat"
+        or applied_authority not in _INTENT_GATE_ALLOWED_AUTHORITIES
+        or reply_origin not in _INTENT_GATE_ALLOWED_REPLY_ORIGINS
+    ):
+        return result
+
+    if not _has_active_continuity_context(state):
+        return result
+    if not _looks_like_unverified_completion_claim(reply_text):
+        return result
+
+    result.update(
+        {
+            "applied": True,
+            "reply_text": _build_completion_claim_guard_fallback(state),
+            "applied_authority": "host_degraded_fallback",
+            "reason": "completion_claim_guard_applied",
+        }
+    )
+    return result
+
+
 def _resolve_intent_contract_source(plan: ResponsePlan, state: Any) -> Dict[str, Any]:
     metadata = dict(getattr(plan, "metadata", None) or {})
     source = metadata.get("intent_contract_source")
@@ -348,6 +428,40 @@ def _build_response_grounding(state: Any) -> Dict[str, Any]:
     if grounding:
         return grounding
     return {}
+
+
+def _has_active_continuity_context(state: Any) -> bool:
+    if state is None:
+        return False
+    ingress_context = dict(getattr(state, "ingress_context", None) or {})
+    if str(ingress_context.get("runtime_action") or "").strip() != "chat":
+        return False
+    recent_result_context = dict(getattr(state, "recent_delivered_result_context", None) or {})
+    active_task_summary = {}
+    if hasattr(state, "build_active_task_summary"):
+        try:
+            active_task_summary = dict(state.build_active_task_summary() or {})
+        except Exception:
+            active_task_summary = {}
+    return bool(recent_result_context or active_task_summary or getattr(state, "current_goal", None))
+
+
+def _looks_like_unverified_completion_claim(reply_text: str) -> bool:
+    normalized = str(reply_text or "").strip()
+    if not normalized:
+        return False
+    return any(pattern.search(normalized) for pattern in _COMPLETION_CLAIM_GUARD_PATTERNS)
+
+
+def _build_completion_claim_guard_fallback(state: Any) -> str:
+    recent_result_context = dict(getattr(state, "recent_delivered_result_context", None) or {})
+    target_name = str(recent_result_context.get("target_name") or "").strip()
+    if target_name:
+        return f"我还没实际改动并重新验证 {target_name}。要我现在继续检查并处理吗？"
+    current_goal = str(getattr(state, "current_goal", "") or "").strip()
+    if current_goal:
+        return f"我还没实际执行并验证“{current_goal}”这一步。要我继续处理吗？"
+    return "我还没实际执行并重新验证这一步。要我继续处理吗？"
 
 
 def _build_intent_gate_fallback(plan: ResponsePlan) -> str:

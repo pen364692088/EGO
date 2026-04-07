@@ -91,6 +91,62 @@ async def test_telegram_bot_runtime_v2_path(monkeypatch):
 
 
 @pytest.mark.asyncio
+async def test_telegram_bot_runtime_v2_passes_semantic_llm_client_to_bridge(monkeypatch):
+    bot = TelegramBot(token="test-token", use_runtime_v2=True)
+    runtime_loop = bot._get_runtime_v2_loop()
+    captured = {"llm_client": None}
+    sentinel_client = object()
+
+    class DummyBot:
+        async def send_chat_action(self, chat_id, action):
+            return None
+
+    class DummyMessage:
+        text = "你觉得什么才是构建一个有自我意识的AI最核心的框架?"
+        message_id = 11
+        reply_to_message = None
+        last_text = None
+        async def reply_text(self, text, parse_mode=None):
+            self.last_text = text
+
+    class DummyChat:
+        id = 123
+        type = "private"
+
+    class DummyUser:
+        id = 456
+        username = "moonlight"
+
+    class DummyUpdate:
+        message = DummyMessage()
+        effective_chat = DummyChat()
+        effective_user = DummyUser()
+
+    bot.app = type('A', (), {'bot': DummyBot()})()
+
+    monkeypatch.setattr(bot, "_get_semantic_parse_client", lambda: sentinel_client)
+
+    async def fake_inspect_ingress_semantic(text, state, llm_client):
+        captured["llm_client"] = llm_client
+        return bot.runtime_v2_bridge.inspect_ingress(text, state)
+
+    async def fake_run_turn_typed(session_id, user_input):
+        from app.runtime_v2.runtime_reply import RuntimeV2Reply, RuntimeV2TurnResult
+        return RuntimeV2TurnResult(
+            status="chat",
+            state=runtime_loop.get_state(session_id),
+            reply=RuntimeV2Reply(reply_text="这是个值得讨论的问题。", delivery_kind="chat", status="chat"),
+        )
+
+    monkeypatch.setattr(bot.runtime_v2_bridge, "inspect_ingress_semantic", fake_inspect_ingress_semantic)
+    monkeypatch.setattr(runtime_loop, "run_turn_typed", fake_run_turn_typed)
+
+    await bot.handle_message(DummyUpdate(), None)
+
+    assert captured["llm_client"] is sentinel_client
+
+
+@pytest.mark.asyncio
 async def test_telegram_bot_runtime_v2_busy_short_probe_enters_runtime(monkeypatch):
     """短探针不再被吸收，而是进入 runtime 获取正常回复"""
     bot = TelegramBot(token="test-token", use_runtime_v2=True)

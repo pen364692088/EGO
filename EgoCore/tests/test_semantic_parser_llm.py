@@ -8,11 +8,13 @@ import pytest
 from app.runtime_v2.semantic_parser import (
     ParsedIntentGraph,
     SemanticSegment,
+    build_parser_context,
     heuristic_parse,
     SEGMENT_KINDS,
     REQUEST_MODES,
     _extract_first_json,
 )
+from app.runtime_v2.state import RuntimeV2State
 
 
 class TestSemanticParserDataStructures:
@@ -422,6 +424,41 @@ class TestSemanticParserIntegration:
         assert graph.parser_source == "heuristic_parser"
         assert graph.parser_source != "semantic_parser"
         assert graph.primary_intent == "reference_material"
+
+    async def test_path_1b_semantic_parser_handles_ordinary_discussion(self):
+        from app.runtime_v2.semantic_parser import semantic_parse_message
+
+        class MockLLMClient:
+            async def complete(self, prompt):
+                class Response:
+                    content = '{"segments": [{"text": "你觉得什么才是构建一个有自我意识的AI最核心的框架?", "kind": "small_talk", "confidence": 0.93}]}'
+                return Response()
+
+        graph = await semantic_parse_message(
+            text="你觉得什么才是构建一个有自我意识的AI最核心的框架?",
+            recent_turns=[],
+            runtime_snapshot={"task_status": "idle"},
+            llm_client=MockLLMClient(),
+        )
+
+        assert graph.parser_source == "semantic_parser"
+        assert graph.primary_intent == "small_talk"
+
+
+def test_build_parser_context_includes_recent_result_and_last_reply() -> None:
+    state = RuntimeV2State(session_id="telegram:dm:1")
+    state.get_chat_state().recent_user_turns = ["你好", "排版有些问题 你检查一下"]
+    state.get_chat_state().recent_assistant_replies = ["你好。", "好的，你是指刚才那个页面排版吗？"]
+    state.recent_delivered_result_context = {
+        "target_name": "bilili_lookalike.html",
+        "target_path": r"D:\Project\AIProject\MyProject\Test2\bilili_lookalike.html",
+    }
+
+    context = build_parser_context([], state)
+
+    assert context["runtime_snapshot"]["recent_delivered_result_context"]["target_name"] == "bilili_lookalike.html"
+    assert context["runtime_snapshot"]["last_assistant_reply"] == "好的，你是指刚才那个页面排版吗？"
+    assert len(context["recent_turns_summary"]) >= 2
 
 
 class TestDesignContractSamples:
