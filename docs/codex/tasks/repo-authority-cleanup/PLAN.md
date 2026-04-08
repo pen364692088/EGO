@@ -74,7 +74,7 @@
 ## Progress
 
 - current_status: in_progress
-- current_milestone: Milestone 1 - Phase 0 Truth Map + Identity Baseline + Self-Model Wave
+- current_milestone: Milestone 2 - Drives / Reflection / Developmental Classification
 - milestone_state: executing
 
 ## Decision log
@@ -83,6 +83,7 @@
 - 2026-04-08: 第一轮固定只做 `Phase 0 + identity baseline closeout + self-model authority wave`；原因是 drives/reflection/developmental 仍有更高 dual-layer 风险，不能一轮混改
 - 2026-04-08: `identity` 不再重复设计；当前已落地代码波次作为 baseline 复核与 ledger 对齐对象
 - 2026-04-08: docs/artifacts 先做索引与 fate ledger，不先做物理迁移；原因是当前 scripts/gates/artifacts caller 仍分散
+- 2026-04-08: `proto_self_restore` 的 package re-export 可以安全移除；原因是全仓 caller 证明已显示代码 caller 只剩 `__init__.py` 自身，formal mainline 为 0
 
 ## Surprises / discoveries
 
@@ -99,5 +100,5 @@
   - `proto_self_restore` 是否已可直接删除
   - drives/reflection/developmental 的删除 admission 还不清楚
 - 下一步最小闭环动作：
-  - 先落 6 个 ledger 和 `self-model` authority demotion
-  - 再用定向测试 + `verify_repo --mode fast` 判定是否解锁下一里程碑
+  - 完成 drives/reflection/developmental caller/authority ledger 收口
+  - 去掉 `proto_self_restore` package re-export 并用 scoped tests + `verify_repo --mode fast` 复核

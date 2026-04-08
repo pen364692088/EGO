@@ -20,13 +20,11 @@ from app.openemotion_adapter.developmental_writeback import (
     record_developmental_projection_from_finalized_sample,
     sync_real_developmental_projection,
 )
-from app.openemotion_adapter.proto_self_restore import ProtoSelfRestore
 from app.openemotion_adapter.proto_self_state_store import ProtoSelfStateStore
 from app.openemotion_adapter.proto_self_trace_bridge import ProtoSelfTraceBridge
 
 __all__ = [
     "ProtoSelfAdapter",
-    "ProtoSelfRestore",
     "ProtoSelfStateStore",
     "ProtoSelfTraceBridge",
     "record_developmental_projection_from_finalized_sample",

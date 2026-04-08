@@ -2,14 +2,14 @@
 
 ## Current milestone
 
-- name: Milestone 1 - Phase 0 Truth Map + Identity Baseline + Self-Model Wave
+- name: Milestone 2 - Drives / Reflection / Developmental Classification
 - owner: Codex
 - state: completed
 
 ## Current state
 
 - current_layer: repo_authority_cleanup
-- main_chain_status: phase0_truth_map_landed_identity_baseline_confirmed_self_model_authority_wave_landed
+- main_chain_status: phase0_truth_map_landed_identity_baseline_confirmed_self_model_authority_wave_landed_milestone2_classification_landed
 - completion_class: conditional_complete
 
 ## Completed work
@@ -21,17 +21,17 @@
 - 已确认 `emotiond/self_model_adapter.py`、`emotiond/self_model_mirror.py`、`proto_self_restore.py` 当前 formal caller 为 0，但仍存在 tools/docs/generated caller
 - 已完成 Phase 0 六个 ledger 首版落地：`AUTHORITY_MATRIX / CALLER_MATRIX / FILE_FATE_LEDGER / CANONICAL_DOCS_INDEX / ARTIFACT_LOG_INVENTORY / CONFLICT_REGISTER`
 - 已完成 `self-model` 代码级 authority 收口：formal owner 自证、legacy adapter/mirror 自降级、single-authority static regression 落地
+- 已完成 `drives / reflection / developmental` 的 caller/authority ledger 收口，不改语义
+- 已移除 `EgoCore/app/openemotion_adapter/__init__.py` 中对 `ProtoSelfRestore` 的 package re-export；当前只剩 docs/generated residue
 
 ## Last validation results
 
-- mode: milestone-1 scoped verification
+- mode: milestone-2 scoped verification
 - result: passed
 - summary:
-  - `python3 -m py_compile OpenEmotion/openemotion/self_model/model.py OpenEmotion/openemotion/self_model/__init__.py OpenEmotion/emotiond/self_model_adapter.py OpenEmotion/emotiond/self_model_mirror.py OpenEmotion/tests/test_self_model_single_authority.py scripts/codex/verify_proto_self_single_authority.py`
-  - `cmd.exe /c "OpenEmotion\\.venv\\Scripts\\python.exe -m pytest OpenEmotion\\tests\\test_identity_single_authority.py OpenEmotion\\tests\\test_self_model_single_authority.py OpenEmotion\\openemotion\\proto_self_v2\\tests\\test_self_model_read_integration.py -q"` -> `12 passed`
-  - `PYTHONPATH=EgoCore:EgoCore/modules:OpenEmotion python3 -m pytest EgoCore/tests/test_runtime_v2_proto_self_runtime.py -k "self_model or identity" -q -s` -> `8 passed`
+  - `python3 -m py_compile EgoCore/app/openemotion_adapter/__init__.py EgoCore/tests/test_openemotion_adapter_shims.py`
+  - `PYTHONPATH=EgoCore:EgoCore/modules:OpenEmotion python3 -m pytest EgoCore/tests/test_openemotion_adapter_shims.py -q -s` -> `3 passed`
   - `python3 scripts/codex/verify_proto_self_single_authority.py` -> passed
-  - `python3 scripts/codex/lint_repo.py` -> passed
   - `python3 scripts/codex/verify_repo.py --mode fast` -> passed
   - scoped `git diff --check` -> passed
 
@@ -43,17 +43,20 @@
 - `drives / reflection / developmental` 第一轮只进 ledger 与 conflict register，不进语义改造
 - `self-model` 本轮后的唯一 authority 固定为 `openemotion.self_model/*`；`openemotion.proto_self.self_model` 仅保留 active compute/proposal substrate 角色
 - `emotiond/self_model_adapter.py` 固定为 `compatibility_only`，`emotiond/self_model_mirror.py` 固定为 `reference_only`
+- `drives / reflection / developmental` 本轮只做 caller/authority 定性，不改 owner/substrate 语义
+- `proto_self_restore` 当前 formal caller 仍为 0，且 package re-export 已被清除；删除 admission 现在只剩 docs/generated residue
 
 ## Open risks
 
 - worktree 脏文件很多，提交必须极度 scoped
-- `proto_self_restore` 因 `__init__.py` re-export 与历史 docs/generated caller，当前只能进 delete-admission ledger，不能直接删
+- `proto_self_restore` 当前虽已无代码 caller，但 docs/generated residue 仍在，不能直接删
 - `self-model` dual-authority 已收口，但 legacy adapter/mirror 仍有 tool/docs caller，当前还不能删
+- reflection legacy residue 仍有 `emotiond/core.py` caller；当前只能维持 `reference_only`
 - artifacts/logs 只做 inventory，不做物理迁移或删除；archive 边界仍待后续波次明确
 
 ## Next step
 
-- 进入下一波：`drives / reflection / developmental` 只做 caller/authority ledger 收口，不做语义改造；同时继续推进 `proto_self_restore / self_model_adapter / self_model_mirror` 的 delete-admission 证明
+- 进入下一波：做 `canonical docs / artifact admission`，并继续推进 `proto_self_restore / self_model_adapter / self_model_mirror` 的 docs/generated/tool caller 清理；`drives / reflection / developmental` 仍不改语义
 
 ## Commands run / evidence
 
@@ -73,3 +76,9 @@
 - `find OpenEmotion/artifacts -maxdepth 2`
 - `find EgoCore/artifacts -maxdepth 2`
 - targeted `rg` on `self_model_adapter / self_model_mirror / proto_self_restore / identity_invariants / developmental_core`
+- `rg -n "openemotion\\.endogenous_drives|endogenous_drive_context|DriveField|proto_self\\.appraisal" EgoCore/app OpenEmotion/openemotion/proto_self_v2 OpenEmotion/openemotion/proto_self OpenEmotion/tests OpenEmotion/tools`
+- `rg -n "openemotion\\.reflective_self|reflective_self_context|proto_self\\.reflection|reflection_note|emotiond\\.reflection|self_counterfactual" EgoCore/app OpenEmotion/openemotion/proto_self_v2 OpenEmotion/openemotion/proto_self OpenEmotion/emotiond OpenEmotion/tests OpenEmotion/tools`
+- `rg -n "openemotion\\.developmental_self|developmental_self_context|emotiond\\.developmental_core|openemotion\\.endogenous_drives|openemotion\\.reflective_self" .`
+- `rg -n "ProtoSelfRestore|proto_self_restore" .`
+- `python3 -m py_compile EgoCore/app/openemotion_adapter/__init__.py EgoCore/tests/test_openemotion_adapter_shims.py`
+- `PYTHONPATH=EgoCore:EgoCore/modules:OpenEmotion python3 -m pytest EgoCore/tests/test_openemotion_adapter_shims.py -q -s`
