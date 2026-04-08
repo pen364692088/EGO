@@ -8,6 +8,7 @@
 - **Proto-Self 当前主线状态**：`proto_self.v2` 已是主体层 state writeback 默认主线
   - `v1` 仅保留为 session-scoped compatibility fallback
   - Telegram 真实自然语言主线已命中 `proto_self.output.v2 + proto_self.trace.v2`
+  - 四类核心能力的单一权威收口决策见 `../docs/PROTO_SELF_SINGLE_AUTHORITY_DECISION.md`
 - **当前阶段**
   - 当前是**边界冻结下的收口期**
   - 不再换 Telegram 正式主链，也不把 compat 路径重新叙述成“也算主线”
@@ -48,6 +49,7 @@
   - `docs/PROGRAM_STATE_UNIFIED.yaml`
   - `docs/00_MASTER_INDEX.md`
   - `docs/05_DEPRECATED_AND_SHIMS.md`
+  - `../docs/PROTO_SELF_SINGLE_AUTHORITY_DECISION.md`
   - `artifacts/proto_self_v2/PROTO_SELF_V2_EVIDENCE_REPORT_20260328.md`
   - `artifacts/proto_self_v2/README.md`
   - `../docs/CAPABILITY_REGISTRY.md`

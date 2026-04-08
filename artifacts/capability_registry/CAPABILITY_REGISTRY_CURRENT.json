@@ -1,0 +1,192 @@
+{
+  "generated_from": [
+    "EgoCore/docs/PROGRAM_STATE_UNIFIED.yaml",
+    "README.md",
+    "EgoCore/README.md",
+    "OpenEmotion/README.md",
+    "docs/CURRENT_PROJECT_LOGIC_FLOW.md",
+    "docs/PROTO_SELF_SINGLE_AUTHORITY_DECISION.md"
+  ],
+  "rows": [
+    {
+      "capability_name": "Telegram 正式主链",
+      "owner": "EgoCore",
+      "authority_source": "program_state_unified + current_readme_logic_flow supplement",
+      "canonical_entry_file": "EgoCore/app/telegram_bot.py",
+      "default_enabled": "yes",
+      "current_evidence_level": "real_telegram_samples_verified_p4 + repo-level current README",
+      "user_visible_symptom": "Telegram 对话、任务执行与 delivery 走统一宿主主链。",
+      "how_to_test": "第 0 链 `python3 scripts/codex/run_acceptance_subject_ingress_mainline.py` + `EXP-SUBJECT-INGRESS`"
+    },
+    {
+      "capability_name": "proto_self_v2 主体链",
+      "owner": "OpenEmotion",
+      "authority_source": "program_state_unified + current_readme_logic_flow supplement",
+      "canonical_entry_file": "EgoCore/app/runtime_v2/proto_self_runtime.py",
+      "default_enabled": "yes",
+      "current_evidence_level": "in_progress + formal surface on Telegram natural-language mainline",
+      "user_visible_symptom": "真实样本 `/flow` 中出现 `Subject Understanding`、`proto_self.trace.v2`、多轴上下文载荷；当前 formal surface 是 `proto_self_v2`。",
+      "how_to_test": "第 0 链 + `EXP-FLOW-CANONICAL-FIELDS`"
+    },
+    {
+      "capability_name": "identity invariants authority surface",
+      "owner": "OpenEmotion",
+      "authority_source": "program_state_unified + current_readme_logic_flow supplement",
+      "canonical_entry_file": "OpenEmotion/openemotion/proto_self/state.py",
+      "default_enabled": "yes",
+      "current_evidence_level": "formal mainline currently executes v1 substrate; identity formal owner not wired",
+      "user_visible_symptom": "当前 identity runtime authority 仍由 `proto_self` v1 substrate 提供，而不是 `openemotion.identity` formal owner。",
+      "how_to_test": "读 `docs/PROTO_SELF_SINGLE_AUTHORITY_DECISION.md` + `docs/PROTO_SELF_MVP_AUTHORITY_AUDIT.md`"
+    },
+    {
+      "capability_name": "self-model authority surface",
+      "owner": "OpenEmotion",
+      "authority_source": "program_state_unified + current_readme_logic_flow supplement",
+      "canonical_entry_file": "EgoCore/app/runtime_v2/proto_self_runtime.py",
+      "default_enabled": "yes",
+      "current_evidence_level": "formal owner active; v1 substrate remains active compute/proposal-only layer",
+      "user_visible_symptom": "`self_model` formal owner 已接入 governed writeback，但 base delta 仍由 v1 substrate 参与计算。",
+      "how_to_test": "`python3 scripts/codex/run_acceptance_self_model_causality.py` + `docs/PROTO_SELF_SINGLE_AUTHORITY_DECISION.md`"
+    },
+    {
+      "capability_name": "drives / appraisal authority surface",
+      "owner": "OpenEmotion",
+      "authority_source": "program_state_unified + current_readme_logic_flow supplement",
+      "canonical_entry_file": "EgoCore/app/runtime_v2/proto_self_runtime.py",
+      "default_enabled": "yes",
+      "current_evidence_level": "formal owner active; v1 drive substrate remains active compute/proposal-only layer",
+      "user_visible_symptom": "`endogenous_drives` formal owner 已接入 governed writeback，但 base drive/appraisal 仍由 v1 substrate 参与计算。",
+      "how_to_test": "`python3 scripts/codex/run_acceptance_drives_causality.py` + `docs/PROTO_SELF_SINGLE_AUTHORITY_DECISION.md`"
+    },
+    {
+      "capability_name": "reflection / structured revision authority surface",
+      "owner": "OpenEmotion",
+      "authority_source": "program_state_unified + current_readme_logic_flow supplement",
+      "canonical_entry_file": "EgoCore/app/runtime_v2/proto_self_runtime.py",
+      "default_enabled": "yes",
+      "current_evidence_level": "formal owner active; v1 reflection note remains transient trigger-only layer",
+      "user_visible_symptom": "`reflective_self` formal owner 已接入 governed writeback，但 v1 `reflection_note` 仍是 active trigger layer，不再是 authority。",
+      "how_to_test": "`python3 scripts/codex/run_acceptance_reflection_boundary.py` + `docs/PROTO_SELF_SINGLE_AUTHORITY_DECISION.md`"
+    },
+    {
+      "capability_name": "Mandatory Subject Ingress",
+      "owner": "EgoCore",
+      "authority_source": "program_state_unified + current_readme_logic_flow supplement",
+      "canonical_entry_file": "EgoCore/app/openemotion_hooks/subject_gate.py",
+      "default_enabled": "partial",
+      "current_evidence_level": "当前 live Telegram 路径中，大量 turn 仍在宿主 pre-runtime / policy interception 层结束；可以证明一部分真实聊天已进入主体，但还不能证明 live 聊天已稳定表现出 downstream tendency change。",
+      "user_visible_symptom": "已授权 turn 应先进入主体再由宿主裁决；host-only bypass 会在第 0 链里暴露。",
+      "how_to_test": "第 0 链 `python3 scripts/codex/run_acceptance_subject_ingress_mainline.py` + `EXP-SUBJECT-INGRESS`"
+    },
+    {
+      "capability_name": "same-session continuity",
+      "owner": "OpenEmotion",
+      "authority_source": "program_state_unified + current_readme_logic_flow supplement",
+      "canonical_entry_file": "EgoCore/app/runtime_v2/proto_self_runtime.py",
+      "default_enabled": "yes",
+      "current_evidence_level": "real Telegram E5 same-session continuity (README current state)",
+      "user_visible_symptom": "同一 session 内能记住刚刚的话题、对象和刚完成结果。",
+      "how_to_test": "`python3 scripts/codex/run_acceptance_continuity.py` + `EXP-CONTINUITY-SAME-SESSION`"
+    },
+    {
+      "capability_name": "cross-session continuity",
+      "owner": "OpenEmotion",
+      "authority_source": "program_state_unified + current_readme_logic_flow supplement",
+      "canonical_entry_file": "EgoCore/app/runtime_v2/proto_self_runtime.py",
+      "default_enabled": "yes",
+      "current_evidence_level": "same-day cross-session continuity `2 / 2` (README current state)",
+      "user_visible_symptom": "新 `/new` 后仍能在当日跨 session 恢复持续身份与上下文线索。",
+      "how_to_test": "`python3 scripts/codex/run_acceptance_continuity.py` + `EXP-CONTINUITY-CROSS-SESSION`"
+    },
+    {
+      "capability_name": "cross-day continuity",
+      "owner": "OpenEmotion",
+      "authority_source": "program_state_unified + current_readme_logic_flow supplement",
+      "canonical_entry_file": "EgoCore/app/runtime_v2/proto_self_runtime.py",
+      "default_enabled": "partial",
+      "current_evidence_level": "cross-day continuity `1 / 2`, later-day sample pending (current README conservative line)",
+      "user_visible_symptom": "跨天后仍保持同一主体的线索，但当前证据仍不满配。",
+      "how_to_test": "`python3 scripts/codex/run_acceptance_continuity.py` + `EXP-CONTINUITY-CROSS-DAY`"
+    },
+    {
+      "capability_name": "self-model projection",
+      "owner": "OpenEmotion",
+      "authority_source": "program_state_unified + current_readme_logic_flow supplement",
+      "canonical_entry_file": "EgoCore/app/runtime_v2/proto_self_runtime.py",
+      "default_enabled": "yes",
+      "current_evidence_level": "live self-model projection enabled with auto-bootstrap (README + flow current behavior)",
+      "user_visible_symptom": "`/flow` 里 `contexts_seen.self_model=true`，且 `self_model_context_source=loaded|bootstrapped_live`。",
+      "how_to_test": "`python3 scripts/codex/run_acceptance_self_model_causality.py` + `EXP-SELF-MODEL-PROJECTION`"
+    },
+    {
+      "capability_name": "self-model causal influence",
+      "owner": "OpenEmotion",
+      "authority_source": "program_state_unified + current_readme_logic_flow supplement",
+      "canonical_entry_file": "OpenEmotion/openemotion/proto_self_v2/kernel.py",
+      "default_enabled": "yes",
+      "current_evidence_level": "controlled_pass / controlled axis only",
+      "user_visible_symptom": "在受控 proof 中，只改 self-model 条件会改变 downstream choice/tendency。",
+      "how_to_test": "`python3 scripts/codex/run_acceptance_self_model_causality.py` + `EXP-SELF-MODEL-CAUSALITY`"
+    },
+    {
+      "capability_name": "drives causal influence",
+      "owner": "OpenEmotion",
+      "authority_source": "program_state_unified + current_readme_logic_flow supplement",
+      "canonical_entry_file": "OpenEmotion/openemotion/proto_self_v2/endogenous_drive_context.py",
+      "default_enabled": "yes",
+      "current_evidence_level": "controlled_pass / controlled axis only",
+      "user_visible_symptom": "verification / conservation / repair pressure 会改变 candidate bias 与 maintenance bias。",
+      "how_to_test": "`python3 scripts/codex/run_acceptance_drives_causality.py` + `EXP-DRIVES-CAUSALITY`"
+    },
+    {
+      "capability_name": "reflection writeback + proposal-only boundary",
+      "owner": "OpenEmotion",
+      "authority_source": "program_state_unified + current_readme_logic_flow supplement",
+      "canonical_entry_file": "OpenEmotion/openemotion/proto_self_v2/reflection.py",
+      "default_enabled": "yes",
+      "current_evidence_level": "controlled_pass / proposal_only discipline preserved",
+      "user_visible_symptom": "会出现 reflection writeback candidate，但不会突破 `behavioral_authority = none`。",
+      "how_to_test": "`python3 scripts/codex/run_acceptance_reflection_boundary.py` + `EXP-REFLECTION-BOUNDARY`"
+    },
+    {
+      "capability_name": "developmental continuity",
+      "owner": "OpenEmotion",
+      "authority_source": "program_state_unified + current_readme_logic_flow supplement",
+      "canonical_entry_file": "OpenEmotion/openemotion/proto_self_v2/developmental.py",
+      "default_enabled": "yes",
+      "current_evidence_level": "controlled_pass / controlled axis only",
+      "user_visible_symptom": "growth / stagnation / identity guard 会改变 developmental bias 与 suggested next step。",
+      "how_to_test": "`python3 scripts/codex/run_acceptance_developmental_proactive.py` + `EXP-DEVELOPMENTAL-CONTINUITY`"
+    },
+    {
+      "capability_name": "proactive bounded expression",
+      "owner": "EgoCore",
+      "authority_source": "program_state_unified + current_readme_logic_flow supplement",
+      "canonical_entry_file": "EgoCore/app/runtime_v2/proactive_telegram_cycle.py",
+      "default_enabled": "feature_flag_off / allowlist_only",
+      "current_evidence_level": "CONTROLLED PASS + host-governed proactive cycle current artifact",
+      "user_visible_symptom": "满足 host-governed 条件时才允许 bounded proactive follow-up / outbox / delivery。",
+      "how_to_test": "`python3 scripts/codex/run_acceptance_developmental_proactive.py` + `EXP-PROACTIVE-BOUNDED`"
+    },
+    {
+      "capability_name": "/flow explanation layer",
+      "owner": "EgoCore",
+      "authority_source": "program_state_unified + current_readme_logic_flow supplement",
+      "canonical_entry_file": "EgoCore/app/dashboard/server.py",
+      "default_enabled": "yes",
+      "current_evidence_level": "dashboard read-only explanation layer with canonical fields",
+      "user_visible_symptom": "一屏内看到 Input -> Host -> Subject -> Host -> Output 与关键 bounded fields。",
+      "how_to_test": "打开 `/flow` + `EXP-FLOW-CANONICAL-FIELDS`"
+    },
+    {
+      "capability_name": "provider/runtime E2E gate",
+      "owner": "EgoCore",
+      "authority_source": "program_state_unified + current_readme_logic_flow supplement",
+      "canonical_entry_file": "scripts/codex/run_provider_runtime_openemotion_e2e_gate.py",
+      "default_enabled": "yes",
+      "current_evidence_level": "all_passed=true admission gate current report",
+      "user_visible_symptom": "provider/runtime 改动后必须通到 OpenEmotion evidence，不能只做局部 smoke。",
+      "how_to_test": "`python3 scripts/codex/run_provider_runtime_openemotion_e2e_gate.py --session-key <telegram:...>` + `EXP-PROVIDER-RUNTIME-GATE`"
+    }
+  ]
+}

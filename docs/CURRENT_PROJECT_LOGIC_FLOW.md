@@ -18,6 +18,7 @@
 - `EgoCore/docs/03_BOUNDARY_AND_OWNERSHIP.md`
 - `OpenEmotion/docs/03_BOUNDARY_AND_OWNERSHIP.md`
 - `OpenEmotion/docs/PROTO_SELF_KERNEL_V2_SPEC.md`
+- `docs/PROTO_SELF_SINGLE_AUTHORITY_DECISION.md`
 - `EgoCore/app/openemotion_hooks/native_hooks.py`
 - `EgoCore/app/openemotion_hooks/subject_gate.py`
 - `EgoCore/app/runtime_v2/proto_self_runtime.py`
@@ -225,6 +226,17 @@ flowchart TD
 | `WP15 / MVP20` | initiative continuity | `maintenance_mode` |
 | `WP16 / MVP21` | initiative realization | `maintenance_mode` |
 | `WP17 / MVP22` | long-horizon self-continuity | `authority_frozen / task_package_ready` |
+
+### 4.4 当前四类能力的单一权威收口
+
+当前这四类能力的 authority 以 `docs/PROTO_SELF_SINGLE_AUTHORITY_DECISION.md` 为准：
+
+| 能力 | formal owner | active substrate | 当前口径 |
+|---|---|---|---|
+| `identity invariants` | `openemotion.proto_self.state.IdentityInvariants` | `openemotion.proto_self.kernel + reducers` | 当前 runtime authority 仍在 v1 substrate；`openemotion.identity.identity_invariants` 与 `long_term_self_summary` 只是名义 owner / support library |
+| `self-model` | `openemotion.self_model/*` | `openemotion.proto_self.self_model` + v1 `SelfModel` | formal owner 是唯一 authority；substrate 仍是 active compute/proposal layer |
+| `drives / appraisal` | `openemotion.endogenous_drives/*` | `openemotion.proto_self.appraisal` + v1 `DriveField` | formal owner 是唯一 authority；substrate 仍是 active compute/proposal layer |
+| `reflection / structured revision` | `openemotion.reflective_self/*` | `openemotion.proto_self.reflection` | formal owner 是唯一 authority；v1 `reflection_note` 只保留 transient trigger 语义 |
 
 ## 5. 当前“入口到出口”应如何理解
 

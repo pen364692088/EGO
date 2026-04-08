@@ -17,6 +17,7 @@ EGO 是 AI Agent 项目的总仓，负责集成 EgoCore（宿主）和 OpenEmoti
   - `proto_self_v2` 已是主体层默认主线
   - Telegram 自然语言主线已命中 `proto_self.output.v2 + proto_self.trace.v2`
   - live self-model projection 已接通；当 formal self-model store 为空时会自动 bootstrap baseline snapshot
+  - `identity invariants / self-model / drives / reflection` 的单一权威收口决策见 `docs/PROTO_SELF_SINGLE_AUTHORITY_DECISION.md`
 - **当前阶段**
   - 当前 repo 处于**边界冻结下的收口期**
   - 不再改双核边界，不再换 Telegram 正式主链，不再开第三套 runtime 叙事
@@ -49,6 +50,7 @@ EGO 是 AI Agent 项目的总仓，负责集成 EgoCore（宿主）和 OpenEmoti
 最新权威入口：
 - `PROJECT_MEMORY.md`
 - `docs/CURRENT_PROJECT_LOGIC_FLOW.md`
+- `docs/PROTO_SELF_SINGLE_AUTHORITY_DECISION.md`
 - `EgoCore/README.md`
 - `artifacts/telegram_real_mainline_v1/dashboard_v1/README.md`
 - `docs/TELEGRAM_FLOW_VIEW_README.md`
