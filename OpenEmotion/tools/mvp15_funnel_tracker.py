@@ -12,53 +12,85 @@ Usage:
     python tools/mvp15_funnel_tracker.py --day 2 --record
     python tools/mvp15_funnel_tracker.py --report
 """
-import sys
 import json
 import argparse
 from pathlib import Path
 from datetime import datetime
 from typing import Dict, Any, List, Optional
 
-# Add project root to path
-sys.path.insert(0, str(Path(__file__).parent.parent))
-
-
 TRACKER_DIR = Path("artifacts/mvp15/tracker")
 TRACKER_DIR.mkdir(parents=True, exist_ok=True)
+
+
+def _load_archive_records() -> List[Dict[str, Any]]:
+    records: List[Dict[str, Any]] = []
+    if not TRACKER_DIR.exists():
+        return records
+    for path in sorted(TRACKER_DIR.glob("day_*.json")):
+        try:
+            records.append(json.loads(path.read_text(encoding="utf-8")))
+        except Exception:
+            continue
+    return records
+
+
+def _current_archive_metrics() -> Dict[str, Any]:
+    records = _load_archive_records()
+    if not records:
+        return {
+            "enable": False,
+            "call_count": 0,
+            "error_count": 0,
+            "funnel": {
+                "events_seen": 0,
+                "eligible_for_reflection": 0,
+                "reflection_invoked": 0,
+                "artifact_generated": 0,
+                "artifact_persisted": 0,
+            },
+            "funnel_rates": {
+                "eligibility_rate": 0.0,
+                "invocation_rate": 0.0,
+                "generation_rate": 0.0,
+                "persistence_rate": 0.0,
+                "end_to_end_rate": 0.0,
+            },
+            "artifacts_generated": 0,
+        }
+
+    latest = records[-1]
+    return {
+        "enable": False,
+        "call_count": len(records),
+        "error_count": sum(int(record.get("error_count", 0) or 0) for record in records),
+        "funnel": dict(latest.get("funnel") or {}),
+        "funnel_rates": dict(latest.get("funnel_rates") or {}),
+        "artifacts_generated": sum(1 for _ in TRACKER_DIR.glob("*.json")),
+    }
 
 
 def record_day_metrics(day: int, notes: str = "") -> Dict[str, Any]:
     """Record funnel metrics for a specific day."""
     print("Historical archive/reference-only surface")
-    
-    try:
-        from emotiond.reflection_shadow import get_reflection_shadow
-        
-        shadow = get_reflection_shadow()
-        metrics = shadow.get_metrics()
-        
-        record = {
-            "day": day,
-            "timestamp": datetime.now().isoformat(),
-            "notes": notes,
-            "funnel": metrics["funnel"],
-            "funnel_rates": metrics["funnel_rates"],
-            "artifacts_generated": metrics["artifacts_generated"],
-            "call_count": metrics["call_count"],
-            "error_count": metrics["error_count"],
-        }
-        
-        # Save record
-        record_path = TRACKER_DIR / f"day_{day}.json"
-        with open(record_path, "w") as f:
-            json.dump(record, f, indent=2)
-        
-        print(f"✅ Day {day} metrics recorded to {record_path}")
-        return record
-        
-    except Exception as e:
-        print(f"❌ Error recording metrics: {e}")
-        return {"error": str(e)}
+
+    metrics = _current_archive_metrics()
+    record = {
+        "day": day,
+        "timestamp": datetime.now().isoformat(),
+        "notes": notes,
+        "funnel": metrics["funnel"],
+        "funnel_rates": metrics["funnel_rates"],
+        "artifacts_generated": metrics["artifacts_generated"],
+        "call_count": metrics["call_count"],
+        "error_count": metrics["error_count"],
+    }
+
+    record_path = TRACKER_DIR / f"day_{day}.json"
+    with open(record_path, "w", encoding="utf-8") as f:
+        json.dump(record, f, indent=2, ensure_ascii=False)
+
+    print(f"✅ Day {day} metrics recorded to {record_path}")
+    return record
 
 
 def load_day_metrics(day: int) -> Optional[Dict[str, Any]]:
@@ -73,12 +105,7 @@ def load_day_metrics(day: int) -> Optional[Dict[str, Any]]:
 
 def load_all_metrics() -> List[Dict[str, Any]]:
     """Load all recorded metrics."""
-    records = []
-    for i in range(1, 8):
-        record = load_day_metrics(i)
-        if record:
-            records.append(record)
-    return records
+    return _load_archive_records()
 
 
 def generate_trend_report() -> str:
@@ -222,21 +249,14 @@ def main():
     
     else:
         # Default: show current metrics
-        try:
-            from emotiond.reflection_shadow import get_reflection_shadow
-            shadow = get_reflection_shadow()
-            metrics = shadow.get_metrics()
-            
-            print("=== Current MVP15 Funnel Metrics ===\n")
-            print(f"Events seen: {metrics['funnel']['events_seen']}")
-            print(f"Eligible: {metrics['funnel']['eligible_for_reflection']}")
-            print(f"Invoked: {metrics['funnel']['reflection_invoked']}")
-            print(f"Generated: {metrics['funnel']['artifact_generated']}")
-            print(f"Persisted: {metrics['funnel']['artifact_persisted']}")
-            print(f"\nArtifacts on disk: {metrics['artifacts_generated']}")
-            
-        except Exception as e:
-            print(f"Error: {e}")
+        metrics = _current_archive_metrics()
+        print("=== Current MVP15 Funnel Metrics ===\n")
+        print(f"Events seen: {metrics['funnel']['events_seen']}")
+        print(f"Eligible: {metrics['funnel']['eligible_for_reflection']}")
+        print(f"Invoked: {metrics['funnel']['reflection_invoked']}")
+        print(f"Generated: {metrics['funnel']['artifact_generated']}")
+        print(f"Persisted: {metrics['funnel']['artifact_persisted']}")
+        print(f"\nArtifacts on disk: {metrics['artifacts_generated']}")
 
 
 if __name__ == "__main__":

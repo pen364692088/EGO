@@ -55,6 +55,9 @@ except ImportError:  # pragma: no cover - fallback for incomplete local runtimes
     SelfModelStore = None
 
 _formal_self_model_store = SelfModelStore() if SelfModelStore is not None else None
+from openemotion.reflective_self import ReflectiveSelfState, ReflectiveSelfStore
+
+_formal_reflective_self_store = ReflectiveSelfStore()
 
 # MVP-5 D2: Allostasis Budget
 from emotiond.allostasis import (
@@ -87,14 +90,6 @@ try:
 except ImportError:
     _mvp14_adapter = None
     ENABLE_MVP14_DUAL_RUN = False
-
-# MVP15: Shadow reflection mode (optional)
-ENABLE_MVP15_SHADOW = os.environ.get("ENABLE_MVP15_SHADOW", "true").lower() == "true"
-try:
-    from emotiond.reflection_adapter import get_reflection_adapter
-    _mvp15_reflection_adapter = get_reflection_adapter(enable_guidance=True)
-except ImportError:
-    _mvp15_reflection_adapter = None
 
 # Global allostasis budget instance
 _allostasis_budget: Optional[AllostasisBudget] = None
@@ -1086,29 +1081,6 @@ async def process_event(event: Event) -> Dict[str, Any]:
         except Exception as e:
             result["intent_check_error"] = str(e)
 
-    # MVP15: Shadow reflection mode (read-only, generates artifacts)
-    if ENABLE_MVP15_SHADOW:
-        try:
-            from emotiond.reflection_shadow import get_reflection_shadow
-            shadow = get_reflection_shadow()
-            if shadow.enable:
-                # Create state snapshot for reflection
-                state_snapshot = {
-                    "emotion": {
-                        "valence": emotion_state.valence,
-                        "arousal": emotion_state.arousal,
-                        "joy": emotion_state.joy,
-                        "loneliness": emotion_state.loneliness,
-                    },
-                    "target": target,
-                    "event_type": event.type,
-                }
-                # Process in shadow mode (read-only, no state modification)
-                shadow.process_event(dict(result) if isinstance(result, dict) else {}, state_snapshot)
-        except Exception as e:
-            import logging
-            logging.getLogger("emotiond.core").debug(f"[MVP15-SHADOW] Error: {e}")
-
     return result
 
 
@@ -1527,20 +1499,86 @@ def _build_reflection_guidance(
     relationship: Dict[str, float],
     source: str,
 ) -> Optional[Dict[str, Any]]:
-    """Build bounded MVP15 reflection guidance for current mainline surfaces."""
-    if not _mvp15_reflection_adapter:
-        return None
-    try:
-        return _mvp15_reflection_adapter.build_guidance(
-            target=target,
-            target_id=target_id,
-            state=emotion_state,
-            relationship=relationship,
-            source=source,
+    """Build bounded MVP15 reflection guidance from the formal owner store."""
+    state = _load_reflective_self_state(target=target, target_id=target_id)
+    summary = state.get_summary()
+    projection = state.to_runtime_projection()
+    latest_job = _latest_reflective_job(state)
+    pending_proposals = len(state.revision_proposals)
+    reflection_pressure = float(
+        summary.get("reflection_pressure")
+        or projection.get("reflection_pressure")
+        or 0.0
+    )
+    should_surface = (
+        reflection_pressure >= 0.35
+        or pending_proposals > 0
+        or int(summary.get("unresolved_items") or 0) > 0
+        or int(summary.get("pending_reflections") or 0) > 0
+    )
+    strategy_source = "counterfactual" if should_surface else "adaptive"
+
+    return {
+        "schema_version": "mvp15.mainline_guidance.v1",
+        "source": source,
+        "target": target,
+        "target_id": target_id,
+        "proposal_discipline": "proposal_only",
+        "writeback_surface": "plan_and_decision_explanation_only",
+        "behavioral_authority": "none",
+        "reflection": {
+            "summary": summary,
+            "latest_job": latest_job,
+            "pending_proposals": pending_proposals,
+        },
+        "counterfactual": {
+            "strategy_source": strategy_source,
+            "mode": "info_seeking" if should_surface else "normal",
+            "risk_tolerance": 0.25 if should_surface else 0.55,
+            "info_seeking_weight": 0.85 if should_surface else 0.35,
+            "preferred_actions": ["clarify", "gather_info"] if should_surface else [],
+            "avoided_actions": ["novel_approach"] if should_surface else [],
+            "matched_counterfactual": should_surface,
+        },
+    }
+
+
+def _load_reflective_self_state(*, target: str, target_id: str) -> ReflectiveSelfState:
+    if _formal_reflective_self_store is None:
+        return ReflectiveSelfState()
+    for identity in _dedupe_strings([target_id, target, "openemotion"]):
+        try:
+            state = _formal_reflective_self_store.load(identity)
+        except Exception:
+            state = None
+        if state is not None:
+            return state
+    return ReflectiveSelfState()
+
+
+def _latest_reflective_job(state: ReflectiveSelfState) -> Optional[Dict[str, Any]]:
+    if state.reflection_queue:
+        latest = max(
+            state.reflection_queue.values(),
+            key=lambda item: ((item.started_at or item.created_at), item.reflection_id),
         )
-    except Exception as e:
-        logger.debug(f"[MVP15] reflection guidance unavailable: {e}")
-        return None
+        return {
+            "job_id": latest.reflection_id,
+            "reflection_type": latest.target_type.value,
+            "status": latest.status,
+            "confidence": latest.priority,
+            "proposal_count": len(latest.requested_effects),
+        }
+    if state.reflection_history.entries:
+        latest_entry = state.reflection_history.entries[-1]
+        return {
+            "job_id": latest_entry.entry_id,
+            "reflection_type": latest_entry.entry_type,
+            "status": "completed",
+            "confidence": 0.5,
+            "proposal_count": len(latest_entry.details or {}),
+        }
+    return None
 
 
 def _dedupe_strings(values: List[str]) -> List[str]:

@@ -112,6 +112,7 @@
 - 2026-04-08: `OpenEmotion/emotiond/core.py` 已移除 `emotiond.self_model_adapter` / `emotiond.self_model_mirror` 的 live import 与 shadow side-effect 调用，bias 读取改为 formal owner `SelfModelStore` 优先；`OpenEmotion/tools/dual_repo_closed_loop_e2e.py` 已降为 archive/proof-only harness，不再导入或实例化 live adapter；原因是这波只做 legacy caller consolidation，不改变 formal mainline 语义
 - 2026-04-08: `OpenEmotion/tests/mvp13/test_owner_backed_decision_surface.py` 与 `OpenEmotion/tests/mvp13/test_behavioral_influence_formal_proof.py` 已迁到 formal owner store proof path，不再依赖 live adapter 注入；原因是 proof harness 需要与当前单一 authority 对齐，避免继续把 adapter 伪装成 live surface
 - 2026-04-08: `self_model_adapter` / `self_model_mirror` delete-admission finish wave 已完成：`OpenEmotion/tests/test_self_model_single_authority.py` 已改为更弱的 ledger/file-fate/admission test，legacy adapter/mirror 已物理删除，当前 docs/path register/program-state 已不再把它们叙述成 live-ish blockers
+- 2026-04-08: reflection legacy caller wave 已收口：`OpenEmotion/emotiond/core.py` 不再使用 `reflection_shadow`，reflection guidance 已改为 formal owner store-backed read；`OpenEmotion/tools/causal_intervention_experiments.py` 已降为 archive/reference-only reflection probe，`emotiond/reflection.py` 只保留 thin trigger/report substrate；原因是 reflection legacy runtime callers 必须移出 live authority 叙事，但当前 formal owner/report split 仍需保留最薄触发层
 
 ## Surprises / discoveries
 

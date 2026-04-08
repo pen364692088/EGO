@@ -10,16 +10,16 @@ from httpx import ASGITransport, AsyncClient
 @pytest_asyncio.fixture(scope="function")
 async def isolated_mvp15_mainline_env():
     from emotiond import api, config, core, db
-    from emotiond.reflection_adapter import reset_reflection_adapter
 
     test_data_dir = tempfile.mkdtemp(prefix="emotiond_mvp15_mainline_")
     original_db_path = os.environ.get("EMOTIOND_DB_PATH")
+    original_reflective_self_dir = os.environ.get("EMOTIOND_REFLECTIVE_SELF_DIR")
 
     os.environ["EMOTIOND_DB_PATH"] = os.path.join(test_data_dir, "test_emotiond.db")
+    os.environ["EMOTIOND_REFLECTIVE_SELF_DIR"] = os.path.join(test_data_dir, "reflective_self")
     os.environ["ENABLE_MVP15_SHADOW"] = "true"
     os.environ["ENABLE_MVP15_MAINLINE_GUIDANCE"] = "true"
 
-    reset_reflection_adapter()
     importlib.reload(config)
     importlib.reload(db)
     importlib.reload(core)
@@ -43,7 +43,10 @@ async def isolated_mvp15_mainline_env():
         os.environ["EMOTIOND_DB_PATH"] = original_db_path
     else:
         os.environ.pop("EMOTIOND_DB_PATH", None)
-    reset_reflection_adapter()
+    if original_reflective_self_dir is not None:
+        os.environ["EMOTIOND_REFLECTIVE_SELF_DIR"] = original_reflective_self_dir
+    else:
+        os.environ.pop("EMOTIOND_REFLECTIVE_SELF_DIR", None)
 
 
 def _assert_bounded_guidance(guidance: dict, expected_source: str, expected_target_id: str) -> None:

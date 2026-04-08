@@ -2,11 +2,10 @@
 """
 Causal Intervention Experiments for MVP11.5-16
 
-This script performs controlled experiments to verify causal relationships
-between state changes and behavioral outcomes.
+Archive/reference-only historical experiment for causal relationship probes.
 
 WP11 / MVP16 status:
-- reference-only / historical experiment
+- archive/reference-only / historical experiment
 - not the formal owner path
 - not current-mainline closeout proof
 """
@@ -310,7 +309,7 @@ def experiment_reflection_intervention():
     }
     
     # Test 1: Old reflection.py
-    print("\n[Test 3.1] Legacy reflection.py - Check if run_reflection is callable")
+    print("\n[Test 3.1] Archive/reference-only reflection probe - Check if run_reflection is callable")
     try:
         from emotiond.reflection import run_reflection
         

@@ -23,7 +23,11 @@ def _utc_now_iso() -> str:
 
 class ReflectiveSelfStore:
     def __init__(self, base_dir: Optional[str | Path] = None, *, default_identity: str = "openemotion"):
-        self.base_dir = Path(base_dir) if base_dir is not None else DEFAULT_OWNER_ARTIFACTS_DIR
+        if base_dir is not None:
+            self.base_dir = Path(base_dir)
+        else:
+            env_base_dir = os.environ.get("EMOTIOND_REFLECTIVE_SELF_DIR")
+            self.base_dir = Path(env_base_dir) if env_base_dir else DEFAULT_OWNER_ARTIFACTS_DIR
         self.base_dir.mkdir(parents=True, exist_ok=True)
         self.default_identity = default_identity
 

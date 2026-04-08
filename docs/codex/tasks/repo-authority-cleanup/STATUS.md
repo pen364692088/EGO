@@ -9,7 +9,7 @@
 ## Current state
 
 - current_layer: repo_authority_cleanup
-- main_chain_status: phase0_truth_map_landed_identity_baseline_confirmed_self_model_authority_wave_landed_milestone2_classification_landed_milestone3_admission_landed_milestone4_proto_self_restore_generated_edge_cleared_self_model_mirror_tool_import_removed_mvp13_report_archive_based_e2e_adapter_report_archive_based_archive_self_model_docs_clarified_proto_self_restore_inventory_residue_only_oe_mvp13_archive_evidence_only_archive_self_model_body_clarified_archive_self_model_paths_clarified_e2e_adapter_legacy_artifact_dir_clarified_self_model_adapter_core_and_dual_repo_live_callers_removed_mvp13_proof_tests_migrated_to_formal_owner_store_self_model_delete_admission_finished_adapter_mirror_deleted
+- main_chain_status: phase0_truth_map_landed_identity_baseline_confirmed_self_model_authority_wave_landed_milestone2_classification_landed_milestone3_admission_landed_milestone4_proto_self_restore_generated_edge_cleared_self_model_mirror_tool_import_removed_mvp13_report_archive_based_e2e_adapter_report_archive_based_archive_self_model_docs_clarified_proto_self_restore_inventory_residue_only_oe_mvp13_archive_evidence_only_archive_self_model_body_clarified_archive_self_model_paths_clarified_e2e_adapter_legacy_artifact_dir_clarified_self_model_adapter_core_and_dual_repo_live_callers_removed_mvp13_proof_tests_migrated_to_formal_owner_store_self_model_delete_admission_finished_adapter_mirror_deleted_reflection_legacy_runtime_callers_removed_reflection_probe_archive_only_reflection_trigger_substrate_retained
 - completion_class: conditional_complete
 
 ## Completed work
@@ -18,7 +18,7 @@
 - 已确认当前 formal mainline 不变：`native_hooks -> proto_self_runtime -> proto_self_adapter -> proto_self_v2/kernel`
 - 已确认 `identity` 代码级单一 authority baseline 已存在，可直接作为本轮基线复核
 - 已确认 `self-model` formal owner 当前在主链上被 runtime projection/writeback 消费
-- 已确认 `emotiond/self_model_adapter.py`、`emotiond/self_model_mirror.py`、`proto_self_restore.py` 当前 formal caller 为 0，但仍存在 tools/docs/generated caller
+- 已确认 `proto_self_restore.py` 当前 formal caller 为 0，但仍存在 tools/docs/generated caller；`emotiond/self_model_adapter.py`、`emotiond/self_model_mirror.py` 已物理删除
 - 已完成 Phase 0 六个 ledger 首版落地：`AUTHORITY_MATRIX / CALLER_MATRIX / FILE_FATE_LEDGER / CANONICAL_DOCS_INDEX / ARTIFACT_LOG_INVENTORY / CONFLICT_REGISTER`
 - 已完成 `self-model` 代码级 authority 收口：formal owner 自证、legacy adapter/mirror 自降级、single-authority static regression 落地
 - 已完成 `drives / reflection / developmental` 的 caller/authority ledger 收口，不改语义
@@ -41,6 +41,7 @@
 - 已将 `OpenEmotion/tests/mvp13/test_owner_backed_decision_surface.py` 与 `OpenEmotion/tests/mvp13/test_behavioral_influence_formal_proof.py` 迁到 formal owner store proof path，不再依赖 live adapter 注入
 - 已将 `OpenEmotion/tests/test_self_model_single_authority.py` 重写为更弱的 ledger/file-fate/admission test，不再 import legacy adapter/mirror modules
 - 已确认 `OpenEmotion/emotiond/self_model_adapter.py` 与 `OpenEmotion/emotiond/self_model_mirror.py` 已物理删除，当前 delete-ready 结论已升级为 delete-done
+- 已完成 reflection legacy caller wave：`OpenEmotion/emotiond/core.py` 不再依赖 `reflection_shadow`，reflection guidance 改为 formal owner store-backed read；`OpenEmotion/tools/causal_intervention_experiments.py` 已降为 archive/reference-only reflection probe；`emotiond/reflection.py` 仅保留 thin trigger/report substrate
 
 ## Last validation results
 
@@ -76,23 +77,17 @@
 
 - worktree 脏文件很多，提交必须极度 scoped
 - `proto_self_restore` 当前虽已无代码 caller，但 generated file inventory residue 仍在，不能直接删
-- `self_model_adapter / self_model_mirror` 当前仍不能删；`emotiond/core.py` 与少量 legacy tool callers 仍在
-- `self_model_mirror` 的 real tool caller 已进一步收窄，archive report tools 已转为独立 archive rows，但 `emotiond/core.py` 仍在，因此还不能报 delete-ready
-- `self_model_adapter` 的 real tool caller 已进一步收窄，archive report tools 已转为独立 archive rows，但 `dual_repo_closed_loop_e2e.py` 与 `emotiond/core.py` 仍在，因此还不能报 delete-ready
-- `MVP15` reflection archive report / wrapper tools 已拆出为独立 archive rows，但 `emotiond/core.py` 仍然是 reflection legacy residue 的 live caller，所以 reflection 本体仍不能进入 delete-ready
-- 当前 stop boundary：`OpenEmotion/tools/dual_repo_closed_loop_e2e.py` 仍是有意保留的 legacy compatibility harness；在未先决定它是否应转 archive/reference-only 前，继续削它的 live adapter caller 有删除风险
+- `proto_self_restore.py` 当前 formal caller 为 0，但 generated file inventory residue 仍在，因此还不能报 delete-ready
+- reflection legacy runtime caller 已收口，当前只剩 `emotiond/reflection.py` 的 thin trigger/report substrate 与 archive/reference-only probe surface；reflection 本体不再是 delete blocker，但 trigger substrate 是否保留仍待后续 dedicated wave 决定
 - archive self-model docs 已完成降噪，当前不再是 blocker
 - `self-model` dual-authority 已收口；`self_model_adapter.py` 与 `self_model_mirror.py` 已物理删除，当前不再是 delete-ready blocker
-- reflection legacy residue 仍有 `emotiond/core.py` caller；当前只能维持 `reference_only`
 - artifacts/logs 仍未物理迁移；archive/current 目录现在只是 boundary marker
 
 ## Next step
 
-- 当前下一步：继续做 `delete admission proof and generated/docs cleanup`，优先收窄 `self_model_adapter / self_model_mirror` 的剩余 legacy daemon/docs callers；`drives / reflection / developmental` 仍不改语义
-- 当前下一步：继续收窄 `self_model_adapter / self_model_mirror` 的 proof/archive-only 路径，若要进入 delete-ready，必须先把 `test_self_model_single_authority.py` 的模块级证明迁出或归档
-- 当前下一步：`dual_repo_closed_loop_e2e.py` 已转 archive/proof-only harness，下一步只需验证其不再出现在 live caller 集合里，然后把它从 delete-admission blocker 中移出
-- 当前下一步：`proto_self_restore` 的 file inventory residue 保持待后续低风险切片处理
-- 当前下一步：如果继续清理 reflection，只能先处理 `emotiond/core.py` 的 legacy caller 或把 reflection 也提升到独立 archive/reference-only 计划；当前波次不再把 MVP15 archive 工具视为 blocker
+- 当前下一步：继续做 `delete admission proof and generated/docs cleanup`，优先处理 `proto_self_restore` 的 generated/docs residue；`drives / reflection / developmental` 仍不改语义
+- 当前下一步：`dual_repo_closed_loop_e2e.py` 已转 archive/proof-only harness，下一步只需维持其 archive-only 口径，不再把它当 live blocker
+- 当前下一步：reflection legacy runtime caller 已收口，若继续推进只能决定是否把 `emotiond/reflection.py` 也纳入后续 trigger-substrate retirement 波；当前波次不再把 MVP15 archive 工具视为 blocker
 
 ## Commands run / evidence
 
