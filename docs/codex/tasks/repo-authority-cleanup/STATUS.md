@@ -9,7 +9,7 @@
 ## Current state
 
 - current_layer: repo_authority_cleanup
-- main_chain_status: phase0_truth_map_landed_identity_baseline_confirmed_self_model_authority_wave_landed_milestone2_classification_landed_milestone3_admission_landed_milestone4_proto_self_restore_generated_edge_cleared_self_model_mirror_tool_import_removed_mvp13_report_archive_based_e2e_adapter_report_archive_based_archive_self_model_docs_clarified_proto_self_restore_inventory_residue_only_oe_mvp13_archive_evidence_only_archive_self_model_body_clarified_archive_self_model_paths_clarified_e2e_adapter_legacy_artifact_dir_clarified_self_model_adapter_core_and_dual_repo_live_callers_removed_mvp13_proof_tests_migrated_to_formal_owner_store
+- main_chain_status: phase0_truth_map_landed_identity_baseline_confirmed_self_model_authority_wave_landed_milestone2_classification_landed_milestone3_admission_landed_milestone4_proto_self_restore_generated_edge_cleared_self_model_mirror_tool_import_removed_mvp13_report_archive_based_e2e_adapter_report_archive_based_archive_self_model_docs_clarified_proto_self_restore_inventory_residue_only_oe_mvp13_archive_evidence_only_archive_self_model_body_clarified_archive_self_model_paths_clarified_e2e_adapter_legacy_artifact_dir_clarified_self_model_adapter_core_and_dual_repo_live_callers_removed_mvp13_proof_tests_migrated_to_formal_owner_store_self_model_delete_admission_finished_adapter_mirror_deleted
 - completion_class: conditional_complete
 
 ## Completed work
@@ -39,6 +39,8 @@
 - 已将 `OpenEmotion/emotiond/core.py` 中 `emotiond.self_model_adapter` / `emotiond.self_model_mirror` 的 live import 和 shadow side-effect 调用移除，bias 读取改为 formal owner `SelfModelStore` 优先
 - 已将 `OpenEmotion/tools/dual_repo_closed_loop_e2e.py` 降级为 archive/proof-only harness，不再导入或实例化 live adapter
 - 已将 `OpenEmotion/tests/mvp13/test_owner_backed_decision_surface.py` 与 `OpenEmotion/tests/mvp13/test_behavioral_influence_formal_proof.py` 迁到 formal owner store proof path，不再依赖 live adapter 注入
+- 已将 `OpenEmotion/tests/test_self_model_single_authority.py` 重写为更弱的 ledger/file-fate/admission test，不再 import legacy adapter/mirror modules
+- 已确认 `OpenEmotion/emotiond/self_model_adapter.py` 与 `OpenEmotion/emotiond/self_model_mirror.py` 已物理删除，当前 delete-ready 结论已升级为 delete-done
 
 ## Last validation results
 
@@ -80,8 +82,7 @@
 - `MVP15` reflection archive report / wrapper tools 已拆出为独立 archive rows，但 `emotiond/core.py` 仍然是 reflection legacy residue 的 live caller，所以 reflection 本体仍不能进入 delete-ready
 - 当前 stop boundary：`OpenEmotion/tools/dual_repo_closed_loop_e2e.py` 仍是有意保留的 legacy compatibility harness；在未先决定它是否应转 archive/reference-only 前，继续削它的 live adapter caller 有删除风险
 - archive self-model docs 已完成降噪，当前不再是 blocker
-- `self-model` dual-authority 已收口，但 legacy adapter/mirror 仍有 tool/docs caller，当前还不能删
-- `self-model` live adapter/mirror caller 已进一步收窄：`core.py` 与 `dual_repo_closed_loop_e2e.py` 已退出 live caller 身份，但 `test_self_model_single_authority.py` 仍保留 proof-only module assertions，因此当前仍不是 delete-ready
+- `self-model` dual-authority 已收口；`self_model_adapter.py` 与 `self_model_mirror.py` 已物理删除，当前不再是 delete-ready blocker
 - reflection legacy residue 仍有 `emotiond/core.py` caller；当前只能维持 `reference_only`
 - artifacts/logs 仍未物理迁移；archive/current 目录现在只是 boundary marker
 

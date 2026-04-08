@@ -1,209 +1,54 @@
-from __future__ import annotations
-
-import ast
 from pathlib import Path
 
-from emotiond.self_model_adapter import (
-    ACTIVE_RUNTIME_SUBSTRATE as ADAPTER_ACTIVE_RUNTIME_SUBSTRATE,
-    AUTHORITY_STATUS as ADAPTER_AUTHORITY_STATUS,
-    COMPATIBILITY_REASON as ADAPTER_COMPATIBILITY_REASON,
-    FORMAL_MAINLINE_ENABLED as ADAPTER_FORMAL_MAINLINE_ENABLED,
-    LIVE_RUNTIME_AUTHORITY as ADAPTER_LIVE_RUNTIME_AUTHORITY,
-)
-from emotiond.self_model_mirror import (
-    ACTIVE_RUNTIME_SUBSTRATE as MIRROR_ACTIVE_RUNTIME_SUBSTRATE,
-    AUTHORITY_STATUS as MIRROR_AUTHORITY_STATUS,
-    FORMAL_MAINLINE_ENABLED as MIRROR_FORMAL_MAINLINE_ENABLED,
-    LIVE_RUNTIME_AUTHORITY as MIRROR_LIVE_RUNTIME_AUTHORITY,
-    REFERENCE_ONLY_REASON as MIRROR_REFERENCE_ONLY_REASON,
-)
-from openemotion.proto_self.state import SelfModel as RuntimeSelfModel
-from openemotion.proto_self_v2.state import ProtoSelfStateV2
-from openemotion.self_model import (
-    ACTIVE_RUNTIME_SUBSTRATE,
-    ACTIVE_RUNTIME_SUBSTRATE_ROLE,
-    FORMAL_MAINLINE_ENABLED,
-    LIVE_RUNTIME_AUTHORITY,
-    PACKAGE_ACTIVE_RUNTIME_SUBSTRATE,
-    PACKAGE_ACTIVE_RUNTIME_SUBSTRATE_ROLE,
-    PACKAGE_AUTHORITY_STATUS,
-    PACKAGE_FORMAL_MAINLINE_ENABLED,
-    PACKAGE_LIVE_RUNTIME_AUTHORITY,
-)
+
+ROOT = Path(__file__).resolve().parents[2]
 
 
-REPO_ROOT = Path(__file__).resolve().parents[2]
+def _read(rel_path: str) -> str:
+    return (ROOT / rel_path).read_text(encoding="utf-8")
 
 
-def _imports_module(rel_path: str, module_prefix: str) -> bool:
-    source = (REPO_ROOT / rel_path).read_text(encoding="utf-8")
-    tree = ast.parse(source, filename=rel_path)
-    for node in ast.walk(tree):
-        if isinstance(node, ast.Import):
-            for alias in node.names:
-                if alias.name == module_prefix or alias.name.startswith(f"{module_prefix}."):
-                    return True
-        if isinstance(node, ast.ImportFrom):
-            module = node.module or ""
-            if module == module_prefix or module.startswith(f"{module_prefix}."):
-                return True
-    return False
+def test_self_model_legacy_adapter_and_mirror_are_deleted_and_only_ledgered():
+    adapter = ROOT / "OpenEmotion" / "emotiond" / "self_model_adapter.py"
+    mirror = ROOT / "OpenEmotion" / "emotiond" / "self_model_mirror.py"
 
+    assert not adapter.exists()
+    assert not mirror.exists()
 
-def test_self_model_owner_and_legacy_surfaces_are_explicit():
-    assert PACKAGE_AUTHORITY_STATUS == "formal_owner"
-    assert PACKAGE_FORMAL_MAINLINE_ENABLED is True
-    assert PACKAGE_LIVE_RUNTIME_AUTHORITY == "openemotion.self_model"
-    assert PACKAGE_ACTIVE_RUNTIME_SUBSTRATE == "openemotion.proto_self.self_model"
-    assert PACKAGE_ACTIVE_RUNTIME_SUBSTRATE_ROLE == "compute_proposal_only"
+    decision = _read("docs/PROTO_SELF_SINGLE_AUTHORITY_DECISION.md")
+    readme = _read("OpenEmotion/README.md")
+    logic_flow = _read("docs/CURRENT_PROJECT_LOGIC_FLOW.md")
+    program_state = _read("EgoCore/docs/PROGRAM_STATE_UNIFIED.yaml")
+    path_register = _read("EgoCore/docs/05_DEPRECATED_AND_SHIMS.md")
+    authority = _read("docs/codex/tasks/repo-authority-cleanup/AUTHORITY_MATRIX.md")
+    caller = _read("docs/codex/tasks/repo-authority-cleanup/CALLER_MATRIX.md")
+    fate = _read("docs/codex/tasks/repo-authority-cleanup/FILE_FATE_LEDGER.md")
+    conflict = _read("docs/codex/tasks/repo-authority-cleanup/CONFLICT_REGISTER.md")
+    import_map = _read("EgoCore/docs/generated/import_or_reference_map.csv")
+    file_inventory = _read("EgoCore/docs/generated/file_inventory.csv")
 
-    assert FORMAL_MAINLINE_ENABLED is True
-    assert LIVE_RUNTIME_AUTHORITY == "openemotion.self_model"
-    assert ACTIVE_RUNTIME_SUBSTRATE == "openemotion.proto_self.self_model"
-    assert ACTIVE_RUNTIME_SUBSTRATE_ROLE == "compute_proposal_only"
-
-    assert ADAPTER_AUTHORITY_STATUS == "compatibility_only"
-    assert ADAPTER_FORMAL_MAINLINE_ENABLED is False
-    assert ADAPTER_LIVE_RUNTIME_AUTHORITY == "openemotion.self_model"
-    assert ADAPTER_ACTIVE_RUNTIME_SUBSTRATE == "openemotion.proto_self.self_model"
-    assert "formal mainline" in ADAPTER_COMPATIBILITY_REASON
-
-    assert MIRROR_AUTHORITY_STATUS == "reference_only"
-    assert MIRROR_FORMAL_MAINLINE_ENABLED is False
-    assert MIRROR_LIVE_RUNTIME_AUTHORITY == "openemotion.self_model"
-    assert MIRROR_ACTIVE_RUNTIME_SUBSTRATE == "openemotion.proto_self.self_model"
-    assert "formal mainline" in MIRROR_REFERENCE_ONLY_REASON
-
-
-def test_proto_self_v2_self_model_state_shape_still_uses_runtime_substrate():
-    self_model_field = ProtoSelfStateV2.__dataclass_fields__["self_model"]
-    assert self_model_field.default_factory is RuntimeSelfModel
-
-
-def test_formal_mainline_uses_formal_owner_not_legacy_self_model_surfaces():
-    assert _imports_module(
-        "OpenEmotion/openemotion/proto_self_v2/self_model_context.py",
-        "openemotion.self_model",
-    ) is True
-    assert _imports_module(
-        "EgoCore/app/runtime_v2/proto_self_runtime.py",
-        "openemotion.self_model",
-    ) is True
-
-    for rel_path in (
-        "OpenEmotion/openemotion/proto_self_v2/kernel.py",
-        "OpenEmotion/openemotion/proto_self_v2/self_model_context.py",
-        "EgoCore/app/runtime_v2/proto_self_runtime.py",
-        "EgoCore/app/openemotion_adapter/proto_self_adapter.py",
-        "OpenEmotion/emotiond/core.py",
-        "OpenEmotion/tools/dual_repo_closed_loop_e2e.py",
-    ):
-        assert _imports_module(rel_path, "emotiond.self_model_adapter") is False
-        assert _imports_module(rel_path, "emotiond.self_model_mirror") is False
-
-
-def test_egocore_does_not_take_self_model_runtime_ownership():
-    for rel_path in (
-        "EgoCore/app/openemotion_hooks/native_hooks.py",
-        "EgoCore/app/runtime_v2/proto_self_runtime.py",
-        "EgoCore/app/openemotion_adapter/proto_self_adapter.py",
-        "OpenEmotion/emotiond/core.py",
-    ):
-        assert _imports_module(rel_path, "openemotion.proto_self.self_model") is False
-
-
-def test_emotiond_core_does_not_import_legacy_self_model_adapter_or_mirror():
-    assert _imports_module("OpenEmotion/emotiond/core.py", "emotiond.self_model_adapter") is False
-    assert _imports_module("OpenEmotion/emotiond/core.py", "emotiond.self_model_mirror") is False
-
-
-def test_dual_repo_closed_loop_e2e_is_archive_only_and_does_not_import_live_adapter():
-    source = (REPO_ROOT / "OpenEmotion/tools/dual_repo_closed_loop_e2e.py").read_text(encoding="utf-8")
-    assert "archive/proof-only" in source
-    assert "live adapter authority surfaces" in source
-    assert _imports_module(
-        "OpenEmotion/tools/dual_repo_closed_loop_e2e.py",
-        "emotiond.self_model_adapter",
-    ) is False
-
-
-def test_legacy_wiring_tool_does_not_import_reference_only_mirror_module():
-    assert _imports_module(
-        "OpenEmotion/tools/main_chain_wiring_check.py",
-        "emotiond.self_model_mirror",
-    ) is False
-
-
-def test_program_state_marks_adapter_evidence_as_historical_shadow_only():
-    text = (REPO_ROOT / "OpenEmotion/docs/PROGRAM_STATE_UNIFIED.yaml").read_text(encoding="utf-8")
-    assert "OpenEmotion/docs/archive/E2E_SELF_MODEL_ADAPTER_REPORT.md" in text
-    assert "OpenEmotion/emotiond/self_model_adapter.py" not in text
-    assert "历史 SelfModelAdapter shadow wiring 证据" in text
-    assert "adapter 非 formal mainline" in text
-
-
-def test_mvp13_daily_report_is_archive_based_and_does_not_import_live_mirror():
-    assert _imports_module(
-        "OpenEmotion/tools/mvp13_daily_report.py",
-        "emotiond.self_model_mirror",
-    ) is False
-
-
-def test_dual_repo_closed_loop_e2e_is_marked_legacy_compatibility_harness():
-    source = (REPO_ROOT / "OpenEmotion/tools/dual_repo_closed_loop_e2e.py").read_text(encoding="utf-8")
-    assert "legacy compatibility harness" in source
-    assert "archive/proof-only" in source
-
-
-def test_main_chain_wiring_check_is_historical_snapshot_only():
-    source = (REPO_ROOT / "OpenEmotion/tools/main_chain_wiring_check.py").read_text(encoding="utf-8")
-    assert "Historical Snapshot" in source
-    assert "formal mainline verifier" in source
-    assert "live\nadapter or mirror authority" in source or "live adapter or mirror authority" in source
-    assert "emotiond.self_model_adapter" not in source
-    assert "emotiond.self_model_mirror" not in source
-
-
-def test_e2e_self_model_adapter_is_archive_based_and_does_not_import_live_adapter():
-    source = (REPO_ROOT / "OpenEmotion/tools/e2e_self_model_adapter.py").read_text(encoding="utf-8")
-    assert "archive/reference-only surface" in source
-    assert "legacy artifact directory" in source
-    assert "formal mainline verifier" in source
-    assert _imports_module(
-        "OpenEmotion/tools/e2e_self_model_adapter.py",
-        "emotiond.self_model_adapter",
-    ) is False
-
-
-def test_program_state_changelog_marks_main_chain_wiring_check_as_historical_snapshot():
-    source = (REPO_ROOT / "OpenEmotion/docs/PROGRAM_STATE_CHANGELOG.md").read_text(encoding="utf-8")
-    assert "tools/main_chain_wiring_check.py" in source
-    assert "历史快照证据 / historical snapshot evidence" in source
-    assert "historical snapshot evidence" in source
-    assert "OpenEmotion imported in core.py: False" in source
-
-
-def test_archive_self_model_docs_point_to_archive_report_path():
-    dual_repo_mainline = (REPO_ROOT / "OpenEmotion/docs/archive/DUAL_REPO_MAINLINE.md").read_text(encoding="utf-8")
-    closed_loop_report = (REPO_ROOT / "OpenEmotion/docs/archive/DUAL_REPO_CLOSED_LOOP_E2E_REPORT.md").read_text(encoding="utf-8")
-    assert "OpenEmotion/docs/archive/E2E_SELF_MODEL_ADAPTER_REPORT.md" in dual_repo_mainline
-    assert "`docs/archive/E2E_SELF_MODEL_ADAPTER_REPORT.md`" in closed_loop_report
-
-
-def test_caller_matrix_separates_archive_report_tools_from_adapter_and_mirror_callers():
-    text = (REPO_ROOT / "docs/codex/tasks/repo-authority-cleanup/CALLER_MATRIX.md").read_text(encoding="utf-8")
-    adapter_row = next(line for line in text.splitlines() if "OpenEmotion/emotiond/self_model_adapter.py" in line)
-    mirror_row = next(line for line in text.splitlines() if "OpenEmotion/emotiond/self_model_mirror.py" in line)
-    archive_rows = [
-        line for line in text.splitlines()
-        if "OpenEmotion/tools/main_chain_wiring_check.py" in line
-        or "OpenEmotion/tools/e2e_self_model_adapter.py" in line
-        or "OpenEmotion/tools/dual_repo_closed_loop_e2e.py" in line
-        or "OpenEmotion/tools/mvp13_daily_report.py" in line
-    ]
-
-    assert "OpenEmotion/tools/e2e_self_model_adapter.py" not in adapter_row
-    assert "OpenEmotion/tools/dual_repo_closed_loop_e2e.py" not in adapter_row
-    assert "OpenEmotion/tools/mvp13_daily_report.py" not in mirror_row
-    assert "OpenEmotion/emotiond/core.py" not in mirror_row
-    assert len(archive_rows) == 4
+    assert "## Final Fate" in decision
+    assert "legacy adapter/mirror 已物理删除" in decision
+    assert "legacy adapter/mirror 已删除" in readme
+    assert "已从 repo 删除，不再是 formal mainline" in readme
+    assert "已从 repo 删除" in logic_flow
+    assert "OpenEmotion/emotiond/self_model_adapter.py" not in program_state
+    assert "OpenEmotion/emotiond/self_model_mirror.py" not in program_state
+    assert "| `OpenEmotion/emotiond/self_model_adapter.py` |" not in path_register
+    assert "| `OpenEmotion/emotiond/self_model_mirror.py` |" not in path_register
+    assert "OpenEmotion/emotiond/self_model_adapter.py" in authority
+    assert "OpenEmotion/emotiond/self_model_mirror.py" in authority
+    assert "deleted" in authority
+    assert "OpenEmotion/tests/test_self_model_single_authority.py" in caller
+    assert "OpenEmotion/tests/test_self_model_single_authority.py" in fate
+    assert "OpenEmotion/emotiond/self_model_adapter.py" in caller
+    assert "OpenEmotion/emotiond/self_model_mirror.py" in caller
+    assert "deleted" in caller
+    assert "OpenEmotion/emotiond/self_model_adapter.py" in fate
+    assert "OpenEmotion/emotiond/self_model_mirror.py" in fate
+    assert "deleted" in fate
+    assert "resolved delete admission" in conflict
+    assert ",emotiond/self_model_adapter.py," not in import_map
+    assert ",emotiond/self_model_mirror.py," not in import_map
+    assert "OpenEmotion/emotiond/self_model_adapter.py" not in file_inventory
+    assert "OpenEmotion/emotiond/self_model_mirror.py" not in file_inventory

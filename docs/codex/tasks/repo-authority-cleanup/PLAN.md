@@ -77,15 +77,15 @@
 
 - scope:
   - 继续推进 `proto_self_restore / self_model_adapter / self_model_mirror` 的 generated/docs/tool caller 清理
-  - 只做 delete admission proof，不做大规模物理删除
+  - 对 `self_model_adapter / self_model_mirror` 完成 delete-admission finish wave，必要时物理删除
 - acceptance:
-  - 至少一个 delete-candidate 的非 formal caller 进一步收窄
+  - 至少一个 delete-candidate 的非 formal caller 进一步收窄，且 self_model_adapter / self_model_mirror 达到 delete-ready 或已物理删除
   - 不引入 formal mainline 回退
 - validation:
   - scoped tests
   - `python3 scripts/codex/verify_repo.py --mode fast`
 - rollback note:
-  - 若 generated/docs/tool caller 迁移不清晰，则只更新 ledger，不删文件
+  - 若 generated/docs/tool caller 迁移不清晰，则只更新 ledger，不删文件；若已无 compat consumer，则优先物理删除 self_model_adapter / self_model_mirror
 
 ## Progress
 
@@ -111,6 +111,7 @@
 - 2026-04-08: `verify_mvp15_mainline_wiring.py`、`mvp15_funnel_check.py`、`mvp15_funnel_tracker.py`、`mvp15_daily_validation.sh`、`setup_mvp15_cron.sh` 已在 caller/fate ledger 中明确为 archive/reference-only surfaces；原因是它们是 MVP15 历史验证/趋势/包装工具，不应再被计为 live callers
 - 2026-04-08: `OpenEmotion/emotiond/core.py` 已移除 `emotiond.self_model_adapter` / `emotiond.self_model_mirror` 的 live import 与 shadow side-effect 调用，bias 读取改为 formal owner `SelfModelStore` 优先；`OpenEmotion/tools/dual_repo_closed_loop_e2e.py` 已降为 archive/proof-only harness，不再导入或实例化 live adapter；原因是这波只做 legacy caller consolidation，不改变 formal mainline 语义
 - 2026-04-08: `OpenEmotion/tests/mvp13/test_owner_backed_decision_surface.py` 与 `OpenEmotion/tests/mvp13/test_behavioral_influence_formal_proof.py` 已迁到 formal owner store proof path，不再依赖 live adapter 注入；原因是 proof harness 需要与当前单一 authority 对齐，避免继续把 adapter 伪装成 live surface
+- 2026-04-08: `self_model_adapter` / `self_model_mirror` delete-admission finish wave 已完成：`OpenEmotion/tests/test_self_model_single_authority.py` 已改为更弱的 ledger/file-fate/admission test，legacy adapter/mirror 已物理删除，当前 docs/path register/program-state 已不再把它们叙述成 live-ish blockers
 
 ## Surprises / discoveries
 

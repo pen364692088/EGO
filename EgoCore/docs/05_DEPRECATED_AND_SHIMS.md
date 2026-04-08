@@ -31,10 +31,8 @@
 | `OpenEmotion/openemotion/*` | `formal` | `OpenEmotion` | 当前正式主体本体与 formal owner 实现 | 无 | 当前正式主体本体实现 | 无 | 主体本体误删 |
 | `OpenEmotion/emotiond/*` | `reference_only` | `OpenEmotion` | 历史服务/宿主处理面、迁移参考与残留支撑 | `OpenEmotion/openemotion/*` + EgoCore 正式宿主主链 | 不是当前 formal owner，也不是当前 Telegram 主链 | 当前残余引用与历史文档完成切分后再评估收缩 | 服务/历史链说明失真 |
 | `EgoCore/app/openemotion_adapter/proto_self_restore.py` | `compatibility_only` | `EgoCore` | restore helper 与历史状态恢复注入面 | `EgoCore/app/openemotion_adapter/proto_self_adapter.py` + current formal replay/writeback chain | 不是 formal recovery path，只能作为 compat/shim 保留 | formal caller 清零 + 删除 admission 通过 | 被误当当前恢复主链 |
-| `OpenEmotion/emotiond/self_model_adapter.py` | `compatibility_only` | `OpenEmotion` | 历史 self-model bridge / shadow adapter 残留 | `OpenEmotion/openemotion/self_model/*` + `EgoCore/app/runtime_v2/proto_self_runtime.py` | 不是 formal owner，不是 formal mainline | formal caller 清零 + 删除 admission 通过 | 被误当当前 self-model authority |
 | `OpenEmotion/legacy/openclaw/*` | `deprecated_candidate` | `OpenEmotion` | 历史 OpenClaw 依赖残留 | EgoCore + OpenEmotion 正式双核 | 不是正式主链，只能作为历史残留候选 | 无引用确认 + 替代确认 | 误删后历史链测试断裂 |
 | `OpenEmotion/openclaw_skill/*` | `reference_only` | `OpenEmotion` | 兼容 OpenClaw skill 形态的参考面 | EgoCore + OpenEmotion 正式双核 | 不是 formal owner，不是当前 runtime authority | 确认无人使用后再删 | 兼容链断裂 |
-| `OpenEmotion/emotiond/self_model_mirror.py` | `reference_only` | `OpenEmotion` | self-model mirror / 对照面 | `OpenEmotion/openemotion/self_model/*` | mirror 不拥有最终解释权 | 若替代说明面出现再评估收缩 | 被误当正式真相 |
 | `OpenEmotion/openemotion/identity/identity_invariants.py` | `reference_only` | `OpenEmotion` | 名义 identity owner surface，当前未接 formal mainline | `OpenEmotion/openemotion/proto_self/state.py` + `OpenEmotion/openemotion/proto_self/kernel.py` | 当前不能叙述成 live runtime authority | 若未来真接入 formal mainline，再重新分类 | 被误当 live identity owner |
 | `OpenEmotion/openemotion/identity/long_term_self_summary.py` | `reference_only` | `OpenEmotion` | support library，当前未接 formal mainline | 当前无 formal replacement；仅保留 support/reference 角色 | 当前不能叙述成 live runtime authority | formal consumer 明确后再重分类 | 被误当 live long-term self owner |
 | `OpenEmotion/openemotion/cycle_core/*` | `reference_only` | `OpenEmotion` | 历史 cycle implementation reference | `OpenEmotion/openemotion/proto_self/*` + `proto_self_v2/*` | 不是当前 formal mainline | formal caller 清零已确认后再评估收缩 | 被误当当前 cycle authority |
@@ -44,6 +42,11 @@
 | `OpenEmotion/emotiond/reflection_engine/*` | `reference_only` | `OpenEmotion` | 历史 reflection engine 参考面 | `OpenEmotion/openemotion/reflective_self/*` | 不是当前 reflection authority | formal caller 清零 + 删除 admission 通过 | 被误当当前 reflection authority |
 | `OpenEmotion/emotiond/reflection.py` | `reference_only` | `OpenEmotion` | 历史 reflection support residue | `OpenEmotion/openemotion/reflective_self/*` + `OpenEmotion/openemotion/proto_self/reflection.py` | 不是当前 reflection authority | formal caller 清零 + 删除 admission 通过 | 被误当当前 reflection authority |
 | `OpenEmotion/emotiond/self_counterfactual.py` | `reference_only` | `OpenEmotion` | 历史 counterfactual support residue | `OpenEmotion/openemotion/reflective_self/*` | 不是当前 reflection authority | formal caller 清零 + 删除 admission 通过 | 被误当当前 reflection authority |
+
+## 已删除
+
+- `OpenEmotion/emotiond/self_model_adapter.py`：已物理删除，历史 proof/archive evidence 仅保留在 cleanup ledger
+- `OpenEmotion/emotiond/self_model_mirror.py`：已物理删除，历史 proof/archive evidence 仅保留在 cleanup ledger
 
 ## 当前收口期约束
 

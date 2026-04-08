@@ -43,7 +43,7 @@ def scan_files(repo: Path):
                 if not raw_path:
                     continue
                 rel = Path(raw_path.decode('utf-8', errors='surrogateescape'))
-                if keep(rel):
+                if keep(rel) and (repo / rel).exists():
                     yield rel
             return
     except (FileNotFoundError, subprocess.TimeoutExpired):
@@ -127,12 +127,12 @@ def build():
                     orphans.append([repo_name, rel.as_posix(), 'python-no-obvious-import-hit'])
 
     with open(OUT / 'file_inventory.csv', 'w', newline='', encoding='utf-8') as f:
-        w = csv.writer(f)
+        w = csv.writer(f, lineterminator='\n')
         w.writerow(['repo', 'path', 'suffix', 'size_bytes'])
         w.writerows(rows)
 
     with open(OUT / 'import_or_reference_map.csv', 'w', newline='', encoding='utf-8') as f:
-        w = csv.writer(f)
+        w = csv.writer(f, lineterminator='\n')
         w.writerow(['repo', 'source', 'target'])
         w.writerows(imports)
 

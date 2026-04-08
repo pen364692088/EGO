@@ -234,7 +234,7 @@ flowchart TD
 | 能力 | formal owner | active substrate | 当前口径 |
 |---|---|---|---|
 | `identity invariants` | `openemotion.proto_self.state.IdentityInvariants` | `openemotion.proto_self.kernel + reducers` | 当前 runtime authority 仍在 v1 substrate；`openemotion.identity.identity_invariants` 与 `long_term_self_summary` 只是名义 owner / support library |
-| `self-model` | `openemotion.self_model/*` | `openemotion.proto_self.self_model` + v1 `SelfModel` | formal owner 是唯一 authority；substrate 仍是 active compute/proposal layer |
+| `self-model` | `openemotion.self_model/*` | `openemotion.proto_self.self_model` + v1 `SelfModel` | formal owner 是唯一 authority；substrate 仍是 active compute/proposal layer；`OpenEmotion/emotiond/self_model_adapter.py` 与 `OpenEmotion/emotiond/self_model_mirror.py` 已从 repo 删除 |
 | `drives / appraisal` | `openemotion.endogenous_drives/*` | `openemotion.proto_self.appraisal` + v1 `DriveField` | formal owner 是唯一 authority；substrate 仍是 active compute/proposal layer |
 | `reflection / structured revision` | `openemotion.reflective_self/*` | `openemotion.proto_self.reflection` | formal owner 是唯一 authority；v1 `reflection_note` 只保留 transient trigger 语义 |
 
