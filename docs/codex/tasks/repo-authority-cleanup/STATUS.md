@@ -2,14 +2,14 @@
 
 ## Current milestone
 
-- name: Milestone 2 - Drives / Reflection / Developmental Classification
+- name: Milestone 4 - Delete Admission Proof and Generated/Docs Cleanup
 - owner: Codex
-- state: completed
+- state: in_progress
 
 ## Current state
 
 - current_layer: repo_authority_cleanup
-- main_chain_status: phase0_truth_map_landed_identity_baseline_confirmed_self_model_authority_wave_landed_milestone2_classification_landed
+- main_chain_status: phase0_truth_map_landed_identity_baseline_confirmed_self_model_authority_wave_landed_milestone2_classification_landed_milestone3_admission_landed
 - completion_class: conditional_complete
 
 ## Completed work
@@ -23,15 +23,16 @@
 - 已完成 `self-model` 代码级 authority 收口：formal owner 自证、legacy adapter/mirror 自降级、single-authority static regression 落地
 - 已完成 `drives / reflection / developmental` 的 caller/authority ledger 收口，不改语义
 - 已移除 `EgoCore/app/openemotion_adapter/__init__.py` 中对 `ProtoSelfRestore` 的 package re-export；当前只剩 docs/generated residue
+- 已建立 canonical/archive boundary marker：`docs/canonical/README.md`、`docs/archive/README.md`、`artifacts/current/README.md`、`artifacts/archive/README.md`
+- 已新增 cleanup admission gate：`scripts/codex/verify_cleanup_admission.py`
 
 ## Last validation results
 
-- mode: milestone-2 scoped verification
+- mode: milestone-3 scoped verification
 - result: passed
 - summary:
-  - `python3 -m py_compile EgoCore/app/openemotion_adapter/__init__.py EgoCore/tests/test_openemotion_adapter_shims.py`
-  - `PYTHONPATH=EgoCore:EgoCore/modules:OpenEmotion python3 -m pytest EgoCore/tests/test_openemotion_adapter_shims.py -q -s` -> `3 passed`
-  - `python3 scripts/codex/verify_proto_self_single_authority.py` -> passed
+  - `python3 -m py_compile scripts/codex/verify_cleanup_admission.py`
+  - `python3 scripts/codex/verify_cleanup_admission.py` -> passed
   - `python3 scripts/codex/verify_repo.py --mode fast` -> passed
   - scoped `git diff --check` -> passed
 
@@ -45,6 +46,7 @@
 - `emotiond/self_model_adapter.py` 固定为 `compatibility_only`，`emotiond/self_model_mirror.py` 固定为 `reference_only`
 - `drives / reflection / developmental` 本轮只做 caller/authority 定性，不改 owner/substrate 语义
 - `proto_self_restore` 当前 formal caller 仍为 0，且 package re-export 已被清除；删除 admission 现在只剩 docs/generated residue
+- canonical/docs/artifact 当前只建立 admission boundary，不做物理迁移
 
 ## Open risks
 
@@ -52,11 +54,11 @@
 - `proto_self_restore` 当前虽已无代码 caller，但 docs/generated residue 仍在，不能直接删
 - `self-model` dual-authority 已收口，但 legacy adapter/mirror 仍有 tool/docs caller，当前还不能删
 - reflection legacy residue 仍有 `emotiond/core.py` caller；当前只能维持 `reference_only`
-- artifacts/logs 只做 inventory，不做物理迁移或删除；archive 边界仍待后续波次明确
+- artifacts/logs 仍未物理迁移；archive/current 目录现在只是 boundary marker
 
 ## Next step
 
-- 进入下一波：做 `canonical docs / artifact admission`，并继续推进 `proto_self_restore / self_model_adapter / self_model_mirror` 的 docs/generated/tool caller 清理；`drives / reflection / developmental` 仍不改语义
+- 当前下一步：继续做 `delete admission proof and generated/docs cleanup`，优先收窄 `proto_self_restore` 的 generated/docs callers，再处理 `self_model_adapter / self_model_mirror` 的 tool/docs callers；`drives / reflection / developmental` 仍不改语义
 
 ## Commands run / evidence
 
@@ -82,3 +84,5 @@
 - `rg -n "ProtoSelfRestore|proto_self_restore" .`
 - `python3 -m py_compile EgoCore/app/openemotion_adapter/__init__.py EgoCore/tests/test_openemotion_adapter_shims.py`
 - `PYTHONPATH=EgoCore:EgoCore/modules:OpenEmotion python3 -m pytest EgoCore/tests/test_openemotion_adapter_shims.py -q -s`
+- `python3 -m py_compile scripts/codex/verify_cleanup_admission.py`
+- `python3 scripts/codex/verify_cleanup_admission.py`

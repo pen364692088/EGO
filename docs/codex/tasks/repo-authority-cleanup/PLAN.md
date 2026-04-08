@@ -65,16 +65,32 @@
 - acceptance:
   - canonical docs 集合明确
   - current evidence 与 archive candidates 明确
-  - README / registry / gate 只指向 canonical docs
+  - canonical/archive boundary marker 已建立
+  - cleanup admission gate 能拦住 canonical/docs/artifact 边界漂移
 - validation:
+  - `python3 scripts/codex/verify_cleanup_admission.py`
   - `python3 scripts/codex/verify_repo.py --mode fast`
 - rollback note:
   - 若 docs/artifacts 存在 caller 不明的引用，不做物理移动
 
+### Milestone 4: Delete Admission Proof and Generated/Docs Cleanup
+
+- scope:
+  - 继续推进 `proto_self_restore / self_model_adapter / self_model_mirror` 的 generated/docs/tool caller 清理
+  - 只做 delete admission proof，不做大规模物理删除
+- acceptance:
+  - 至少一个 delete-candidate 的非 formal caller 进一步收窄
+  - 不引入 formal mainline 回退
+- validation:
+  - scoped tests
+  - `python3 scripts/codex/verify_repo.py --mode fast`
+- rollback note:
+  - 若 generated/docs/tool caller 迁移不清晰，则只更新 ledger，不删文件
+
 ## Progress
 
 - current_status: in_progress
-- current_milestone: Milestone 2 - Drives / Reflection / Developmental Classification
+- current_milestone: Milestone 4 - Delete Admission Proof and Generated/Docs Cleanup
 - milestone_state: executing
 
 ## Decision log
@@ -84,6 +100,7 @@
 - 2026-04-08: `identity` 不再重复设计；当前已落地代码波次作为 baseline 复核与 ledger 对齐对象
 - 2026-04-08: docs/artifacts 先做索引与 fate ledger，不先做物理迁移；原因是当前 scripts/gates/artifacts caller 仍分散
 - 2026-04-08: `proto_self_restore` 的 package re-export 可以安全移除；原因是全仓 caller 证明已显示代码 caller 只剩 `__init__.py` 自身，formal mainline 为 0
+- 2026-04-08: canonical/docs/artifact 先建立 boundary marker 和 gate，不做物理迁移；原因是当前 docs/scripts/artifacts 仍存在大量路径引用，先锁 admission 比盲目搬迁更安全
 
 ## Surprises / discoveries
 
@@ -100,5 +117,5 @@
   - `proto_self_restore` 是否已可直接删除
   - drives/reflection/developmental 的删除 admission 还不清楚
 - 下一步最小闭环动作：
-  - 完成 drives/reflection/developmental caller/authority ledger 收口
-  - 去掉 `proto_self_restore` package re-export 并用 scoped tests + `verify_repo --mode fast` 复核
+  - 建立 canonical/archive boundary marker 与 cleanup admission gate
+  - 再进入 delete-candidate 的 generated/docs/tool caller 收窄

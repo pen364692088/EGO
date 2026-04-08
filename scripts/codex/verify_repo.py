@@ -448,6 +448,20 @@ def detect_checks(open_runtime: OpenEmotionRuntime) -> List[Check]:
             )
         )
 
+    cleanup_admission_verify = ROOT / "scripts" / "codex" / "verify_cleanup_admission.py"
+    if cleanup_admission_verify.exists():
+        checks.append(
+            Check(
+                category="governance",
+                name="Cleanup admission drift gate",
+                command=["python3", "scripts/codex/verify_cleanup_admission.py"],
+                cwd=ROOT,
+                source="scripts/codex/verify_cleanup_admission.py",
+                run_in_fast=True,
+                run_in_full=True,
+            )
+        )
+
     if open_typecheck_simple.exists():
         simple_reason = None
         if open_runtime_missing:
