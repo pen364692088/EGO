@@ -40,7 +40,7 @@
 ### EgoCore 侧（薄 adapter）
 
 - `app/openemotion_adapter/proto_self_adapter.py` — 事件标准化 + kernel 调用
-- `app/openemotion_adapter/proto_self_restore.py` — 状态恢复注入
+- `app/openemotion_adapter/proto_self_restore.py` — 历史 compat/restore helper，不是当前 formal recovery path
 - `app/openemotion_adapter/proto_self_trace_bridge.py` — trace 桥接
 
 ### 禁止事项

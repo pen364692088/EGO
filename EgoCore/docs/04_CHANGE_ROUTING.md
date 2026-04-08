@@ -82,7 +82,7 @@
 
 联动时再看 EgoCore：
 - `app/openemotion_adapter/proto_self_adapter.py` — **Proto-Self Kernel adapter**
-- `app/openemotion_adapter/proto_self_restore.py`
+- `app/openemotion_adapter/proto_self_restore.py`（仅历史 compat/restore helper，不是 formal mainline）
 - `app/openemotion_adapter/proto_self_trace_bridge.py`
 - `app/runtime_v2/loop.py` — **wiring 点**
 - `contracts/self_model.schema.json`

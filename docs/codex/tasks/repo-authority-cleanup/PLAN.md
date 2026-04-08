@@ -101,12 +101,14 @@
 - 2026-04-08: docs/artifacts 先做索引与 fate ledger，不先做物理迁移；原因是当前 scripts/gates/artifacts caller 仍分散
 - 2026-04-08: `proto_self_restore` 的 package re-export 可以安全移除；原因是全仓 caller 证明已显示代码 caller 只剩 `__init__.py` 自身，formal mainline 为 0
 - 2026-04-08: canonical/docs/artifact 先建立 boundary marker 和 gate，不做物理迁移；原因是当前 docs/scripts/artifacts 仍存在大量路径引用，先锁 admission 比盲目搬迁更安全
+- 2026-04-08: `proto_self_restore` 的 generated import-map stale edge 已通过重新生成 inventory 清除；原因是 package re-export 移除后，继续保留旧 generated caller 会误导 delete admission 结论
 
 ## Surprises / discoveries
 
 - 当前 worktree 已存在大量与本任务无关的脏文件；提交时必须严格 scoped
 - `self-model` legacy adapter/mirror 当前 formal caller 为 0，但仍有 tools/docs/generated caller
 - `proto_self_restore.py` formal caller 为 0，但 `EgoCore/app/openemotion_adapter/__init__.py` 仍 re-export 它，删除 admission 不能直接跳过
+- `proto_self_restore.py` 当前仍不能删；虽然 package re-export 和 generated import-map stale edge 已清掉，但 generated file inventory 与 compat/historical docs residue 还在
 
 ## Outcomes / retrospective
 
@@ -117,5 +119,5 @@
   - `proto_self_restore` 是否已可直接删除
   - drives/reflection/developmental 的删除 admission 还不清楚
 - 下一步最小闭环动作：
-  - 建立 canonical/archive boundary marker 与 cleanup admission gate
-  - 再进入 delete-candidate 的 generated/docs/tool caller 收窄
+  - 继续收窄 `proto_self_restore` 的 inventory/docs residue
+  - 再进入 `self_model_adapter / self_model_mirror` 的 tool/docs caller 收窄
