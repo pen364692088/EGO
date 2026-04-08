@@ -9,7 +9,7 @@
 ## Current state
 
 - current_layer: repo_authority_cleanup
-- main_chain_status: phase0_truth_map_landed_identity_baseline_confirmed_self_model_authority_wave_landed_milestone2_classification_landed_milestone3_admission_landed_milestone4_proto_self_restore_generated_edge_cleared
+- main_chain_status: phase0_truth_map_landed_identity_baseline_confirmed_self_model_authority_wave_landed_milestone2_classification_landed_milestone3_admission_landed_milestone4_proto_self_restore_generated_edge_cleared_self_model_mirror_tool_import_removed
 - completion_class: conditional_complete
 
 ## Completed work
@@ -26,6 +26,7 @@
 - 已建立 canonical/archive boundary marker：`docs/canonical/README.md`、`docs/archive/README.md`、`artifacts/current/README.md`、`artifacts/archive/README.md`
 - 已新增 cleanup admission gate：`scripts/codex/verify_cleanup_admission.py`
 - 已重新生成 `EgoCore/docs/generated/*`，清除 `proto_self_restore` 的 generated import-map stale edge；当前剩余 residue 为 generated file inventory 与 compat/historical docs
+- 已移除 `OpenEmotion/tools/main_chain_wiring_check.py` 对 `emotiond.self_model_mirror` 的真实 import，并把 `OpenEmotion/docs/PROGRAM_STATE_UNIFIED.yaml` 的 `OE_MVP:13` 证据改成历史 shadow 口径
 
 ## Last validation results
 
@@ -48,12 +49,14 @@
 - `drives / reflection / developmental` 本轮只做 caller/authority 定性，不改 owner/substrate 语义
 - `proto_self_restore` 当前 formal caller 仍为 0，且 package re-export 已被清除；删除 admission 现在只剩 docs/generated residue
 - `proto_self_restore` 当前 formal caller 仍为 0，package re-export 与 generated import-map stale edge都已清除；删除 admission 现在只剩 generated file inventory 与 compat/historical docs residue
+- `self_model_mirror` 当前仍有 legacy daemon/tool callers，但 `main_chain_wiring_check.py` 不再作为真实 code caller；`OE_MVP:13` 也不再把 adapter 口径写成 current mainline
 - canonical/docs/artifact 当前只建立 admission boundary，不做物理迁移
 
 ## Open risks
 
 - worktree 脏文件很多，提交必须极度 scoped
 - `proto_self_restore` 当前虽已无代码 caller，但 generated file inventory 与 compat/historical docs residue 仍在，不能直接删
+- `self_model_adapter / self_model_mirror` 当前仍不能删；`emotiond/core.py` 与 legacy tools callers 仍在
 - `self-model` dual-authority 已收口，但 legacy adapter/mirror 仍有 tool/docs caller，当前还不能删
 - reflection legacy residue 仍有 `emotiond/core.py` caller；当前只能维持 `reference_only`
 - artifacts/logs 仍未物理迁移；archive/current 目录现在只是 boundary marker
@@ -61,6 +64,7 @@
 ## Next step
 
 - 当前下一步：继续做 `delete admission proof and generated/docs cleanup`，优先收窄 `proto_self_restore` 的 inventory/docs callers，再处理 `self_model_adapter / self_model_mirror` 的 tool/docs callers；`drives / reflection / developmental` 仍不改语义
+- 当前下一步：继续做 `delete admission proof and generated/docs cleanup`，优先收窄 `self_model_adapter / self_model_mirror` 的剩余 legacy tool/docs callers；`drives / reflection / developmental` 仍不改语义
 
 ## Commands run / evidence
 

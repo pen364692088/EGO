@@ -107,3 +107,17 @@ def test_egocore_does_not_take_self_model_runtime_ownership():
         "EgoCore/app/openemotion_adapter/proto_self_adapter.py",
     ):
         assert _imports_module(rel_path, "openemotion.proto_self.self_model") is False
+
+
+def test_legacy_wiring_tool_does_not_import_reference_only_mirror_module():
+    assert _imports_module(
+        "OpenEmotion/tools/main_chain_wiring_check.py",
+        "emotiond.self_model_mirror",
+    ) is False
+
+
+def test_program_state_marks_adapter_evidence_as_historical_shadow_only():
+    text = (REPO_ROOT / "OpenEmotion/docs/PROGRAM_STATE_UNIFIED.yaml").read_text(encoding="utf-8")
+    assert "OpenEmotion/docs/archive/E2E_SELF_MODEL_ADAPTER_REPORT.md" in text
+    assert "历史 SelfModelAdapter shadow wiring 证据" in text
+    assert "adapter 非 formal mainline" in text

@@ -2,7 +2,8 @@
 """
 Main-Chain Wiring Verification Script
 
-Verifies that new OpenEmotion modules are wired into emotiond/core.py main chain.
+Legacy compatibility verification for the old `emotiond/core.py` wiring path.
+This script is not the formal mainline verifier.
 
 NOT just module tests - checks that:
 1. New self_model is called by core.py
@@ -112,22 +113,16 @@ def check_new_self_model_exists():
 
 
 def check_mirror_adapter():
-    """Check if mirror adapter exists and can convert."""
+    """Check whether the legacy mirror module still exists on disk."""
     print("\n" + "=" * 60)
     print("4. Checking mirror adapter")
     print("=" * 60)
-    
-    try:
-        from emotiond.self_model_mirror import SelfModelMirrorAdapter
-        print("  SelfModelMirrorAdapter import: OK")
-        
-        adapter = SelfModelMirrorAdapter(enable=False)
-        print("  Adapter instantiation: OK")
-        
-        return True
-    except Exception as e:
-        print(f"  Mirror adapter check FAILED: {e}")
-        return False
+
+    mirror_path = Path(__file__).parent.parent / "emotiond" / "self_model_mirror.py"
+    mirror_exists = mirror_path.exists()
+    print(f"  SelfModelMirrorAdapter module present: {mirror_exists}")
+    print("  Note: mirror is a legacy reference-only surface, not a formal mainline requirement")
+    return mirror_exists
 
 
 def check_shadow_data():

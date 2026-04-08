@@ -64,7 +64,8 @@ axes:
     local_refs:
       - ref: "OE_MVP:13"
         state: "verified_e2e"
-        evidence: "OpenEmotion/emotiond/self_model_adapter.py, docs/E2E_SELF_MODEL_ADAPTER_REPORT.md"
+        evidence: "OpenEmotion/emotiond/self_model_adapter.py, OpenEmotion/docs/archive/E2E_SELF_MODEL_ADAPTER_REPORT.md"
+        note: "历史 SelfModelAdapter shadow wiring 证据；当前 formal owner 为 openemotion/self_model，adapter 非 formal mainline"
       - ref: "CLOSED_LOOP_E2E_V3"
         state: "verified_e2e_v3_real_transport"
         evidence: "EgoCore/docs/DUAL_REPO_CLOSED_LOOP_E2E_V3_REPORT.md"
