@@ -48,7 +48,7 @@
   - `python3 scripts/codex/verify_path_classification.py` 通过
   - `python3 scripts/codex/lint_repo.py` 通过
   - `python3 scripts/codex/verify_repo.py --mode fast` 通过
-  - `python3 scripts/codex/run_provider_runtime_openemotion_e2e_gate.py --session-key telegram:dm:8420019401` 结果为 `all_passed=false`；卡在 current fresh window 缺少 follow-up continuity pair，claim ceiling 仍是 conditional
+  - `python3 scripts/codex/run_provider_runtime_openemotion_e2e_gate.py --session-key telegram:dm:8420019401` 最新结果仍为 `all_passed=false`；当前 fresh window 只有 `sample_20260407_212157_aeb0a7fc` 一条 task sample，缺少 recent-result follow-up pair，claim ceiling 仍是 conditional
 
 ## Decisions made
 
@@ -97,14 +97,17 @@
 
 ## External blocker details
 
-- 当前 provider/runtime E2E gate 使用的 fresh window 只包含：
-  - `sample_20260406_222621_bae06e33`：`/new`，`command_result`
-  - `sample_20260406_222640_fcaaad0d`：普通 chat
-  - `sample_20260406_222751_c01ad222`：普通 chat
+- 当前 provider/runtime E2E gate 的最新 fresh window 从 `sample_20260407_212157_aeb0a7fc` 开始，`sample_count = 1`
+- 该窗口当前只有：
+  - `sample_20260407_212157_aeb0a7fc`：`task_mainline`
 - 该窗口没有：
-  - 带 `metadata.recent_result_context` 的 `task_mainline` 样本
-  - 后续 recent-result follow-up 样本
-- 因此 `followup_continuity_pass = false` 当前是样本缺口，不是仓内逻辑失败
+  - fresh `ordinary_chat` task-flow pair
+  - recent-result follow-up 样本
+  - accepted `task_mainline -> recent-result follow-up` continuity pair
+- 因此当前失败项是：
+  - `telegram_task_flow_pass = false`
+  - `followup_continuity_pass = false`
+- 这仍然是 fresh live 样本缺口，不是仓内逻辑失败
 - 关闭 blocker 的最小 live 序列：
   1. `/new`
   2. 发送一个会产出文件或页面的任务
@@ -134,6 +137,12 @@
 - `python3 scripts/codex/lint_repo.py`
 - `python3 scripts/codex/verify_repo.py --mode fast`
 - `python3 scripts/codex/run_provider_runtime_openemotion_e2e_gate.py --session-key telegram:dm:8420019401`
+- latest provider/runtime gate snapshot:
+  - `window_start_sample_id = sample_20260407_212157_aeb0a7fc`
+  - `sample_count = 1`
+  - `telegram_task_flow_pass = false`
+  - `followup_continuity_pass = false`
+  - `claim_ceiling = only conditional completion is allowed`
 - `python3 -m py_compile scripts/codex/verify_path_classification.py scripts/codex/verify_repo.py EgoCore/app/dashboard/server.py EgoCore/tests/test_dashboard_server.py`
 - `git diff --check -- README.md EgoCore/README.md OpenEmotion/README.md docs/CURRENT_PROJECT_LOGIC_FLOW.md docs/TELEGRAM_FLOW_VIEW_README.md EgoCore/docs/05_DEPRECATED_AND_SHIMS.md scripts/codex/verify_path_classification.py scripts/codex/verify_repo.py EgoCore/app/dashboard/server.py EgoCore/app/dashboard/static/dashboard.js EgoCore/tests/test_dashboard_server.py docs/codex/tasks/interface-layer-consolidation/PLAN.md docs/codex/tasks/interface-layer-consolidation/STATUS.md`
 - authority refs:
