@@ -3,6 +3,8 @@
 > 双仓闭环 E2E 验证报告  
 > 生成时间: 2026-03-16T06:03:00  
 > 测试脚本: tools/dual_repo_closed_loop_e2e.py
+>
+> Archive note: this is a historical compatibility report. It does not describe the current formal mainline or current authority boundaries.
 
 ---
 

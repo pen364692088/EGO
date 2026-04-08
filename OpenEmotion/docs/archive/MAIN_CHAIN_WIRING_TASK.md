@@ -3,6 +3,8 @@
 > 任务类型: 验证修复  
 > 优先级: P0  
 > 创建时间: 2026-03-16
+>
+> Archive note: this is a historical task record. It does not describe the current formal mainline or current authority boundaries.
 
 ---
 

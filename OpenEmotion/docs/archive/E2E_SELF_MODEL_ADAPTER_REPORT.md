@@ -2,6 +2,8 @@
 
 > 生成时间: 2026-03-16T05:40:00  
 > 验证脚本: tools/e2e_self_model_adapter.py
+>
+> Archive note: this is a historical verification snapshot. It does not describe the current formal mainline or current authority boundaries.
 
 ---
 

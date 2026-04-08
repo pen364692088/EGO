@@ -2,6 +2,8 @@
 
 > 生成时间: 2026-03-16T00:20:00
 > 验证脚本: tools/main_chain_wiring_check.py
+>
+> Archive note: this is a historical wiring snapshot. It does not describe the current formal mainline or current authority boundaries.
 
 ---
 

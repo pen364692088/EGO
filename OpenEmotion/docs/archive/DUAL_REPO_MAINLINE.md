@@ -3,6 +3,8 @@
 > **权威源**: `docs/PROGRAM_STATE_UNIFIED.yaml`
 > **版本**: v1.0
 > **更新时间**: 2026-03-19
+>
+> Archive note: this is a historical mainline definition snapshot. It is preserved for traceability and does not supersede the current formal mainline or authority registers.
 
 ---
 
