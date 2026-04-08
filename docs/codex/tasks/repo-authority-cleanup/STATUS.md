@@ -63,6 +63,7 @@
 - `self_model_adapter / self_model_mirror` 当前仍不能删；`emotiond/core.py` 与少量 legacy tool callers 仍在
 - `self_model_mirror` 的 real tool caller 已进一步收窄，但 `mvp13_daily_report.py` 仍保留 archive-based 历史报表角色，因此还不能报 delete-ready
 - `self_model_adapter` 的 real tool caller 已进一步收窄，但 `dual_repo_closed_loop_e2e.py` 与 `emotiond/core.py` 仍在，因此还不能报 delete-ready
+- 当前 stop boundary：`OpenEmotion/tools/dual_repo_closed_loop_e2e.py` 仍是有意保留的 legacy compatibility harness；在未先决定它是否应转 archive/reference-only 前，继续削它的 live adapter caller 有删除风险
 - `self-model` dual-authority 已收口，但 legacy adapter/mirror 仍有 tool/docs caller，当前还不能删
 - reflection legacy residue 仍有 `emotiond/core.py` caller；当前只能维持 `reference_only`
 - artifacts/logs 仍未物理迁移；archive/current 目录现在只是 boundary marker
@@ -70,6 +71,7 @@
 ## Next step
 
 - 当前下一步：继续做 `delete admission proof and generated/docs cleanup`，优先收窄 `self_model_adapter / self_model_mirror` 的剩余 legacy daemon/docs callers；`drives / reflection / developmental` 仍不改语义
+- 当前下一步：先判定 `OpenEmotion/tools/dual_repo_closed_loop_e2e.py` 是否仍需保留为 legacy compatibility proof surface；若答案是“保留”，则先转去收窄其他 non-formal docs/tool callers，而不是继续直接逼近 delete-ready
 
 ## Commands run / evidence
 
