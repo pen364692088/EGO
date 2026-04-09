@@ -2,7 +2,7 @@
 
 ## Task summary
 
-把全仓收成“一个正式主链 + 一组单一 authority + 一套 canonical docs + 一条 archive 边界”。当前第一轮已推进到 canonical/archive physical admission boundary；本轮继续固化 canonical/archive/current/archive/generated/dirty-worktree admission，并准备 clean-clone / CI final closeout proof surface。
+把全仓收成“一个正式主链 + 一组单一 authority + 一套 canonical docs + 一条 archive 边界”。当前任务状态已收口为 `repo_authority_cleanup: closeout-complete (repo/integration scope)`；remaining items only live in `optional housekeeping / future cleanup backlog`.
 
 ## Milestones
 
@@ -117,8 +117,16 @@
 ## Progress
 
 - current_status: complete
-- current_milestone: Milestone 5 - Clean-Clone / CI Final Closeout Proof
+- current_milestone: repo_authority_cleanup: closeout-complete (repo/integration scope)
 - milestone_state: complete
+
+## Optional housekeeping / future cleanup backlog
+
+- 仅作为后续可选 housekeeping，不属于本任务 closeout 范围
+- 可能的后续项：
+  - archive/reference-only docs further compression
+  - optional physical archive of non-authoritative proof surfaces
+  - any future non-authoritative generated-residue tidy-up
 
 ## Decision log
 
@@ -128,6 +136,7 @@
 - 2026-04-08: docs/artifacts 先做索引与 fate ledger，不先做物理迁移；原因是当前 scripts/gates/artifacts caller 仍分散
 - 2026-04-08: `proto_self_restore` 的 package re-export 可以安全移除；原因是全仓 caller 证明已显示代码 caller 只剩 `__init__.py` 自身，formal mainline 为 0
 - 2026-04-08: canonical/docs/artifact 先建立 boundary marker 和 gate，不做物理迁移；原因是当前 docs/scripts/artifacts 仍存在大量路径引用，先锁 admission 比盲目搬迁更安全
+- 2026-04-08: clean-clone / CI final closeout proof 必须显式包含 generated-residue cleanup；原因是 settled targeted tests 会写入 repo-tracked generated files（尤其 `EgoCore/docs/generated/*` 与 `OpenEmotion/artifacts/mvp12/*`），不先 restore/remove 再验 clean 会导致 proof overclaim
 - 2026-04-08: `proto_self_restore` 的 generated import-map stale edge 已通过重新生成 inventory 清除；原因是 package re-export 移除后，继续保留旧 generated caller 会误导 delete admission 结论
 - 2026-04-08: `proto_self_restore` 已在 residue wave 中物理删除；原因是 formal caller = 0，generated import-map stale edge 已清，generated file inventory residue 也已清除
 - 2026-04-08: `mvp13_daily_report.py` 已改为 archive-based 历史报告，不再真实 import mirror；原因是 legacy report 继续持有 live mirror import 会污染 delete admission 口径

@@ -2,13 +2,14 @@
 
 ## Current milestone
 
-- name: Milestone 5 - Clean-Clone / CI Final Closeout Proof
+- name: repo_authority_cleanup: closeout-complete (repo/integration scope)
 - owner: Codex
 - state: complete
 
 ## Current state
 
 - current_layer: repo_authority_cleanup
+- repo_authority_cleanup: closeout-complete (repo/integration scope)
 - main_chain_status: phase0_truth_map_landed_identity_authority_wave_landed_self_model_authority_wave_landed_milestone2_classification_landed_milestone3_admission_landed_milestone4_proto_self_restore_generated_edge_cleared_proto_self_restore_deleted_self_model_mirror_tool_import_removed_mvp13_report_archive_based_e2e_adapter_report_archive_based_archive_self_model_docs_clarified_oe_mvp13_archive_evidence_only_archive_self_model_body_clarified_archive_self_model_paths_clarified_e2e_adapter_legacy_artifact_dir_clarified_self_model_adapter_core_and_dual_repo_live_callers_removed_mvp13_proof_tests_migrated_to_formal_owner_store_self_model_delete_admission_finished_adapter_mirror_deleted_reflection_legacy_runtime_callers_removed_reflection_probe_archive_only_reflection_trigger_substrate_retained_drives_authority_wave_landed_drive_adapter_and_emotiond_drives_demoted_thin_substrate_retained_developmental_authority_wave_landed_developmental_core_retained_as_active_substrate_clean_clone_ci_final_closeout_proof_passed
 - completion_class: complete
 
@@ -94,6 +95,12 @@
 - clean-clone / CI final closeout proof 已完成；原因是 clean clone `Ego-cleancloseout` 上 `verify_cleanup_admission.py`、`verify_proto_self_single_authority.py`、`verify_repo.py --mode fast`、settled-branch targeted tests、repo-level `git diff --check` 与 clean-clone `git status` 均已通过
 - 为修复 clean-clone settled autonomy tests 的缺口，新增 `EgoCore/app/autonomy/repository.py` 并补齐 `autonomy_runs` schema bootstrap；原因是该支持层缺失会让 autonomy settled tests 在 clean clone 中无法落库，但这不改变 formal mainline 或 authority/runtime 语义
 
+## Optional housekeeping / future cleanup backlog
+
+- archive/reference-only docs further compression
+- optional physical archive of non-authoritative proof surfaces
+- any later non-authoritative generated-residue tidy-up
+
 ## Open risks
 
 - worktree 脏文件很多，提交必须极度 scoped
@@ -108,8 +115,8 @@
 
 ## Next step
 
-- 当前下一步：归档本任务并保留 closeout report 作为最终证据，不再继续新的 authority cleanup
-- 当前下一步：`delete admission proof and generated/docs cleanup`、`dual_repo_closed_loop_e2e.py`、reflection trigger substrate retirement 等剩余议题都已退回历史或后续独立波次，不再阻塞本任务 closeout
+- 当前下一步：仅保留 `optional housekeeping / future cleanup backlog`，不再继续新的 authority cleanup
+- 当前下一步：`delete admission proof and generated/docs cleanup`、`dual_repo_closed_loop_e2e.py`、reflection trigger substrate retirement 等剩余议题都已退回 backlog，不再阻塞本任务 closeout
 
 ## Commands run / evidence
 

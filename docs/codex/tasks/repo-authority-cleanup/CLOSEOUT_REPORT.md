@@ -1,7 +1,7 @@
 # Repo Authority Cleanup - CLOSEOUT REPORT
 
 ## 当前层级
-`repo_authority_cleanup / Milestone 5 / clean-clone / CI final closeout proof`
+`repo_authority_cleanup: closeout-complete (repo/integration scope)`
 
 ## 证据层级
 - clean clone workspace: `/mnt/d/Project/AIProject/MyProject/Ego-cleancloseout`
@@ -17,6 +17,12 @@
 - completed authority cleanup remains in force
 - retained thin substrate / compat / reference-only surfaces remain present as bounded support paths
 - those residues are explicitly non-authoritative and do not block closeout because the closeout proof is about boundary reproducibility, not further feature removal
+
+## Optional housekeeping / future cleanup backlog
+
+- archive/reference-only docs further compression
+- optional physical archive of non-authoritative proof surfaces
+- any later non-authoritative generated-residue tidy-up
 
 ## 当前确定项
 - `python3 scripts/codex/verify_cleanup_admission.py` passed in the clean clone
@@ -42,7 +48,7 @@
 
 ## 剩余未做事项
 - none blocking for `repo_authority_cleanup`
-- only optional archival housekeeping remains, and it is outside the closeout criteria
+- only `optional housekeeping / future cleanup backlog` remains, and it is outside the closeout criteria
 
 ## Completed cleanup vs retained residues
 - completed authority cleanup:

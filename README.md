@@ -21,6 +21,8 @@ EGO 是 AI Agent 项目的总仓，负责集成 EgoCore（宿主）和 OpenEmoti
 - **当前阶段**
   - 当前 repo 处于**边界冻结下的收口期**
   - 不再改双核边界，不再换 Telegram 正式主链，不再开第三套 runtime 叙事
+  - `repo_authority_cleanup: closeout-complete (repo/integration scope)`
+  - 其余事项仅保留在 `optional housekeeping / future cleanup backlog`
 - **Path / Compat Discipline**
   - 正式/compat/reference/deprecated 路径统一登记在 `EgoCore/docs/05_DEPRECATED_AND_SHIMS.md`
   - `v1 compatibility fallback`、`legacy/new_runtime`、`_handle_with_new_runtime`、`_handle_with_legacy_router` 都不是当前正式主链
