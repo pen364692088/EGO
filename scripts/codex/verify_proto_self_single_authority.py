@@ -16,6 +16,7 @@ PATH_REGISTER = ROOT / "EgoCore" / "docs" / "05_DEPRECATED_AND_SHIMS.md"
 CAPABILITY_REGISTRY = ROOT / "docs" / "CAPABILITY_REGISTRY.md"
 PROGRAM_STATE = ROOT / "EgoCore" / "docs" / "PROGRAM_STATE_UNIFIED.yaml"
 TEST_FILE = ROOT / "OpenEmotion" / "tests" / "test_self_model_single_authority.py"
+IDENTITY_TEST_FILE = ROOT / "OpenEmotion" / "tests" / "test_identity_single_authority.py"
 DRIVES_WIRING_TEST = ROOT / "OpenEmotion" / "tests" / "mvp14" / "test_mainline_wiring.py"
 DELETED_PATHS = (
     ROOT / "OpenEmotion" / "emotiond" / "self_model_adapter.py",
@@ -102,6 +103,24 @@ CODE_REQUIRED_SNIPPETS = {
         'assert "legacy adapter/mirror 已物理删除" in decision',
         'assert "resolved delete admission" in conflict',
         'assert "legacy adapter/mirror 已删除" in readme',
+    ],
+    IDENTITY_TEST_FILE: [
+        'assert PACKAGE_AUTHORITY_STATUS == "reference_only"',
+        'assert PACKAGE_FORMAL_MAINLINE_ENABLED is False',
+        'assert PACKAGE_LIVE_RUNTIME_AUTHORITY == "openemotion.proto_self.state.IdentityInvariants"',
+        'assert IDENTITY_INVARIANTS_AUTHORITY_STATUS == "reference_only"',
+        'assert IDENTITY_INVARIANTS_FORMAL_MAINLINE_ENABLED is False',
+        'assert IDENTITY_INVARIANTS_LIVE_RUNTIME_AUTHORITY == "openemotion.proto_self.state.IdentityInvariants"',
+        'assert LONG_TERM_SELF_SUMMARY_AUTHORITY_STATUS == "reference_only"',
+        'assert LONG_TERM_SELF_SUMMARY_FORMAL_MAINLINE_ENABLED is False',
+        'assert LONG_TERM_SELF_SUMMARY_LIVE_RUNTIME_AUTHORITY == "openemotion.proto_self.state.IdentityInvariants"',
+        'assert _imports_module(',
+        'OpenEmotion/openemotion/proto_self_v2/kernel.py',
+        'OpenEmotion/openemotion/proto_self_v2/state.py',
+        'EgoCore/app/openemotion_hooks/native_hooks.py',
+        'EgoCore/app/openemotion_adapter/proto_self_adapter.py',
+        'EgoCore/app/runtime_v2/proto_self_runtime.py',
+        '"openemotion.identity"',
     ],
     DRIVES_WIRING_TEST: [
         'assert LegacyDriveManager is FormalDriveManager',
@@ -205,6 +224,14 @@ def main() -> int:
         for snippet in snippets:
             if snippet not in text:
                 errors.append(f"{path.relative_to(ROOT)} missing required authority constant: {snippet}")
+
+    if not IDENTITY_TEST_FILE.exists():
+        errors.append(f"missing required admission test: {IDENTITY_TEST_FILE.relative_to(ROOT)}")
+    else:
+        identity_text = IDENTITY_TEST_FILE.read_text(encoding="utf-8")
+        for snippet in CODE_REQUIRED_SNIPPETS[IDENTITY_TEST_FILE]:
+            if snippet not in identity_text:
+                errors.append(f"{IDENTITY_TEST_FILE.relative_to(ROOT)} missing required identity authority assertion: {snippet}")
 
     if not TEST_FILE.exists():
         errors.append(f"missing required admission test: {TEST_FILE.relative_to(ROOT)}")

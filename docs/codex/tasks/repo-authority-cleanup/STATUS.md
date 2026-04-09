@@ -9,19 +9,20 @@
 ## Current state
 
 - current_layer: repo_authority_cleanup
-- main_chain_status: phase0_truth_map_landed_identity_baseline_confirmed_self_model_authority_wave_landed_milestone2_classification_landed_milestone3_admission_landed_milestone4_proto_self_restore_generated_edge_cleared_self_model_mirror_tool_import_removed_mvp13_report_archive_based_e2e_adapter_report_archive_based_archive_self_model_docs_clarified_proto_self_restore_inventory_residue_only_oe_mvp13_archive_evidence_only_archive_self_model_body_clarified_archive_self_model_paths_clarified_e2e_adapter_legacy_artifact_dir_clarified_self_model_adapter_core_and_dual_repo_live_callers_removed_mvp13_proof_tests_migrated_to_formal_owner_store_self_model_delete_admission_finished_adapter_mirror_deleted_reflection_legacy_runtime_callers_removed_reflection_probe_archive_only_reflection_trigger_substrate_retained_drives_authority_wave_landed_drive_adapter_and_emotiond_drives_demoted_thin_substrate_retained
+- main_chain_status: phase0_truth_map_landed_identity_authority_wave_landed_self_model_authority_wave_landed_milestone2_classification_landed_milestone3_admission_landed_milestone4_proto_self_restore_generated_edge_cleared_self_model_mirror_tool_import_removed_mvp13_report_archive_based_e2e_adapter_report_archive_based_archive_self_model_docs_clarified_proto_self_restore_inventory_residue_only_oe_mvp13_archive_evidence_only_archive_self_model_body_clarified_archive_self_model_paths_clarified_e2e_adapter_legacy_artifact_dir_clarified_self_model_adapter_core_and_dual_repo_live_callers_removed_mvp13_proof_tests_migrated_to_formal_owner_store_self_model_delete_admission_finished_adapter_mirror_deleted_reflection_legacy_runtime_callers_removed_reflection_probe_archive_only_reflection_trigger_substrate_retained_drives_authority_wave_landed_drive_adapter_and_emotiond_drives_demoted_thin_substrate_retained
 - completion_class: conditional_complete
 
 ## Completed work
 
 - 已创建 long-run task package：`docs/codex/tasks/repo-authority-cleanup/`
 - 已确认当前 formal mainline 不变：`native_hooks -> proto_self_runtime -> proto_self_adapter -> proto_self_v2/kernel`
-- 已确认 `identity` 代码级单一 authority baseline 已存在，可直接作为本轮基线复核
+- 已确认 `identity` 代码级单一 authority wave 已落地，并由 single-authority gate 和 identity proof test 共同约束
 - 已确认 `self-model` formal owner 当前在主链上被 runtime projection/writeback 消费
 - 已确认 `drives` formal owner 当前在主链上被 runtime projection/writeback 消费，`drive_adapter.py` 与 `emotiond/drives/*` 只保留 compat/projection/helper surfaces
 - 已确认 `proto_self_restore.py` 当前 formal caller 为 0，但仍存在 tools/docs/generated caller；`emotiond/self_model_adapter.py`、`emotiond/self_model_mirror.py` 已物理删除
 - 已完成 Phase 0 六个 ledger 首版落地：`AUTHORITY_MATRIX / CALLER_MATRIX / FILE_FATE_LEDGER / CANONICAL_DOCS_INDEX / ARTIFACT_LOG_INVENTORY / CONFLICT_REGISTER`
 - 已完成 `self-model` 代码级 authority 收口：formal owner 自证、legacy adapter/mirror 自降级、single-authority static regression 落地
+- 已完成 `identity` 代码级 authority 收口：唯一 live runtime authority 仍在 v1 substrate，reference-only owner surfaces 与 proof test 已对齐
 - 已完成 `drives / reflection / developmental` 的 caller/authority ledger 收口，不改语义
 - 已移除 `EgoCore/app/openemotion_adapter/__init__.py` 中对 `ProtoSelfRestore` 的 package re-export；当前只剩 docs/generated residue
 - 已建立 canonical/archive boundary marker：`docs/canonical/README.md`、`docs/archive/README.md`、`artifacts/current/README.md`、`artifacts/archive/README.md`
@@ -58,11 +59,11 @@
 
 ## Decisions made
 
-- 第一轮 milestone 固定为 `Phase 0 + identity baseline closeout + self-model authority wave`
-- `identity` 本轮不重复设计，只做 ledger/doc/gate 对齐
+- 第一轮 milestone 固定为 `Phase 0 + identity authority wave + self-model authority wave`
+- `identity` 本轮已落地为 resolved single runtime authority，只做 ledger/doc/gate 对齐，不重复设计
 - `self-model` 本轮采取最小代码收口：formal owner 自证 + legacy adapter/mirror 自降级 + no-dual-authority static assertion
 - `drives / reflection / developmental` 第一轮先做 ledger 与 conflict register；其中 drives 这一支已完成 authority wave，reflection/developmental 仍按后续波次处理
-- `self-model` 本轮后的唯一 authority 固定为 `openemotion.self_model/*`；`openemotion.proto_self.self_model` 仅保留 active compute/proposal substrate 角色
+- `identity` 本轮后的唯一 runtime authority 固定为 `openemotion.proto_self.state.IdentityInvariants`；`openemotion.identity.*` 仅保留 reference-only 角色
 - `emotiond/self_model_adapter.py` 固定为 `compatibility_only`，`emotiond/self_model_mirror.py` 固定为 `reference_only`
 - `drives / reflection / developmental` 本轮只做 caller/authority 定性；drives 这一支已完成 authority wave，不再作为 later wave blocker
 - `proto_self_restore` 当前 formal caller 仍为 0，且 package re-export 已被清除；删除 admission 现在只剩 generated file inventory residue
