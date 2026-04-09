@@ -50,9 +50,8 @@
 - mode: milestone-4 scoped verification
 - result: passed
 - summary:
-  - `cmd.exe /c "cd /d D:\Project\AIProject\MyProject\Ego\OpenEmotion && .venv\Scripts\python.exe -m pytest tests\mvp14\test_mainline_wiring.py tests\mvp14\test_drive_integration.py tests\mvp14\test_e2e_gate_b.py tests\mvp14\test_drive_behavioral_influence_formal_proof.py openemotion\proto_self_v2\tests\test_endogenous_drive_read_integration.py -q"` -> `22 passed`
-  - `PYTHONPATH=EgoCore:EgoCore/modules:OpenEmotion python3 -m pytest EgoCore/tests/test_runtime_v2_proto_self_runtime.py -k "drive or endogenous" -q -s` -> `2 passed`
-  - `python3 -m py_compile OpenEmotion/openemotion/endogenous_drives/action_bias.py OpenEmotion/openemotion/endogenous_drives/__init__.py OpenEmotion/emotiond/core.py OpenEmotion/emotiond/drive_adapter.py OpenEmotion/emotiond/drives/__init__.py OpenEmotion/emotiond/drives/manager.py OpenEmotion/emotiond/drives/schema.py OpenEmotion/emotiond/drives/integration.py OpenEmotion/tests/mvp14/test_mainline_wiring.py scripts/codex/verify_proto_self_single_authority.py`
+  - `cmd.exe /c "cd /d D:\Project\AIProject\MyProject\Ego\OpenEmotion && set PYTHONPATH=D:\Project\AIProject\MyProject\Ego\OpenEmotion;D:\Project\AIProject\MyProject\Ego\EgoCore;D:\Project\AIProject\MyProject\Ego\EgoCore\modules && .venv\Scripts\python.exe -m pytest tests\test_identity_single_authority.py openemotion\proto_self\tests\test_kernel_identity.py -q"` -> `6 passed`
+  - `python3 -m py_compile scripts/codex/verify_proto_self_single_authority.py OpenEmotion/tests/test_identity_single_authority.py`
   - `python3 scripts/codex/verify_proto_self_single_authority.py` -> passed
   - `python3 scripts/codex/verify_repo.py --mode fast` -> passed
   - scoped `git diff --check` -> passed
@@ -119,6 +118,9 @@
 - `PYTHONPATH=EgoCore:EgoCore/modules:OpenEmotion python3 -m pytest EgoCore/tests/test_openemotion_adapter_shims.py -q -s`
 - `python3 -m py_compile scripts/codex/verify_cleanup_admission.py`
 - `python3 scripts/codex/verify_cleanup_admission.py`
+- `cmd.exe /c "cd /d D:\Project\AIProject\MyProject\Ego\OpenEmotion && set PYTHONPATH=D:\Project\AIProject\MyProject\Ego\OpenEmotion;D:\Project\AIProject\MyProject\Ego\EgoCore;D:\Project\AIProject\MyProject\Ego\EgoCore\modules && .venv\Scripts\python.exe -m pytest tests\test_identity_single_authority.py openemotion\proto_self\tests\test_kernel_identity.py -q"`
+- `python3 -m py_compile scripts/codex/verify_proto_self_single_authority.py OpenEmotion/tests/test_identity_single_authority.py`
+- `python3 scripts/codex/verify_proto_self_single_authority.py`
 - `python3 EgoCore/tools/build_doc_system_inventory.py`
 - `PYTHONPATH=EgoCore:EgoCore/modules:OpenEmotion python3 -m pytest EgoCore/tests/test_doc_system_inventory_builder.py -q -s`
 - `python3 -m py_compile OpenEmotion/tools/mvp13_daily_report.py OpenEmotion/tools/dual_repo_closed_loop_e2e.py OpenEmotion/tests/test_self_model_single_authority.py`
