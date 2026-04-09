@@ -7,6 +7,38 @@
 - 把单轮样本重组为 `Input -> Host Ingress -> Subject Understanding -> Canonical Fields -> Reply Evolution -> Host Arbitration -> Output`
 - 让人一眼看出这条链有没有通、哪里降级、主体到底基于什么上下文和倾向在工作
 
+## 当前权威状态（2026-04-09）
+
+- `repo_authority_cleanup: closeout-complete (repo/integration scope)`
+- 当前 formal mainline 仍是：`telegram_bot -> telegram_runtime_bridge -> native_loop -> contract_runtime -> openemotion hooks -> delivery`
+- 这是 repo/integration scope closeout，不是 real-channel 新效果声明
+- thin substrate / compat / reference-only 残留仍存在，但不阻塞 closeout
+- 剩余项仅保留在 `optional housekeeping / future cleanup backlog`
+
+## 当前正式口径
+
+- 本文件是只读解释层说明，不升格为 authority source
+- `/flow` 与 `/samples/<sample_id>/flow` 只解释当前样本与 current artifacts，不代表额外主权威
+- 解释层看到的 current state 仍要回到原始 artifacts 和 closeout evidence 交叉确认
+
+## repo_authority_cleanup
+
+- `repo_authority_cleanup: closeout-complete (repo/integration scope)`
+- closeout 的含义是 repo/integration scope 的边界与验证完成，不是把所有 historical helper / thin substrate 一刀切删除
+- 剩余项仅作为 `optional housekeeping / future cleanup backlog`
+
+## 当前权威入口
+
+- [CURRENT_PROJECT_LOGIC_FLOW.md](CURRENT_PROJECT_LOGIC_FLOW.md)
+- [codex/tasks/repo-authority-cleanup/CLOSEOUT_REPORT.md](codex/tasks/repo-authority-cleanup/CLOSEOUT_REPORT.md)
+- [CAPABILITY_REGISTRY.md](CAPABILITY_REGISTRY.md)
+- [ACCEPTANCE_CHAINS.md](ACCEPTANCE_CHAINS.md)
+
+## 历史与详细证据入口
+
+- 下方页面解释规则与字段说明保留为详细说明，不是新的 authority source
+- 具体 current state / closeout proof 仍以对应文档与原始 artifacts 为准
+
 ## 权威边界
 
 - 这不是新的 authority source

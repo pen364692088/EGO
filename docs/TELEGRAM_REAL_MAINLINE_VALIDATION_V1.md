@@ -5,6 +5,38 @@
 > 证据层级：E2-E4
 > 状态：E4 样本级已验证，E5 观察进行中；`/new continuity` 已有直接真实正证据，`restart continuity` 已有跨证据链正证据，`restore continuity` 已有直接真实正证据
 
+## 当前权威状态（2026-04-09）
+
+- `repo_authority_cleanup: closeout-complete (repo/integration scope)`
+- 当前 formal mainline 仍是：`telegram_bot -> telegram_runtime_bridge -> native_loop -> contract_runtime -> openemotion hooks -> delivery`
+- 这是 repo/integration scope closeout，不是 real-channel 新效果声明
+- thin substrate / compat / reference-only 残留仍存在，但不阻塞 closeout
+- 剩余项仅保留在 `optional housekeeping / future cleanup backlog`
+
+## 当前正式口径
+
+- 本文件是正式验证体系文档，但当前 closeout 口径已经统一到 README / logic flow / capability / acceptance / scripts 首页
+- 这里保留的是 E2-E4 证据与验收说明，不是额外的主权威
+- 真实渠道证据与 clean-clone proof 需要和原始 artifacts 一起看
+
+## repo_authority_cleanup
+
+- `repo_authority_cleanup: closeout-complete (repo/integration scope)`
+- closeout 的含义是 repo/integration scope 的边界与验证完成，不是把所有 historical helper / thin substrate 一刀切删除
+- 剩余项仅作为 `optional housekeeping / future cleanup backlog`
+
+## 当前权威入口
+
+- [CURRENT_PROJECT_LOGIC_FLOW.md](CURRENT_PROJECT_LOGIC_FLOW.md)
+- [codex/tasks/repo-authority-cleanup/CLOSEOUT_REPORT.md](codex/tasks/repo-authority-cleanup/CLOSEOUT_REPORT.md)
+- [CAPABILITY_REGISTRY.md](CAPABILITY_REGISTRY.md)
+- [ACCEPTANCE_CHAINS.md](ACCEPTANCE_CHAINS.md)
+
+## 历史与详细证据入口
+
+- 下方 E2-E4 定义、Tape Recorder 规范、失败样本规范与 gate 保留为详细验证说明，不是新的 authority source
+- 具体 current state / current logic / closeout proof 仍以对应文档为准
+
 ---
 
 ## 一、定位与目标
