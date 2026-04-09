@@ -1,0 +1,47 @@
+name: program-state-integrity
+
+on:
+  pull_request:
+    paths:
+      - "README.md"
+      - "AGENTS.md"
+      - "docs/**"
+      - "scripts/codex/**"
+      - "artifacts/evidence_ledger/**"
+      - "EgoCore/**"
+      - "OpenEmotion/**"
+      - ".github/**"
+  workflow_dispatch:
+
+jobs:
+  integrity:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install minimal deps
+        run: python -m pip install --upgrade pip pyyaml
+
+      - name: Regenerate derived views
+        run: python3 scripts/codex/generate_program_state_views.py
+
+      - name: Check program-state integrity
+        run: >
+          python3 scripts/codex/check_program_state_integrity.py
+          --base-ref "${{ github.event.pull_request.base.sha }}"
+          --head-ref "${{ github.sha }}"
+
+      - name: Rebuild capability registry
+        run: python3 scripts/codex/build_capability_registry.py
+
+      - name: Verify capability registry
+        run: python3 scripts/codex/verify_capability_registry.py
+
+      - name: Fail on stale generated files
+        run: git diff --exit-code -- docs/STATUS.md artifacts/reports/program_state_summary.md EgoCore/docs/PROGRAM_STATE_UNIFIED.yaml OpenEmotion/docs/PROGRAM_STATE_UNIFIED.yaml docs/CAPABILITY_REGISTRY.md

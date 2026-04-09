@@ -9,6 +9,7 @@
 - `RuntimeV2ProtoSelfRuntime` 仍是主体事件正式入口
 - `proto_self_v2` 已是主体层默认主线，当前只读解释层与受治理写回面已收口
 - `repo_authority_cleanup: closeout-complete (repo/integration scope)`
+- 当前 repo 处于 `边界冻结下的收口期`
 - 剩余项仅保留在 `optional housekeeping / future cleanup backlog`
 - 这不是 real-channel 新效果声明，也不是新的 authority wave 声明
 - thin substrate / compat / reference-only 残留仍存在，但不阻塞 closeout
@@ -29,7 +30,8 @@
 
 ## 当前权威入口
 
-- [docs/PROGRAM_STATE_UNIFIED.yaml](docs/PROGRAM_STATE_UNIFIED.yaml)
+- [../docs/PROGRAM_STATE_UNIFIED.yaml](../docs/PROGRAM_STATE_UNIFIED.yaml)
+- [../docs/STATUS.md](../docs/STATUS.md)
 - [docs/00_MASTER_INDEX.md](docs/00_MASTER_INDEX.md)
 - [docs/05_DEPRECATED_AND_SHIMS.md](docs/05_DEPRECATED_AND_SHIMS.md)
 - [../docs/PROTO_SELF_SINGLE_AUTHORITY_DECISION.md](../docs/PROTO_SELF_SINGLE_AUTHORITY_DECISION.md)
@@ -102,7 +104,7 @@
 
 ### 历史治理基线：Runtime Metrics Shadow Observation
 
-**状态说明**: 历史 shadow 观测轨道；当前最新主链验收口径以上方“当前权威状态”为准。
+**状态说明**: 历史 shadow 观测轨道；repo 级 phase / layer / evidence 以 [../docs/PROGRAM_STATE_UNIFIED.yaml](../docs/PROGRAM_STATE_UNIFIED.yaml) 和 [../docs/STATUS.md](../docs/STATUS.md) 为准。
 
 **目标**: 收集 shadow 指标，评估 pilot 模式切换条件。
 

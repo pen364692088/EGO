@@ -14,7 +14,7 @@ OPENEMOTION_README = ROOT / "OpenEmotion" / "README.md"
 LOGIC_FLOW = ROOT / "docs" / "CURRENT_PROJECT_LOGIC_FLOW.md"
 PATH_REGISTER = ROOT / "EgoCore" / "docs" / "05_DEPRECATED_AND_SHIMS.md"
 CAPABILITY_REGISTRY = ROOT / "docs" / "CAPABILITY_REGISTRY.md"
-PROGRAM_STATE = ROOT / "EgoCore" / "docs" / "PROGRAM_STATE_UNIFIED.yaml"
+PROGRAM_STATE = ROOT / "docs" / "PROGRAM_STATE_UNIFIED.yaml"
 TEST_FILE = ROOT / "OpenEmotion" / "tests" / "test_self_model_single_authority.py"
 IDENTITY_TEST_FILE = ROOT / "OpenEmotion" / "tests" / "test_identity_single_authority.py"
 DRIVES_WIRING_TEST = ROOT / "OpenEmotion" / "tests" / "mvp14" / "test_mainline_wiring.py"
@@ -92,9 +92,10 @@ REQUIRED_DOC_SNIPPETS = {
         "- `EgoCore/app/openemotion_adapter/proto_self_restore.py`：已物理删除，历史 proof/archive evidence 仅保留在 cleanup ledger",
     ],
     PROGRAM_STATE: [
-        "formal owner is openemotion/endogenous_drives/*",
-        "`emotiond/drives/*` remains thin compat re-export surface",
-        "thin rather than authoritative",
+        "program:",
+        "highest_evidence_level: \"E5\"",
+        "controlled_subject_capabilities",
+        "authority_source: \"docs/PROGRAM_STATE_UNIFIED.yaml\"",
     ],
     CAPABILITY_REGISTRY: [
         "| identity invariants authority surface |",

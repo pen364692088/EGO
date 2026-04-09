@@ -10,7 +10,7 @@ import yaml
 
 
 ROOT = Path(__file__).resolve().parents[2]
-PROGRAM_STATE = ROOT / "EgoCore" / "docs" / "PROGRAM_STATE_UNIFIED.yaml"
+PROGRAM_STATE = ROOT / "docs" / "PROGRAM_STATE_UNIFIED.yaml"
 ROOT_README = ROOT / "README.md"
 EGOCORE_README = ROOT / "EgoCore" / "README.md"
 OPENEMOTION_README = ROOT / "OpenEmotion" / "README.md"
@@ -262,7 +262,7 @@ def render_markdown(rows: list[CapabilityRow]) -> str:
     lines = [
         "# Capability Registry",
         "",
-        "> 这是人类索引与派生层，不是新的 authority source。当前主权威仍是 `EgoCore/docs/PROGRAM_STATE_UNIFIED.yaml`，并由当前 README / logic flow 补充尚未回写到 YAML 的现状；`docs/PROTO_SELF_SINGLE_AUTHORITY_DECISION.md` 只作为 prescriptive supplement，不升格为 authority source。",
+        "> 这是人类索引与派生层，不是新的 authority source。当前主权威仍是 `docs/PROGRAM_STATE_UNIFIED.yaml`；`EgoCore/docs/PROGRAM_STATE_UNIFIED.yaml` 与 `OpenEmotion/docs/PROGRAM_STATE_UNIFIED.yaml` 只是生成的兼容镜像；`docs/PROTO_SELF_SINGLE_AUTHORITY_DECISION.md` 只作为 prescriptive supplement，不升格为 authority source。",
         "",
         "生成方式：`python3 scripts/codex/build_capability_registry.py`",
         "",

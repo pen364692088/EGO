@@ -1,0 +1,31 @@
+required_fields:
+  - evidence_id
+  - status
+  - evidence_level
+  - source_type
+  - artifact_path
+  - what_it_proves
+  - what_it_does_not_prove
+  - related_workstream
+  - created_at
+  - created_from_commit
+enums:
+  status:
+    - pass
+    - fail
+    - partial
+  evidence_level:
+    - E0
+    - E1
+    - E2
+    - E3
+    - E4
+    - E5
+    - E6
+  source_type:
+    - doc
+    - unit
+    - simulated
+    - integration
+    - real_channel
+    - observation

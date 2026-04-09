@@ -27,6 +27,8 @@
 
 ## 当前权威入口
 
+- [PROGRAM_STATE_UNIFIED.yaml](PROGRAM_STATE_UNIFIED.yaml)
+- [STATUS.md](STATUS.md)
 - [CURRENT_PROJECT_LOGIC_FLOW.md](CURRENT_PROJECT_LOGIC_FLOW.md)
 - [codex/tasks/repo-authority-cleanup/CLOSEOUT_REPORT.md](codex/tasks/repo-authority-cleanup/CLOSEOUT_REPORT.md)
 - [CAPABILITY_REGISTRY.md](CAPABILITY_REGISTRY.md)

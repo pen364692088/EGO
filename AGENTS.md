@@ -7,17 +7,19 @@
 开始任何正式任务前，先按顺序读取：
 
 1. `PROJECT_MEMORY.md`
-2. `docs/AGENT_DEVELOPMENT_PLAYBOOK.md`
-3. `docs/CODEX_CLOSED_LOOP_SELF_REVIEW_WORKFLOW.md`
-4. `README.md`
-5. 如果改 `EgoCore/`，再读 `EgoCore/README.md`
-6. 如果改 `OpenEmotion/`，再读 `OpenEmotion/README.md`
-7. 如果存在当前任务单，优先读 `Tasks/active/` 下的 spec / plan / acceptance / status / review 文档
-8. 如果任务已进入 Codex 长任务闭环，再读 `docs/codex/tasks/<slug>/SPEC.md`、`PLAN.md`、`IMPLEMENT.md`、`STATUS.md`
+2. `docs/PROGRAM_STATE_UNIFIED.yaml`
+3. `docs/AGENT_DEVELOPMENT_PLAYBOOK.md`
+4. `docs/CODEX_CLOSED_LOOP_SELF_REVIEW_WORKFLOW.md`
+5. `README.md`
+6. 如果改 `EgoCore/`，再读 `EgoCore/README.md`
+7. 如果改 `OpenEmotion/`，再读 `OpenEmotion/README.md`
+8. 如果存在当前任务单，优先读 `Tasks/active/` 下的 spec / plan / acceptance / status / review 文档
+9. 如果任务已进入 Codex 长任务闭环，再读 `docs/codex/tasks/<slug>/SPEC.md`、`PLAN.md`、`IMPLEMENT.md`、`STATUS.md`
 
 读取优先级：
 
 - 当前任务 spec / acceptance / status
+- `docs/PROGRAM_STATE_UNIFIED.yaml`
 - `PROJECT_MEMORY.md`
 - Playbook / package README
 - 历史报告与观察文档
@@ -131,6 +133,15 @@
 - prompt 含 `LONGRUN` 时，进入持续推进模式：默认不为常规实现细节征求用户；只有命中缺外部凭据/审批、authority source 冲突、或验证证明当前 slice 无法闭环时才停
 
 ## Change constraints / do-not rules
+
+Before any implementation:
+1. Read `docs/PROGRAM_STATE_UNIFIED.yaml`
+2. Summarize `current_phase / current_layer / highest_evidence_level / next_minimal_action`
+3. State what the task can change and what it cannot prove
+4. If implementation changes project state, update `PROGRAM_STATE_UNIFIED.yaml`
+5. If implementation changes evidence, update `artifacts/evidence_ledger`
+6. Regenerate derived views
+7. Never claim a conclusion stronger than the current evidence level
 
 - 保持双核边界：EgoCore 负责宿主与现实裁决；OpenEmotion 负责主体语义与状态
 - 一项能力只能有一个权威源；不要把 shim / mirror / cache / fallback 偷升为正式主线

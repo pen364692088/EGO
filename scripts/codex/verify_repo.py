@@ -420,6 +420,20 @@ def detect_checks(open_runtime: OpenEmotionRuntime) -> List[Check]:
             )
         )
 
+    program_state_integrity = ROOT / "scripts" / "codex" / "check_program_state_integrity.py"
+    if program_state_integrity.exists():
+        checks.append(
+            Check(
+                category="governance",
+                name="Program-state integrity gate",
+                command=["python3", "scripts/codex/check_program_state_integrity.py", "--skip-diff-check"],
+                cwd=ROOT,
+                source="scripts/codex/check_program_state_integrity.py",
+                run_in_fast=True,
+                run_in_full=True,
+            )
+        )
+
     path_classification_verify = ROOT / "scripts" / "codex" / "verify_path_classification.py"
     if path_classification_verify.exists():
         checks.append(

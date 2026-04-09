@@ -1,0 +1,111 @@
+program:
+  version: 1
+  north_star: "Keep one formal mainline where EgoCore governs real-world execution, OpenEmotion owns subject semantics, and repo-level status claims never outrun evidence."
+  current_phase: "repo_authority_cleanup_closeout"
+  current_layer: "收口"
+  highest_evidence_level: "E5"
+  verification_level: "V5"
+  mainline_connected: true
+  enabled: true
+  real_trigger_evidence:
+    - evidence_id: "provider_runtime_openemotion_e2e_gate_current"
+      note: "Recent real Telegram samples show the provider/runtime/OpenEmotion path can traverse the formal mainline and produce OpenEmotion evidence."
+    - evidence_id: "subject_mainline_audit_current"
+      note: "Live Telegram already contains subject-ingress samples, but the audit still records host-only misses and does not yet prove stable downstream tendency change."
+  current_focus:
+    - "Institutionalize repo-level project-state governance at the repo root without creating a second authority source."
+    - "Keep README / logic flow / capability / acceptance views aligned to the same repo-level status source."
+    - "Continue reducing live Telegram host-only subject-miss residue before making stronger live-behavior claims."
+  completed_since_last:
+    - "repo_authority_cleanup is marked closeout-complete at repo/integration scope."
+    - "README / logic flow / capability / acceptance language is aligned to the 2026-04-09 current-authority wording."
+    - "provider/runtime/OpenEmotion E2E gate currently passes on a recent real Telegram session window."
+  blocked_by:
+    - "Live Telegram ordinary chat still has unexpected subject-miss samples on the host path."
+  key_unknowns:
+    - "Whether the root-level state governance workflow will remain consistently enforced across routine future PRs."
+    - "How quickly remaining hand-written current-state prose can be reduced in favor of derived views."
+  next_minimal_action: "Use the root program-state authority, evidence ledger, and integrity gate in the next routine PR and record that first closed-loop proof in the ledger."
+  last_verified_commit: "78e90a2"
+  last_verified_at: "2026-04-07T23:17:51-05:00"
+  status_owner: "EgoCore"
+  status_note: "Overall repo/integration authority closeout is complete, but stronger live-telegram subject claims remain blocked by residual host-only misses."
+  claim_thresholds:
+    mainline_claim_requires: "E4"
+    enabled_claim_requires: "E4"
+    stable_claim_requires: "E5"
+    institutionalized_claim_requires: "E6"
+
+workstreams:
+  - id: "repo_authority_cleanup"
+    owner: "EgoCore"
+    status: "closeout-complete"
+    evidence_level: "E3"
+    verification_level: "V3"
+    mainline_connected: true
+    enabled: true
+    summary: "Repo/integration boundary cleanup is reproducibly closed out in clean-clone / CI space, but that closeout does not itself prove new real-channel behavior."
+  - id: "program_state_governance"
+    owner: "EgoCore"
+    status: "integrating"
+    evidence_level: "E3"
+    verification_level: "V2"
+    mainline_connected: false
+    enabled: true
+    summary: "Root-level program state, derived views, evidence ledger, templates, and integrity gates are being wired into the repo governance path."
+  - id: "provider_runtime_openemotion_e2e_gate"
+    owner: "EgoCore"
+    status: "pass"
+    evidence_level: "E4"
+    verification_level: "V4"
+    mainline_connected: true
+    enabled: true
+    summary: "Recent real Telegram samples prove the formal provider/runtime/OpenEmotion path can execute end-to-end."
+  - id: "live_subject_ingress_observation"
+    owner: "EgoCore + OpenEmotion"
+    status: "partial"
+    evidence_level: "E4"
+    verification_level: "V4"
+    mainline_connected: true
+    enabled: true
+    summary: "Live Telegram contains subject-ingress evidence, but the current audit still records host-only misses and cannot support stronger live-behavior claims."
+  - id: "controlled_subject_capabilities"
+    owner: "OpenEmotion"
+    status: "maintenance"
+    evidence_level: "E5"
+    verification_level: "V5"
+    mainline_connected: true
+    enabled: true
+    summary: "Controlled-axis self-model / drive / reflection / developmental capability proofs are at maintenance strength, but they do not prove unrestricted live autonomy."
+
+axes:
+  host_axis:
+    current_state: "closeout_complete"
+  subject_axis:
+    current_state: "maintenance"
+
+host_runtime_contract:
+  evidence_state: "recent_real_telegram_e2e_gate_pass"
+
+integrity:
+  authority_source: "docs/PROGRAM_STATE_UNIFIED.yaml"
+  generated_views:
+    - "docs/STATUS.md"
+    - "artifacts/reports/program_state_summary.md"
+    - "EgoCore/docs/PROGRAM_STATE_UNIFIED.yaml"
+    - "OpenEmotion/docs/PROGRAM_STATE_UNIFIED.yaml"
+  compatibility_mirrors:
+    - path: "EgoCore/docs/PROGRAM_STATE_UNIFIED.yaml"
+      mode: "generated_reference"
+      reason: "Legacy links and older scripts still expect a subrepo-local path."
+    - path: "OpenEmotion/docs/PROGRAM_STATE_UNIFIED.yaml"
+      mode: "generated_reference"
+      reason: "Legacy links and older scripts still expect a subrepo-local path."
+  evidence_ledger_dir: "artifacts/evidence_ledger"
+  shim_register: "EgoCore/SHIM_REGISTER.md"
+  required_templates:
+    - "docs/templates/CODEX_TASK_TEMPLATE.md"
+    - ".github/pull_request_template.md"
+  required_checks:
+    - "python3 scripts/codex/generate_program_state_views.py"
+    - "python3 scripts/codex/check_program_state_integrity.py"

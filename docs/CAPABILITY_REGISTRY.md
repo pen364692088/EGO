@@ -1,45 +1,13 @@
 # Capability Registry
 
-## 当前权威状态（2026-04-09）
-
-- `repo_authority_cleanup: closeout-complete (repo/integration scope)`
-- 当前 formal mainline 仍是：`telegram_bot -> telegram_runtime_bridge -> native_loop -> contract_runtime -> openemotion hooks -> delivery`
-- 这是 repo/integration scope closeout，不是 real-channel 新效果声明
-- thin substrate / compat / reference-only 残留仍存在，但不阻塞 closeout
-- 剩余项仅保留在 `optional housekeeping / future cleanup backlog`
-
-## 当前正式口径
-
-- 这是人类索引与派生层，不是新的 authority source
-- 当前主权威仍是 `EgoCore/docs/PROGRAM_STATE_UNIFIED.yaml`
-- `docs/PROTO_SELF_SINGLE_AUTHORITY_DECISION.md` 只作为 prescriptive supplement，不升格为 authority source
-- 当前 README / logic flow / closeout report 共同提供维护者向的当前状态摘要
-
-## repo_authority_cleanup
-
-- `repo_authority_cleanup: closeout-complete (repo/integration scope)`
-- closeout 的含义是 repo/integration scope 的边界与验证完成，不是把所有 historical helper / thin substrate 一刀切删除
-- 剩余项仅作为 `optional housekeeping / future cleanup backlog`
-- 相关 closeout 证据见 [codex/tasks/repo-authority-cleanup/CLOSEOUT_REPORT.md](codex/tasks/repo-authority-cleanup/CLOSEOUT_REPORT.md)
-
-## 当前权威入口
-
-- [CURRENT_PROJECT_LOGIC_FLOW.md](CURRENT_PROJECT_LOGIC_FLOW.md)
-- [codex/tasks/repo-authority-cleanup/CLOSEOUT_REPORT.md](codex/tasks/repo-authority-cleanup/CLOSEOUT_REPORT.md)
-- [PROTO_SELF_SINGLE_AUTHORITY_DECISION.md](PROTO_SELF_SINGLE_AUTHORITY_DECISION.md)
-- [../EgoCore/docs/PROGRAM_STATE_UNIFIED.yaml](../EgoCore/docs/PROGRAM_STATE_UNIFIED.yaml)
-
-## 历史与详细证据入口
-
-- 下方表格保留为派生能力索引与验证入口，不作为新的 authority source
-- 详细 current state、current logic 与 acceptance runner 细节仍以对应文档为准
+> 这是人类索引与派生层，不是新的 authority source。当前主权威仍是 `docs/PROGRAM_STATE_UNIFIED.yaml`；`EgoCore/docs/PROGRAM_STATE_UNIFIED.yaml` 与 `OpenEmotion/docs/PROGRAM_STATE_UNIFIED.yaml` 只是生成的兼容镜像；`docs/PROTO_SELF_SINGLE_AUTHORITY_DECISION.md` 只作为 prescriptive supplement，不升格为 authority source。
 
 生成方式：`python3 scripts/codex/build_capability_registry.py`
 
 | capability_name | owner | authority_source | canonical_entry_file | default_enabled | current_evidence_level | user_visible_symptom | how_to_test |
 |---|---|---|---|---|---|---|---|
-| Telegram 正式主链 | EgoCore | program_state_unified + current_readme_logic_flow supplement | EgoCore/app/telegram_bot.py | yes | real_telegram_samples_verified_p4 + repo-level current README | Telegram 对话、任务执行与 delivery 走统一宿主主链。 | 第 0 链 `python3 scripts/codex/run_acceptance_subject_ingress_mainline.py` + `EXP-SUBJECT-INGRESS` |
-| proto_self_v2 主体链 | OpenEmotion | program_state_unified + current_readme_logic_flow supplement | EgoCore/app/runtime_v2/proto_self_runtime.py | yes | in_progress + formal surface on Telegram natural-language mainline | 真实样本 `/flow` 中出现 `Subject Understanding`、`proto_self.trace.v2`、多轴上下文载荷；当前 formal surface 是 `proto_self_v2`。 | 第 0 链 + `EXP-FLOW-CANONICAL-FIELDS` |
+| Telegram 正式主链 | EgoCore | program_state_unified + current_readme_logic_flow supplement | EgoCore/app/telegram_bot.py | yes | recent_real_telegram_e2e_gate_pass + repo-level current README | Telegram 对话、任务执行与 delivery 走统一宿主主链。 | 第 0 链 `python3 scripts/codex/run_acceptance_subject_ingress_mainline.py` + `EXP-SUBJECT-INGRESS` |
+| proto_self_v2 主体链 | OpenEmotion | program_state_unified + current_readme_logic_flow supplement | EgoCore/app/runtime_v2/proto_self_runtime.py | yes | maintenance + formal surface on Telegram natural-language mainline | 真实样本 `/flow` 中出现 `Subject Understanding`、`proto_self.trace.v2`、多轴上下文载荷；当前 formal surface 是 `proto_self_v2`。 | 第 0 链 + `EXP-FLOW-CANONICAL-FIELDS` |
 | identity invariants authority surface | OpenEmotion | program_state_unified + current_readme_logic_flow supplement | OpenEmotion/openemotion/proto_self/state.py | yes | formal mainline currently executes v1 substrate; identity formal owner not wired | 当前 identity runtime authority 仍由 `proto_self` v1 substrate 提供，而不是 `openemotion.identity` formal owner。 | 读 `docs/PROTO_SELF_SINGLE_AUTHORITY_DECISION.md` + `docs/PROTO_SELF_MVP_AUTHORITY_AUDIT.md` |
 | self-model authority surface | OpenEmotion | program_state_unified + current_readme_logic_flow supplement | EgoCore/app/runtime_v2/proto_self_runtime.py | yes | formal owner active; v1 substrate remains active compute/proposal-only layer | `self_model` formal owner 已接入 governed writeback，但 base delta 仍由 v1 substrate 参与计算。 | `python3 scripts/codex/run_acceptance_self_model_causality.py` + `docs/PROTO_SELF_SINGLE_AUTHORITY_DECISION.md` |
 | drives / appraisal authority surface | OpenEmotion | program_state_unified + current_readme_logic_flow supplement | EgoCore/app/runtime_v2/proto_self_runtime.py | yes | formal owner active; v1 drive substrate remains active compute/proposal-only layer | `endogenous_drives` formal owner 已接入 governed writeback，但 base drive/appraisal 仍由 v1 substrate 参与计算。 | `python3 scripts/codex/run_acceptance_drives_causality.py` + `docs/PROTO_SELF_SINGLE_AUTHORITY_DECISION.md` |

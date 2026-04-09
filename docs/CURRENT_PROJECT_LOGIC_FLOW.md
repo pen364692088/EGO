@@ -38,9 +38,9 @@
 
 ## 当前权威入口
 
-- `EgoCore/docs/PROGRAM_STATE_UNIFIED.yaml`
+- `docs/PROGRAM_STATE_UNIFIED.yaml`
+- `docs/STATUS.md`
 - `EgoCore/docs/00_MASTER_INDEX.md`
-- `OpenEmotion/docs/PROGRAM_STATE_UNIFIED.yaml`
 - `OpenEmotion/docs/00_MASTER_INDEX.md`
 - `docs/05_DEPRECATED_AND_SHIMS.md`
 - `docs/PROTO_SELF_SINGLE_AUTHORITY_DECISION.md`
@@ -50,6 +50,7 @@
 
 ## 历史与详细证据入口
 
+- 需要看 repo 级总体 phase / layer / evidence / next action 时，先看 `docs/PROGRAM_STATE_UNIFIED.yaml` 与 `docs/STATUS.md`
 - 当前详细技术内容、历史基线与 shadow observation 仍保留在下方各节
 - 需要看 current logic / boundary / canonical state 时，先看 `docs/CURRENT_PROJECT_LOGIC_FLOW.md`
 - 需要看 closeout proof、clean-clone proof、remaining backlog 时，先看 `docs/codex/tasks/repo-authority-cleanup/CLOSEOUT_REPORT.md`
@@ -59,6 +60,7 @@
 
 ## 当前权威源
 
+- `docs/PROGRAM_STATE_UNIFIED.yaml`
 - `Tasks/MVS_task_plan.md`
 - `PROJECT_MEMORY.md`
 - `EgoCore/docs/02_SYSTEM_FLOW.md`
