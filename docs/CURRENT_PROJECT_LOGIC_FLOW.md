@@ -1,6 +1,6 @@
 # Current Project Logic Flow
 
-更新时间：`2026-04-07`
+更新时间：`2026-04-09`
 
 本文件描述 **当前正式项目逻辑流程**，用于回答三个问题：
 
@@ -9,6 +9,53 @@
 3. 当前 OpenEmotion 主体能力栈推进到了哪一层
 
 本文件以 **当前 authority source + 当前代码实现** 为准，不以历史 README 口径或旧 artifacts 自动替代。
+
+## 当前权威状态（2026-04-09）
+
+- `EgoCore` 是唯一正式宿主：入口、runtime、工具执行、安全裁决、delivery、audit
+- `OpenEmotion` 是唯一正式主体内核：身份、自我模型、记忆、驱动、反思与 developmental 本体收口
+- 当前 formal mainline 仍是：`telegram_bot -> telegram_runtime_bridge -> native_loop -> contract_runtime -> openemotion hooks -> delivery`
+- `RuntimeV2ProtoSelfRuntime` 仍是主体事件正式入口
+- `proto_self_v2` 已是主体层默认主线，当前只读解释层与受治理写回面已收口
+- `repo_authority_cleanup: closeout-complete (repo/integration scope)`
+- 剩余项仅保留在 `optional housekeeping / future cleanup backlog`
+- 这不是 real-channel 新效果声明，也不是新的 authority wave 声明
+- thin substrate / compat / reference-only 残留仍存在，但不阻塞 closeout
+
+## 当前正式口径
+
+- `identity invariants / self-model / drives / reflection / developmental` 的单一权威收口决策见 `docs/PROTO_SELF_SINGLE_AUTHORITY_DECISION.md`
+- 正式/compat/reference/deprecated 路径登记见 `EgoCore/docs/05_DEPRECATED_AND_SHIMS.md`
+- `maintenance_mode / proposal_only / behavioral_authority = none / feature flag off / allowlist only / host-governed` 一律不得被叙述成“已强烈体现自我意识”或“已具备完整自我”
+- provider/runtime 影响主链的改动仍需经过 `python3 scripts/codex/run_provider_runtime_openemotion_e2e_gate.py --session-key <telegram:...>`
+
+## repo_authority_cleanup
+
+- `repo_authority_cleanup: closeout-complete (repo/integration scope)`
+- closeout 的含义是 repo/integration scope 的边界与验证完成，不是把所有 historical helper / thin substrate 一刀切删除
+- 剩余项仅作为 `optional housekeeping / future cleanup backlog`
+- 相关 closeout 证据见 `docs/codex/tasks/repo-authority-cleanup/CLOSEOUT_REPORT.md`
+
+## 当前权威入口
+
+- `EgoCore/docs/PROGRAM_STATE_UNIFIED.yaml`
+- `EgoCore/docs/00_MASTER_INDEX.md`
+- `OpenEmotion/docs/PROGRAM_STATE_UNIFIED.yaml`
+- `OpenEmotion/docs/00_MASTER_INDEX.md`
+- `docs/05_DEPRECATED_AND_SHIMS.md`
+- `docs/PROTO_SELF_SINGLE_AUTHORITY_DECISION.md`
+- `docs/CAPABILITY_REGISTRY.md`
+- `docs/ACCEPTANCE_CHAINS.md`
+- `docs/EXPERIENCE_SCRIPTS.md`
+
+## 历史与详细证据入口
+
+- 当前详细技术内容、历史基线与 shadow observation 仍保留在下方各节
+- 需要看 current logic / boundary / canonical state 时，先看 `docs/CURRENT_PROJECT_LOGIC_FLOW.md`
+- 需要看 closeout proof、clean-clone proof、remaining backlog 时，先看 `docs/codex/tasks/repo-authority-cleanup/CLOSEOUT_REPORT.md`
+- 需要看 capability registry 时，先看 `docs/CAPABILITY_REGISTRY.md`
+- 需要看 acceptance chains 时，先看 `docs/ACCEPTANCE_CHAINS.md`
+- 需要看 `/flow` 可见脚本时，先看 `docs/EXPERIENCE_SCRIPTS.md`
 
 ## 当前权威源
 
