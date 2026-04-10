@@ -32,6 +32,7 @@ class TelegramRuntimeFallbackRunner:
         session_key: str,
         user_input: str,
         state: RuntimeV2State,
+        source: str = "telegram",
         evidence_collector=None,
         progress_callback=None,
         run_event_callback=None,
@@ -40,6 +41,7 @@ class TelegramRuntimeFallbackRunner:
         kwargs = {
             "session_id": session_key,
             "user_input": user_input,
+            "source": source,
         }
         parameters = inspect.signature(loop.run_turn_typed).parameters
         if "evidence_collector" in parameters:

@@ -261,6 +261,7 @@ class FlowViewRecord:
     input_summary: Dict[str, Any]
     host_ingress_summary: Dict[str, Any]
     subject_summary: Dict[str, Any]
+    canonical_fields_summary: Dict[str, Any]
     reply_evolution_summary: Dict[str, Any]
     host_arbitration_summary: Dict[str, Any]
     output_summary: Dict[str, Any]

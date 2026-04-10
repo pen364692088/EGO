@@ -6,8 +6,9 @@ from http import HTTPStatus
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 from typing import Any, Dict, Optional
-from urllib.parse import parse_qs, urlparse
+from urllib.parse import parse_qs, unquote, urlparse
 
+from app.dashboard.chat_service import DashboardChatError, DashboardChatService
 from app.dashboard.index_builder import (
     AGENCY_ROLLUP_FILE,
     BUILD_META_FILE,
@@ -1035,6 +1036,7 @@ class DashboardDataStore:
 
 class DashboardRequestHandler(BaseHTTPRequestHandler):
     store: DashboardDataStore
+    chat_service: Optional[DashboardChatService] = None
 
     def log_message(self, format: str, *args) -> None:  # noqa: A003
         return
@@ -1051,14 +1053,25 @@ class DashboardRequestHandler(BaseHTTPRequestHandler):
             self._serve_static(parsed.path.removeprefix("/static/"))
             return
 
-        if parsed.path in {"/", "/runs", "/flow", "/growth", "/failures", "/agency"} or parsed.path.startswith("/samples/"):
+        if parsed.path in {"/", "/runs", "/flow", "/agency", "/growth", "/failures", "/chat"} or parsed.path.startswith("/samples/"):
             self._serve_html_shell(parsed.path)
             return
 
         self.send_error(HTTPStatus.NOT_FOUND, "Not Found")
 
-    def _handle_api(self, parsed) -> None:
+    def do_POST(self) -> None:  # noqa: N802
+        parsed = urlparse(self.path)
+        if parsed.path.startswith("/api/dashboard/chat/"):
+            self._handle_api(parsed, method="POST")
+            return
+        self.send_error(HTTPStatus.NOT_FOUND, "Not Found")
+
+    def _handle_api(self, parsed, *, method: str = "GET") -> None:
         query = parse_qs(parsed.query)
+        if parsed.path.startswith("/api/dashboard/chat/"):
+            self._handle_chat_api(parsed, method=method)
+            return
+
         if parsed.path == "/api/dashboard/health":
             self._send_json(
                 {
@@ -1122,6 +1135,59 @@ class DashboardRequestHandler(BaseHTTPRequestHandler):
 
         self.send_error(HTTPStatus.NOT_FOUND, "Unknown API route")
 
+    def _handle_chat_api(self, parsed, *, method: str) -> None:
+        service = self.chat_service
+        if service is None:
+            self._send_json({"error": "dashboard_chat_unavailable"}, status=HTTPStatus.SERVICE_UNAVAILABLE)
+            return
+
+        try:
+            if parsed.path == "/api/dashboard/chat/sessions":
+                if method == "GET":
+                    self._send_json(service.list_sessions())
+                    return
+                if method == "POST":
+                    payload = self._read_json_body()
+                    self._send_json(
+                        service.create_or_select_session(
+                            name=payload.get("name"),
+                            session_id=payload.get("session_id"),
+                        ),
+                        status=HTTPStatus.CREATED,
+                    )
+                    return
+                self._send_json_error(HTTPStatus.METHOD_NOT_ALLOWED, "method_not_allowed")
+                return
+
+            if parsed.path.startswith("/api/dashboard/chat/sessions/") and parsed.path.endswith("/messages"):
+                if method != "POST":
+                    self._send_json_error(HTTPStatus.METHOD_NOT_ALLOWED, "method_not_allowed")
+                    return
+                session_id = unquote(parsed.path.split("/")[-2])
+                payload = self._read_json_body()
+                self._send_json(service.send_message(session_id, payload.get("text") or ""))
+                return
+
+            if parsed.path.startswith("/api/dashboard/chat/sessions/"):
+                if method != "GET":
+                    self._send_json_error(HTTPStatus.METHOD_NOT_ALLOWED, "method_not_allowed")
+                    return
+                session_id = unquote(parsed.path.rsplit("/", 1)[-1])
+                self._send_json(service.get_session_payload(session_id))
+                return
+        except DashboardChatError as exc:
+            self._send_json_error(
+                int(getattr(exc, "status_code", HTTPStatus.INTERNAL_SERVER_ERROR)),
+                getattr(exc, "error_code", "dashboard_chat_error"),
+                message=str(exc),
+            )
+            return
+        except ValueError as exc:
+            self._send_json_error(HTTPStatus.BAD_REQUEST, "invalid_json", message=str(exc))
+            return
+
+        self.send_error(HTTPStatus.NOT_FOUND, "Unknown chat API route")
+
     def _send_json(self, payload: Dict[str, Any], status: int = 200) -> None:
         body = json.dumps(payload, ensure_ascii=False).encode("utf-8")
         self.send_response(status)
@@ -1129,6 +1195,24 @@ class DashboardRequestHandler(BaseHTTPRequestHandler):
         self.send_header("Content-Length", str(len(body)))
         self.end_headers()
         self.wfile.write(body)
+
+    def _send_json_error(self, status: int, error: str, *, message: Optional[str] = None) -> None:
+        payload = {"error": error}
+        if message:
+            payload["message"] = message
+        self._send_json(payload, status=int(status))
+
+    def _read_json_body(self) -> Dict[str, Any]:
+        length = int(self.headers.get("Content-Length") or "0")
+        if length <= 0:
+            return {}
+        body = self.rfile.read(length)
+        if not body:
+            return {}
+        payload = json.loads(body.decode("utf-8"))
+        if not isinstance(payload, dict):
+            raise ValueError("JSON body must be an object.")
+        return payload
 
     def _serve_static(self, static_path: str) -> None:
         target = STATIC_DIR / static_path.lstrip("/")
@@ -1148,7 +1232,7 @@ class DashboardRequestHandler(BaseHTTPRequestHandler):
         sample_id = ""
         if path == "/":
             view = "runs"
-        elif path in {"/runs", "/flow", "/growth", "/failures", "/agency"}:
+        elif path in {"/runs", "/flow", "/agency", "/growth", "/failures", "/chat"}:
             view = path.removeprefix("/")
         elif path.startswith("/samples/") and path.endswith("/flow"):
             view = "flow"
@@ -1181,6 +1265,7 @@ class DashboardRequestHandler(BaseHTTPRequestHandler):
         <nav class="nav">
           <a href="/runs" id="nav-runs"></a>
           <a href="/flow" id="nav-flow"></a>
+          <a href="/chat" id="nav-chat"></a>
           <a href="/agency" id="nav-agency"></a>
           <a href="/growth" id="nav-growth"></a>
           <a href="/failures" id="nav-failures"></a>
@@ -1214,6 +1299,7 @@ def run_dashboard_server(
 ) -> None:
     store = DashboardDataStore(dashboard_dir=dashboard_dir, build_kwargs=build_kwargs)
     DashboardRequestHandler.store = store
+    DashboardRequestHandler.chat_service = DashboardChatService()
     store.ensure_indexes()
     server = ThreadingHTTPServer((host, port), DashboardRequestHandler)
     print(f"Growth Dashboard v1 listening on http://{host}:{port}")

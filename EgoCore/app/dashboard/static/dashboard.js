@@ -6,6 +6,7 @@ const POLL_MS = 5000;
 const VIEW_ROUTES = {
   runs: "/runs",
   flow: "/flow",
+  chat: "/chat",
   agency: "/agency",
   growth: "/growth",
   failures: "/failures",
@@ -15,6 +16,12 @@ const UI_STATE = {
   locale: "zh",
   detailOpen: new Set(),
   artifactModes: new Map(),
+  chatSessionId: null,
+  chatSelectedMessageId: null,
+  chatDraft: "",
+  chatSessionNameDraft: "",
+  chatBusy: false,
+  chatError: "",
 };
 
 const I18N = {
@@ -23,10 +30,16 @@ const I18N = {
       eyebrow: "Telegram Real Mainline · 只读观测",
       title: "OpenEmotion Growth Dashboard v1",
       copy: "先看摘要，再看证据。页面上的拟人化描述都必须能回指到底层 artifacts。",
+      chat: {
+        eyebrow: "Dashboard Local Transport · 本地测试入口",
+        title: "OpenEmotion Growth Dashboard v1",
+        copy: "这里是本地测试 transport，不是 Telegram live。它复用主体入口、runtime 和 response contract，但不会抬升 live 证据结论。",
+      },
     },
     nav: {
       runs: "Live Runs",
       flow: "Flow",
+      chat: "Chat",
       agency: "Agency",
       growth: "Growth Signals",
       failures: "Failures & Replay",
@@ -82,8 +95,42 @@ const I18N = {
       result: "结果",
       evidence: "证据",
       growth: "变化",
+      local_test_only: "本地测试入口",
+      assistant: "宿主输出",
+      user: "用户输入",
+      send: "发送",
+      sending: "发送中",
+      session: "会话",
+      create_session: "新建会话",
+      session_name: "会话名",
+      transcript: "聊天记录",
+      debug_panel: "调试面板",
+      choose_session: "选择测试会话",
+      latest_debug: "最近一轮调试",
+      selected_debug: "当前选中调试",
+      message_count: "消息数",
+      state: "状态",
+      empty_chat: "这个会话还没有消息。",
+      empty_debug: "当前还没有调试数据。",
+      session_created: "会话已创建",
+      selected_turn: "选中回合",
     },
     pages: {
+      chat: {
+        title: "Local Chat Test",
+        subtitle: "用 dashboard 本地 transport 直接发消息，验证 subject gate → runtime → response contract → local delivery 主链。",
+        sessions: "测试会话",
+        transcript: "聊天窗口",
+        debug: "调试卡片",
+        transport: "Transport",
+        session_state: "Session State",
+        subject_gate: "Subject Gate",
+        ingress: "Ingress",
+        proto_self: "Proto-Self",
+        response_plan: "Response Plan",
+        output_check: "Output Check",
+        delivery: "Final Delivery",
+      },
       agency: {
         title: "Agency",
         subtitle: "一眼看清它有没有想动、想做什么、宿主是否放行、以及做完后有没有真的变。",
@@ -289,10 +336,16 @@ const I18N = {
       eyebrow: "Telegram Real Mainline · Read-only",
       title: "OpenEmotion Growth Dashboard v1",
       copy: "Read the summary first, then inspect the evidence. Every anthropomorphic phrase must map back to raw artifacts.",
+      chat: {
+        eyebrow: "Dashboard Local Transport · Local Test Entry",
+        title: "OpenEmotion Growth Dashboard v1",
+        copy: "This is a local test transport, not Telegram live. It reuses subject ingress, runtime, and the response contract without upgrading live evidence claims.",
+      },
     },
     nav: {
       runs: "Live Runs",
       flow: "Flow",
+      chat: "Chat",
       agency: "Agency",
       growth: "Growth Signals",
       failures: "Failures & Replay",
@@ -348,8 +401,42 @@ const I18N = {
       result: "Result",
       evidence: "Evidence",
       growth: "Change",
+      local_test_only: "Local test entry",
+      assistant: "Assistant",
+      user: "User",
+      send: "Send",
+      sending: "Sending",
+      session: "Session",
+      create_session: "Create session",
+      session_name: "Session name",
+      transcript: "Transcript",
+      debug_panel: "Debug panel",
+      choose_session: "Choose a test session",
+      latest_debug: "Latest debug",
+      selected_debug: "Selected debug",
+      message_count: "Messages",
+      state: "State",
+      empty_chat: "No messages in this session yet.",
+      empty_debug: "No debug payload yet.",
+      session_created: "Session created",
+      selected_turn: "Selected turn",
     },
     pages: {
+      chat: {
+        title: "Local Chat Test",
+        subtitle: "Send messages through the dashboard local transport and validate the subject gate → runtime → response contract → local delivery chain.",
+        sessions: "Test sessions",
+        transcript: "Chat window",
+        debug: "Debug cards",
+        transport: "Transport",
+        session_state: "Session State",
+        subject_gate: "Subject Gate",
+        ingress: "Ingress",
+        proto_self: "Proto-Self",
+        response_plan: "Response Plan",
+        output_check: "Output Check",
+        delivery: "Final Delivery",
+      },
       agency: {
         title: "Agency",
         subtitle: "Show whether it wanted to act, what it wanted to do, whether the host allowed it, and whether the result changed its state.",
@@ -719,6 +806,23 @@ async function fetchJson(path) {
   return response.json();
 }
 
+async function requestJson(path, options = {}) {
+  const response = await fetch(path, {
+    headers: {
+      "Content-Type": "application/json",
+      ...(options.headers || {}),
+    },
+    ...options,
+  });
+  const contentType = response.headers.get("content-type") || "";
+  const payload = contentType.includes("application/json") ? await response.json() : null;
+  if (!response.ok) {
+    const reason = payload?.message || payload?.error || `Request failed: ${response.status}`;
+    throw new Error(reason);
+  }
+  return payload;
+}
+
 function escapeHtml(value) {
   return String(value ?? "")
     .replaceAll("&", "&amp;")
@@ -742,6 +846,20 @@ function formatFreshness(seconds) {
   if (seconds < 60) return `${Math.round(seconds)}s`;
   if (seconds < 3600) return `${Math.round(seconds / 60)}m`;
   return `${Math.round(seconds / 3600)}h`;
+}
+
+function formatDateTime(value) {
+  if (!value) return t("common.unknown");
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return String(value);
+  return date.toLocaleString(UI_STATE.locale === "zh" ? "zh-CN" : "en-US", {
+    hour12: false,
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+    second: "2-digit",
+  });
 }
 
 function detectLocale() {
@@ -799,11 +917,13 @@ function artifactLabel(name) {
 }
 
 function applyChrome() {
-  document.getElementById("hero-eyebrow").textContent = t("hero.eyebrow");
-  document.getElementById("hero-title").textContent = t("hero.title");
-  document.getElementById("hero-copy").textContent = t("hero.copy");
+  const heroScope = view === "chat" ? "hero.chat" : "hero";
+  document.getElementById("hero-eyebrow").textContent = t(`${heroScope}.eyebrow`);
+  document.getElementById("hero-title").textContent = t(`${heroScope}.title`);
+  document.getElementById("hero-copy").textContent = t(`${heroScope}.copy`);
   document.getElementById("nav-runs").textContent = t("nav.runs");
   document.getElementById("nav-flow").textContent = t("nav.flow");
+  document.getElementById("nav-chat").textContent = t("nav.chat");
   document.getElementById("nav-agency").textContent = t("nav.agency");
   document.getElementById("nav-growth").textContent = t("nav.growth");
   document.getElementById("nav-failures").textContent = t("nav.failures");
@@ -1709,6 +1829,261 @@ function renderSample(detail) {
   `;
 }
 
+function renderDebugRows(rows = []) {
+  const blocks = rows
+    .map(({ label, value }) => {
+      if (value === null || value === undefined || value === "" || (typeof value === "object" && !Object.keys(value).length)) {
+        return "";
+      }
+      if (typeof value === "object") {
+        return `
+          <div class="key-value-row block">
+            <span>${escapeHtml(label)}</span>
+            <pre>${escapeHtml(JSON.stringify(value, null, 2))}</pre>
+          </div>
+        `;
+      }
+      return `
+        <div class="key-value-row">
+          <span>${escapeHtml(label)}</span>
+          <strong>${escapeHtml(value)}</strong>
+        </div>
+      `;
+    })
+    .filter(Boolean)
+    .join("");
+  return blocks || `<div class="empty">${escapeHtml(t("common.no_data"))}</div>`;
+}
+
+function renderDebugCard(title, rows = []) {
+  return `
+    <article class="panel debug-card">
+      <h3>${escapeHtml(title)}</h3>
+      ${renderDebugRows(rows)}
+    </article>
+  `;
+}
+
+function resolveLatestAssistantMessage(detail) {
+  const transcript = detail?.transcript || [];
+  for (let index = transcript.length - 1; index >= 0; index -= 1) {
+    if (transcript[index]?.role === "assistant") return transcript[index];
+  }
+  return null;
+}
+
+function renderChat(sessionsPayload, detail) {
+  const sessions = sessionsPayload?.sessions || [];
+  const session = detail?.session || {};
+  const transcript = detail?.transcript || [];
+  const debugHistory = detail?.debug_history || {};
+  const latestAssistant = resolveLatestAssistantMessage(detail);
+  if (!UI_STATE.chatSelectedMessageId || !debugHistory[UI_STATE.chatSelectedMessageId]) {
+    UI_STATE.chatSelectedMessageId = latestAssistant?.message_id || null;
+  }
+  const selectedDebug = debugHistory[UI_STATE.chatSelectedMessageId] || detail?.last_debug || null;
+  const selectedAssistant = transcript.find((item) => item.message_id === UI_STATE.chatSelectedMessageId) || latestAssistant;
+
+  const sessionButtons = sessions.length
+    ? sessions
+        .map((item) => `
+          <button
+            type="button"
+            class="chat-session-button${item.session_id === session.session_id ? " active" : ""}"
+            data-chat-session-id="${escapeHtml(item.session_id)}"
+          >
+            <span>${escapeHtml(item.session_name)}</span>
+            <small>${escapeHtml(`${t("common.message_count")}: ${item.message_count}`)}</small>
+          </button>
+        `)
+        .join("")
+    : `<div class="empty">${escapeHtml(t("common.no_data"))}</div>`;
+
+  const transcriptHtml = transcript.length
+    ? transcript
+        .map((message) => {
+          const selectable = message.role === "assistant";
+          const tag = selectable ? "button" : "article";
+          const attrs = selectable ? `type="button" data-chat-message-id="${escapeHtml(message.message_id)}"` : "";
+          return `
+            <${tag} class="chat-message ${escapeHtml(message.role)}${message.message_id === UI_STATE.chatSelectedMessageId ? " active" : ""}" ${attrs}>
+              <header>
+                <strong>${escapeHtml(t(`common.${message.role}`))}</strong>
+                <span>${escapeHtml(formatDateTime(message.created_at))}</span>
+              </header>
+              <p>${escapeHtml(message.text)}</p>
+              <footer>
+                <span>${escapeHtml(message.delivery_kind || t("common.none"))}</span>
+                <span>${escapeHtml(message.status || t("common.unknown"))}</span>
+              </footer>
+            </${tag}>
+          `;
+        })
+        .join("")
+    : `<div class="empty">${escapeHtml(t("common.empty_chat"))}</div>`;
+
+  const debugCards = selectedDebug
+    ? [
+        renderDebugCard(t("pages.chat.subject_gate"), [
+          { label: "ingress.ok", value: String(Boolean(selectedDebug?.subject_gate?.ingress?.ok)) },
+          { label: "ingress.reason", value: selectedDebug?.subject_gate?.ingress?.reason || null },
+          { label: "finalize.ok", value: selectedDebug?.subject_gate?.finalize ? String(Boolean(selectedDebug.subject_gate.finalize.ok)) : null },
+          { label: "finalize.reason", value: selectedDebug?.subject_gate?.finalize?.reason || null },
+        ]),
+        renderDebugCard(t("pages.chat.ingress"), [
+          { label: "runtime_action", value: selectedDebug?.ingress?.runtime_action || null },
+          { label: "interaction_kind", value: selectedDebug?.ingress?.interaction_kind || null },
+          { label: "request_mode", value: selectedDebug?.ingress?.request_mode || null },
+          { label: "conversation_act", value: selectedDebug?.ingress?.conversation_act || null },
+          { label: "parser_source", value: selectedDebug?.ingress?.parser_source || null },
+          { label: "normalized_turn", value: selectedDebug?.ingress?.normalized_turn || null },
+        ]),
+        renderDebugCard(t("pages.chat.proto_self"), [
+          { label: "subject_profile", value: selectedDebug?.proto_self?.subject_profile || null },
+          { label: "policy_hint", value: selectedDebug?.proto_self?.policy_hint || null },
+          { label: "response_tendency", value: selectedDebug?.proto_self?.response_tendency || null },
+          { label: "candidate_actions", value: selectedDebug?.proto_self?.candidate_actions || null },
+        ]),
+        renderDebugCard(t("pages.chat.response_plan"), [
+          { label: "kind", value: selectedDebug?.response_plan?.kind || null },
+          { label: "delivery_kind", value: selectedDebug?.response_plan?.delivery_kind || null },
+          { label: "reply_authority", value: selectedDebug?.response_plan?.reply_authority || null },
+          { label: "authority_source", value: selectedDebug?.response_plan?.authority_source || null },
+          { label: "metadata", value: selectedDebug?.response_plan?.metadata || null },
+        ]),
+        renderDebugCard(t("pages.chat.output_check"), [
+          { label: "passed", value: selectedDebug?.output_check ? String(Boolean(selectedDebug.output_check.passed)) : null },
+          { label: "reason", value: selectedDebug?.output_check?.reason || null },
+          { label: "applied_authority", value: selectedDebug?.output_check?.applied_authority || null },
+          { label: "reply_origin", value: selectedDebug?.output_check?.reply_origin || null },
+          { label: "intent_gate_reason", value: selectedDebug?.output_check?.intent_gate_reason || null },
+        ]),
+        renderDebugCard(t("pages.chat.delivery"), [
+          { label: "should_send", value: String(Boolean(selectedDebug?.delivery?.should_send)) },
+          { label: "delivery_kind", value: selectedDebug?.delivery?.delivery_kind || null },
+          { label: "text_preview", value: selectedDebug?.delivery?.text_preview || null },
+        ]),
+        renderDebugCard(t("pages.chat.session_state"), [
+          { label: "task_status", value: detail?.session_state?.task_status || null },
+          { label: "active_turn_status", value: detail?.session_state?.active_turn_status || null },
+          { label: "waiting_for_user_input", value: String(Boolean(detail?.session_state?.waiting_for_user_input)) },
+          { label: "ingress_context", value: detail?.session_state?.ingress_context || null },
+          { label: "pending_result_continuation", value: detail?.session_state?.pending_result_continuation || null },
+        ]),
+      ].join("")
+    : `<section class="panel"><div class="empty">${escapeHtml(t("common.empty_debug"))}</div></section>`;
+
+  app.innerHTML = `
+    ${pageIntro(t("pages.chat.title"), t("pages.chat.subtitle"), [
+      `<span class="pill warning">${escapeHtml(t("common.local_test_only"))}</span>`,
+      `<span class="pill ok">${escapeHtml(`${t("common.session")}: ${session.session_name || "default"}`)}</span>`,
+      `<span class="pill ok">${escapeHtml(`${t("common.state")}: ${detail?.session_state?.task_status || t("common.unknown")}`)}</span>`,
+    ])}
+    ${UI_STATE.chatError ? `<section class="panel"><div class="empty">${escapeHtml(UI_STATE.chatError)}</div></section>` : ""}
+    <section class="chat-shell">
+      <aside class="panel chat-sidebar">
+        <div class="section-head">
+          <div>
+            <h3>${escapeHtml(t("pages.chat.sessions"))}</h3>
+            <p>${escapeHtml(t("common.choose_session"))}</p>
+          </div>
+        </div>
+        <div class="chat-create-row">
+          <input id="chat-session-name" class="chat-input" type="text" value="${escapeHtml(UI_STATE.chatSessionNameDraft)}" placeholder="${escapeHtml(t("common.session_name"))}">
+          <button type="button" class="subtle-button" data-chat-create>${escapeHtml(t("common.create_session"))}</button>
+        </div>
+        <div class="chat-session-list">${sessionButtons}</div>
+      </aside>
+      <section class="panel chat-main">
+        <div class="section-head">
+          <div>
+            <h3>${escapeHtml(t("pages.chat.transcript"))}</h3>
+            <p>${escapeHtml(session.session_id || "")}</p>
+          </div>
+          <div class="pill-row">
+            <span class="pill ok">${escapeHtml(`${t("common.message_count")}: ${transcript.length}`)}</span>
+            ${selectedAssistant ? `<span class="pill">${escapeHtml(`${t("common.selected_turn")}: ${selectedAssistant.message_id}`)}</span>` : ""}
+          </div>
+        </div>
+        <div class="chat-transcript">${transcriptHtml}</div>
+        <div class="chat-composer">
+          <textarea id="chat-draft" class="chat-textarea" placeholder="${escapeHtml(t("pages.chat.subtitle"))}">${escapeHtml(UI_STATE.chatDraft)}</textarea>
+          <div class="chat-actions">
+            <span class="muted">${escapeHtml(session.updated_at ? formatDateTime(session.updated_at) : "")}</span>
+            <button type="button" class="subtle-button active" data-chat-send ${UI_STATE.chatBusy ? "disabled" : ""}>${escapeHtml(UI_STATE.chatBusy ? t("common.sending") : t("common.send"))}</button>
+          </div>
+        </div>
+      </section>
+    </section>
+    <section class="chat-debug-grid">
+      ${debugCards}
+    </section>
+  `;
+}
+
+async function ensureChatSession() {
+  const sessionsPayload = await fetchJson("/api/dashboard/chat/sessions");
+  const persisted = window.localStorage.getItem("dashboard:chatSessionId");
+  const knownIds = new Set((sessionsPayload.sessions || []).map((item) => item.session_id));
+  if (!UI_STATE.chatSessionId) {
+    UI_STATE.chatSessionId = persisted && knownIds.has(persisted) ? persisted : sessionsPayload.default_session_id;
+  }
+  if (!knownIds.has(UI_STATE.chatSessionId)) {
+    UI_STATE.chatSessionId = sessionsPayload.default_session_id;
+  }
+  if (UI_STATE.chatSessionId) {
+    window.localStorage.setItem("dashboard:chatSessionId", UI_STATE.chatSessionId);
+  }
+  return sessionsPayload;
+}
+
+async function refreshChat() {
+  const sessionsPayload = await ensureChatSession();
+  const detail = await fetchJson(`/api/dashboard/chat/sessions/${encodeURIComponent(UI_STATE.chatSessionId)}`);
+  renderChat(sessionsPayload, detail);
+}
+
+async function createChatSessionFromDraft() {
+  UI_STATE.chatBusy = true;
+  UI_STATE.chatError = "";
+  try {
+    const payload = await requestJson("/api/dashboard/chat/sessions", {
+      method: "POST",
+      body: JSON.stringify({ name: String(UI_STATE.chatSessionNameDraft || "").trim() || "default" }),
+    });
+    UI_STATE.chatSessionId = payload?.session?.session_id || UI_STATE.chatSessionId;
+    UI_STATE.chatSessionNameDraft = "";
+    UI_STATE.chatSelectedMessageId = null;
+    await refreshChat();
+  } catch (error) {
+    UI_STATE.chatError = error.message;
+    await refreshChat();
+  } finally {
+    UI_STATE.chatBusy = false;
+  }
+}
+
+async function sendChatDraft() {
+  const text = String(UI_STATE.chatDraft || "").trim();
+  if (!text || !UI_STATE.chatSessionId || UI_STATE.chatBusy) return;
+  UI_STATE.chatBusy = true;
+  UI_STATE.chatError = "";
+  try {
+    const payload = await requestJson(`/api/dashboard/chat/sessions/${encodeURIComponent(UI_STATE.chatSessionId)}/messages`, {
+      method: "POST",
+      body: JSON.stringify({ text }),
+    });
+    UI_STATE.chatDraft = "";
+    UI_STATE.chatSelectedMessageId = payload?.messages?.assistant?.message_id || UI_STATE.chatSelectedMessageId;
+    await refreshChat();
+  } catch (error) {
+    UI_STATE.chatError = error.message;
+    await refreshChat();
+  } finally {
+    UI_STATE.chatBusy = false;
+  }
+}
+
 async function refresh() {
   const health = await fetchJson("/api/dashboard/health");
   renderMeta(health.build_meta || {}, health.gap_summary || {});
@@ -1718,6 +2093,10 @@ async function refresh() {
       ? `/api/dashboard/samples/${encodeURIComponent(sampleId)}/flow`
       : "/api/dashboard/flow";
     renderFlow(await fetchJson(path));
+    return;
+  }
+  if (view === "chat") {
+    await refreshChat();
     return;
   }
   if (view === "growth") {
@@ -1745,6 +2124,30 @@ document.addEventListener("click", (event) => {
     setLocale(localeButton.dataset.locale);
     return;
   }
+  const sessionButton = event.target.closest("[data-chat-session-id]");
+  if (sessionButton) {
+    UI_STATE.chatSessionId = sessionButton.dataset.chatSessionId;
+    UI_STATE.chatSelectedMessageId = null;
+    UI_STATE.chatError = "";
+    refresh().catch(() => {});
+    return;
+  }
+  const chatMessageButton = event.target.closest("[data-chat-message-id]");
+  if (chatMessageButton) {
+    UI_STATE.chatSelectedMessageId = chatMessageButton.dataset.chatMessageId;
+    refresh().catch(() => {});
+    return;
+  }
+  const chatCreateButton = event.target.closest("[data-chat-create]");
+  if (chatCreateButton) {
+    createChatSessionFromDraft().catch(() => {});
+    return;
+  }
+  const chatSendButton = event.target.closest("[data-chat-send]");
+  if (chatSendButton) {
+    sendChatDraft().catch(() => {});
+    return;
+  }
   const detailButton = event.target.closest("[data-detail-key]");
   if (detailButton) {
     const key = detailButton.dataset.detailKey;
@@ -1757,6 +2160,22 @@ document.addEventListener("click", (event) => {
   if (artifactButton) {
     UI_STATE.artifactModes.set(artifactButton.dataset.artifactKey, artifactButton.dataset.artifactMode);
     refresh().catch(() => {});
+  }
+});
+
+document.addEventListener("input", (event) => {
+  if (event.target.id === "chat-draft") {
+    UI_STATE.chatDraft = event.target.value;
+  }
+  if (event.target.id === "chat-session-name") {
+    UI_STATE.chatSessionNameDraft = event.target.value;
+  }
+});
+
+document.addEventListener("keydown", (event) => {
+  if (event.target.id === "chat-draft" && event.key === "Enter" && (event.ctrlKey || event.metaKey)) {
+    event.preventDefault();
+    sendChatDraft().catch(() => {});
   }
 });
 

@@ -3,10 +3,12 @@ from __future__ import annotations
 import json
 import threading
 from pathlib import Path
-from urllib.request import urlopen
+from urllib.error import HTTPError
+from urllib.request import Request, urlopen
 
 from http.server import ThreadingHTTPServer
 
+from app.dashboard.chat_service import DashboardChatNotFoundError, DashboardChatValidationError
 from app.dashboard.index_builder import build_dashboard_indexes
 from app.dashboard.server import DashboardDataStore, DashboardRequestHandler
 
@@ -497,3 +499,190 @@ def test_dashboard_flow_detail_marks_host_only_reply_evolution_not_available(tmp
     assert detail is not None
     assert detail["reply_evolution_summary"]["available"] is False
     assert detail["reply_evolution_summary"]["reason"] == "host_only_no_subject_chat_evolution"
+
+
+def test_dashboard_server_exposes_chat_tab_and_local_chat_api(tmp_path: Path) -> None:
+    class _FakeChatService:
+        def __init__(self) -> None:
+            self.session_id = "dashboard:test:default"
+            self.detail = {
+                "session": {
+                    "session_id": self.session_id,
+                    "session_name": "default",
+                    "message_count": 2,
+                    "turn_count": 1,
+                    "created_at": "2026-04-10T12:00:00+00:00",
+                    "updated_at": "2026-04-10T12:01:00+00:00",
+                    "task_status": "chat",
+                    "waiting_for_user_input": False,
+                },
+                "transcript": [
+                    {
+                        "message_id": "msg_00001",
+                        "role": "user",
+                        "text": "hello",
+                        "status": "received",
+                        "delivery_kind": "ingress",
+                        "created_at": "2026-04-10T12:00:00+00:00",
+                    },
+                    {
+                        "message_id": "msg_00002",
+                        "role": "assistant",
+                        "text": "world",
+                        "status": "chat",
+                        "delivery_kind": "chat",
+                        "created_at": "2026-04-10T12:00:01+00:00",
+                    },
+                ],
+                "last_debug": {"trace_id": "trace-smoke", "delivery": {"text_preview": "world"}},
+                "debug_history": {"msg_00002": {"trace_id": "trace-smoke", "delivery": {"text_preview": "world"}}},
+                "session_state": {"task_status": "chat", "waiting_for_user_input": False},
+            }
+
+        def list_sessions(self):
+            return {
+                "default_session_id": self.session_id,
+                "sessions": [
+                    {
+                        "session_id": self.session_id,
+                        "session_name": "default",
+                        "message_count": 2,
+                        "turn_count": 1,
+                        "created_at": "2026-04-10T12:00:00+00:00",
+                        "updated_at": "2026-04-10T12:01:00+00:00",
+                        "task_status": "chat",
+                        "waiting_for_user_input": False,
+                    }
+                ],
+            }
+
+        def create_or_select_session(self, *, name=None, session_id=None):
+            return {
+                "session": {
+                    "session_id": self.session_id,
+                    "session_name": name or "default",
+                },
+                "session_state": {"task_status": "idle"},
+            }
+
+        def get_session_payload(self, session_id):
+            if session_id != self.session_id:
+                raise DashboardChatNotFoundError("unknown session")
+            return self.detail
+
+        def send_message(self, session_id, text):
+            if session_id != self.session_id:
+                raise DashboardChatNotFoundError("unknown session")
+            if not str(text or "").strip():
+                raise DashboardChatValidationError("empty text")
+            return {
+                "session": self.detail["session"],
+                "messages": {
+                    "user": {
+                        "message_id": "msg_00003",
+                        "role": "user",
+                        "text": text,
+                        "status": "received",
+                        "delivery_kind": "ingress",
+                        "created_at": "2026-04-10T12:01:30+00:00",
+                    },
+                    "assistant": {
+                        "message_id": "msg_00004",
+                        "role": "assistant",
+                        "text": "echo:" + text,
+                        "status": "chat",
+                        "delivery_kind": "chat",
+                        "created_at": "2026-04-10T12:01:31+00:00",
+                    },
+                },
+                "debug": {
+                    "subject_gate": {"ingress": {"ok": True, "reason": "ok"}},
+                    "output_check": {"passed": True},
+                    "delivery": {"text_preview": "echo:" + text},
+                },
+                "session_state": {"task_status": "chat", "waiting_for_user_input": False},
+            }
+
+    real_dir = tmp_path / "artifacts" / "telegram_real_mainline_v1" / "real_telegram"
+    failure_dir = tmp_path / "artifacts" / "telegram_real_mainline_v1" / "failure_cases"
+    observation_dir = tmp_path / "artifacts" / "mvs_e5_observation"
+    output_dir = tmp_path / "artifacts" / "telegram_real_mainline_v1" / "dashboard_v1"
+    validation_doc = tmp_path / "docs" / "TELEGRAM_REAL_MAINLINE_VALIDATION_V1.md"
+    validation_doc.parent.mkdir(parents=True, exist_ok=True)
+    validation_doc.write_text("dashboard chat smoke\n", encoding="utf-8")
+    observation_dir.mkdir(parents=True, exist_ok=True)
+    _make_sample(real_dir, "sample_20260410_120000_chatseed", oe_available=True)
+    build_dashboard_indexes(
+        real_dir=real_dir,
+        failure_dir=failure_dir,
+        observation_dir=observation_dir,
+        output_dir=output_dir,
+        validation_doc=validation_doc,
+    )
+
+    DashboardRequestHandler.store = DashboardDataStore(
+        dashboard_dir=output_dir,
+        build_kwargs={
+            "real_dir": real_dir,
+            "failure_dir": failure_dir,
+            "observation_dir": observation_dir,
+            "validation_doc": validation_doc,
+        },
+    )
+    DashboardRequestHandler.chat_service = _FakeChatService()
+    server = ThreadingHTTPServer(("127.0.0.1", 0), DashboardRequestHandler)
+    thread = threading.Thread(target=server.serve_forever, daemon=True)
+    thread.start()
+    try:
+        base = f"http://127.0.0.1:{server.server_address[1]}"
+        html = urlopen(f"{base}/chat").read().decode("utf-8")
+        sessions = json.loads(urlopen(f"{base}/api/dashboard/chat/sessions").read().decode("utf-8"))
+        created = json.loads(
+            urlopen(
+                Request(
+                    f"{base}/api/dashboard/chat/sessions",
+                    data=json.dumps({"name": "smoke"}).encode("utf-8"),
+                    headers={"Content-Type": "application/json"},
+                    method="POST",
+                )
+            ).read().decode("utf-8")
+        )
+        detail = json.loads(
+            urlopen(f"{base}/api/dashboard/chat/sessions/dashboard%3Atest%3Adefault").read().decode("utf-8")
+        )
+        message = json.loads(
+            urlopen(
+                Request(
+                    f"{base}/api/dashboard/chat/sessions/dashboard%3Atest%3Adefault/messages",
+                    data=json.dumps({"text": "ping"}).encode("utf-8"),
+                    headers={"Content-Type": "application/json"},
+                    method="POST",
+                )
+            ).read().decode("utf-8")
+        )
+        try:
+            urlopen(
+                Request(
+                    f"{base}/api/dashboard/chat/sessions/dashboard%3Atest%3Adefault/messages",
+                    data=json.dumps({"text": ""}).encode("utf-8"),
+                    headers={"Content-Type": "application/json"},
+                    method="POST",
+                )
+            )
+            empty_status = None
+        except HTTPError as exc:
+            empty_status = exc.code
+    finally:
+        server.shutdown()
+        thread.join(timeout=2)
+        server.server_close()
+        DashboardRequestHandler.chat_service = None
+
+    assert 'data-view="chat"' in html
+    assert sessions["default_session_id"] == "dashboard:test:default"
+    assert created["session"]["session_name"] == "smoke"
+    assert detail["session"]["session_id"] == "dashboard:test:default"
+    assert detail["debug_history"]["msg_00002"]["trace_id"] == "trace-smoke"
+    assert message["messages"]["assistant"]["text"] == "echo:ping"
+    assert message["debug"]["subject_gate"]["ingress"]["ok"] is True
+    assert empty_status == 400
