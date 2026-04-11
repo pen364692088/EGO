@@ -1,7 +1,7 @@
 # PROJECT_MEMORY.md
 
 > AIProject 核心记忆 - Claude Code 持续更新
-> 最后更新: 2026-04-06
+> 最后更新: 2026-04-11
 
 ---
 
@@ -90,7 +90,11 @@
 - 正式说明文档: `docs/CODEX_CLOSED_LOOP_SELF_REVIEW_WORKFLOW.md`
 - 分档规则: `L1` 低风险可只做自审；`L2` 中风险默认建议独立 Reviewer subagent；`L2` 高风险与 `L3/双仓/Telegram 主链/状态恢复/evidence` 强制独立 Reviewer subagent
 - 收口规则: 完成当前主问题后，默认做一次主动增益检查；若存在直接服务真实目标、验证成本低、失败代价小、可回退的优化点，补充 1-3 条；否则明确写“本轮无必要额外建议”
-- 进度视图维护规则: `docs/OVERALL_PROGRESS.md` 是派生进度视图；当 roadmap 终点、active stage、remaining execution cards、supporting lines 状态发生实质变化时同步回写，且必须先更新 authority source，再回写该页；不要把它写成流水账
+- 进度视图维护规则: `docs/OVERALL_PROGRESS.md` 是派生进度视图；当 roadmap 终点、active stage、remaining execution cards、supporting lines 状态发生实质变化时同步回写，且必须先更新 authority source，再回写该页；不要把它写成流水账。每次回写时固定写清：
+  - 当前正式工程目标还剩多少阶段
+  - 下一个阶段做什么
+  - 下一个阶段怎么做
+  - 若“真正 AI 自我意识”的阶段数不能诚实给出，明确写 `unknown`，再切换为当前正式工程目标 `replay-validated self-awareness proxy` 的阶段数
 
 ### Codex Assistant Memory
 - 稳定记忆索引: `CODEX_MEMORY.md`
