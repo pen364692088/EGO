@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import asyncio
 import threading
+import time
 from concurrent.futures import ThreadPoolExecutor
 
 import pytest
@@ -121,6 +122,14 @@ def test_dashboard_chat_service_keeps_named_sessions_continuous_and_isolated(mon
     assert other_payload["session"]["turn_count"] == 1
     assert len(default_payload["transcript"]) == 4
     assert len(other_payload["transcript"]) == 2
+    assert default_payload["session_revision"] == 3
+    assert other_payload["session_revision"] == 2
+    assert default_payload["session_state"]["proto_self_scope"]["state_scope"] == "experiment"
+    assert other_payload["session_state"]["proto_self_scope"]["state_scope"] == "experiment"
+    assert (
+        default_payload["session_state"]["proto_self_scope"]["experiment_id"]
+        != other_payload["session_state"]["proto_self_scope"]["experiment_id"]
+    )
     assert second["debug"]["response_plan"]["reply_authority"] == "model_chat"
     assert second["debug"]["output_check"]["passed"] is True
     assert subject_gate.calls and subject_gate.calls[0][0] == "ingress"
@@ -169,3 +178,39 @@ def test_dashboard_chat_service_serializes_parallel_messages_per_session(monkeyp
     assert len(results) == 2
     assert len(payload["transcript"]) == 4
     assert payload["session"]["turn_count"] == 2
+
+
+def test_dashboard_chat_service_waits_for_revision_updates_and_wakes_on_new_message(monkeypatch) -> None:
+    bridge = TelegramRuntimeBridge()
+    _patch_semantic_to_heuristic(monkeypatch, bridge)
+    runner = _CountingRunner(delay_seconds=0.01)
+    service = DashboardChatService(
+        bridge=bridge,
+        runner=runner,
+        subject_gate=_AllowSubjectGate(),
+        llm_client_resolver=lambda: None,
+    )
+
+    session = service.ensure_session("waiter")
+    assert session.session_revision == 1
+
+    ready = threading.Event()
+
+    def _wait_for_update():
+        ready.set()
+        return service.get_session_payload(session.session_id, after_revision=1, wait_timeout_ms=500)
+
+    with ThreadPoolExecutor(max_workers=1) as pool:
+        future = pool.submit(_wait_for_update)
+        assert ready.wait(timeout=0.2) is True
+        time.sleep(0.05)
+        assert future.done() is False
+
+        send_payload = service.send_message(session.session_id, "hello after wait")
+        waited_payload = future.result(timeout=1.0)
+
+    assert send_payload["session_revision"] == 2
+    assert waited_payload["has_update"] is True
+    assert waited_payload["session_revision"] == 2
+    assert waited_payload["transcript"][-1]["text"] == "reply 1: hello after wait"
+    assert waited_payload["session_state"]["proto_self_scope"]["state_scope"] == "experiment"

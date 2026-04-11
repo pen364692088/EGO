@@ -183,7 +183,7 @@ async def test_status_command_returns_runtime_style_card(monkeypatch):
     text = DummyUpdate.message.last_text
     assert bot.runtime_v2_loop is None
     assert "EgoCore Runtime" in text
-    assert "openrouter/stepfun/step-3.5-flash:free" in text
+    assert "openrouter/stepfun/step-3.5-flash" in text
     assert "Session ID:" in text
     assert "native\\_loop" in text
     assert "task\\_status" in text and "running" in text

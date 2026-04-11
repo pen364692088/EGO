@@ -2,7 +2,7 @@
 
 # Default settings
 default_provider: openrouter
-default_model: stepfun/step-3.5-flash:free
+default_model: stepfun/step-3.5-flash
 
 # Provider configurations
 providers:
@@ -11,16 +11,16 @@ providers:
     base_url: "https://openrouter.ai/api/v1"
     api_key_env: OPENROUTER_API_KEY
     models:
-      - id: stepfun/step-3.5-flash:free
-        name: StepFun 3.5 Flash Free
+      - id: stepfun/step-3.5-flash
+        name: StepFun 3.5 Flash
         max_tokens: 64000
         supports_vision: false
       - id: openai/gpt-oss-20b:free
         name: GPT OSS 20B Free
         max_tokens: 131072
         supports_vision: false
-      - id: qwen/qwen3.6-plus:free
-        name: Qwen 3.6 Plus Free
+      - id: qwen/qwen3.6-plus
+        name: Qwen 3.6 Plus
         max_tokens: 64000
         supports_vision: false
 
@@ -83,31 +83,31 @@ providers:
 use_cases:
   planning:
     provider: openrouter
-    model: stepfun/step-3.5-flash:free
+    model: stepfun/step-3.5-flash
     temperature: 0.7
     max_tokens: 4000
   
   execution:
     provider: openrouter
-    model: stepfun/step-3.5-flash:free
+    model: stepfun/step-3.5-flash
     temperature: 0.3
     max_tokens: 8000
   
   reporting:
     provider: openrouter
-    model: stepfun/step-3.5-flash:free
+    model: stepfun/step-3.5-flash
     temperature: 0.5
     max_tokens: 4000
   
   memory_summary:
     provider: openrouter
-    model: stepfun/step-3.5-flash:free
+    model: stepfun/step-3.5-flash
     temperature: 0.3
     max_tokens: 2000
   
   chat:
     provider: openrouter
-    model: stepfun/step-3.5-flash:free
+    model: stepfun/step-3.5-flash
     temperature: 0.8
     max_tokens: 2000
 

@@ -97,6 +97,10 @@ def _compact_response_plan_metadata(metadata: Optional[dict]) -> dict:
         compact["chat_expression_hint"] = dict(source.get("chat_expression_hint") or {})
     if source.get("response_tendency_summary"):
         compact["response_tendency_summary"] = dict(source.get("response_tendency_summary") or {})
+    if source.get("chat_degradation"):
+        compact["chat_degradation"] = dict(source.get("chat_degradation") or {})
+    if source.get("degraded") is not None:
+        compact["degraded"] = bool(source.get("degraded"))
     if source.get("final_text_preview"):
         compact["final_text_preview"] = source.get("final_text_preview")
     if source.get("final_text_hash"):
@@ -160,6 +164,7 @@ class DashboardChatSession:
     session_id: str
     session_name: str
     state: RuntimeV2State
+    proto_self_scope: Dict[str, Any]
     transcript: list[dict[str, Any]] = field(default_factory=list)
     debug_history: dict[str, dict[str, Any]] = field(default_factory=dict)
     last_debug: Optional[dict[str, Any]] = None
@@ -167,6 +172,12 @@ class DashboardChatSession:
     updated_at: str = field(default_factory=_utc_now_iso)
     turn_count: int = 0
     lock: threading.RLock = field(default_factory=threading.RLock, repr=False)
+    condition: threading.Condition = field(init=False, repr=False)
+    session_revision: int = 1
+    last_message_id: Optional[str] = None
+
+    def __post_init__(self) -> None:
+        self.condition = threading.Condition(self.lock)
 
 
 class DashboardChatService:
@@ -182,6 +193,7 @@ class DashboardChatService:
         self.runner = runner or TelegramRuntimeFallbackRunner()
         self.subject_gate = subject_gate or MandatorySubjectGate(hooks=NativeOpenEmotionHooks())
         self._llm_client_resolver = llm_client_resolver or self._default_semantic_parse_client
+        self._process_nonce = uuid.uuid4().hex[:10]
         self._sessions: dict[str, DashboardChatSession] = {}
         self._sessions_lock = threading.RLock()
         self.default_session_id = self.ensure_session("default").session_id
@@ -199,10 +211,30 @@ class DashboardChatService:
             logger.warning("dashboard_chat.semantic_parse_client_unavailable err=%s", exc)
             return None
 
-    def _build_runtime_state(self, session_id: str) -> RuntimeV2State:
+    def _build_runtime_state(self, session_id: str, *, proto_self_scope: Optional[Dict[str, Any]] = None) -> RuntimeV2State:
         state = RuntimeV2State(session_id=session_id)
         state.proto_self_subject_profile_override = SEED_SUBJECT_PROFILE
+        if proto_self_scope:
+            state.ingress_context = self._merge_dashboard_proto_self_scope({}, proto_self_scope)
         return state
+
+    def _build_proto_self_scope(self, session_id: str) -> Dict[str, Any]:
+        return {
+            "state_scope": "experiment",
+            "experiment_id": f"dashboard_local:{self._process_nonce}:{session_id}",
+            "owner": "dashboard_local",
+        }
+
+    def _merge_dashboard_proto_self_scope(
+        self,
+        ingress_context: Optional[Dict[str, Any]],
+        proto_self_scope: Dict[str, Any],
+    ) -> Dict[str, Any]:
+        merged = dict(ingress_context or {})
+        merged["proto_self_state_scope"] = proto_self_scope.get("state_scope") or "experiment"
+        merged["proto_self_experiment_id"] = proto_self_scope.get("experiment_id")
+        merged["proto_self_scope_owner"] = proto_self_scope.get("owner") or "dashboard_local"
+        return merged
 
     def ensure_session(self, name: str) -> DashboardChatSession:
         session_name, session_slug = _sanitize_session_name(name)
@@ -210,10 +242,12 @@ class DashboardChatService:
         with self._sessions_lock:
             session = self._sessions.get(session_id)
             if session is None:
+                proto_self_scope = self._build_proto_self_scope(session_id)
                 session = DashboardChatSession(
                     session_id=session_id,
                     session_name=session_name,
-                    state=self._build_runtime_state(session_id),
+                    state=self._build_runtime_state(session_id, proto_self_scope=proto_self_scope),
+                    proto_self_scope=proto_self_scope,
                 )
                 self._sessions[session_id] = session
             else:
@@ -248,18 +282,29 @@ class DashboardChatService:
         return {
             "session": self._build_session_descriptor(session),
             "session_state": self._build_session_state_summary(session.state),
+            "session_revision": session.session_revision,
         }
 
-    def get_session_payload(self, session_id: str) -> Dict[str, Any]:
+    def get_session_payload(
+        self,
+        session_id: str,
+        *,
+        after_revision: Optional[int] = None,
+        wait_timeout_ms: Optional[int] = None,
+    ) -> Dict[str, Any]:
         session = self.get_session(session_id)
-        with session.lock:
-            return {
-                "session": self._build_session_descriptor(session),
-                "transcript": list(session.transcript),
-                "last_debug": dict(session.last_debug or {}) if session.last_debug else None,
-                "debug_history": dict(session.debug_history or {}),
-                "session_state": self._build_session_state_summary(session.state),
-            }
+        normalized_after_revision = None if after_revision is None else max(0, int(after_revision))
+        timeout_seconds = max(0.0, float(wait_timeout_ms or 0) / 1000.0)
+        with session.condition:
+            if normalized_after_revision is not None and session.session_revision <= normalized_after_revision and timeout_seconds > 0:
+                deadline = time.monotonic() + timeout_seconds
+                while session.session_revision <= normalized_after_revision:
+                    remaining = deadline - time.monotonic()
+                    if remaining <= 0:
+                        break
+                    session.condition.wait(remaining)
+            has_update = normalized_after_revision is None or session.session_revision > normalized_after_revision
+            return self._build_session_payload_locked(session, has_update=has_update)
 
     def send_message(self, session_id: str, text: str) -> Dict[str, Any]:
         body = str(text or "").strip()
@@ -304,7 +349,10 @@ class DashboardChatService:
             bridge=self.bridge,
             llm_client=llm_client,
         )
-        session.state.ingress_context = dict(unified_ingress.ingress_context or {})
+        session.state.ingress_context = self._merge_dashboard_proto_self_scope(
+            unified_ingress.ingress_context,
+            session.proto_self_scope,
+        )
         self._sync_pending_result_continuation_from_ingress(session.state, user_text=request.effective_user_input)
         pre_runtime = unified_ingress.pre_runtime_action
         if getattr(pre_runtime, "remember_challenge_turn", False):
@@ -338,6 +386,7 @@ class DashboardChatService:
                 state=session.state,
             )
             self._store_debug(session, assistant_message, debug)
+            self._commit_session_update(session)
             return self._build_turn_response(session, user_message=user_message, assistant_message=assistant_message, debug=debug)
 
         if session.state.get_pending_task_conflict() is not None:
@@ -419,6 +468,7 @@ class DashboardChatService:
             state=session.state,
         )
         self._store_debug(session, assistant_message, debug)
+        self._commit_session_update(session)
         return self._build_turn_response(session, user_message=user_message, assistant_message=assistant_message, debug=debug)
 
     async def _complete_pre_runtime_turn(
@@ -563,6 +613,7 @@ class DashboardChatService:
                 state=session.state,
             )
             self._store_debug(session, assistant_message, debug)
+            self._commit_session_update(session)
             return self._build_turn_response(session, user_message=user_message, assistant_message=assistant_message, debug=debug)
 
         unified_turn = build_unified_turn_result(
@@ -608,6 +659,7 @@ class DashboardChatService:
             state=session.state,
         )
         self._store_debug(session, assistant_message, debug)
+        self._commit_session_update(session)
         return self._build_turn_response(session, user_message=user_message, assistant_message=assistant_message, debug=debug)
 
     async def _build_profile_rule_preflight_reply(self, state: RuntimeV2State, rule_enforcement: dict) -> str:
@@ -769,9 +821,12 @@ class DashboardChatService:
             "updated_at": session.updated_at,
             "task_status": session.state.task_status,
             "waiting_for_user_input": bool(session.state.waiting_for_user_input),
+            "session_revision": session.session_revision,
+            "last_message_id": session.last_message_id,
         }
 
     def _build_session_state_summary(self, state: RuntimeV2State) -> Dict[str, Any]:
+        ingress_context = dict(state.ingress_context or {})
         return {
             "task_status": state.task_status,
             "active_turn_id": state.active_turn_id,
@@ -781,7 +836,12 @@ class DashboardChatService:
             "current_step": state.current_step,
             "last_delivery_type": state.last_delivery_type,
             "generation_id": state.generation_id,
-            "ingress_context": _compact_ingress_context(state.ingress_context),
+            "ingress_context": _compact_ingress_context(ingress_context),
+            "proto_self_scope": {
+                "state_scope": ingress_context.get("proto_self_state_scope") or ingress_context.get("state_scope") or "agent_global",
+                "experiment_id": ingress_context.get("proto_self_experiment_id") or ingress_context.get("experiment_id"),
+                "owner": ingress_context.get("proto_self_scope_owner") or "runtime_default",
+            },
             "proto_self": _compact_proto_self_context(state.proto_self_context),
             "recent_delivered_result_context": dict(state.recent_delivered_result_context or {}),
             "pending_result_continuation": state.build_pending_result_continuation_summary(),
@@ -805,6 +865,7 @@ class DashboardChatService:
             "created_at": _utc_now_iso(),
         }
         session.transcript.append(message)
+        session.last_message_id = message["message_id"]
         session.updated_at = message["created_at"]
         return message
 
@@ -818,6 +879,27 @@ class DashboardChatService:
         if assistant_message is not None:
             session.debug_history[assistant_message["message_id"]] = debug
         session.updated_at = _utc_now_iso()
+
+    def _commit_session_update(self, session: DashboardChatSession) -> None:
+        session.session_revision += 1
+        session.updated_at = _utc_now_iso()
+        session.condition.notify_all()
+
+    def _build_session_payload_locked(
+        self,
+        session: DashboardChatSession,
+        *,
+        has_update: bool,
+    ) -> Dict[str, Any]:
+        return {
+            "session": self._build_session_descriptor(session),
+            "transcript": list(session.transcript),
+            "last_debug": dict(session.last_debug or {}) if session.last_debug else None,
+            "debug_history": dict(session.debug_history or {}),
+            "session_state": self._build_session_state_summary(session.state),
+            "session_revision": session.session_revision,
+            "has_update": bool(has_update),
+        }
 
     def _build_turn_response(
         self,
@@ -835,6 +917,8 @@ class DashboardChatService:
             },
             "debug": debug,
             "session_state": self._build_session_state_summary(session.state),
+            "session_revision": session.session_revision,
+            "has_update": True,
         }
 
     def _build_subject_turn_id(self, session: DashboardChatSession, trace_id: str) -> str:

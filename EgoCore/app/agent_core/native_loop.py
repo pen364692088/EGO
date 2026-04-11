@@ -7,6 +7,7 @@ from typing import Any, Awaitable, Callable, Dict, List, Optional
 
 from app.config import get_config, load_config
 from app.llm_client import LLMClient, get_llm_client
+from app.repo_paths import get_egocore_root
 from app.tools import execute_tool, get_registry, setup_tools
 
 from .contract_runtime import ContractRuntimeEngine, NextStepDecision, PlanningTimeoutError, TaskContract, VerificationResult
@@ -41,28 +42,28 @@ class NativeToolCallingLoop:
         self._ensure_tools_ready()
 
     def _build_default_llm_client(self) -> LLMClient:
-        repo_root = Path(__file__).resolve().parents[2]
+        ego_root = get_egocore_root()
         try:
             cfg = get_config()
         except Exception:
             cfg = load_config(
-                config_dir=str(repo_root / "config"),
-                env_file=str(repo_root / ".env"),
+                config_dir=str(ego_root / "config"),
+                env_file=str(ego_root / ".env"),
                 validate=False,
             )
         use_case = cfg.get_llm_config_for_use_case("execution") if hasattr(cfg, "get_llm_config_for_use_case") else {}
         provider = use_case.get("provider") or getattr(cfg, "llm", {}).get("default_provider") or "openrouter"
-        model = use_case.get("model") or getattr(cfg, "llm", {}).get("default_model") or "stepfun/step-3.5-flash:free"
+        model = use_case.get("model") or getattr(cfg, "llm", {}).get("default_model") or "stepfun/step-3.5-flash"
         return get_llm_client(provider=str(provider), model=str(model))
 
     def _ensure_tools_ready(self) -> None:
-        repo_root = Path(__file__).resolve().parents[2]
+        ego_root = get_egocore_root()
         try:
             cfg = get_config()
         except Exception:
             cfg = load_config(
-                config_dir=str(repo_root / "config"),
-                env_file=str(repo_root / ".env"),
+                config_dir=str(ego_root / "config"),
+                env_file=str(ego_root / ".env"),
                 validate=False,
             )
         registry = get_registry()

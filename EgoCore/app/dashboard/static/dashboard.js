@@ -3,6 +3,7 @@ const sampleId = document.body.dataset.sampleId;
 const metaBar = document.getElementById("meta-bar");
 const app = document.getElementById("app");
 const POLL_MS = 5000;
+const CHAT_WAIT_TIMEOUT_MS = 25000;
 const VIEW_ROUTES = {
   runs: "/runs",
   flow: "/flow",
@@ -22,6 +23,15 @@ const UI_STATE = {
   chatSessionNameDraft: "",
   chatBusy: false,
   chatError: "",
+  chatCopyFeedback: "",
+  chatCurrentRevision: 0,
+  chatPendingPayload: null,
+  chatPendingLabel: "",
+  chatDraftFocused: false,
+  chatWatchGeneration: 0,
+  chatSessionsPayload: null,
+  chatDetail: null,
+  chatCopyFeedbackTimer: null,
 };
 
 const I18N = {
@@ -80,6 +90,9 @@ const I18N = {
       translated_summary: "摘要说明",
       because: "原因",
       auto_refresh: "5 秒自动刷新",
+      refresh_updates: "有新更新",
+      new_messages: "有新消息",
+      new_debug: "有新调试数据",
       continuity: "连续性",
       sample: "样本",
       flow: "流程",
@@ -114,6 +127,12 @@ const I18N = {
       empty_debug: "当前还没有调试数据。",
       session_created: "会话已创建",
       selected_turn: "选中回合",
+      copy_history: "复制历史记录",
+      copied: "已复制",
+      copy_failed: "复制失败",
+      session_revision: "Revision",
+      apply_updates: "应用新消息",
+      pending_updates: "有新消息，点此刷新",
     },
     pages: {
       chat: {
@@ -386,6 +405,9 @@ const I18N = {
       translated_summary: "Summary",
       because: "Because",
       auto_refresh: "Auto-refresh every 5s",
+      refresh_updates: "New updates",
+      new_messages: "New messages",
+      new_debug: "New debug data",
       continuity: "Continuity",
       sample: "Sample",
       flow: "Flow",
@@ -420,6 +442,12 @@ const I18N = {
       empty_debug: "No debug payload yet.",
       session_created: "Session created",
       selected_turn: "Selected turn",
+      copy_history: "Copy history",
+      copied: "Copied",
+      copy_failed: "Copy failed",
+      session_revision: "Revision",
+      apply_updates: "Apply updates",
+      pending_updates: "New messages available",
     },
     pages: {
       chat: {
@@ -862,6 +890,132 @@ function formatDateTime(value) {
   });
 }
 
+function delay(ms) {
+  return new Promise((resolve) => window.setTimeout(resolve, ms));
+}
+
+function isChatView() {
+  return view === "chat";
+}
+
+function hasChatDraft() {
+  return Boolean(String(UI_STATE.chatDraft || "").trim());
+}
+
+function shouldDeferChatHydration() {
+  return UI_STATE.chatDraftFocused || hasChatDraft();
+}
+
+function updateChatLiveIndicators() {
+  const refreshButton = document.querySelector("[data-chat-apply-pending]");
+  if (refreshButton) {
+    const hasPending = Boolean(UI_STATE.chatPendingPayload);
+    refreshButton.hidden = !hasPending;
+    refreshButton.textContent = hasPending ? UI_STATE.chatPendingLabel || t("common.pending_updates") : t("common.apply_updates");
+  }
+  const copyFeedback = document.querySelector("[data-chat-copy-feedback]");
+  if (copyFeedback) {
+    const hasFeedback = Boolean(UI_STATE.chatCopyFeedback);
+    copyFeedback.hidden = !hasFeedback;
+    copyFeedback.textContent = UI_STATE.chatCopyFeedback || "";
+  }
+}
+
+function buildChatPendingLabel(previousDetail, nextDetail) {
+  const previousMessages = previousDetail?.transcript?.length || 0;
+  const nextMessages = nextDetail?.transcript?.length || 0;
+  if (nextMessages > previousMessages) return t("common.pending_updates");
+  return t("common.refresh_updates");
+}
+
+function rememberChatPayload(sessionsPayload, detail) {
+  UI_STATE.chatSessionsPayload = sessionsPayload;
+  UI_STATE.chatDetail = detail;
+  UI_STATE.chatCurrentRevision = Number(detail?.session_revision || detail?.session?.session_revision || 0);
+}
+
+function clearChatPendingPayload() {
+  UI_STATE.chatPendingPayload = null;
+  UI_STATE.chatPendingLabel = "";
+  updateChatLiveIndicators();
+}
+
+function applyChatSnapshot(sessionsPayload, detail, { allowDefer = false } = {}) {
+  const nextRevision = Number(detail?.session_revision || detail?.session?.session_revision || 0);
+  const shouldDefer = allowDefer && UI_STATE.chatDetail && shouldDeferChatHydration();
+  if (shouldDefer) {
+    UI_STATE.chatPendingPayload = { sessionsPayload, detail };
+    UI_STATE.chatPendingLabel = buildChatPendingLabel(UI_STATE.chatDetail, detail);
+    updateChatLiveIndicators();
+    return false;
+  }
+  rememberChatPayload(sessionsPayload, detail);
+  clearChatPendingPayload();
+  renderChat(UI_STATE.chatSessionsPayload, UI_STATE.chatDetail);
+  return nextRevision > 0;
+}
+
+function renderChatFromState() {
+  if (!UI_STATE.chatSessionsPayload || !UI_STATE.chatDetail) return;
+  renderChat(UI_STATE.chatSessionsPayload, UI_STATE.chatDetail);
+}
+
+async function applyPendingChatUpdate() {
+  if (!UI_STATE.chatPendingPayload) return;
+  const pending = UI_STATE.chatPendingPayload;
+  UI_STATE.chatPendingPayload = null;
+  UI_STATE.chatPendingLabel = "";
+  rememberChatPayload(pending.sessionsPayload, pending.detail);
+  renderChatFromState();
+}
+
+function buildChatHistoryText(detail) {
+  const session = detail?.session || {};
+  const transcript = detail?.transcript || [];
+  const lines = [
+    `session_id: ${session.session_id || ""}`,
+    `session_name: ${session.session_name || ""}`,
+    `message_count: ${transcript.length}`,
+    "",
+  ];
+  transcript.forEach((message) => {
+    lines.push(`[${formatDateTime(message.created_at)}] ${t(`common.${message.role}`)} | ${message.delivery_kind || t("common.none")} | ${message.status || t("common.unknown")}`);
+    lines.push(String(message.text || ""));
+    lines.push("");
+  });
+  return lines.join("\n").trim();
+}
+
+async function copyText(text) {
+  if (navigator.clipboard?.writeText) {
+    await navigator.clipboard.writeText(text);
+    return;
+  }
+  const textarea = document.createElement("textarea");
+  textarea.value = text;
+  textarea.setAttribute("readonly", "true");
+  textarea.style.position = "fixed";
+  textarea.style.opacity = "0";
+  textarea.style.pointerEvents = "none";
+  document.body.appendChild(textarea);
+  textarea.select();
+  const success = document.execCommand("copy");
+  document.body.removeChild(textarea);
+  if (!success) {
+    throw new Error("copy_failed");
+  }
+}
+
+function setChatCopyFeedback(message) {
+  UI_STATE.chatCopyFeedback = message;
+  updateChatLiveIndicators();
+  window.clearTimeout(UI_STATE.chatCopyFeedbackTimer);
+  UI_STATE.chatCopyFeedbackTimer = window.setTimeout(() => {
+    UI_STATE.chatCopyFeedback = "";
+    updateChatLiveIndicators();
+  }, 1800);
+}
+
 function detectLocale() {
   const stored = window.localStorage.getItem("dashboard:locale");
   if (stored === "zh" || stored === "en") return stored;
@@ -936,7 +1090,8 @@ function applyChrome() {
   });
 }
 
-function pageIntro(title, subtitle, extras = []) {
+function pageIntro(title, subtitle, extras = [], options = {}) {
+  const showAutoRefresh = options.showAutoRefresh ?? true;
   return `
     <section class="panel intro-panel">
       <div class="intro-head">
@@ -945,7 +1100,7 @@ function pageIntro(title, subtitle, extras = []) {
           <p>${escapeHtml(subtitle)}</p>
         </div>
         <div class="pill-row">
-          <span class="pill ok">${escapeHtml(t("common.auto_refresh"))}</span>
+          ${showAutoRefresh ? `<span class="pill ok">${escapeHtml(t("common.auto_refresh"))}</span>` : ""}
           ${extras.join("")}
         </div>
       </div>
@@ -1893,7 +2048,7 @@ function renderChat(sessionsPayload, detail) {
             data-chat-session-id="${escapeHtml(item.session_id)}"
           >
             <span>${escapeHtml(item.session_name)}</span>
-            <small>${escapeHtml(`${t("common.message_count")}: ${item.message_count}`)}</small>
+            <small>${escapeHtml(`${t("common.message_count")}: ${item.message_count} · ${t("common.session_revision")}: ${item.session_revision || 0}`)}</small>
           </button>
         `)
         .join("")
@@ -1949,6 +2104,8 @@ function renderChat(sessionsPayload, detail) {
           { label: "delivery_kind", value: selectedDebug?.response_plan?.delivery_kind || null },
           { label: "reply_authority", value: selectedDebug?.response_plan?.reply_authority || null },
           { label: "authority_source", value: selectedDebug?.response_plan?.authority_source || null },
+          { label: "degraded", value: selectedDebug?.response_plan?.metadata ? String(Boolean(selectedDebug.response_plan.metadata.degraded)) : null },
+          { label: "chat_degradation", value: selectedDebug?.response_plan?.metadata?.chat_degradation || null },
           { label: "metadata", value: selectedDebug?.response_plan?.metadata || null },
         ]),
         renderDebugCard(t("pages.chat.output_check"), [
@@ -1967,6 +2124,7 @@ function renderChat(sessionsPayload, detail) {
           { label: "task_status", value: detail?.session_state?.task_status || null },
           { label: "active_turn_status", value: detail?.session_state?.active_turn_status || null },
           { label: "waiting_for_user_input", value: String(Boolean(detail?.session_state?.waiting_for_user_input)) },
+          { label: "proto_self_scope", value: detail?.session_state?.proto_self_scope || null },
           { label: "ingress_context", value: detail?.session_state?.ingress_context || null },
           { label: "pending_result_continuation", value: detail?.session_state?.pending_result_continuation || null },
         ]),
@@ -1978,7 +2136,7 @@ function renderChat(sessionsPayload, detail) {
       `<span class="pill warning">${escapeHtml(t("common.local_test_only"))}</span>`,
       `<span class="pill ok">${escapeHtml(`${t("common.session")}: ${session.session_name || "default"}`)}</span>`,
       `<span class="pill ok">${escapeHtml(`${t("common.state")}: ${detail?.session_state?.task_status || t("common.unknown")}`)}</span>`,
-    ])}
+    ], { showAutoRefresh: false })}
     ${UI_STATE.chatError ? `<section class="panel"><div class="empty">${escapeHtml(UI_STATE.chatError)}</div></section>` : ""}
     <section class="chat-shell">
       <aside class="panel chat-sidebar">
@@ -2002,8 +2160,14 @@ function renderChat(sessionsPayload, detail) {
           </div>
           <div class="pill-row">
             <span class="pill ok">${escapeHtml(`${t("common.message_count")}: ${transcript.length}`)}</span>
+            <span class="pill">${escapeHtml(`${t("common.session_revision")}: ${detail?.session_revision || session.session_revision || 0}`)}</span>
             ${selectedAssistant ? `<span class="pill">${escapeHtml(`${t("common.selected_turn")}: ${selectedAssistant.message_id}`)}</span>` : ""}
           </div>
+        </div>
+        <div class="button-row">
+          <button type="button" class="subtle-button" data-chat-copy-history ${transcript.length ? "" : "disabled"}>${escapeHtml(t("common.copy_history"))}</button>
+          <button type="button" class="subtle-button active" data-chat-apply-pending ${UI_STATE.chatPendingPayload ? "" : "hidden"}>${escapeHtml(UI_STATE.chatPendingLabel || t("common.apply_updates"))}</button>
+          <span class="pill ok" data-chat-copy-feedback ${UI_STATE.chatCopyFeedback ? "" : "hidden"}>${escapeHtml(UI_STATE.chatCopyFeedback || "")}</span>
         </div>
         <div class="chat-transcript">${transcriptHtml}</div>
         <div class="chat-composer">
@@ -2019,6 +2183,7 @@ function renderChat(sessionsPayload, detail) {
       ${debugCards}
     </section>
   `;
+  updateChatLiveIndicators();
 }
 
 async function ensureChatSession() {
@@ -2037,10 +2202,62 @@ async function ensureChatSession() {
   return sessionsPayload;
 }
 
-async function refreshChat() {
+async function fetchChatDetail({ afterRevision = null, waitTimeoutMs = null } = {}) {
+  const query = new URLSearchParams();
+  if (afterRevision !== null && afterRevision !== undefined) {
+    query.set("after_revision", String(afterRevision));
+  }
+  if (waitTimeoutMs !== null && waitTimeoutMs !== undefined) {
+    query.set("wait_timeout_ms", String(waitTimeoutMs));
+  }
+  const suffix = query.toString() ? `?${query.toString()}` : "";
+  return fetchJson(`/api/dashboard/chat/sessions/${encodeURIComponent(UI_STATE.chatSessionId)}${suffix}`);
+}
+
+async function refreshChat({ allowDefer = false } = {}) {
   const sessionsPayload = await ensureChatSession();
-  const detail = await fetchJson(`/api/dashboard/chat/sessions/${encodeURIComponent(UI_STATE.chatSessionId)}`);
-  renderChat(sessionsPayload, detail);
+  const detail = await fetchChatDetail();
+  UI_STATE.chatError = "";
+  applyChatSnapshot(sessionsPayload, detail, { allowDefer });
+}
+
+async function watchChatUpdates(generation) {
+  while (isChatView() && generation === UI_STATE.chatWatchGeneration) {
+    const sessionId = UI_STATE.chatSessionId;
+    const afterRevision = UI_STATE.chatCurrentRevision || 0;
+    if (!sessionId) {
+      await delay(250);
+      continue;
+    }
+    try {
+      const detail = await fetchChatDetail({
+        afterRevision,
+        waitTimeoutMs: CHAT_WAIT_TIMEOUT_MS,
+      });
+      if (generation !== UI_STATE.chatWatchGeneration || sessionId !== UI_STATE.chatSessionId) {
+        continue;
+      }
+      const hadError = Boolean(UI_STATE.chatError);
+      UI_STATE.chatError = "";
+      if (detail?.has_update && Number(detail?.session_revision || 0) !== Number(afterRevision || 0)) {
+        const sessionsPayload = await ensureChatSession();
+        applyChatSnapshot(sessionsPayload, detail, { allowDefer: true });
+      } else if (hadError) {
+        renderChatFromState();
+      }
+    } catch (error) {
+      if (generation !== UI_STATE.chatWatchGeneration) break;
+      UI_STATE.chatError = error.message;
+      updateChatLiveIndicators();
+      await delay(1500);
+    }
+  }
+}
+
+function restartChatWatchLoop() {
+  if (!isChatView()) return;
+  UI_STATE.chatWatchGeneration += 1;
+  watchChatUpdates(UI_STATE.chatWatchGeneration).catch(() => {});
 }
 
 async function createChatSessionFromDraft() {
@@ -2055,11 +2272,13 @@ async function createChatSessionFromDraft() {
     UI_STATE.chatSessionNameDraft = "";
     UI_STATE.chatSelectedMessageId = null;
     await refreshChat();
+    restartChatWatchLoop();
   } catch (error) {
     UI_STATE.chatError = error.message;
     await refreshChat();
   } finally {
     UI_STATE.chatBusy = false;
+    renderChatFromState();
   }
 }
 
@@ -2074,13 +2293,16 @@ async function sendChatDraft() {
       body: JSON.stringify({ text }),
     });
     UI_STATE.chatDraft = "";
+    UI_STATE.chatDraftFocused = false;
     UI_STATE.chatSelectedMessageId = payload?.messages?.assistant?.message_id || UI_STATE.chatSelectedMessageId;
     await refreshChat();
+    restartChatWatchLoop();
   } catch (error) {
     UI_STATE.chatError = error.message;
     await refreshChat();
   } finally {
     UI_STATE.chatBusy = false;
+    renderChatFromState();
   }
 }
 
@@ -2129,13 +2351,29 @@ document.addEventListener("click", (event) => {
     UI_STATE.chatSessionId = sessionButton.dataset.chatSessionId;
     UI_STATE.chatSelectedMessageId = null;
     UI_STATE.chatError = "";
-    refresh().catch(() => {});
+    clearChatPendingPayload();
+    refresh()
+      .then(() => restartChatWatchLoop())
+      .catch(() => {});
     return;
   }
   const chatMessageButton = event.target.closest("[data-chat-message-id]");
   if (chatMessageButton) {
     UI_STATE.chatSelectedMessageId = chatMessageButton.dataset.chatMessageId;
-    refresh().catch(() => {});
+    renderChatFromState();
+    return;
+  }
+  const applyPendingButton = event.target.closest("[data-chat-apply-pending]");
+  if (applyPendingButton) {
+    applyPendingChatUpdate().catch(() => {});
+    return;
+  }
+  const copyHistoryButton = event.target.closest("[data-chat-copy-history]");
+  if (copyHistoryButton) {
+    const text = buildChatHistoryText(UI_STATE.chatDetail);
+    copyText(text)
+      .then(() => setChatCopyFeedback(t("common.copied")))
+      .catch(() => setChatCopyFeedback(t("common.copy_failed")));
     return;
   }
   const chatCreateButton = event.target.closest("[data-chat-create]");
@@ -2166,9 +2404,27 @@ document.addEventListener("click", (event) => {
 document.addEventListener("input", (event) => {
   if (event.target.id === "chat-draft") {
     UI_STATE.chatDraft = event.target.value;
+    if (!shouldDeferChatHydration() && UI_STATE.chatPendingPayload) {
+      applyPendingChatUpdate().catch(() => {});
+    }
   }
   if (event.target.id === "chat-session-name") {
     UI_STATE.chatSessionNameDraft = event.target.value;
+  }
+});
+
+document.addEventListener("focusin", (event) => {
+  if (event.target.id === "chat-draft") {
+    UI_STATE.chatDraftFocused = true;
+  }
+});
+
+document.addEventListener("focusout", (event) => {
+  if (event.target.id === "chat-draft") {
+    UI_STATE.chatDraftFocused = false;
+    if (!shouldDeferChatHydration() && UI_STATE.chatPendingPayload) {
+      applyPendingChatUpdate().catch(() => {});
+    }
   }
 });
 
@@ -2194,7 +2450,11 @@ async function start() {
   }
   try {
     await refresh();
-    setInterval(refresh, POLL_MS);
+    if (isChatView()) {
+      restartChatWatchLoop();
+    } else {
+      setInterval(refresh, POLL_MS);
+    }
   } catch (error) {
     app.innerHTML = `<section class="panel"><div class="empty">Dashboard load failed: ${escapeHtml(error.message)}</div></section>`;
   }

@@ -1142,6 +1142,7 @@ class DashboardRequestHandler(BaseHTTPRequestHandler):
             return
 
         try:
+            query = parse_qs(parsed.query)
             if parsed.path == "/api/dashboard/chat/sessions":
                 if method == "GET":
                     self._send_json(service.list_sessions())
@@ -1173,7 +1174,15 @@ class DashboardRequestHandler(BaseHTTPRequestHandler):
                     self._send_json_error(HTTPStatus.METHOD_NOT_ALLOWED, "method_not_allowed")
                     return
                 session_id = unquote(parsed.path.rsplit("/", 1)[-1])
-                self._send_json(service.get_session_payload(session_id))
+                after_revision = self._parse_optional_int(query.get("after_revision", [None])[0], field_name="after_revision")
+                wait_timeout_ms = self._parse_optional_int(query.get("wait_timeout_ms", [None])[0], field_name="wait_timeout_ms")
+                self._send_json(
+                    service.get_session_payload(
+                        session_id,
+                        after_revision=after_revision,
+                        wait_timeout_ms=wait_timeout_ms,
+                    )
+                )
                 return
         except DashboardChatError as exc:
             self._send_json_error(
@@ -1213,6 +1222,14 @@ class DashboardRequestHandler(BaseHTTPRequestHandler):
         if not isinstance(payload, dict):
             raise ValueError("JSON body must be an object.")
         return payload
+
+    def _parse_optional_int(self, raw_value: Optional[str], *, field_name: str) -> Optional[int]:
+        if raw_value in (None, ""):
+            return None
+        try:
+            return int(str(raw_value))
+        except (TypeError, ValueError) as exc:
+            raise ValueError(f"{field_name} must be an integer.") from exc
 
     def _serve_static(self, static_path: str) -> None:
         target = STATIC_DIR / static_path.lstrip("/")

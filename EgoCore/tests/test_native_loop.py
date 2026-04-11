@@ -38,6 +38,17 @@ class FakeLLMClient:
             raw_response={},
         )
 
+    def generate_with_messages(self, messages, **kwargs):
+        tool_message = next(m for m in messages if m.get("role") == "tool")
+        assert json.loads(tool_message["content"])["success"] is True
+        return LLMResponse(
+            content="已检查完成。",
+            model="fake",
+            provider="fake",
+            finish_reason="stop",
+            raw_response={},
+        )
+
 
 @pytest.mark.asyncio
 async def test_native_loop_runs_tool_call_and_returns_reply(monkeypatch):
@@ -63,14 +74,14 @@ def test_native_loop_default_client_uses_execution_use_case(monkeypatch):
     class DummyConfig:
         llm = {
             "default_provider": "openrouter",
-            "default_model": "stepfun/step-3.5-flash:free",
+            "default_model": "stepfun/step-3.5-flash",
         }
 
         def get_llm_config_for_use_case(self, use_case):
             assert use_case == "execution"
             return {
                 "provider": "openrouter",
-                "model": "stepfun/step-3.5-flash:free",
+                "model": "stepfun/step-3.5-flash",
             }
 
     monkeypatch.setattr("app.agent_core.native_loop.get_config", lambda: DummyConfig())
@@ -79,4 +90,4 @@ def test_native_loop_default_client_uses_execution_use_case(monkeypatch):
 
     loop = NativeToolCallingLoop()
 
-    assert loop.llm_client == ("openrouter", "stepfun/step-3.5-flash:free")
+    assert loop.llm_client == ("openrouter", "stepfun/step-3.5-flash")

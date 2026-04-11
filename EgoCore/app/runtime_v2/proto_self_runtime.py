@@ -89,6 +89,9 @@ from .state import RuntimeV2State
 
 logger = logging.getLogger(__name__)
 ENABLE_MVP12_SANDBOX = os.environ.get("EGO_ENABLE_MVP12_SANDBOX", "false").lower() == "true"
+H1_CANONICAL_SHADOW_ENV = "EGO_ENABLE_H1_CANONICAL_SHADOW"
+H1_CANONICAL_SHADOW_ALLOWLIST_ENV = "EGO_H1_CANONICAL_SHADOW_ALLOWLIST"
+H1_CANONICAL_SHADOW_RUNTIME_FIELD = "h1_canonical_shadow"
 DEFAULT_SELF_MODEL_IDENTITY_HANDLE = "openemotion"
 DEFAULT_ENDOGENOUS_DRIVE_IDENTITY_HANDLE = "openemotion"
 DEFAULT_REFLECTIVE_SELF_IDENTITY_HANDLE = "openemotion"
@@ -121,12 +124,29 @@ def _resolved_target(state: RuntimeV2State) -> Dict[str, Any]:
     return dict(((state.ingress_context or {}).get("resolved_target") or {}))
 
 
+def _proto_self_state_scope_context(state: RuntimeV2State) -> Dict[str, Any]:
+    ingress_context = state.ingress_context or {}
+    state_scope = str(
+        ingress_context.get("proto_self_state_scope")
+        or ingress_context.get("state_scope")
+        or "agent_global"
+    ).strip() or "agent_global"
+    experiment_id = str(
+        ingress_context.get("proto_self_experiment_id")
+        or ingress_context.get("experiment_id")
+        or ""
+    ).strip() or None
+    context = {"state_scope": state_scope}
+    if state_scope == "experiment" and experiment_id:
+        context["experiment_id"] = experiment_id
+    return context
+
+
 def _seed_runtime_summary(state: RuntimeV2State) -> Dict[str, Any]:
     ingress_context = state.ingress_context or {}
     resolved_target = _resolved_target(state)
-    return {
+    summary = {
         "runtime": "runtime_v2",
-        "state_scope": "agent_global",
         "runtime_action": ingress_context.get("runtime_action"),
         "request_mode": ingress_context.get("request_mode"),
         "interaction_kind": ingress_context.get("interaction_kind"),
@@ -150,6 +170,93 @@ def _seed_runtime_summary(state: RuntimeV2State) -> Dict[str, Any]:
         "resource_budget_hint": _build_resource_budget_hint(state),
         "maintenance_context": _build_maintenance_context(state),
     }
+    summary.update(_proto_self_state_scope_context(state))
+    return _inject_h1_canonical_shadow_context(summary, state=state)
+
+
+def _h1_canonical_shadow_enabled() -> bool:
+    return os.environ.get(H1_CANONICAL_SHADOW_ENV, "false").strip().lower() == "true"
+
+
+def _parse_h1_canonical_shadow_allowlist() -> set[str]:
+    raw = os.environ.get(H1_CANONICAL_SHADOW_ALLOWLIST_ENV, "")
+    return {item.strip() for item in raw.split(",") if item.strip()}
+
+
+def _is_h1_canonical_shadow_allowlisted(state: RuntimeV2State) -> bool:
+    allowlist = _parse_h1_canonical_shadow_allowlist()
+    if not allowlist:
+        return True
+    ingress_context = state.ingress_context or {}
+    candidates = {
+        str(getattr(state, "session_id", "") or ""),
+        str(getattr(state, "active_turn_id", "") or ""),
+        str(ingress_context.get("capture_id") or ""),
+        str(ingress_context.get("observation_source") or ""),
+    }
+    return "*" in allowlist or bool(allowlist & {item for item in candidates if item})
+
+
+def _inject_h1_canonical_shadow_context(
+    runtime_summary: Dict[str, Any],
+    *,
+    state: RuntimeV2State,
+) -> Dict[str, Any]:
+    if not _h1_canonical_shadow_enabled():
+        return runtime_summary
+    updated = dict(runtime_summary or {})
+    allowlisted = _is_h1_canonical_shadow_allowlisted(state)
+    updated[H1_CANONICAL_SHADOW_RUNTIME_FIELD] = {
+        "enabled": allowlisted,
+        "shadow_only": True,
+        "allowlisted": allowlisted,
+        "source": "canonical_shadow",
+        "rollout_owner": "egocore.runtime_v2",
+    }
+    return updated
+
+
+def _extract_shadow_h1_telemetry(proto_self_result: Dict[str, Any]) -> Optional[Dict[str, Any]]:
+    trace_payload = dict(proto_self_result.get("trace_payload") or {})
+    legacy_trace_payload = dict(trace_payload.get("legacy_trace_payload") or {})
+    raw = trace_payload.get("shadow_h1") or legacy_trace_payload.get("shadow_h1")
+    if not isinstance(raw, dict) or not raw:
+        confidence_meta = dict(proto_self_result.get("confidence_meta") or {})
+        if not confidence_meta.get("shadow_h1_enabled"):
+            return None
+        raw = {
+            "enabled": True,
+            "action_key": confidence_meta.get("shadow_h1_action_key"),
+            "predicted_success": confidence_meta.get("shadow_h1_predicted_success"),
+            "threshold": confidence_meta.get("shadow_h1_threshold"),
+            "would_guard": confidence_meta.get("shadow_h1_would_guard"),
+            "would_ask": confidence_meta.get("shadow_h1_would_ask"),
+            "source": "canonical_shadow",
+        }
+    return {
+        "enabled": bool(raw.get("enabled")),
+        "action_key": str(raw.get("action_key") or ""),
+        "predicted_success": float(raw.get("predicted_success") or 0.0),
+        "threshold": float(raw.get("threshold") or 0.0),
+        "would_guard": bool(raw.get("would_guard")),
+        "would_ask": bool(raw.get("would_ask")),
+        "source": str(raw.get("source") or "canonical_shadow"),
+    }
+
+
+def _update_shadow_h1_proto_self_context(
+    state: RuntimeV2State,
+    proto_self_result: Dict[str, Any],
+    *,
+    preserve_existing: bool = False,
+) -> None:
+    if state.proto_self_context is None:
+        state.proto_self_context = {}
+    shadow_h1 = _extract_shadow_h1_telemetry(proto_self_result)
+    if shadow_h1 is not None:
+        state.proto_self_context["shadow_h1"] = shadow_h1
+    elif not preserve_existing:
+        state.proto_self_context.pop("shadow_h1", None)
 
 
 def _resolve_self_model_identity_handle(state: RuntimeV2State) -> str:
@@ -1074,7 +1181,7 @@ def build_proto_self_ingress_event(
         runtime_summary = _inject_self_model_context(
             {
                 "runtime": "runtime_v2",
-                "state_scope": "agent_global",
+                **_proto_self_state_scope_context(state),
                 "restore_observation": restore_observation,
             },
             state=state,
@@ -1132,6 +1239,7 @@ def build_proto_self_ingress_event(
         runtime_summary = _inject_environment_context(runtime_summary, state=state)
         runtime_summary = _inject_initiative_context(runtime_summary, state=state)
         runtime_summary = _inject_host_proactive_context(runtime_summary, state=state)
+        runtime_summary = _inject_h1_canonical_shadow_context(runtime_summary, state=state)
         payload = {
             "schema_version": schema_version,
             "event_id": f"{session_id}_{turn_id}",
@@ -1178,6 +1286,14 @@ def build_proto_self_ingress_event(
                 safety_context={"risk_level": risk_level, "blocked": False},
             )
         return payload
+    runtime_summary = _inject_h1_canonical_shadow_context(
+        {
+            "runtime": "runtime_v2",
+            **_proto_self_state_scope_context(state),
+            "restore_observation": restore_observation,
+        },
+        state=state,
+    )
     return {
         "event_id": f"{session_id}_{turn_id}",
         "timestamp": datetime.now().isoformat(),
@@ -1195,11 +1311,7 @@ def build_proto_self_ingress_event(
             "pending_tasks": 1 if state.current_goal else 0,
             "blocked_tasks": 0,
         },
-        "runtime_summary": {
-            "runtime": "runtime_v2",
-            "state_scope": "agent_global",
-            "restore_observation": restore_observation,
-        },
+        "runtime_summary": runtime_summary,
         "safety_context": {
             "risk_level": risk_level,
         },
@@ -1251,7 +1363,7 @@ def build_external_result_event(
             "runtime_summary": _inject_self_model_context(
                 {
                     "runtime": "runtime_v2",
-                    "state_scope": "agent_global",
+                    **_proto_self_state_scope_context(state),
                 },
                 state=state,
                 self_model_store=self_model_store,
@@ -1330,6 +1442,10 @@ def build_external_result_event(
             payload["runtime_summary"],
             state=state,
         )
+        payload["runtime_summary"] = _inject_h1_canonical_shadow_context(
+            payload["runtime_summary"],
+            state=state,
+        )
         payload["subject_profile"] = subject_profile
         if subject_profile == SEED_SUBJECT_PROFILE:
             payload["seed_event"] = _build_seed_event(
@@ -1353,6 +1469,13 @@ def build_external_result_event(
                 },
             )
         return payload
+    runtime_summary = _inject_h1_canonical_shadow_context(
+        {
+            "runtime": "runtime_v2",
+            **_proto_self_state_scope_context(state),
+        },
+        state=state,
+    )
     return {
         "event_id": f"{session_id}_{turn_id}_tool_{step}",
         "timestamp": datetime.now().isoformat(),
@@ -1370,10 +1493,7 @@ def build_external_result_event(
             "pending_tasks": 1 if state.current_goal else 0,
             "blocked_tasks": 1 if failed else 0,
         },
-        "runtime_summary": {
-            "runtime": "runtime_v2",
-            "state_scope": "agent_global",
-        },
+        "runtime_summary": runtime_summary,
         "safety_context": {
             "risk_level": risk_level_from_external_result(failed=failed),
         },
@@ -1431,7 +1551,7 @@ def build_finalized_result_event(
         "runtime_summary": _inject_self_model_context(
             {
                 "runtime": "runtime_v2",
-                "state_scope": "agent_global",
+                **_proto_self_state_scope_context(state),
                 **_seed_runtime_summary(state),
             },
             state=state,
@@ -1508,6 +1628,10 @@ def build_finalized_result_event(
         payload["runtime_summary"],
         state=state,
     )
+    payload["runtime_summary"] = _inject_h1_canonical_shadow_context(
+        payload["runtime_summary"],
+        state=state,
+    )
     if subject_profile == SEED_SUBJECT_PROFILE:
         payload["seed_event"] = _build_seed_event(
             event_type="exec_result",
@@ -1577,7 +1701,7 @@ def build_idle_check_event(
         "runtime_summary": _inject_self_model_context(
             {
                 "runtime": "runtime_v2",
-                "state_scope": "agent_global",
+                **_proto_self_state_scope_context(state),
                 **_seed_runtime_summary(state),
             },
             state=state,
@@ -1651,6 +1775,10 @@ def build_idle_check_event(
         event["runtime_summary"],
         state=state,
     )
+    event["runtime_summary"] = _inject_h1_canonical_shadow_context(
+        event["runtime_summary"],
+        state=state,
+    )
     return event
 
 
@@ -1687,7 +1815,7 @@ def build_developmental_tick_event(
     runtime_summary = _inject_self_model_context(
         {
             "runtime": "runtime_v2",
-            "state_scope": "agent_global",
+            **_proto_self_state_scope_context(state),
             **_seed_runtime_summary(state),
             "developmental_mode": "shadow_observe",
             "observation_source": observation_source,
@@ -1746,6 +1874,7 @@ def build_developmental_tick_event(
     runtime_summary = _inject_environment_context(runtime_summary, state=state)
     runtime_summary = _inject_initiative_context(runtime_summary, state=state)
     runtime_summary = _inject_host_proactive_context(runtime_summary, state=state)
+    runtime_summary = _inject_h1_canonical_shadow_context(runtime_summary, state=state)
     if replay_seed is not None:
         runtime_summary["replay_seed"] = replay_seed
     return {
@@ -4007,6 +4136,7 @@ class RuntimeV2ProtoSelfRuntime:
             collector=collector,
             bridge_stage="ingress_kernel_trace",
         )
+        shadow_h1 = _extract_shadow_h1_telemetry(proto_self_result)
         state.proto_self_context = {
             "subject_profile": proto_self_result.get("subject_profile"),
             "policy_hint": proto_self_result.get("policy_hint"),
@@ -4099,6 +4229,8 @@ class RuntimeV2ProtoSelfRuntime:
             ),
             "initiative_realization_writeback": initiative_realization_writeback,
         }
+        if shadow_h1 is not None:
+            state.proto_self_context["shadow_h1"] = shadow_h1
         state.record(
             "proto_self",
             {
@@ -4333,6 +4465,7 @@ class RuntimeV2ProtoSelfRuntime:
         if external_result.get("policy_hint"):
             state.proto_self_context["policy_hint"] = external_result.get("policy_hint")
             state.proto_self_context["governor_hint"] = external_result.get("policy_hint", {}).get("governor_hint")
+        _update_shadow_h1_proto_self_context(state, external_result, preserve_existing=False)
         if external_result.get("reflection_note"):
             state.record(
                 "proto_self_reflection",
@@ -4541,6 +4674,7 @@ class RuntimeV2ProtoSelfRuntime:
         if finalized_result.get("policy_hint"):
             state.proto_self_context["policy_hint"] = finalized_result.get("policy_hint")
             state.proto_self_context["governor_hint"] = finalized_result.get("policy_hint", {}).get("governor_hint")
+        _update_shadow_h1_proto_self_context(state, finalized_result, preserve_existing=True)
 
     def process_idle_check(
         self,
@@ -4728,6 +4862,7 @@ class RuntimeV2ProtoSelfRuntime:
         if idle_result.get("policy_hint"):
             state.proto_self_context["policy_hint"] = idle_result.get("policy_hint")
             state.proto_self_context["governor_hint"] = idle_result.get("policy_hint", {}).get("governor_hint")
+        _update_shadow_h1_proto_self_context(state, idle_result, preserve_existing=False)
 
     def process_developmental_tick(
         self,

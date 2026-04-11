@@ -67,7 +67,7 @@ def test_qianfan_client_chat_with_tools_parses_tool_calls(monkeypatch):
 
 def test_openrouter_client_uses_openai_compatible_endpoint(monkeypatch):
     payload = {
-        "model": "qwen/qwen3.6-plus:free",
+        "model": "qwen/qwen3.6-plus",
         "choices": [
             {
                 "finish_reason": "stop",
@@ -89,7 +89,7 @@ def test_openrouter_client_uses_openai_compatible_endpoint(monkeypatch):
 
     monkeypatch.setattr("app.llm_client.httpx.Client", lambda timeout=60: _RecordingHTTPClient(payload))
 
-    client = OpenRouterClient(api_key="test-openrouter", model="qwen/qwen3.6-plus:free")
+    client = OpenRouterClient(api_key="test-openrouter", model="qwen/qwen3.6-plus")
     response = client.generate_with_messages([{"role": "user", "content": "hi"}])
 
     assert calls["url"] == "https://openrouter.ai/api/v1/chat/completions"

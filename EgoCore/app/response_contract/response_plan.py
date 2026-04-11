@@ -216,6 +216,10 @@ def build_runtime_result_response_plan(result: Any, state: Any) -> ResponsePlan:
         metadata["chat_expression_hint"] = dict(reply_metadata.get("chat_expression_hint") or {})
     if "response_tendency_summary" in reply_metadata:
         metadata["response_tendency_summary"] = dict(reply_metadata.get("response_tendency_summary") or {})
+    if "chat_degradation" in reply_metadata:
+        metadata["chat_degradation"] = dict(reply_metadata.get("chat_degradation") or {})
+    if "degraded" in reply_metadata:
+        metadata["degraded"] = bool(reply_metadata.get("degraded"))
     _apply_continuation_metadata(metadata, state)
     _apply_final_text_metadata(metadata, gated_reply_text)
     intent_contract_source = _build_intent_contract_source(

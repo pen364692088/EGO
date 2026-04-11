@@ -505,6 +505,7 @@ def test_dashboard_server_exposes_chat_tab_and_local_chat_api(tmp_path: Path) ->
     class _FakeChatService:
         def __init__(self) -> None:
             self.session_id = "dashboard:test:default"
+            self.session_revision = 4
             self.detail = {
                 "session": {
                     "session_id": self.session_id,
@@ -515,6 +516,8 @@ def test_dashboard_server_exposes_chat_tab_and_local_chat_api(tmp_path: Path) ->
                     "updated_at": "2026-04-10T12:01:00+00:00",
                     "task_status": "chat",
                     "waiting_for_user_input": False,
+                    "session_revision": self.session_revision,
+                    "last_message_id": "msg_00002",
                 },
                 "transcript": [
                     {
@@ -536,7 +539,17 @@ def test_dashboard_server_exposes_chat_tab_and_local_chat_api(tmp_path: Path) ->
                 ],
                 "last_debug": {"trace_id": "trace-smoke", "delivery": {"text_preview": "world"}},
                 "debug_history": {"msg_00002": {"trace_id": "trace-smoke", "delivery": {"text_preview": "world"}}},
-                "session_state": {"task_status": "chat", "waiting_for_user_input": False},
+                "session_state": {
+                    "task_status": "chat",
+                    "waiting_for_user_input": False,
+                    "proto_self_scope": {
+                        "state_scope": "experiment",
+                        "experiment_id": "dashboard_local:test:default",
+                        "owner": "dashboard_local",
+                    },
+                },
+                "session_revision": self.session_revision,
+                "has_update": True,
             }
 
         def list_sessions(self):
@@ -552,6 +565,8 @@ def test_dashboard_server_exposes_chat_tab_and_local_chat_api(tmp_path: Path) ->
                         "updated_at": "2026-04-10T12:01:00+00:00",
                         "task_status": "chat",
                         "waiting_for_user_input": False,
+                        "session_revision": self.session_revision,
+                        "last_message_id": "msg_00002",
                     }
                 ],
             }
@@ -561,22 +576,32 @@ def test_dashboard_server_exposes_chat_tab_and_local_chat_api(tmp_path: Path) ->
                 "session": {
                     "session_id": self.session_id,
                     "session_name": name or "default",
+                    "session_revision": self.session_revision,
                 },
                 "session_state": {"task_status": "idle"},
+                "session_revision": self.session_revision,
             }
 
-        def get_session_payload(self, session_id):
+        def get_session_payload(self, session_id, *, after_revision=None, wait_timeout_ms=None):
             if session_id != self.session_id:
                 raise DashboardChatNotFoundError("unknown session")
-            return self.detail
+            payload = dict(self.detail)
+            payload["has_update"] = after_revision is None or int(after_revision) < self.session_revision
+            payload["wait_timeout_ms"] = wait_timeout_ms
+            return payload
 
         def send_message(self, session_id, text):
             if session_id != self.session_id:
                 raise DashboardChatNotFoundError("unknown session")
             if not str(text or "").strip():
                 raise DashboardChatValidationError("empty text")
+            self.session_revision += 1
             return {
-                "session": self.detail["session"],
+                "session": {
+                    **self.detail["session"],
+                    "session_revision": self.session_revision,
+                    "last_message_id": "msg_00004",
+                },
                 "messages": {
                     "user": {
                         "message_id": "msg_00003",
@@ -600,7 +625,17 @@ def test_dashboard_server_exposes_chat_tab_and_local_chat_api(tmp_path: Path) ->
                     "output_check": {"passed": True},
                     "delivery": {"text_preview": "echo:" + text},
                 },
-                "session_state": {"task_status": "chat", "waiting_for_user_input": False},
+                "session_state": {
+                    "task_status": "chat",
+                    "waiting_for_user_input": False,
+                    "proto_self_scope": {
+                        "state_scope": "experiment",
+                        "experiment_id": "dashboard_local:test:default",
+                        "owner": "dashboard_local",
+                    },
+                },
+                "session_revision": self.session_revision,
+                "has_update": True,
             }
 
     real_dir = tmp_path / "artifacts" / "telegram_real_mainline_v1" / "real_telegram"
@@ -650,6 +685,11 @@ def test_dashboard_server_exposes_chat_tab_and_local_chat_api(tmp_path: Path) ->
         detail = json.loads(
             urlopen(f"{base}/api/dashboard/chat/sessions/dashboard%3Atest%3Adefault").read().decode("utf-8")
         )
+        waited = json.loads(
+            urlopen(
+                f"{base}/api/dashboard/chat/sessions/dashboard%3Atest%3Adefault?after_revision=4&wait_timeout_ms=50"
+            ).read().decode("utf-8")
+        )
         message = json.loads(
             urlopen(
                 Request(
@@ -682,7 +722,11 @@ def test_dashboard_server_exposes_chat_tab_and_local_chat_api(tmp_path: Path) ->
     assert sessions["default_session_id"] == "dashboard:test:default"
     assert created["session"]["session_name"] == "smoke"
     assert detail["session"]["session_id"] == "dashboard:test:default"
+    assert detail["session_revision"] == 4
     assert detail["debug_history"]["msg_00002"]["trace_id"] == "trace-smoke"
+    assert waited["has_update"] is False
+    assert waited["wait_timeout_ms"] == 50
     assert message["messages"]["assistant"]["text"] == "echo:ping"
+    assert message["session_revision"] == 5
     assert message["debug"]["subject_gate"]["ingress"]["ok"] is True
     assert empty_status == 400

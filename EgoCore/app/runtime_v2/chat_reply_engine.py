@@ -90,8 +90,10 @@ class ChatReplyEngine:
             if not reply_text:
                 raise RuntimeError("empty_chat_reply")
             reply_authority = "model_chat"
+            chat_degradation = None
         except Exception as exc:
             logger.warning("runtime_v2.chat_mainline.degraded err=%s", exc)
+            chat_degradation = _build_chat_degradation_details(exc)
             reply_text = _build_degraded_chat_reply(
                 state,
                 chat_act=chat_act,
@@ -110,6 +112,9 @@ class ChatReplyEngine:
             "chat_cadence_mode": chat_cadence_mode,
             "response_tendency_summary": response_tendency_summary,
         }
+        if chat_degradation is not None:
+            state.last_model_action["degraded"] = True
+            state.last_model_action["chat_degradation"] = chat_degradation
         state.record(
             "assistant",
             {
@@ -121,9 +126,22 @@ class ChatReplyEngine:
                 "chat_expression_hint": chat_expression_hint,
                 "chat_cadence_mode": chat_cadence_mode,
                 "response_tendency_summary": response_tendency_summary,
+                "degraded": chat_degradation is not None,
+                "chat_degradation": chat_degradation,
             },
         )
         state.last_delivery_type = "chat"
+        reply_metadata = {
+            "chat_act": chat_act,
+            "reply_origin": "chat_mainline",
+            "reply_authority": reply_authority,
+            "chat_expression_hint": chat_expression_hint,
+            "chat_cadence_mode": chat_cadence_mode,
+            "response_tendency_summary": response_tendency_summary,
+            "degraded": chat_degradation is not None,
+        }
+        if chat_degradation is not None:
+            reply_metadata["chat_degradation"] = chat_degradation
         return RuntimeV2TurnResult(
             status="chat",
             state=state,
@@ -131,14 +149,7 @@ class ChatReplyEngine:
                 reply_text=reply_text,
                 delivery_kind="chat",
                 status="chat",
-                metadata={
-                    "chat_act": chat_act,
-                    "reply_origin": "chat_mainline",
-                    "reply_authority": reply_authority,
-                    "chat_expression_hint": chat_expression_hint,
-                    "chat_cadence_mode": chat_cadence_mode,
-                    "response_tendency_summary": response_tendency_summary,
-                },
+                metadata=reply_metadata,
             ),
             finish_reason="chat_mainline",
         )
@@ -370,6 +381,7 @@ class ChatReplyEngine:
                 )
             except Exception as exc:
                 last_error = exc
+                _annotate_chat_generation_error(exc, provider=provider, model=model)
                 is_primary = index == 0
                 if is_primary:
                     primary_error = exc
@@ -845,9 +857,35 @@ def _classify_chat_generation_error(error: Exception) -> str:
         status_code = getattr(getattr(error, "response", None), "status_code", None)
         if status_code == 429:
             return "provider_rate_limited"
+        if status_code in {401, 403}:
+            return "provider_auth_failed"
+        if status_code == 404:
+            return "provider_model_not_found"
     if isinstance(error, (httpx.TimeoutException, TimeoutError)):
         return "provider_timeout"
     return "generation_failed"
+
+
+def _annotate_chat_generation_error(error: Exception, *, provider: str, model: str) -> None:
+    try:
+        setattr(error, "_ego_provider", str(provider or "unknown"))
+        setattr(error, "_ego_model", str(model or "unknown"))
+        if isinstance(error, httpx.HTTPStatusError):
+            status_code = getattr(getattr(error, "response", None), "status_code", None)
+            setattr(error, "_ego_http_status", status_code)
+        setattr(error, "_ego_error_kind", _classify_chat_generation_error(error))
+    except Exception:
+        return
+
+
+def _build_chat_degradation_details(error: Exception) -> Dict[str, Any]:
+    return {
+        "degraded": True,
+        "error_kind": str(getattr(error, "_ego_error_kind", None) or _classify_chat_generation_error(error)),
+        "provider": str(getattr(error, "_ego_provider", None) or "unknown"),
+        "model": str(getattr(error, "_ego_model", None) or "unknown"),
+        "http_status": getattr(error, "_ego_http_status", None),
+    }
 
 
 def _build_degraded_chat_reply(
@@ -863,19 +901,31 @@ def _build_degraded_chat_reply(
         base = _build_recent_result_followup_reply(recent_result_followup)
         if error_kind == "provider_rate_limited":
             return base + " 刚才聊天生成被限流了，但这不影响我继续基于这份结果往下看。"
+        if error_kind == "provider_model_not_found":
+            return base + " 刚才聊天模型不可用，但这不影响我继续基于这份结果往下看。"
         return base
     if _looks_like_fault_question(user_text):
         if error_kind == "provider_rate_limited":
             return "刚才是聊天提供方触发了限流（429），所以这几轮走了降级回复。你可以继续说，或者等几秒再发。"
+        if error_kind == "provider_model_not_found":
+            return "刚才 dashboard chat 配置的聊天模型不可用（404），所以这轮走了降级回复。你可以继续说。"
+        if error_kind == "provider_auth_failed":
+            return "刚才聊天提供方鉴权失败了，所以这轮走了降级回复。你可以继续说。"
         if error_kind == "provider_timeout":
             return "刚才聊天生成超时了，所以这轮走了降级回复。你可以继续说。"
         return "刚才聊天生成出了故障，所以这轮走了降级回复。你可以继续说。"
     if chat_act == "presence_check":
         if error_kind == "provider_rate_limited":
             return "我在。刚才聊天提供方限流了，但你可以继续说。"
+        if error_kind == "provider_model_not_found":
+            return "我在。刚才 dashboard chat 的聊天模型不可用，但你可以继续说。"
         return "我在。你继续说。"
     if error_kind == "provider_rate_limited":
         return "刚才聊天提供方限流了（429），这轮先走降级回复。你可以继续说，或者等几秒再发。"
+    if error_kind == "provider_model_not_found":
+        return "刚才 dashboard chat 配置的聊天模型不可用（404），这轮先走降级回复。你可以继续说。"
+    if error_kind == "provider_auth_failed":
+        return "刚才聊天提供方鉴权失败了，这轮先走降级回复。你可以继续说。"
     if error_kind == "provider_timeout":
         return "刚才聊天生成超时了，这轮先走降级回复。你可以继续说。"
     return "我在。刚才聊天生成出了点问题，你可以继续说。"
