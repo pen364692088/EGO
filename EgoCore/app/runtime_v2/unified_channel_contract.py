@@ -83,6 +83,273 @@ class UnifiedEgressEnvelope:
     metadata: Dict[str, Any] = field(default_factory=dict)
 
 
+HOST_CONTRACT_SNAPSHOT_VERSION = "unified_host_contract.v1"
+
+
+def _trim_contract_text(value: Any, *, limit: int = 280) -> Optional[str]:
+    text = str(value or "").strip()
+    if not text:
+        return None
+    if len(text) <= limit:
+        return text
+    return f"{text[:limit]}..."
+
+
+def _compact_response_plan_metadata_for_contract(metadata: Optional[dict]) -> Dict[str, Any]:
+    source = dict(metadata or {})
+    compact: Dict[str, Any] = {}
+    if source.get("conversation_act"):
+        compact["conversation_act"] = source.get("conversation_act")
+    if source.get("matched_rule_ids"):
+        compact["matched_rule_ids"] = list(source.get("matched_rule_ids") or [])
+    if source.get("enforcement") is not None:
+        compact["enforcement"] = source.get("enforcement")
+    if source.get("rule_enforcement") is not None:
+        compact["rule_enforcement"] = dict(source.get("rule_enforcement") or {})
+    if source.get("recent_result_binding") is not None:
+        compact["recent_result_binding"] = bool(source.get("recent_result_binding"))
+    if source.get("correction_context") is not None:
+        compact["correction_context"] = bool(source.get("correction_context"))
+    if source.get("pending_result_continuation"):
+        compact["pending_result_continuation"] = dict(source.get("pending_result_continuation") or {})
+    if source.get("chat_expression_hint"):
+        compact["chat_expression_hint"] = dict(source.get("chat_expression_hint") or {})
+    if source.get("response_tendency_summary"):
+        compact["response_tendency_summary"] = dict(source.get("response_tendency_summary") or {})
+    if source.get("chat_degradation"):
+        compact["chat_degradation"] = dict(source.get("chat_degradation") or {})
+    return compact
+
+
+def _compact_ingress_context_for_contract(ingress_context: Optional[Dict[str, Any]]) -> Dict[str, Any]:
+    source = dict(ingress_context or {})
+    return {
+        "runtime_action": source.get("runtime_action"),
+        "request_mode": source.get("request_mode"),
+        "interaction_kind": source.get("interaction_kind"),
+        "conversation_act": source.get("conversation_act"),
+        "parser_source": source.get("parser_source"),
+        "primary_intent": source.get("primary_intent"),
+        "recent_result_binding": bool(source.get("recent_result_binding")),
+        "correction_context": bool(source.get("correction_context")),
+        "resolved_target": dict(source.get("resolved_target") or {}),
+        "requested_output": dict(source.get("requested_output") or {}),
+    }
+
+
+def _extract_trace_reference(
+    proto_self_context: Optional[Dict[str, Any]],
+    openemotion_result: Optional[Dict[str, Any]],
+) -> Optional[str]:
+    candidates = [dict(openemotion_result or {})]
+    source = dict(proto_self_context or {})
+    if isinstance(source.get("finalized_result"), dict):
+        candidates.append(dict(source.get("finalized_result") or {}))
+    if isinstance(source.get("external_result"), dict):
+        candidates.append(dict(source.get("external_result") or {}))
+    for candidate in candidates:
+        trace_payload = dict(candidate.get("trace_payload") or {})
+        reference = str(trace_payload.get("update_packet_hash") or "").strip()
+        if reference:
+            return reference
+    return None
+
+
+def _trace_payload_present(
+    proto_self_context: Optional[Dict[str, Any]],
+    openemotion_result: Optional[Dict[str, Any]],
+) -> bool:
+    source = dict(proto_self_context or {})
+    candidates = [dict(openemotion_result or {})]
+    if isinstance(source.get("finalized_result"), dict):
+        candidates.append(dict(source.get("finalized_result") or {}))
+    if isinstance(source.get("external_result"), dict):
+        candidates.append(dict(source.get("external_result") or {}))
+    for candidate in candidates:
+        if isinstance(candidate.get("trace_payload"), dict) and candidate.get("trace_payload"):
+            return True
+    return False
+
+
+def _compact_proto_self_context_for_contract(
+    proto_self_context: Optional[Dict[str, Any]],
+    openemotion_result: Optional[Dict[str, Any]],
+) -> Dict[str, Any]:
+    source = dict(proto_self_context or {})
+    return {
+        "available": bool(source),
+        "policy_hint": dict(source.get("policy_hint") or {}),
+        "response_tendency": dict(source.get("response_tendency") or {}),
+        "social_policy_hints": dict(source.get("social_policy_hints") or {}),
+        "embodied_policy_hints": dict(source.get("embodied_policy_hints") or {}),
+        "integrated_policy_hints": dict(source.get("integrated_policy_hints") or {}),
+        "initiative_policy_hints": dict(source.get("initiative_policy_hints") or {}),
+        "chat_cadence_mode": source.get("chat_cadence_mode"),
+        "response_tendency_summary": dict(source.get("response_tendency_summary") or {}),
+        "candidate_actions_count": len(list(source.get("candidate_actions") or [])),
+        "finalized_result_present": isinstance(source.get("finalized_result"), dict),
+        "external_result_present": isinstance(source.get("external_result"), dict),
+        "trace_payload_present": _trace_payload_present(source, openemotion_result),
+        "trace_reference": _extract_trace_reference(source, openemotion_result),
+    }
+
+
+def build_host_contract_snapshot(
+    *,
+    request: Optional[UnifiedIngressRequest] = None,
+    ingress: Optional[UnifiedIngressBundle] = None,
+    turn_result: Optional[UnifiedTurnResult] = None,
+    egress: Optional[UnifiedEgressEnvelope] = None,
+) -> Dict[str, Any]:
+    snapshot: Dict[str, Any] = {"contract_version": HOST_CONTRACT_SNAPSHOT_VERSION}
+
+    if request is not None:
+        snapshot["adapter"] = {
+            "channel": request.channel,
+            "source_kind": request.source_kind,
+            "raw_event_present": bool(request.raw_event),
+            "transport_meta": dict(request.transport_meta or {}),
+        }
+        snapshot["request"] = {
+            "session_key": request.session_key,
+            "user_input": request.user_input,
+            "effective_user_input": request.effective_user_input,
+        }
+
+    if ingress is not None:
+        snapshot["ingress"] = {
+            **_compact_ingress_context_for_contract(ingress.ingress_context),
+            "normalized_turn": ingress.normalized_turn,
+            "pre_runtime": {
+                "should_return_early": bool(getattr(ingress.pre_runtime_action, "should_return_early", False)),
+                "force_waiting_input": bool(getattr(ingress.pre_runtime_action, "force_waiting_input", False)),
+                "direct_reply_text": _trim_contract_text(getattr(ingress.pre_runtime_action, "direct_reply_text", None)),
+                "waiting_input_text": _trim_contract_text(getattr(ingress.pre_runtime_action, "waiting_input_text", None)),
+                "rule_enforcement": dict(getattr(ingress.pre_runtime_action, "rule_enforcement", None) or {}),
+            },
+        }
+
+    if turn_result is not None:
+        response_plan = turn_result.response_plan
+        output_verdict = turn_result.output_verdict
+        response_metadata = getattr(response_plan, "metadata", None) if response_plan is not None else None
+        runtime_reply_metadata = dict(
+            getattr(getattr(turn_result.runtime_result, "reply", None), "metadata", None) or {}
+        )
+        snapshot["turn"] = {
+            "status": turn_result.status,
+            "reply_text": turn_result.reply_text,
+            "delivery_kind": turn_result.delivery_kind,
+            "finish_reason": turn_result.finish_reason,
+            "reply_authority": getattr(response_plan, "reply_authority", None)
+            or getattr(output_verdict, "applied_authority", None),
+            "authority_source": getattr(response_plan, "authority_source", None),
+            "response_plan": None
+            if response_plan is None
+            else {
+                "kind": getattr(response_plan, "kind", None),
+                "delivery_kind": getattr(response_plan, "delivery_kind", None),
+                "authority_source": getattr(response_plan, "authority_source", None),
+                "reply_authority": getattr(response_plan, "reply_authority", None),
+                "chat_cadence_mode": getattr(response_plan, "chat_cadence_mode", None),
+                "reply_text_preview": _trim_contract_text(getattr(response_plan, "reply_text", None)),
+                "metadata": _compact_response_plan_metadata_for_contract(response_metadata),
+            },
+            "output_verdict": None
+            if output_verdict is None
+            else {
+                "passed": bool(getattr(output_verdict, "passed", False)),
+                "reason": getattr(output_verdict, "reason", None),
+                "delivery_kind": getattr(output_verdict, "delivery_kind", None),
+                "applied_authority": getattr(output_verdict, "applied_authority", None),
+                "reply_origin": getattr(output_verdict, "reply_origin", None),
+                "intent_gate_status": getattr(output_verdict, "intent_gate_status", None),
+                "intent_gate_reason": getattr(output_verdict, "intent_gate_reason", None),
+                "reply_text_preview": _trim_contract_text(getattr(output_verdict, "reply_text", None)),
+            },
+            "response_tendency_summary": dict(
+                runtime_reply_metadata.get("response_tendency_summary")
+                or ((response_metadata or {}).get("response_tendency_summary") if isinstance(response_metadata, dict) else {})
+                or {}
+            ),
+            "chat_cadence_mode": (
+                getattr(response_plan, "chat_cadence_mode", None)
+                or runtime_reply_metadata.get("chat_cadence_mode")
+            ),
+            "proto_self_context": _compact_proto_self_context_for_contract(
+                turn_result.proto_self_context,
+                turn_result.openemotion_result,
+            ),
+        }
+
+    if egress is not None:
+        snapshot["egress"] = {
+            "should_send": bool(egress.should_send),
+            "user_visible_text": egress.user_visible_text,
+            "delivery_kind": egress.delivery_kind,
+            "transport_meta": dict(egress.transport_meta or {}),
+        }
+
+    return snapshot
+
+
+def _collect_snapshot_diffs(left: Any, right: Any, *, path: str = "") -> list[Dict[str, Any]]:
+    diffs: list[Dict[str, Any]] = []
+    if isinstance(left, dict) and isinstance(right, dict):
+        keys = sorted(set(left.keys()) | set(right.keys()))
+        for key in keys:
+            next_path = f"{path}.{key}" if path else str(key)
+            if key not in left:
+                diffs.append({"path": next_path, "left": "__missing__", "right": deepcopy(right.get(key))})
+                continue
+            if key not in right:
+                diffs.append({"path": next_path, "left": deepcopy(left.get(key)), "right": "__missing__"})
+                continue
+            diffs.extend(_collect_snapshot_diffs(left.get(key), right.get(key), path=next_path))
+        return diffs
+    if isinstance(left, list) and isinstance(right, list):
+        if left != right:
+            diffs.append({"path": path, "left": deepcopy(left), "right": deepcopy(right)})
+        return diffs
+    if left != right:
+        diffs.append({"path": path, "left": deepcopy(left), "right": deepcopy(right)})
+    return diffs
+
+
+def compare_host_contract_snapshots(left: Dict[str, Any], right: Dict[str, Any]) -> Dict[str, Any]:
+    left_snapshot = dict(left or {})
+    right_snapshot = dict(right or {})
+    left_adapter = dict(left_snapshot.pop("adapter", {}) or {})
+    right_adapter = dict(right_snapshot.pop("adapter", {}) or {})
+    left_egress = dict(left_snapshot.get("egress") or {})
+    right_egress = dict(right_snapshot.get("egress") or {})
+    if "transport_meta" in left_egress or "transport_meta" in right_egress:
+        left_egress.pop("transport_meta", None)
+        right_egress.pop("transport_meta", None)
+        if left_egress:
+            left_snapshot["egress"] = left_egress
+        else:
+            left_snapshot.pop("egress", None)
+        if right_egress:
+            right_snapshot["egress"] = right_egress
+        else:
+            right_snapshot.pop("egress", None)
+    unexpected_diffs = _collect_snapshot_diffs(left_snapshot, right_snapshot)
+    return {
+        "match": not unexpected_diffs,
+        "allowed_adapter_fields": [
+            "adapter.channel",
+            "adapter.source_kind",
+            "adapter.raw_event_present",
+            "adapter.transport_meta",
+            "egress.transport_meta",
+        ],
+        "left_adapter": left_adapter,
+        "right_adapter": right_adapter,
+        "unexpected_diffs": unexpected_diffs,
+    }
+
+
 def build_telegram_transport_meta(
     *,
     chat_id: Optional[int],
@@ -290,4 +557,7 @@ __all__ = [
     "build_unified_ingress",
     "build_unified_turn_result",
     "build_unified_egress",
+    "HOST_CONTRACT_SNAPSHOT_VERSION",
+    "build_host_contract_snapshot",
+    "compare_host_contract_snapshots",
 ]

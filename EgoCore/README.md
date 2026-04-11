@@ -15,6 +15,8 @@
 - `proto_self_v2` 已是主体层默认主线，当前只读解释层与受治理写回面已收口
 - `repo_authority_cleanup: closeout-complete (repo/integration scope)`
 - 当前 repo 处于 `边界冻结下的收口期`
+- 当前 execution owner 已切到 `unified-host-contract-correctness`
+- 当前先冻结 unified host contract correctness，用 `dashboard_local` 与 `telegram_prepared` 的 in-process parity 证明宿主 contract 稳定；fresh real Telegram proof 已降为 deferred adapter-level follow-up，而不是当前 acceptance root
 - 剩余项仅保留在 `optional housekeeping / future cleanup backlog`
 - 这不是 real-channel 新效果声明，也不是新的 authority wave 声明
 - thin substrate / compat / reference-only 残留仍存在，但不阻塞 closeout

@@ -1,0 +1,1847 @@
+{
+  "generated_at": "2026-04-11T23:41:06.448709+00:00",
+  "source": "dashboard_local_vs_telegram_prepared_inprocess",
+  "claim_ceiling": "host_contract_only",
+  "contract_version": "unified_host_contract.v1",
+  "aggregate": {
+    "total_cases": 6,
+    "parity_pass_count": 6,
+    "parity_fail_count": 0,
+    "hold_case_count": 1,
+    "hold_consistency_pass_count": 1,
+    "verdict": "pass"
+  },
+  "cases": [
+    {
+      "window": "ordinary_chat_window",
+      "case_id": "ordinary_hello",
+      "text": "你好",
+      "expected_mode": "reply_now_normal",
+      "expectation": "runtime_chat",
+      "parity_match": true,
+      "comparison": {
+        "match": true,
+        "allowed_adapter_fields": [
+          "adapter.channel",
+          "adapter.source_kind",
+          "adapter.raw_event_present",
+          "adapter.transport_meta",
+          "egress.transport_meta"
+        ],
+        "left_adapter": {
+          "channel": "api",
+          "source_kind": "dashboard_local",
+          "raw_event_present": true,
+          "transport_meta": {
+            "client": "dashboard_local",
+            "session_name": "parity-ordinary_chat_window",
+            "message_id": 1
+          }
+        },
+        "right_adapter": {
+          "channel": "telegram",
+          "source_kind": "telegram_prepared",
+          "raw_event_present": true,
+          "transport_meta": {
+            "chat_id": 8420019401,
+            "user_id": 456,
+            "username": "parity",
+            "message_id": 1
+          }
+        },
+        "unexpected_diffs": []
+      },
+      "dashboard_snapshot": {
+        "contract_version": "unified_host_contract.v1",
+        "adapter": {
+          "channel": "api",
+          "source_kind": "dashboard_local",
+          "raw_event_present": true,
+          "transport_meta": {
+            "client": "dashboard_local",
+            "session_name": "parity-ordinary_chat_window",
+            "message_id": 1
+          }
+        },
+        "request": {
+          "session_key": "dashboard:test:parity-ordinary_chat_window",
+          "user_input": "你好",
+          "effective_user_input": "你好"
+        },
+        "ingress": {
+          "runtime_action": "chat",
+          "request_mode": null,
+          "interaction_kind": "chat",
+          "conversation_act": "light_chitchat",
+          "parser_source": "chat_default",
+          "primary_intent": "chat",
+          "recent_result_binding": false,
+          "correction_context": false,
+          "resolved_target": {},
+          "requested_output": {},
+          "normalized_turn": {
+            "text": "你好",
+            "lower_text": "你好",
+            "compact_lower": "你好",
+            "probe_key": "你好",
+            "control_key": "你好",
+            "explicit_paths": [],
+            "has_attachment": false,
+            "is_slash_command": false
+          },
+          "pre_runtime": {
+            "should_return_early": false,
+            "force_waiting_input": false,
+            "direct_reply_text": null,
+            "waiting_input_text": null,
+            "rule_enforcement": {}
+          }
+        },
+        "turn": {
+          "status": "chat",
+          "reply_text": "你好，我在。你先把最卡的一步说出来。",
+          "delivery_kind": "chat",
+          "finish_reason": null,
+          "reply_authority": "model_chat",
+          "authority_source": "response_contract.response_plan",
+          "response_plan": {
+            "kind": "chat",
+            "delivery_kind": "chat",
+            "authority_source": "response_contract.response_plan",
+            "reply_authority": "model_chat",
+            "chat_cadence_mode": "reply_now_normal",
+            "reply_text_preview": "你好，我在。你先把最卡的一步说出来。",
+            "metadata": {
+              "conversation_act": "light_chitchat",
+              "recent_result_binding": false,
+              "correction_context": false,
+              "chat_expression_hint": {
+                "reply_mode": "normal"
+              },
+              "response_tendency_summary": {
+                "preferred_mode": "ask",
+                "preferred_tone": "supportive",
+                "suggested_next_step": "clarify",
+                "chat_cadence_mode": "reply_now_normal"
+              }
+            }
+          },
+          "output_verdict": {
+            "passed": true,
+            "reason": "ok",
+            "delivery_kind": "chat",
+            "applied_authority": "model_chat",
+            "reply_origin": "chat_mainline",
+            "intent_gate_status": "ok",
+            "intent_gate_reason": "ok",
+            "reply_text_preview": "你好，我在。你先把最卡的一步说出来。"
+          },
+          "response_tendency_summary": {
+            "preferred_mode": "ask",
+            "preferred_tone": "supportive",
+            "suggested_next_step": "clarify",
+            "chat_cadence_mode": "reply_now_normal"
+          },
+          "chat_cadence_mode": "reply_now_normal",
+          "proto_self_context": {
+            "available": true,
+            "policy_hint": {
+              "delivery_mode": "bounded_chat"
+            },
+            "response_tendency": {
+              "preferred_mode": "ask",
+              "preferred_tone": "supportive",
+              "suggested_next_step": "clarify"
+            },
+            "social_policy_hints": {
+              "repair_bias": "elevated"
+            },
+            "embodied_policy_hints": {
+              "resource_bias": "conserve"
+            },
+            "integrated_policy_hints": {
+              "selected_priority": "guard"
+            },
+            "initiative_policy_hints": {
+              "initiative_priority": "hold"
+            },
+            "chat_cadence_mode": null,
+            "response_tendency_summary": {},
+            "candidate_actions_count": 0,
+            "finalized_result_present": true,
+            "external_result_present": false,
+            "trace_payload_present": true,
+            "trace_reference": "trace:dashboard:test:parity-ordinary_chat_window:2"
+          }
+        },
+        "egress": {
+          "should_send": true,
+          "user_visible_text": "你好，我在。你先把最卡的一步说出来。",
+          "delivery_kind": "chat",
+          "transport_meta": {
+            "client": "dashboard_local",
+            "session_name": "parity-ordinary_chat_window",
+            "message_id": 1
+          }
+        }
+      },
+      "telegram_prepared_snapshot": {
+        "contract_version": "unified_host_contract.v1",
+        "adapter": {
+          "channel": "telegram",
+          "source_kind": "telegram_prepared",
+          "raw_event_present": true,
+          "transport_meta": {
+            "chat_id": 8420019401,
+            "user_id": 456,
+            "username": "parity",
+            "message_id": 1
+          }
+        },
+        "request": {
+          "session_key": "dashboard:test:parity-ordinary_chat_window",
+          "user_input": "你好",
+          "effective_user_input": "你好"
+        },
+        "ingress": {
+          "runtime_action": "chat",
+          "request_mode": null,
+          "interaction_kind": "chat",
+          "conversation_act": "light_chitchat",
+          "parser_source": "chat_default",
+          "primary_intent": "chat",
+          "recent_result_binding": false,
+          "correction_context": false,
+          "resolved_target": {},
+          "requested_output": {},
+          "normalized_turn": {
+            "text": "你好",
+            "lower_text": "你好",
+            "compact_lower": "你好",
+            "probe_key": "你好",
+            "control_key": "你好",
+            "explicit_paths": [],
+            "has_attachment": false,
+            "is_slash_command": false
+          },
+          "pre_runtime": {
+            "should_return_early": false,
+            "force_waiting_input": false,
+            "direct_reply_text": null,
+            "waiting_input_text": null,
+            "rule_enforcement": {}
+          }
+        },
+        "turn": {
+          "status": "chat",
+          "reply_text": "你好，我在。你先把最卡的一步说出来。",
+          "delivery_kind": "chat",
+          "finish_reason": null,
+          "reply_authority": "model_chat",
+          "authority_source": "response_contract.response_plan",
+          "response_plan": {
+            "kind": "chat",
+            "delivery_kind": "chat",
+            "authority_source": "response_contract.response_plan",
+            "reply_authority": "model_chat",
+            "chat_cadence_mode": "reply_now_normal",
+            "reply_text_preview": "你好，我在。你先把最卡的一步说出来。",
+            "metadata": {
+              "conversation_act": "light_chitchat",
+              "recent_result_binding": false,
+              "correction_context": false,
+              "chat_expression_hint": {
+                "reply_mode": "normal"
+              },
+              "response_tendency_summary": {
+                "preferred_mode": "ask",
+                "preferred_tone": "supportive",
+                "suggested_next_step": "clarify",
+                "chat_cadence_mode": "reply_now_normal"
+              }
+            }
+          },
+          "output_verdict": {
+            "passed": true,
+            "reason": "ok",
+            "delivery_kind": "chat",
+            "applied_authority": "model_chat",
+            "reply_origin": "chat_mainline",
+            "intent_gate_status": "ok",
+            "intent_gate_reason": "ok",
+            "reply_text_preview": "你好，我在。你先把最卡的一步说出来。"
+          },
+          "response_tendency_summary": {
+            "preferred_mode": "ask",
+            "preferred_tone": "supportive",
+            "suggested_next_step": "clarify",
+            "chat_cadence_mode": "reply_now_normal"
+          },
+          "chat_cadence_mode": "reply_now_normal",
+          "proto_self_context": {
+            "available": true,
+            "policy_hint": {
+              "delivery_mode": "bounded_chat"
+            },
+            "response_tendency": {
+              "preferred_mode": "ask",
+              "preferred_tone": "supportive",
+              "suggested_next_step": "clarify"
+            },
+            "social_policy_hints": {
+              "repair_bias": "elevated"
+            },
+            "embodied_policy_hints": {
+              "resource_bias": "conserve"
+            },
+            "integrated_policy_hints": {
+              "selected_priority": "guard"
+            },
+            "initiative_policy_hints": {
+              "initiative_priority": "hold"
+            },
+            "chat_cadence_mode": null,
+            "response_tendency_summary": {},
+            "candidate_actions_count": 0,
+            "finalized_result_present": true,
+            "external_result_present": false,
+            "trace_payload_present": true,
+            "trace_reference": "trace:dashboard:test:parity-ordinary_chat_window:2"
+          }
+        },
+        "egress": {
+          "should_send": true,
+          "user_visible_text": "你好，我在。你先把最卡的一步说出来。",
+          "delivery_kind": "chat",
+          "transport_meta": {
+            "chat_id": 8420019401,
+            "user_id": 456,
+            "username": "parity",
+            "message_id": 1
+          }
+        }
+      },
+      "telegram_hold_event": null,
+      "hold_consistent": null
+    },
+    {
+      "window": "ordinary_chat_window",
+      "case_id": "ordinary_stuck",
+      "text": "我现在有点卡住了，你先帮我理一下",
+      "expected_mode": "reply_now_expand",
+      "expectation": "runtime_chat",
+      "parity_match": true,
+      "comparison": {
+        "match": true,
+        "allowed_adapter_fields": [
+          "adapter.channel",
+          "adapter.source_kind",
+          "adapter.raw_event_present",
+          "adapter.transport_meta",
+          "egress.transport_meta"
+        ],
+        "left_adapter": {
+          "channel": "api",
+          "source_kind": "dashboard_local",
+          "raw_event_present": true,
+          "transport_meta": {
+            "client": "dashboard_local",
+            "session_name": "parity-ordinary_chat_window",
+            "message_id": 2
+          }
+        },
+        "right_adapter": {
+          "channel": "telegram",
+          "source_kind": "telegram_prepared",
+          "raw_event_present": true,
+          "transport_meta": {
+            "chat_id": 8420019401,
+            "user_id": 456,
+            "username": "parity",
+            "message_id": 2
+          }
+        },
+        "unexpected_diffs": []
+      },
+      "dashboard_snapshot": {
+        "contract_version": "unified_host_contract.v1",
+        "adapter": {
+          "channel": "api",
+          "source_kind": "dashboard_local",
+          "raw_event_present": true,
+          "transport_meta": {
+            "client": "dashboard_local",
+            "session_name": "parity-ordinary_chat_window",
+            "message_id": 2
+          }
+        },
+        "request": {
+          "session_key": "dashboard:test:parity-ordinary_chat_window",
+          "user_input": "我现在有点卡住了，你先帮我理一下",
+          "effective_user_input": "我现在有点卡住了，你先帮我理一下"
+        },
+        "ingress": {
+          "runtime_action": "chat",
+          "request_mode": null,
+          "interaction_kind": "chat",
+          "conversation_act": "light_chitchat",
+          "parser_source": "chat_default",
+          "primary_intent": "chat",
+          "recent_result_binding": false,
+          "correction_context": false,
+          "resolved_target": {},
+          "requested_output": {},
+          "normalized_turn": {
+            "text": "我现在有点卡住了，你先帮我理一下",
+            "lower_text": "我现在有点卡住了，你先帮我理一下",
+            "compact_lower": "我现在有点卡住了，你先帮我理一下",
+            "probe_key": "我现在有点卡住了，你先帮我理一下",
+            "control_key": "我现在有点卡住了，你先帮我理一下",
+            "explicit_paths": [],
+            "has_attachment": false,
+            "is_slash_command": false
+          },
+          "pre_runtime": {
+            "should_return_early": false,
+            "force_waiting_input": false,
+            "direct_reply_text": null,
+            "waiting_input_text": null,
+            "rule_enforcement": {}
+          }
+        },
+        "turn": {
+          "status": "chat",
+          "reply_text": "先别同时推三件事。你先说卡住的是哪一步、你已经试了什么、现在最想得到什么。",
+          "delivery_kind": "chat",
+          "finish_reason": null,
+          "reply_authority": "model_chat",
+          "authority_source": "response_contract.response_plan",
+          "response_plan": {
+            "kind": "chat",
+            "delivery_kind": "chat",
+            "authority_source": "response_contract.response_plan",
+            "reply_authority": "model_chat",
+            "chat_cadence_mode": "reply_now_expand",
+            "reply_text_preview": "先别同时推三件事。你先说卡住的是哪一步、你已经试了什么、现在最想得到什么。",
+            "metadata": {
+              "conversation_act": "light_chitchat",
+              "recent_result_binding": false,
+              "correction_context": false,
+              "chat_expression_hint": {
+                "reply_mode": "expand"
+              },
+              "response_tendency_summary": {
+                "preferred_mode": "ask",
+                "preferred_tone": "steady",
+                "suggested_next_step": "isolate_blocker",
+                "chat_cadence_mode": "reply_now_expand"
+              }
+            }
+          },
+          "output_verdict": {
+            "passed": true,
+            "reason": "ok",
+            "delivery_kind": "chat",
+            "applied_authority": "model_chat",
+            "reply_origin": "chat_mainline",
+            "intent_gate_status": "ok",
+            "intent_gate_reason": "ok",
+            "reply_text_preview": "先别同时推三件事。你先说卡住的是哪一步、你已经试了什么、现在最想得到什么。"
+          },
+          "response_tendency_summary": {
+            "preferred_mode": "ask",
+            "preferred_tone": "steady",
+            "suggested_next_step": "isolate_blocker",
+            "chat_cadence_mode": "reply_now_expand"
+          },
+          "chat_cadence_mode": "reply_now_expand",
+          "proto_self_context": {
+            "available": true,
+            "policy_hint": {
+              "delivery_mode": "bounded_chat"
+            },
+            "response_tendency": {
+              "preferred_mode": "ask",
+              "preferred_tone": "steady",
+              "suggested_next_step": "isolate_blocker"
+            },
+            "social_policy_hints": {
+              "repair_bias": "elevated"
+            },
+            "embodied_policy_hints": {
+              "resource_bias": "conserve"
+            },
+            "integrated_policy_hints": {
+              "selected_priority": "review"
+            },
+            "initiative_policy_hints": {
+              "initiative_priority": "hold"
+            },
+            "chat_cadence_mode": null,
+            "response_tendency_summary": {},
+            "candidate_actions_count": 0,
+            "finalized_result_present": true,
+            "external_result_present": false,
+            "trace_payload_present": true,
+            "trace_reference": "trace:dashboard:test:parity-ordinary_chat_window:16"
+          }
+        },
+        "egress": {
+          "should_send": true,
+          "user_visible_text": "先别同时推三件事。你先说卡住的是哪一步、你已经试了什么、现在最想得到什么。",
+          "delivery_kind": "chat",
+          "transport_meta": {
+            "client": "dashboard_local",
+            "session_name": "parity-ordinary_chat_window",
+            "message_id": 2
+          }
+        }
+      },
+      "telegram_prepared_snapshot": {
+        "contract_version": "unified_host_contract.v1",
+        "adapter": {
+          "channel": "telegram",
+          "source_kind": "telegram_prepared",
+          "raw_event_present": true,
+          "transport_meta": {
+            "chat_id": 8420019401,
+            "user_id": 456,
+            "username": "parity",
+            "message_id": 2
+          }
+        },
+        "request": {
+          "session_key": "dashboard:test:parity-ordinary_chat_window",
+          "user_input": "我现在有点卡住了，你先帮我理一下",
+          "effective_user_input": "我现在有点卡住了，你先帮我理一下"
+        },
+        "ingress": {
+          "runtime_action": "chat",
+          "request_mode": null,
+          "interaction_kind": "chat",
+          "conversation_act": "light_chitchat",
+          "parser_source": "chat_default",
+          "primary_intent": "chat",
+          "recent_result_binding": false,
+          "correction_context": false,
+          "resolved_target": {},
+          "requested_output": {},
+          "normalized_turn": {
+            "text": "我现在有点卡住了，你先帮我理一下",
+            "lower_text": "我现在有点卡住了，你先帮我理一下",
+            "compact_lower": "我现在有点卡住了，你先帮我理一下",
+            "probe_key": "我现在有点卡住了，你先帮我理一下",
+            "control_key": "我现在有点卡住了，你先帮我理一下",
+            "explicit_paths": [],
+            "has_attachment": false,
+            "is_slash_command": false
+          },
+          "pre_runtime": {
+            "should_return_early": false,
+            "force_waiting_input": false,
+            "direct_reply_text": null,
+            "waiting_input_text": null,
+            "rule_enforcement": {}
+          }
+        },
+        "turn": {
+          "status": "chat",
+          "reply_text": "先别同时推三件事。你先说卡住的是哪一步、你已经试了什么、现在最想得到什么。",
+          "delivery_kind": "chat",
+          "finish_reason": null,
+          "reply_authority": "model_chat",
+          "authority_source": "response_contract.response_plan",
+          "response_plan": {
+            "kind": "chat",
+            "delivery_kind": "chat",
+            "authority_source": "response_contract.response_plan",
+            "reply_authority": "model_chat",
+            "chat_cadence_mode": "reply_now_expand",
+            "reply_text_preview": "先别同时推三件事。你先说卡住的是哪一步、你已经试了什么、现在最想得到什么。",
+            "metadata": {
+              "conversation_act": "light_chitchat",
+              "recent_result_binding": false,
+              "correction_context": false,
+              "chat_expression_hint": {
+                "reply_mode": "expand"
+              },
+              "response_tendency_summary": {
+                "preferred_mode": "ask",
+                "preferred_tone": "steady",
+                "suggested_next_step": "isolate_blocker",
+                "chat_cadence_mode": "reply_now_expand"
+              }
+            }
+          },
+          "output_verdict": {
+            "passed": true,
+            "reason": "ok",
+            "delivery_kind": "chat",
+            "applied_authority": "model_chat",
+            "reply_origin": "chat_mainline",
+            "intent_gate_status": "ok",
+            "intent_gate_reason": "ok",
+            "reply_text_preview": "先别同时推三件事。你先说卡住的是哪一步、你已经试了什么、现在最想得到什么。"
+          },
+          "response_tendency_summary": {
+            "preferred_mode": "ask",
+            "preferred_tone": "steady",
+            "suggested_next_step": "isolate_blocker",
+            "chat_cadence_mode": "reply_now_expand"
+          },
+          "chat_cadence_mode": "reply_now_expand",
+          "proto_self_context": {
+            "available": true,
+            "policy_hint": {
+              "delivery_mode": "bounded_chat"
+            },
+            "response_tendency": {
+              "preferred_mode": "ask",
+              "preferred_tone": "steady",
+              "suggested_next_step": "isolate_blocker"
+            },
+            "social_policy_hints": {
+              "repair_bias": "elevated"
+            },
+            "embodied_policy_hints": {
+              "resource_bias": "conserve"
+            },
+            "integrated_policy_hints": {
+              "selected_priority": "review"
+            },
+            "initiative_policy_hints": {
+              "initiative_priority": "hold"
+            },
+            "chat_cadence_mode": null,
+            "response_tendency_summary": {},
+            "candidate_actions_count": 0,
+            "finalized_result_present": true,
+            "external_result_present": false,
+            "trace_payload_present": true,
+            "trace_reference": "trace:dashboard:test:parity-ordinary_chat_window:16"
+          }
+        },
+        "egress": {
+          "should_send": true,
+          "user_visible_text": "先别同时推三件事。你先说卡住的是哪一步、你已经试了什么、现在最想得到什么。",
+          "delivery_kind": "chat",
+          "transport_meta": {
+            "chat_id": 8420019401,
+            "user_id": 456,
+            "username": "parity",
+            "message_id": 2
+          }
+        }
+      },
+      "telegram_hold_event": null,
+      "hold_consistent": null
+    },
+    {
+      "window": "ordinary_chat_window",
+      "case_id": "ordinary_continue",
+      "text": "继续",
+      "expected_mode": "reply_now_short",
+      "expectation": "runtime_chat",
+      "parity_match": true,
+      "comparison": {
+        "match": true,
+        "allowed_adapter_fields": [
+          "adapter.channel",
+          "adapter.source_kind",
+          "adapter.raw_event_present",
+          "adapter.transport_meta",
+          "egress.transport_meta"
+        ],
+        "left_adapter": {
+          "channel": "api",
+          "source_kind": "dashboard_local",
+          "raw_event_present": true,
+          "transport_meta": {
+            "client": "dashboard_local",
+            "session_name": "parity-ordinary_chat_window",
+            "message_id": 3
+          }
+        },
+        "right_adapter": {
+          "channel": "telegram",
+          "source_kind": "telegram_prepared",
+          "raw_event_present": true,
+          "transport_meta": {
+            "chat_id": 8420019401,
+            "user_id": 456,
+            "username": "parity",
+            "message_id": 3
+          }
+        },
+        "unexpected_diffs": []
+      },
+      "dashboard_snapshot": {
+        "contract_version": "unified_host_contract.v1",
+        "adapter": {
+          "channel": "api",
+          "source_kind": "dashboard_local",
+          "raw_event_present": true,
+          "transport_meta": {
+            "client": "dashboard_local",
+            "session_name": "parity-ordinary_chat_window",
+            "message_id": 3
+          }
+        },
+        "request": {
+          "session_key": "dashboard:test:parity-ordinary_chat_window",
+          "user_input": "继续",
+          "effective_user_input": "继续"
+        },
+        "ingress": {
+          "runtime_action": "chat",
+          "request_mode": null,
+          "interaction_kind": "chat",
+          "conversation_act": "light_chitchat",
+          "parser_source": "chat_default",
+          "primary_intent": "chat",
+          "recent_result_binding": false,
+          "correction_context": false,
+          "resolved_target": {},
+          "requested_output": {},
+          "normalized_turn": {
+            "text": "继续",
+            "lower_text": "继续",
+            "compact_lower": "继续",
+            "probe_key": "继续",
+            "control_key": "继续",
+            "explicit_paths": [],
+            "has_attachment": false,
+            "is_slash_command": false
+          },
+          "pre_runtime": {
+            "should_return_early": false,
+            "force_waiting_input": false,
+            "direct_reply_text": null,
+            "waiting_input_text": null,
+            "rule_enforcement": {}
+          }
+        },
+        "turn": {
+          "status": "chat",
+          "reply_text": "继续。先做最小闭环，再扩范围。",
+          "delivery_kind": "chat",
+          "finish_reason": null,
+          "reply_authority": "model_chat",
+          "authority_source": "response_contract.response_plan",
+          "response_plan": {
+            "kind": "chat",
+            "delivery_kind": "chat",
+            "authority_source": "response_contract.response_plan",
+            "reply_authority": "model_chat",
+            "chat_cadence_mode": "reply_now_short",
+            "reply_text_preview": "继续。先做最小闭环，再扩范围。",
+            "metadata": {
+              "conversation_act": "light_chitchat",
+              "recent_result_binding": false,
+              "correction_context": false,
+              "chat_expression_hint": {
+                "reply_mode": "short"
+              },
+              "response_tendency_summary": {
+                "preferred_mode": "defer",
+                "preferred_tone": "cautious",
+                "suggested_next_step": "narrow_scope",
+                "chat_cadence_mode": "reply_now_short"
+              }
+            }
+          },
+          "output_verdict": {
+            "passed": true,
+            "reason": "ok",
+            "delivery_kind": "chat",
+            "applied_authority": "model_chat",
+            "reply_origin": "chat_mainline",
+            "intent_gate_status": "ok",
+            "intent_gate_reason": "ok",
+            "reply_text_preview": "继续。先做最小闭环，再扩范围。"
+          },
+          "response_tendency_summary": {
+            "preferred_mode": "defer",
+            "preferred_tone": "cautious",
+            "suggested_next_step": "narrow_scope",
+            "chat_cadence_mode": "reply_now_short"
+          },
+          "chat_cadence_mode": "reply_now_short",
+          "proto_self_context": {
+            "available": true,
+            "policy_hint": {
+              "delivery_mode": "bounded_chat"
+            },
+            "response_tendency": {
+              "preferred_mode": "defer",
+              "preferred_tone": "cautious",
+              "suggested_next_step": "narrow_scope"
+            },
+            "social_policy_hints": {
+              "repair_bias": "elevated"
+            },
+            "embodied_policy_hints": {
+              "resource_bias": "conserve"
+            },
+            "integrated_policy_hints": {
+              "selected_priority": "guard"
+            },
+            "initiative_policy_hints": {
+              "initiative_priority": "bounded_continue"
+            },
+            "chat_cadence_mode": null,
+            "response_tendency_summary": {},
+            "candidate_actions_count": 0,
+            "finalized_result_present": true,
+            "external_result_present": false,
+            "trace_payload_present": true,
+            "trace_reference": "trace:dashboard:test:parity-ordinary_chat_window:2"
+          }
+        },
+        "egress": {
+          "should_send": true,
+          "user_visible_text": "继续。先做最小闭环，再扩范围。",
+          "delivery_kind": "chat",
+          "transport_meta": {
+            "client": "dashboard_local",
+            "session_name": "parity-ordinary_chat_window",
+            "message_id": 3
+          }
+        }
+      },
+      "telegram_prepared_snapshot": {
+        "contract_version": "unified_host_contract.v1",
+        "adapter": {
+          "channel": "telegram",
+          "source_kind": "telegram_prepared",
+          "raw_event_present": true,
+          "transport_meta": {
+            "chat_id": 8420019401,
+            "user_id": 456,
+            "username": "parity",
+            "message_id": 3
+          }
+        },
+        "request": {
+          "session_key": "dashboard:test:parity-ordinary_chat_window",
+          "user_input": "继续",
+          "effective_user_input": "继续"
+        },
+        "ingress": {
+          "runtime_action": "chat",
+          "request_mode": null,
+          "interaction_kind": "chat",
+          "conversation_act": "light_chitchat",
+          "parser_source": "chat_default",
+          "primary_intent": "chat",
+          "recent_result_binding": false,
+          "correction_context": false,
+          "resolved_target": {},
+          "requested_output": {},
+          "normalized_turn": {
+            "text": "继续",
+            "lower_text": "继续",
+            "compact_lower": "继续",
+            "probe_key": "继续",
+            "control_key": "继续",
+            "explicit_paths": [],
+            "has_attachment": false,
+            "is_slash_command": false
+          },
+          "pre_runtime": {
+            "should_return_early": false,
+            "force_waiting_input": false,
+            "direct_reply_text": null,
+            "waiting_input_text": null,
+            "rule_enforcement": {}
+          }
+        },
+        "turn": {
+          "status": "chat",
+          "reply_text": "继续。先做最小闭环，再扩范围。",
+          "delivery_kind": "chat",
+          "finish_reason": null,
+          "reply_authority": "model_chat",
+          "authority_source": "response_contract.response_plan",
+          "response_plan": {
+            "kind": "chat",
+            "delivery_kind": "chat",
+            "authority_source": "response_contract.response_plan",
+            "reply_authority": "model_chat",
+            "chat_cadence_mode": "reply_now_short",
+            "reply_text_preview": "继续。先做最小闭环，再扩范围。",
+            "metadata": {
+              "conversation_act": "light_chitchat",
+              "recent_result_binding": false,
+              "correction_context": false,
+              "chat_expression_hint": {
+                "reply_mode": "short"
+              },
+              "response_tendency_summary": {
+                "preferred_mode": "defer",
+                "preferred_tone": "cautious",
+                "suggested_next_step": "narrow_scope",
+                "chat_cadence_mode": "reply_now_short"
+              }
+            }
+          },
+          "output_verdict": {
+            "passed": true,
+            "reason": "ok",
+            "delivery_kind": "chat",
+            "applied_authority": "model_chat",
+            "reply_origin": "chat_mainline",
+            "intent_gate_status": "ok",
+            "intent_gate_reason": "ok",
+            "reply_text_preview": "继续。先做最小闭环，再扩范围。"
+          },
+          "response_tendency_summary": {
+            "preferred_mode": "defer",
+            "preferred_tone": "cautious",
+            "suggested_next_step": "narrow_scope",
+            "chat_cadence_mode": "reply_now_short"
+          },
+          "chat_cadence_mode": "reply_now_short",
+          "proto_self_context": {
+            "available": true,
+            "policy_hint": {
+              "delivery_mode": "bounded_chat"
+            },
+            "response_tendency": {
+              "preferred_mode": "defer",
+              "preferred_tone": "cautious",
+              "suggested_next_step": "narrow_scope"
+            },
+            "social_policy_hints": {
+              "repair_bias": "elevated"
+            },
+            "embodied_policy_hints": {
+              "resource_bias": "conserve"
+            },
+            "integrated_policy_hints": {
+              "selected_priority": "guard"
+            },
+            "initiative_policy_hints": {
+              "initiative_priority": "bounded_continue"
+            },
+            "chat_cadence_mode": null,
+            "response_tendency_summary": {},
+            "candidate_actions_count": 0,
+            "finalized_result_present": true,
+            "external_result_present": false,
+            "trace_payload_present": true,
+            "trace_reference": "trace:dashboard:test:parity-ordinary_chat_window:2"
+          }
+        },
+        "egress": {
+          "should_send": true,
+          "user_visible_text": "继续。先做最小闭环，再扩范围。",
+          "delivery_kind": "chat",
+          "transport_meta": {
+            "chat_id": 8420019401,
+            "user_id": 456,
+            "username": "parity",
+            "message_id": 3
+          }
+        }
+      },
+      "telegram_hold_event": null,
+      "hold_consistent": null
+    },
+    {
+      "window": "ordinary_chat_window",
+      "case_id": "ordinary_why",
+      "text": "你刚才为什么那样回答",
+      "expected_mode": "reply_now_normal",
+      "expectation": "runtime_chat",
+      "parity_match": true,
+      "comparison": {
+        "match": true,
+        "allowed_adapter_fields": [
+          "adapter.channel",
+          "adapter.source_kind",
+          "adapter.raw_event_present",
+          "adapter.transport_meta",
+          "egress.transport_meta"
+        ],
+        "left_adapter": {
+          "channel": "api",
+          "source_kind": "dashboard_local",
+          "raw_event_present": true,
+          "transport_meta": {
+            "client": "dashboard_local",
+            "session_name": "parity-ordinary_chat_window",
+            "message_id": 4
+          }
+        },
+        "right_adapter": {
+          "channel": "telegram",
+          "source_kind": "telegram_prepared",
+          "raw_event_present": true,
+          "transport_meta": {
+            "chat_id": 8420019401,
+            "user_id": 456,
+            "username": "parity",
+            "message_id": 4
+          }
+        },
+        "unexpected_diffs": []
+      },
+      "dashboard_snapshot": {
+        "contract_version": "unified_host_contract.v1",
+        "adapter": {
+          "channel": "api",
+          "source_kind": "dashboard_local",
+          "raw_event_present": true,
+          "transport_meta": {
+            "client": "dashboard_local",
+            "session_name": "parity-ordinary_chat_window",
+            "message_id": 4
+          }
+        },
+        "request": {
+          "session_key": "dashboard:test:parity-ordinary_chat_window",
+          "user_input": "你刚才为什么那样回答",
+          "effective_user_input": "你刚才为什么那样回答"
+        },
+        "ingress": {
+          "runtime_action": "chat",
+          "request_mode": null,
+          "interaction_kind": "chat",
+          "conversation_act": "light_chitchat",
+          "parser_source": "chat_default",
+          "primary_intent": "chat",
+          "recent_result_binding": false,
+          "correction_context": false,
+          "resolved_target": {},
+          "requested_output": {},
+          "normalized_turn": {
+            "text": "你刚才为什么那样回答",
+            "lower_text": "你刚才为什么那样回答",
+            "compact_lower": "你刚才为什么那样回答",
+            "probe_key": "你刚才为什么那样回答",
+            "control_key": "你刚才为什么那样回答",
+            "explicit_paths": [],
+            "has_attachment": false,
+            "is_slash_command": false
+          },
+          "pre_runtime": {
+            "should_return_early": false,
+            "force_waiting_input": false,
+            "direct_reply_text": null,
+            "waiting_input_text": null,
+            "rule_enforcement": {}
+          }
+        },
+        "turn": {
+          "status": "chat",
+          "reply_text": "因为我在优先减少返工。先把问题缩成一个最小可验证动作，比直接扩大动作面更稳。",
+          "delivery_kind": "chat",
+          "finish_reason": null,
+          "reply_authority": "model_chat",
+          "authority_source": "response_contract.response_plan",
+          "response_plan": {
+            "kind": "chat",
+            "delivery_kind": "chat",
+            "authority_source": "response_contract.response_plan",
+            "reply_authority": "model_chat",
+            "chat_cadence_mode": "reply_now_normal",
+            "reply_text_preview": "因为我在优先减少返工。先把问题缩成一个最小可验证动作，比直接扩大动作面更稳。",
+            "metadata": {
+              "conversation_act": "light_chitchat",
+              "recent_result_binding": false,
+              "correction_context": false,
+              "chat_expression_hint": {
+                "reply_mode": "normal"
+              },
+              "response_tendency_summary": {
+                "preferred_mode": "explain",
+                "preferred_tone": "cautious",
+                "suggested_next_step": "justify",
+                "chat_cadence_mode": "reply_now_normal"
+              }
+            }
+          },
+          "output_verdict": {
+            "passed": true,
+            "reason": "ok",
+            "delivery_kind": "chat",
+            "applied_authority": "model_chat",
+            "reply_origin": "chat_mainline",
+            "intent_gate_status": "ok",
+            "intent_gate_reason": "ok",
+            "reply_text_preview": "因为我在优先减少返工。先把问题缩成一个最小可验证动作，比直接扩大动作面更稳。"
+          },
+          "response_tendency_summary": {
+            "preferred_mode": "explain",
+            "preferred_tone": "cautious",
+            "suggested_next_step": "justify",
+            "chat_cadence_mode": "reply_now_normal"
+          },
+          "chat_cadence_mode": "reply_now_normal",
+          "proto_self_context": {
+            "available": true,
+            "policy_hint": {
+              "delivery_mode": "bounded_explanation"
+            },
+            "response_tendency": {
+              "preferred_mode": "explain",
+              "preferred_tone": "cautious",
+              "suggested_next_step": "justify"
+            },
+            "social_policy_hints": {
+              "repair_bias": "elevated"
+            },
+            "embodied_policy_hints": {
+              "resource_bias": "conserve"
+            },
+            "integrated_policy_hints": {
+              "selected_priority": "guard"
+            },
+            "initiative_policy_hints": {
+              "initiative_priority": "hold"
+            },
+            "chat_cadence_mode": null,
+            "response_tendency_summary": {},
+            "candidate_actions_count": 0,
+            "finalized_result_present": true,
+            "external_result_present": false,
+            "trace_payload_present": true,
+            "trace_reference": "trace:dashboard:test:parity-ordinary_chat_window:10"
+          }
+        },
+        "egress": {
+          "should_send": true,
+          "user_visible_text": "因为我在优先减少返工。先把问题缩成一个最小可验证动作，比直接扩大动作面更稳。",
+          "delivery_kind": "chat",
+          "transport_meta": {
+            "client": "dashboard_local",
+            "session_name": "parity-ordinary_chat_window",
+            "message_id": 4
+          }
+        }
+      },
+      "telegram_prepared_snapshot": {
+        "contract_version": "unified_host_contract.v1",
+        "adapter": {
+          "channel": "telegram",
+          "source_kind": "telegram_prepared",
+          "raw_event_present": true,
+          "transport_meta": {
+            "chat_id": 8420019401,
+            "user_id": 456,
+            "username": "parity",
+            "message_id": 4
+          }
+        },
+        "request": {
+          "session_key": "dashboard:test:parity-ordinary_chat_window",
+          "user_input": "你刚才为什么那样回答",
+          "effective_user_input": "你刚才为什么那样回答"
+        },
+        "ingress": {
+          "runtime_action": "chat",
+          "request_mode": null,
+          "interaction_kind": "chat",
+          "conversation_act": "light_chitchat",
+          "parser_source": "chat_default",
+          "primary_intent": "chat",
+          "recent_result_binding": false,
+          "correction_context": false,
+          "resolved_target": {},
+          "requested_output": {},
+          "normalized_turn": {
+            "text": "你刚才为什么那样回答",
+            "lower_text": "你刚才为什么那样回答",
+            "compact_lower": "你刚才为什么那样回答",
+            "probe_key": "你刚才为什么那样回答",
+            "control_key": "你刚才为什么那样回答",
+            "explicit_paths": [],
+            "has_attachment": false,
+            "is_slash_command": false
+          },
+          "pre_runtime": {
+            "should_return_early": false,
+            "force_waiting_input": false,
+            "direct_reply_text": null,
+            "waiting_input_text": null,
+            "rule_enforcement": {}
+          }
+        },
+        "turn": {
+          "status": "chat",
+          "reply_text": "因为我在优先减少返工。先把问题缩成一个最小可验证动作，比直接扩大动作面更稳。",
+          "delivery_kind": "chat",
+          "finish_reason": null,
+          "reply_authority": "model_chat",
+          "authority_source": "response_contract.response_plan",
+          "response_plan": {
+            "kind": "chat",
+            "delivery_kind": "chat",
+            "authority_source": "response_contract.response_plan",
+            "reply_authority": "model_chat",
+            "chat_cadence_mode": "reply_now_normal",
+            "reply_text_preview": "因为我在优先减少返工。先把问题缩成一个最小可验证动作，比直接扩大动作面更稳。",
+            "metadata": {
+              "conversation_act": "light_chitchat",
+              "recent_result_binding": false,
+              "correction_context": false,
+              "chat_expression_hint": {
+                "reply_mode": "normal"
+              },
+              "response_tendency_summary": {
+                "preferred_mode": "explain",
+                "preferred_tone": "cautious",
+                "suggested_next_step": "justify",
+                "chat_cadence_mode": "reply_now_normal"
+              }
+            }
+          },
+          "output_verdict": {
+            "passed": true,
+            "reason": "ok",
+            "delivery_kind": "chat",
+            "applied_authority": "model_chat",
+            "reply_origin": "chat_mainline",
+            "intent_gate_status": "ok",
+            "intent_gate_reason": "ok",
+            "reply_text_preview": "因为我在优先减少返工。先把问题缩成一个最小可验证动作，比直接扩大动作面更稳。"
+          },
+          "response_tendency_summary": {
+            "preferred_mode": "explain",
+            "preferred_tone": "cautious",
+            "suggested_next_step": "justify",
+            "chat_cadence_mode": "reply_now_normal"
+          },
+          "chat_cadence_mode": "reply_now_normal",
+          "proto_self_context": {
+            "available": true,
+            "policy_hint": {
+              "delivery_mode": "bounded_explanation"
+            },
+            "response_tendency": {
+              "preferred_mode": "explain",
+              "preferred_tone": "cautious",
+              "suggested_next_step": "justify"
+            },
+            "social_policy_hints": {
+              "repair_bias": "elevated"
+            },
+            "embodied_policy_hints": {
+              "resource_bias": "conserve"
+            },
+            "integrated_policy_hints": {
+              "selected_priority": "guard"
+            },
+            "initiative_policy_hints": {
+              "initiative_priority": "hold"
+            },
+            "chat_cadence_mode": null,
+            "response_tendency_summary": {},
+            "candidate_actions_count": 0,
+            "finalized_result_present": true,
+            "external_result_present": false,
+            "trace_payload_present": true,
+            "trace_reference": "trace:dashboard:test:parity-ordinary_chat_window:10"
+          }
+        },
+        "egress": {
+          "should_send": true,
+          "user_visible_text": "因为我在优先减少返工。先把问题缩成一个最小可验证动作，比直接扩大动作面更稳。",
+          "delivery_kind": "chat",
+          "transport_meta": {
+            "chat_id": 8420019401,
+            "user_id": 456,
+            "username": "parity",
+            "message_id": 4
+          }
+        }
+      },
+      "telegram_hold_event": null,
+      "hold_consistent": null
+    },
+    {
+      "window": "hold_probe_window",
+      "case_id": "hold_probe",
+      "text": "我先消化一下",
+      "expected_mode": "hold_for_followup",
+      "expectation": "runtime_chat_hold",
+      "parity_match": true,
+      "comparison": {
+        "match": true,
+        "allowed_adapter_fields": [
+          "adapter.channel",
+          "adapter.source_kind",
+          "adapter.raw_event_present",
+          "adapter.transport_meta",
+          "egress.transport_meta"
+        ],
+        "left_adapter": {
+          "channel": "api",
+          "source_kind": "dashboard_local",
+          "raw_event_present": true,
+          "transport_meta": {
+            "client": "dashboard_local",
+            "session_name": "parity-hold_probe_window",
+            "message_id": 1
+          }
+        },
+        "right_adapter": {
+          "channel": "telegram",
+          "source_kind": "telegram_prepared",
+          "raw_event_present": true,
+          "transport_meta": {
+            "chat_id": 8420019401,
+            "user_id": 456,
+            "username": "parity",
+            "message_id": 1
+          }
+        },
+        "unexpected_diffs": []
+      },
+      "dashboard_snapshot": {
+        "contract_version": "unified_host_contract.v1",
+        "adapter": {
+          "channel": "api",
+          "source_kind": "dashboard_local",
+          "raw_event_present": true,
+          "transport_meta": {
+            "client": "dashboard_local",
+            "session_name": "parity-hold_probe_window",
+            "message_id": 1
+          }
+        },
+        "request": {
+          "session_key": "dashboard:test:parity-hold_probe_window",
+          "user_input": "我先消化一下",
+          "effective_user_input": "我先消化一下"
+        },
+        "ingress": {
+          "runtime_action": "chat",
+          "request_mode": null,
+          "interaction_kind": "chat",
+          "conversation_act": "light_chitchat",
+          "parser_source": "chat_default",
+          "primary_intent": "chat",
+          "recent_result_binding": false,
+          "correction_context": false,
+          "resolved_target": {},
+          "requested_output": {},
+          "normalized_turn": {
+            "text": "我先消化一下",
+            "lower_text": "我先消化一下",
+            "compact_lower": "我先消化一下",
+            "probe_key": "我先消化一下",
+            "control_key": "我先消化一下",
+            "explicit_paths": [],
+            "has_attachment": false,
+            "is_slash_command": false
+          },
+          "pre_runtime": {
+            "should_return_early": false,
+            "force_waiting_input": false,
+            "direct_reply_text": null,
+            "waiting_input_text": null,
+            "rule_enforcement": {}
+          }
+        },
+        "turn": {
+          "status": "chat",
+          "reply_text": "好，你先消化。我先不追问，等你回来再继续。",
+          "delivery_kind": "chat",
+          "finish_reason": null,
+          "reply_authority": "model_chat",
+          "authority_source": "response_contract.response_plan",
+          "response_plan": {
+            "kind": "chat",
+            "delivery_kind": "chat",
+            "authority_source": "response_contract.response_plan",
+            "reply_authority": "model_chat",
+            "chat_cadence_mode": "hold_for_followup",
+            "reply_text_preview": "好，你先消化。我先不追问，等你回来再继续。",
+            "metadata": {
+              "conversation_act": "light_chitchat",
+              "recent_result_binding": false,
+              "correction_context": false,
+              "chat_expression_hint": {
+                "reply_mode": "hold"
+              },
+              "response_tendency_summary": {
+                "preferred_mode": "defer",
+                "preferred_tone": "supportive",
+                "suggested_next_step": "hold",
+                "chat_cadence_mode": "hold_for_followup"
+              }
+            }
+          },
+          "output_verdict": {
+            "passed": true,
+            "reason": "ok",
+            "delivery_kind": "chat",
+            "applied_authority": "model_chat",
+            "reply_origin": "chat_mainline",
+            "intent_gate_status": "ok",
+            "intent_gate_reason": "ok",
+            "reply_text_preview": "好，你先消化。我先不追问，等你回来再继续。"
+          },
+          "response_tendency_summary": {
+            "preferred_mode": "defer",
+            "preferred_tone": "supportive",
+            "suggested_next_step": "hold",
+            "chat_cadence_mode": "hold_for_followup"
+          },
+          "chat_cadence_mode": "hold_for_followup",
+          "proto_self_context": {
+            "available": true,
+            "policy_hint": {
+              "delivery_mode": "bounded_chat"
+            },
+            "response_tendency": {
+              "preferred_mode": "defer",
+              "preferred_tone": "supportive",
+              "suggested_next_step": "hold"
+            },
+            "social_policy_hints": {
+              "repair_bias": "elevated"
+            },
+            "embodied_policy_hints": {
+              "resource_bias": "conserve"
+            },
+            "integrated_policy_hints": {
+              "selected_priority": "guard"
+            },
+            "initiative_policy_hints": {
+              "initiative_priority": "hold"
+            },
+            "chat_cadence_mode": null,
+            "response_tendency_summary": {},
+            "candidate_actions_count": 1,
+            "finalized_result_present": true,
+            "external_result_present": false,
+            "trace_payload_present": true,
+            "trace_reference": "trace:dashboard:test:parity-hold_probe_window:6"
+          }
+        },
+        "egress": {
+          "should_send": true,
+          "user_visible_text": "好，你先消化。我先不追问，等你回来再继续。",
+          "delivery_kind": "chat",
+          "transport_meta": {
+            "client": "dashboard_local",
+            "session_name": "parity-hold_probe_window",
+            "message_id": 1
+          }
+        }
+      },
+      "telegram_prepared_snapshot": {
+        "contract_version": "unified_host_contract.v1",
+        "adapter": {
+          "channel": "telegram",
+          "source_kind": "telegram_prepared",
+          "raw_event_present": true,
+          "transport_meta": {
+            "chat_id": 8420019401,
+            "user_id": 456,
+            "username": "parity",
+            "message_id": 1
+          }
+        },
+        "request": {
+          "session_key": "dashboard:test:parity-hold_probe_window",
+          "user_input": "我先消化一下",
+          "effective_user_input": "我先消化一下"
+        },
+        "ingress": {
+          "runtime_action": "chat",
+          "request_mode": null,
+          "interaction_kind": "chat",
+          "conversation_act": "light_chitchat",
+          "parser_source": "chat_default",
+          "primary_intent": "chat",
+          "recent_result_binding": false,
+          "correction_context": false,
+          "resolved_target": {},
+          "requested_output": {},
+          "normalized_turn": {
+            "text": "我先消化一下",
+            "lower_text": "我先消化一下",
+            "compact_lower": "我先消化一下",
+            "probe_key": "我先消化一下",
+            "control_key": "我先消化一下",
+            "explicit_paths": [],
+            "has_attachment": false,
+            "is_slash_command": false
+          },
+          "pre_runtime": {
+            "should_return_early": false,
+            "force_waiting_input": false,
+            "direct_reply_text": null,
+            "waiting_input_text": null,
+            "rule_enforcement": {}
+          }
+        },
+        "turn": {
+          "status": "chat",
+          "reply_text": "好，你先消化。我先不追问，等你回来再继续。",
+          "delivery_kind": "chat",
+          "finish_reason": null,
+          "reply_authority": "model_chat",
+          "authority_source": "response_contract.response_plan",
+          "response_plan": {
+            "kind": "chat",
+            "delivery_kind": "chat",
+            "authority_source": "response_contract.response_plan",
+            "reply_authority": "model_chat",
+            "chat_cadence_mode": "hold_for_followup",
+            "reply_text_preview": "好，你先消化。我先不追问，等你回来再继续。",
+            "metadata": {
+              "conversation_act": "light_chitchat",
+              "recent_result_binding": false,
+              "correction_context": false,
+              "chat_expression_hint": {
+                "reply_mode": "hold"
+              },
+              "response_tendency_summary": {
+                "preferred_mode": "defer",
+                "preferred_tone": "supportive",
+                "suggested_next_step": "hold",
+                "chat_cadence_mode": "hold_for_followup"
+              }
+            }
+          },
+          "output_verdict": {
+            "passed": true,
+            "reason": "ok",
+            "delivery_kind": "chat",
+            "applied_authority": "model_chat",
+            "reply_origin": "chat_mainline",
+            "intent_gate_status": "ok",
+            "intent_gate_reason": "ok",
+            "reply_text_preview": "好，你先消化。我先不追问，等你回来再继续。"
+          },
+          "response_tendency_summary": {
+            "preferred_mode": "defer",
+            "preferred_tone": "supportive",
+            "suggested_next_step": "hold",
+            "chat_cadence_mode": "hold_for_followup"
+          },
+          "chat_cadence_mode": "hold_for_followup",
+          "proto_self_context": {
+            "available": true,
+            "policy_hint": {
+              "delivery_mode": "bounded_chat"
+            },
+            "response_tendency": {
+              "preferred_mode": "defer",
+              "preferred_tone": "supportive",
+              "suggested_next_step": "hold"
+            },
+            "social_policy_hints": {
+              "repair_bias": "elevated"
+            },
+            "embodied_policy_hints": {
+              "resource_bias": "conserve"
+            },
+            "integrated_policy_hints": {
+              "selected_priority": "guard"
+            },
+            "initiative_policy_hints": {
+              "initiative_priority": "hold"
+            },
+            "chat_cadence_mode": null,
+            "response_tendency_summary": {},
+            "candidate_actions_count": 1,
+            "finalized_result_present": true,
+            "external_result_present": false,
+            "trace_payload_present": true,
+            "trace_reference": "trace:dashboard:test:parity-hold_probe_window:6"
+          }
+        },
+        "egress": {
+          "should_send": true,
+          "user_visible_text": "好，你先消化。我先不追问，等你回来再继续。",
+          "delivery_kind": "chat",
+          "transport_meta": {
+            "chat_id": 8420019401,
+            "user_id": 456,
+            "username": "parity",
+            "message_id": 1
+          }
+        }
+      },
+      "telegram_hold_event": {
+        "reply_text": "好，你先消化。我先不追问，等你回来再继续。",
+        "delivery_kind": "chat",
+        "reply_authority": "model_chat",
+        "reply_origin": "chat_mainline",
+        "authority_source": "response_contract.response_plan",
+        "chat_cadence_mode": "hold_for_followup",
+        "response_tendency_summary": {
+          "preferred_mode": "defer",
+          "preferred_tone": "supportive",
+          "suggested_next_step": "hold",
+          "chat_cadence_mode": "hold_for_followup"
+        },
+        "outbox_lane": "host_proactive_outbox",
+        "outbox_status": "queued"
+      },
+      "hold_consistent": true
+    },
+    {
+      "window": "direct_reply_window",
+      "case_id": "pre_runtime_direct_reply",
+      "text": "先给我一个预检结论",
+      "expected_mode": "reply_now_normal",
+      "expectation": "pre_runtime_direct_reply",
+      "parity_match": true,
+      "comparison": {
+        "match": true,
+        "allowed_adapter_fields": [
+          "adapter.channel",
+          "adapter.source_kind",
+          "adapter.raw_event_present",
+          "adapter.transport_meta",
+          "egress.transport_meta"
+        ],
+        "left_adapter": {
+          "channel": "api",
+          "source_kind": "dashboard_local",
+          "raw_event_present": true,
+          "transport_meta": {
+            "client": "dashboard_local",
+            "session_name": "parity-direct_reply_window",
+            "message_id": 1
+          }
+        },
+        "right_adapter": {
+          "channel": "telegram",
+          "source_kind": "telegram_prepared",
+          "raw_event_present": true,
+          "transport_meta": {
+            "chat_id": 8420019401,
+            "user_id": 456,
+            "username": "parity",
+            "message_id": 1
+          }
+        },
+        "unexpected_diffs": []
+      },
+      "dashboard_snapshot": {
+        "contract_version": "unified_host_contract.v1",
+        "adapter": {
+          "channel": "api",
+          "source_kind": "dashboard_local",
+          "raw_event_present": true,
+          "transport_meta": {
+            "client": "dashboard_local",
+            "session_name": "parity-direct_reply_window",
+            "message_id": 1
+          }
+        },
+        "request": {
+          "session_key": "dashboard:test:parity-direct_reply_window",
+          "user_input": "先给我一个预检结论",
+          "effective_user_input": "先给我一个预检结论"
+        },
+        "ingress": {
+          "runtime_action": "chat",
+          "request_mode": null,
+          "interaction_kind": "chat",
+          "conversation_act": "light_chitchat",
+          "parser_source": "chat_default",
+          "primary_intent": "chat",
+          "recent_result_binding": false,
+          "correction_context": false,
+          "resolved_target": {},
+          "requested_output": {},
+          "normalized_turn": {
+            "text": "先给我一个预检结论",
+            "lower_text": "先给我一个预检结论",
+            "compact_lower": "先给我一个预检结论",
+            "probe_key": "先给我一个预检结论",
+            "control_key": "先给我一个预检结论",
+            "explicit_paths": [],
+            "has_attachment": false,
+            "is_slash_command": false
+          },
+          "pre_runtime": {
+            "should_return_early": true,
+            "force_waiting_input": false,
+            "direct_reply_text": "这是预检结论：当前统一宿主 contract 已保留主体 summary、response plan 和 output verdict。",
+            "waiting_input_text": null,
+            "rule_enforcement": {}
+          }
+        },
+        "turn": {
+          "status": "direct_reply_text",
+          "reply_text": "这是预检结论：当前统一宿主 contract 已保留主体 summary、response plan 和 output verdict。",
+          "delivery_kind": "final",
+          "finish_reason": null,
+          "reply_authority": "host_pre_runtime",
+          "authority_source": "response_contract.response_plan",
+          "response_plan": {
+            "kind": "direct_reply_text",
+            "delivery_kind": "final",
+            "authority_source": "response_contract.response_plan",
+            "reply_authority": "host_pre_runtime",
+            "chat_cadence_mode": null,
+            "reply_text_preview": "这是预检结论：当前统一宿主 contract 已保留主体 summary、response plan 和 output verdict。",
+            "metadata": {
+              "conversation_act": "direct_reply_text",
+              "recent_result_binding": false,
+              "correction_context": false
+            }
+          },
+          "output_verdict": {
+            "passed": true,
+            "reason": "ok",
+            "delivery_kind": "final",
+            "applied_authority": "host_pre_runtime",
+            "reply_origin": "task_mainline",
+            "intent_gate_status": "skipped",
+            "intent_gate_reason": "not_applicable",
+            "reply_text_preview": "这是预检结论：当前统一宿主 contract 已保留主体 summary、response plan 和 output verdict。"
+          },
+          "response_tendency_summary": {},
+          "chat_cadence_mode": null,
+          "proto_self_context": {
+            "available": false,
+            "policy_hint": {},
+            "response_tendency": {},
+            "social_policy_hints": {},
+            "embodied_policy_hints": {},
+            "integrated_policy_hints": {},
+            "initiative_policy_hints": {},
+            "chat_cadence_mode": null,
+            "response_tendency_summary": {},
+            "candidate_actions_count": 0,
+            "finalized_result_present": false,
+            "external_result_present": false,
+            "trace_payload_present": false,
+            "trace_reference": null
+          }
+        },
+        "egress": {
+          "should_send": true,
+          "user_visible_text": "这是预检结论：当前统一宿主 contract 已保留主体 summary、response plan 和 output verdict。",
+          "delivery_kind": "final",
+          "transport_meta": {
+            "client": "dashboard_local",
+            "session_name": "parity-direct_reply_window",
+            "message_id": 1
+          }
+        }
+      },
+      "telegram_prepared_snapshot": {
+        "contract_version": "unified_host_contract.v1",
+        "adapter": {
+          "channel": "telegram",
+          "source_kind": "telegram_prepared",
+          "raw_event_present": true,
+          "transport_meta": {
+            "chat_id": 8420019401,
+            "user_id": 456,
+            "username": "parity",
+            "message_id": 1
+          }
+        },
+        "request": {
+          "session_key": "dashboard:test:parity-direct_reply_window",
+          "user_input": "先给我一个预检结论",
+          "effective_user_input": "先给我一个预检结论"
+        },
+        "ingress": {
+          "runtime_action": "chat",
+          "request_mode": null,
+          "interaction_kind": "chat",
+          "conversation_act": "light_chitchat",
+          "parser_source": "chat_default",
+          "primary_intent": "chat",
+          "recent_result_binding": false,
+          "correction_context": false,
+          "resolved_target": {},
+          "requested_output": {},
+          "normalized_turn": {
+            "text": "先给我一个预检结论",
+            "lower_text": "先给我一个预检结论",
+            "compact_lower": "先给我一个预检结论",
+            "probe_key": "先给我一个预检结论",
+            "control_key": "先给我一个预检结论",
+            "explicit_paths": [],
+            "has_attachment": false,
+            "is_slash_command": false
+          },
+          "pre_runtime": {
+            "should_return_early": true,
+            "force_waiting_input": false,
+            "direct_reply_text": "这是预检结论：当前统一宿主 contract 已保留主体 summary、response plan 和 output verdict。",
+            "waiting_input_text": null,
+            "rule_enforcement": {}
+          }
+        },
+        "turn": {
+          "status": "direct_reply_text",
+          "reply_text": "这是预检结论：当前统一宿主 contract 已保留主体 summary、response plan 和 output verdict。",
+          "delivery_kind": "final",
+          "finish_reason": null,
+          "reply_authority": "host_pre_runtime",
+          "authority_source": "response_contract.response_plan",
+          "response_plan": {
+            "kind": "direct_reply_text",
+            "delivery_kind": "final",
+            "authority_source": "response_contract.response_plan",
+            "reply_authority": "host_pre_runtime",
+            "chat_cadence_mode": null,
+            "reply_text_preview": "这是预检结论：当前统一宿主 contract 已保留主体 summary、response plan 和 output verdict。",
+            "metadata": {
+              "conversation_act": "direct_reply_text",
+              "recent_result_binding": false,
+              "correction_context": false
+            }
+          },
+          "output_verdict": {
+            "passed": true,
+            "reason": "ok",
+            "delivery_kind": "final",
+            "applied_authority": "host_pre_runtime",
+            "reply_origin": "task_mainline",
+            "intent_gate_status": "skipped",
+            "intent_gate_reason": "not_applicable",
+            "reply_text_preview": "这是预检结论：当前统一宿主 contract 已保留主体 summary、response plan 和 output verdict。"
+          },
+          "response_tendency_summary": {},
+          "chat_cadence_mode": null,
+          "proto_self_context": {
+            "available": false,
+            "policy_hint": {},
+            "response_tendency": {},
+            "social_policy_hints": {},
+            "embodied_policy_hints": {},
+            "integrated_policy_hints": {},
+            "initiative_policy_hints": {},
+            "chat_cadence_mode": null,
+            "response_tendency_summary": {},
+            "candidate_actions_count": 0,
+            "finalized_result_present": false,
+            "external_result_present": false,
+            "trace_payload_present": false,
+            "trace_reference": null
+          }
+        },
+        "egress": {
+          "should_send": true,
+          "user_visible_text": "这是预检结论：当前统一宿主 contract 已保留主体 summary、response plan 和 output verdict。",
+          "delivery_kind": "final",
+          "transport_meta": {
+            "chat_id": 8420019401,
+            "user_id": 456,
+            "username": "parity",
+            "message_id": 1
+          }
+        }
+      },
+      "telegram_hold_event": null,
+      "hold_consistent": null
+    }
+  ]
+}

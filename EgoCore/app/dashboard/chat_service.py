@@ -22,6 +22,7 @@ from app.runtime_v2.state import RuntimeV2State
 from app.runtime_v2.unified_channel_contract import (
     UnifiedIngressBundle,
     UnifiedIngressRequest,
+    build_host_contract_snapshot,
     build_dashboard_unified_request,
     build_unified_egress,
     build_unified_ingress,
@@ -384,6 +385,10 @@ class DashboardChatService:
                 output_verdict=None,
                 delivery={"should_send": True, "delivery_kind": "final", "text": ingress_gate.reply_text},
                 state=session.state,
+                host_contract=build_host_contract_snapshot(
+                    request=request,
+                    ingress=unified_ingress,
+                ),
             )
             self._store_debug(session, assistant_message, debug)
             self._commit_session_update(session)
@@ -466,6 +471,12 @@ class DashboardChatService:
                 "text": unified_egress.user_visible_text,
             },
             state=session.state,
+            host_contract=build_host_contract_snapshot(
+                request=request,
+                ingress=unified_ingress,
+                turn_result=unified_turn,
+                egress=unified_egress,
+            ),
         )
         self._store_debug(session, assistant_message, debug)
         self._commit_session_update(session)
@@ -611,6 +622,10 @@ class DashboardChatService:
                 output_verdict=output_verdict,
                 delivery={"should_send": True, "delivery_kind": "final", "text": finalize_gate.reply_text},
                 state=session.state,
+                host_contract=build_host_contract_snapshot(
+                    request=request,
+                    ingress=ingress,
+                ),
             )
             self._store_debug(session, assistant_message, debug)
             self._commit_session_update(session)
@@ -657,6 +672,12 @@ class DashboardChatService:
                 "text": unified_egress.user_visible_text,
             },
             state=session.state,
+            host_contract=build_host_contract_snapshot(
+                request=request,
+                ingress=ingress,
+                turn_result=unified_turn,
+                egress=unified_egress,
+            ),
         )
         self._store_debug(session, assistant_message, debug)
         self._commit_session_update(session)
@@ -936,6 +957,7 @@ class DashboardChatService:
         output_verdict: Optional[Any],
         delivery: Dict[str, Any],
         state: RuntimeV2State,
+        host_contract: Optional[Dict[str, Any]] = None,
     ) -> Dict[str, Any]:
         ingress_context = dict(ingress.ingress_context or {})
         decision = ingress.semantic_decision
@@ -1017,6 +1039,7 @@ class DashboardChatService:
                 "delivery_kind": delivery.get("delivery_kind"),
                 "text_preview": _trim_text(delivery.get("text"), limit=400),
             },
+            "host_contract": dict(host_contract or {}) if host_contract else None,
             "session_state": self._build_session_state_summary(state),
         }
 

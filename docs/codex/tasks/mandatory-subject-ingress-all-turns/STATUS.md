@@ -2,15 +2,15 @@
 
 ## Current milestone
 
-- name: `Milestone 4: Background / Proactive Closure`
+- name: `Downstream Reference: subject-gate / proactive closure authority`
 - owner: `Codex`
-- state: pending
+- state: deferred_to_unified_host_contract_correctness
 
 ## Current state
 
 - current_layer: `repo_mainline_repair`
-- main_chain_status: `command_document_legacy_closure_landed`
-- completion_class: `verify_passed`
+- main_chain_status: `background_proactive_closure_landed`
+- completion_class: `downstream_reference_task`
 
 ## Completed work
 
@@ -36,21 +36,32 @@
   - `_send_result()` 已统一走 subject-gated host-owned finalize / response-plan
   - `handle_document()` 的 unsupported / download failure / ingestion failure / non-runtime-v2 success reply 已 subject-gated
   - `_handle_with_new_runtime()` 已在 `run_agent()` 前执行 mandatory subject ingress；`success / timeout / crash` 均保持 subject-gated finalize
+- `M4` 已完成本地代码闭环：
+  - `drain_pending_proactive_outbox_to_telegram()` 不再直接调用 transport send；现在会先走 host-owned response plan + output check + `finalized_result + response_plan` subject gate
+  - proactive/background gate fail 现在会显式 `held` 并保留 outbox 事件，不再偷偷发送
+  - proactive send 现在使用统一 egress 文本与 compact host-owned reply metadata，而不是绕过 output check 的原始 draft
+  - 定向 proactive transport / cycle 回归和 focused host-owned Telegram 回归已通过
 - 受影响测试已同步到新不变量：
   - command/session tests 默认不再假设“无 gate 也能成功回复”
   - context/profile continuity tests 已显式安装 allow gate，避免把旧 best-effort 预期误当成当前正确行为
 
 ## Open risks
 
-- `telegram_bot.py` 里的 background/proactive user-visible send path 仍未 closure，`M4` 前仍可能存在 authorized bypass
 - fresh real sample acceptance 依赖新采样窗口；历史红点不会自动消失
 - 文档 closeout 时必须防止 wording drift，把“主体知晓”误写成“authority 已释放”
+- 当前还没有 fresh real Telegram audit 证明：
+  - 新窗口 `unexpected_subject_miss = 0`
+  - `policy_driven_host_interception` 已统一成“进主体后由宿主拦截”
+  - proactive/system user-visible send 的 fresh live 窗口已不再绕过 subject finalize
 
 ## Next step
 
-- 进入 `M4 Background / Proactive Closure`
-- 把 proactive/system user-visible send path 接到同一套 mandatory subject finalize / response-plan 规则
-- 完成后再跑 fresh capture window，不能提前把历史红点当作已修复
+- 当前不再作为 acceptance owner 继续推进。
+- 本任务现在只保留：
+  - subject-gate / proactive-background closure 的实现 authority
+  - 后续 Telegram adapter-level follow-up 的参考依据
+- 当前唯一上游执行 owner 是：
+  - `docs/codex/tasks/unified-host-contract-correctness/`
 
 ## Last validation results
 
@@ -73,6 +84,17 @@
   - `PYTHONPATH=EgoCore:EgoCore/modules:OpenEmotion python3 -m pytest EgoCore/tests/test_telegram_session_commands.py -q -s` pass
   - `PYTHONPATH=EgoCore:EgoCore/modules:OpenEmotion python3 -m pytest EgoCore/tests/test_runtime_v2_cli_and_telegram.py -q -s` pass
   - `PYTHONPATH=EgoCore:EgoCore/modules:OpenEmotion python3 -m pytest EgoCore/tests/test_telegram_context_command.py -q -s` pass
+  - `python3 scripts/codex/lint_repo.py` pass
+  - `python3 scripts/codex/verify_repo.py --mode fast` pass
+  - scoped `git diff --check` 已通过
+- mode: `Milestone 4 targeted closeout`
+- result: `pass`
+- summary:
+  - proactive/background user-visible send path 现在先走 host-owned response plan + output check + `finalized_result + response_plan` subject gate，再允许真正 transport send
+  - gate 失败时 outbox 事件会保留并返回 `held`，不再静默发送
+  - `python3 -m py_compile EgoCore/app/telegram_bot.py EgoCore/tests/test_telegram_proactive_transport.py EgoCore/tests/test_host_governed_proactive_telegram_cycle.py` pass
+  - `PYTHONPATH=EgoCore:EgoCore/modules:OpenEmotion python3 -m pytest EgoCore/tests/test_telegram_proactive_transport.py EgoCore/tests/test_host_governed_proactive_telegram_cycle.py -q -s` pass (`8 passed`)
+  - `PYTHONPATH=EgoCore:EgoCore/modules:OpenEmotion python3 -m pytest --basetemp=/tmp/ego_tranche_pytest EgoCore/tests/test_runtime_v2_cli_and_telegram.py::test_telegram_bot_chat_hold_for_followup_queues_outbox_without_immediate_send EgoCore/tests/test_runtime_v2_cli_and_telegram.py::test_telegram_bot_chat_hold_for_followup_blocked_for_explicit_question EgoCore/tests/test_runtime_v2_cli_and_telegram.py::test_telegram_bot_host_owned_reply_captures_explicit_response_plan EgoCore/tests/test_runtime_v2_cli_and_telegram.py::test_telegram_bot_host_owned_reply_blocks_when_subject_gate_fails EgoCore/tests/test_runtime_v2_cli_and_telegram.py::test_telegram_bot_new_runtime_direct_reply_uses_runtime_authority_metadata -q -s` pass (`5 passed`)
   - `python3 scripts/codex/lint_repo.py` pass
   - `python3 scripts/codex/verify_repo.py --mode fast` pass
   - scoped `git diff --check` 已通过
@@ -102,6 +124,12 @@
 - `python3 scripts/codex/lint_repo.py`
 - `python3 scripts/codex/verify_repo.py --mode fast`
 - `git diff --check -- EgoCore/app/telegram_bot.py EgoCore/tests/test_telegram_session_commands.py EgoCore/tests/test_runtime_v2_cli_and_telegram.py EgoCore/tests/test_telegram_context_command.py EgoCore/tests/test_profile_rule_continuity.py`
+- `python3 -m py_compile EgoCore/app/telegram_bot.py EgoCore/tests/test_telegram_proactive_transport.py EgoCore/tests/test_host_governed_proactive_telegram_cycle.py`
+- `PYTHONPATH=EgoCore:EgoCore/modules:OpenEmotion python3 -m pytest EgoCore/tests/test_telegram_proactive_transport.py EgoCore/tests/test_host_governed_proactive_telegram_cycle.py -q -s`
+- `PYTHONPATH=EgoCore:EgoCore/modules:OpenEmotion python3 -m pytest --basetemp=/tmp/ego_tranche_pytest EgoCore/tests/test_runtime_v2_cli_and_telegram.py::test_telegram_bot_chat_hold_for_followup_queues_outbox_without_immediate_send EgoCore/tests/test_runtime_v2_cli_and_telegram.py::test_telegram_bot_chat_hold_for_followup_blocked_for_explicit_question EgoCore/tests/test_runtime_v2_cli_and_telegram.py::test_telegram_bot_host_owned_reply_captures_explicit_response_plan EgoCore/tests/test_runtime_v2_cli_and_telegram.py::test_telegram_bot_host_owned_reply_blocks_when_subject_gate_fails EgoCore/tests/test_runtime_v2_cli_and_telegram.py::test_telegram_bot_new_runtime_direct_reply_uses_runtime_authority_metadata -q -s`
+- `python3 scripts/codex/lint_repo.py`
+- `python3 scripts/codex/verify_repo.py --mode fast`
+- `git diff --check -- EgoCore/app/telegram_bot.py EgoCore/tests/test_telegram_proactive_transport.py EgoCore/tests/test_host_governed_proactive_telegram_cycle.py`
 
 ## Claim ceiling
 
@@ -109,9 +137,12 @@
   - `M1 Subject Gate Skeleton` 已完成
   - `M2 Telegram Runtime_V2 Early-Return Closure` 已完成
   - `M3 Command / Document / Legacy Closure` 已完成
+  - `M4 Background / Proactive Closure` 已完成本地代码与定向验证
   - 统一 gate abstraction 已建立
   - `_send_host_owned_reply()` 已成为第一条 enforced host-owned path
+  - 本任务当前只保留为 downstream reference，不再单独持有当前 acceptance root
 - 当前不能宣称：
   - 已修复所有 authorized bypass
-  - 已实现包含 background/proactive 在内的全域 mandatory subject ingress
   - live 新窗口已变绿
+  - fresh ordinary-chat Telegram proof 已通过
+  - 当前 tranche 已闭环完成

@@ -16,7 +16,8 @@ EGO 是 AI Agent 项目的总仓，负责集成 EgoCore（宿主）和 OpenEmoti
 - 当前唯一 durable build-first candidate 已固定为 `active-inference self-model`
 - `MVS-aligned compact` 已因 frozen replay gate failure 降为 closed evidence / supporting line，不再是当前主实现线
 - `WP17 / MVP22` 不删除，但当前降为 parked bounded lane，不再是默认最高优先级 implementation track
-- `Milestone 21 / selection closeout` 已完成；若还要继续朝更强的 proxy 推进，必须先新开 bounded planning slice，而不是直接扩张 runtime scope
+- `Milestone 21 / selection closeout` 已完成；当前 execution owner 已切到 `unified-host-contract-correctness`
+- 当前先冻结 unified host contract correctness，用 `dashboard_local` 与 `telegram_prepared` 的 in-process parity 证明宿主 contract 稳定；fresh real Telegram proof 已降为 deferred adapter-level follow-up，而不是当前 acceptance root
 - `proto_self_v2` 已是主体层默认主线，且当前只读解释层与受治理写回面已收口
 - `repo_authority_cleanup: closeout-complete (repo/integration scope)`
 - 当前 repo 处于 `边界冻结下的收口期`

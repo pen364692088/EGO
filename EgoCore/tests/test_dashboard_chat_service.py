@@ -132,6 +132,8 @@ def test_dashboard_chat_service_keeps_named_sessions_continuous_and_isolated(mon
     )
     assert second["debug"]["response_plan"]["reply_authority"] == "model_chat"
     assert second["debug"]["output_check"]["passed"] is True
+    assert second["debug"]["host_contract"]["turn"]["reply_authority"] == "model_chat"
+    assert second["debug"]["host_contract"]["turn"]["proto_self_context"]["available"] is False
     assert subject_gate.calls and subject_gate.calls[0][0] == "ingress"
 
 

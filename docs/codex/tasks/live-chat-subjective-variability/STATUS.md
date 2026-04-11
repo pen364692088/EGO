@@ -2,15 +2,15 @@
 
 ## Current milestone
 
-- name: `Milestone 5: Fresh Real Telegram Proof`
+- name: `Downstream Reference: Telegram adapter-level field proof`
 - owner: `Codex`
-- state: blocked_on_fresh_sample_mix
+- state: deferred_to_unified_host_contract_correctness
 
 ## Current state
 
 - current_layer: `repo_live_chat_corrective_slice`
 - main_chain_status: `host_governed_cadence_present`
-- completion_class: `conditional_complete`
+- completion_class: `downstream_reference_task`
 
 ## Completed work
 
@@ -93,12 +93,16 @@
     - tendency delta 没有 fresh ordinary-chat 证明
     - cadence delta 没有 fresh ordinary-chat 证明
   - `M5` 当前结论是 blocker，不是 pass
+- `mandatory-subject-ingress-all-turns / M4` 的 proactive/background user-visible send closure 已在本地落地并通过 targeted verify：
+  - proactive transport 现在会先走 host-owned response plan + output check + `finalized_result + response_plan` subject gate
+  - gate fail 时会保留 outbox 并返回 `held`
+  - 这一步减少了 fresh live proof 前的主链前置缺口，但还不是 fresh Telegram ordinary-chat proof 本身
 
 ## Open risks
 
 - 当前 baseline 已说明“主体已 ingress”，但还没有 live 可感变化证据
 - 当前 baseline 仍不能证明 chat-level downstream tendency change 强成立
-- 当前 corrective slice 仍依赖 `mandatory-subject-ingress-all-turns` 的后续 background/proactive closure，不能把两条任务线混成同一 claim
+- 当前 corrective slice 不再被 `mandatory-subject-ingress-all-turns / M4` 本地 closure 卡住，但仍需要 publish 后的新窗口 real proof
 - 当前还没有 fresh real Telegram window 证明同一 session 内已经出现稳定 tendency / cadence 差异；那是 `M5` 的范围
 - 当前还没有 `hold_for_followup` 的真实 Telegram 新窗口证据；那是 `M5` 的范围
 - 当前 repo-wide full verify 仍有一个外部验证 blocker：
@@ -110,20 +114,12 @@
 
 ## Next step
 
-- 用 Telegram 对话补一个 fresh ordinary-chat window：
-  - 先 `/new`
-  - 连续发送普通聊天而非 profile-rule / slash command：
-    - `你好`
-    - `我现在有点卡住了，你先帮我理一下`
-    - `继续`
-    - `你刚才为什么那样回答`
-- 然后重跑：
-  - `python3 scripts/codex/prove_live_chat_subjective_variability.py --since-commit 72148b3`
-- 目标是拿到：
-  - ordinary-chat mainline 样本
-  - 至少一次 richer fields 可见
-  - 至少一次 tendency delta
-  - 至少一次 cadence delta 或 verified `hold_for_followup` artifact
+- 当前不再作为 acceptance owner 继续推进。
+- 本任务现在只保留：
+  - future Telegram adapter-level proof 的 authority
+  - richer fields / tendency delta / cadence delta 的 live follow-up参考基线
+- 当前唯一上游执行 owner 是：
+  - `docs/codex/tasks/unified-host-contract-correctness/`
 
 ## Last validation results
 
@@ -134,6 +130,16 @@
   - 当前窗口共有 `6` 条样本，但 `ordinary_chat_mainline = 0`
   - 当前窗口没有可用于证明 richer fields / tendency delta / cadence delta 的 fresh ordinary-chat 证据
   - `M5` blocker 不是当前 chat mainline 必然失效，而是当前 fresh 样本类型不满足证明条件
+- mode: `precondition tranche dependency update`
+- result: `pass`
+- summary:
+  - `mandatory-subject-ingress-all-turns / M4` 已在本地补齐 proactive/background user-visible send 的 subject-finalize closure
+  - `python3 -m py_compile EgoCore/app/telegram_bot.py EgoCore/tests/test_telegram_proactive_transport.py EgoCore/tests/test_host_governed_proactive_telegram_cycle.py` pass
+  - `PYTHONPATH=EgoCore:EgoCore/modules:OpenEmotion python3 -m pytest EgoCore/tests/test_telegram_proactive_transport.py EgoCore/tests/test_host_governed_proactive_telegram_cycle.py -q -s` pass (`8 passed`)
+  - `PYTHONPATH=EgoCore:EgoCore/modules:OpenEmotion python3 -m pytest --basetemp=/tmp/ego_tranche_pytest EgoCore/tests/test_runtime_v2_cli_and_telegram.py::test_telegram_bot_chat_hold_for_followup_queues_outbox_without_immediate_send EgoCore/tests/test_runtime_v2_cli_and_telegram.py::test_telegram_bot_chat_hold_for_followup_blocked_for_explicit_question EgoCore/tests/test_runtime_v2_cli_and_telegram.py::test_telegram_bot_host_owned_reply_captures_explicit_response_plan EgoCore/tests/test_runtime_v2_cli_and_telegram.py::test_telegram_bot_host_owned_reply_blocks_when_subject_gate_fails EgoCore/tests/test_runtime_v2_cli_and_telegram.py::test_telegram_bot_new_runtime_direct_reply_uses_runtime_authority_metadata -q -s` pass (`5 passed`)
+  - `python3 scripts/codex/lint_repo.py` pass
+  - `python3 scripts/codex/verify_repo.py --mode fast` pass
+  - 当前仍未获得任何 post-patch fresh real Telegram ordinary-chat 样本，所以 `M5` 继续 blocked
 
 ## Commands run / evidence
 
@@ -159,6 +165,11 @@
 - `python3 scripts/codex/lint_repo.py`
 - `python3 scripts/codex/verify_repo.py --mode fast`
 - `python3 scripts/codex/verify_repo.py --mode full`
+- `python3 -m py_compile EgoCore/app/telegram_bot.py EgoCore/tests/test_telegram_proactive_transport.py EgoCore/tests/test_host_governed_proactive_telegram_cycle.py`
+- `PYTHONPATH=EgoCore:EgoCore/modules:OpenEmotion python3 -m pytest EgoCore/tests/test_telegram_proactive_transport.py EgoCore/tests/test_host_governed_proactive_telegram_cycle.py -q -s`
+- `PYTHONPATH=EgoCore:EgoCore/modules:OpenEmotion python3 -m pytest --basetemp=/tmp/ego_tranche_pytest EgoCore/tests/test_runtime_v2_cli_and_telegram.py::test_telegram_bot_chat_hold_for_followup_queues_outbox_without_immediate_send EgoCore/tests/test_runtime_v2_cli_and_telegram.py::test_telegram_bot_chat_hold_for_followup_blocked_for_explicit_question EgoCore/tests/test_runtime_v2_cli_and_telegram.py::test_telegram_bot_host_owned_reply_captures_explicit_response_plan EgoCore/tests/test_runtime_v2_cli_and_telegram.py::test_telegram_bot_host_owned_reply_blocks_when_subject_gate_fails EgoCore/tests/test_runtime_v2_cli_and_telegram.py::test_telegram_bot_new_runtime_direct_reply_uses_runtime_authority_metadata -q -s`
+- `python3 scripts/codex/lint_repo.py`
+- `python3 scripts/codex/verify_repo.py --mode fast`
 
 ## Claim ceiling
 
@@ -177,3 +188,4 @@
   - `hold_for_followup` 已在 fresh real Telegram 新窗口中证明生效
   - repo-wide full verify 当前为 green
   - unrestricted autonomy / direct reply authority release
+  - 本任务仍是当前 acceptance root
