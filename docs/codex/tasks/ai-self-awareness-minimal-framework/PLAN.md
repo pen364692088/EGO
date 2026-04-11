@@ -735,12 +735,48 @@
 - rollback note:
   - 若实现引入新的 authority surface 或第二 scorer 语义，立即回退到 `Milestone 17` 的 planning freeze
 
+### Milestone 19: Controlled Observation Planning
+
+- type: planning
+- question:
+  - 在不扩张 runtime authority 的前提下，如何把 passing controlled replay bridge 推进到第一轮 controlled observation
+- current framing:
+  - `Milestone 18` 已证明 replay-validated active-inference winner 在 repo-authored conversation slices 上继续过线
+  - 当前仍然禁止 runtime-shadow 扩张、transport 扩张、candidate-private host API 与第二 scorer ontology
+- hypotheses:
+  - 先冻结 observation bank / runner contract / rollback gate，比直接接 formal runtime 更稳
+  - controlled observation 仍可继续复用同一 bounded host surface 与 canonical scorer
+- scope:
+  - 冻结 controlled observation bank 的最小 family 与 coverage
+  - 冻结 observation runner contract、authority drift audit、trace contract audit 与 rollback 条件
+  - 明确第一轮 controlled observation implementation milestone，而不是直接推进 runtime 接线
+- experiments planned:
+  - observation-bank design
+  - observation-runner contract freeze
+  - gate / rollback freeze
+- kill criteria:
+  - 若 planning 发现必须新增 runtime public API、candidate-private host API、parallel runtime lane、或第二 scorer ontology，当前 framing 失败
+- files / areas likely touched:
+  - `docs/codex/tasks/ai-self-awareness-minimal-framework/*`
+  - `docs/PROGRAM_STATE_UNIFIED.yaml`
+  - `docs/OVERALL_PROGRESS.md`
+  - `artifacts/evidence_ledger/index.yaml`
+- acceptance:
+  - 明确回答：
+    - 下一轮 controlled observation 的输入 bank 是什么
+    - 如何继续保持 bounded host contract 与 zero authority drift
+    - 什么条件下允许进入 observation implementation，什么条件下必须停下重构
+- validation:
+  - `python3 scripts/codex/verify_repo.py --mode fast`
+- rollback note:
+  - 若 planning 需要打破 `policy_hint / response_tendency / trace_payload` 之外的 bounded host surface，立即回退到 `Milestone 18` 通过后的 freeze 状态
+
 ## Progress
 
-- current_status: `active_inference_controlled_integration_plan_frozen`
-- current_milestone: `Milestone 18: Controlled Conversation Replay Bridge`
+- current_status: `active_inference_controlled_replay_bridge_pass`
+- current_milestone: `Milestone 19: Controlled Observation Planning`
 - milestone_state: `pending`
-- candidate_vs_proof: `active_inference_replay_gate_passed_shadow_only`
+- candidate_vs_proof: `active_inference_controlled_replay_bridge_passed`
 
 ## Decision log
 
@@ -939,6 +975,37 @@
   - 当前 selection decision = `switch_to_active_inference`
   - 当前已完成 `Milestone 17: Controlled Integration Planning`
   - 下一步进入 `Milestone 18: Controlled Conversation Replay Bridge`
+- 2026-04-11: `Milestone 18` 已完成：
+  - repo-tracked controlled replay manifest 已冻结：
+    - `CONTROLLED_REPLAY_CONVERSATION_MANIFEST.json`
+    - `60` slices
+    - `20 / 20 / 20` family coverage
+    - `20` slices 带 `external_result`
+  - controlled replay bridge runner 已落地：
+    - `scripts/codex/build_controlled_replay_conversation_manifest.py`
+    - `scripts/codex/run_active_inference_controlled_replay.py`
+  - canonical scorer 已继续复用同一 frozen gate，而不是新建第二 scorer ontology
+  - current controlled replay scored result：
+    - `decision = bridge_pass`
+    - `candidate_pass = true`
+    - `T1 = 1.0`
+    - `T2 = 1.0`
+    - `T3 = 1.0`
+    - `T4 = 1.0`
+    - `T5 = 1.0`
+    - `composite = 1.0`
+    - `boundary_integrity = 1.0`
+    - `repair_closure_capture = 1.0`
+    - `trace_replayability = 1.0`
+    - `composite_delta_vs_baseline_a = 0.4667`
+  - current bridge audit result：
+    - `authority_drift_status = pass`
+    - `trace_contract_status = pass`
+  - 一个 bridge-audit false positive 已被修正：
+    - corrective-trace keys 只对声明使用 corrective-trace 的 variant 强制
+    - baseline A 继续作为 replayable lower-bound，不再被误要求携带 winner-only corrective payload
+  - 下一步进入：
+    - `Milestone 19: Controlled Observation Planning`
 
 ## Surprises / discoveries
 

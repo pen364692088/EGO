@@ -2,17 +2,17 @@
 
 ## Current milestone
 
-- name: `Milestone 18: Controlled Conversation Replay Bridge`
+- name: `Milestone 19: Controlled Observation Planning`
 - owner: `Codex`
 - state: pending
-- type: implementation
+- type: planning
 
 ## Current state
 
-- current_layer: `active_inference_controlled_integration_plan_frozen`
+- current_layer: `active_inference_controlled_replay_bridge_pass`
 - main_chain_status: `not_connected_by_design`
-- completion_class: `partial_pending_controlled_replay_bridge`
-- candidate_vs_proof: `active_inference_replay_gate_passed_shadow_only`
+- completion_class: `partial_pending_controlled_observation_planning`
+- candidate_vs_proof: `active_inference_controlled_replay_bridge_passed`
 - trial1_closure:
   - `Trial-1 remains closed and demoted. The formal shadow-only MVS replay gate is now complete; corrected scoring shows MVS fails the frozen gate on tension causality and repair closure, so the research build-first lane must switch to active-inference while formal runtime mainline remains unchanged.`
 
@@ -38,6 +38,35 @@
     - `replayed conversations / repo-authored conversation slices`
   - 当前下一实际编码里程碑已固定为：
     - `Milestone 18: Controlled Conversation Replay Bridge`
+
+- `Milestone 18` 的 controlled conversation replay bridge 已完成：
+  - 新增 repo-tracked manifest：
+    - `CONTROLLED_REPLAY_CONVERSATION_MANIFEST.json`
+    - `60` slices
+    - `20 / 20 / 20` family coverage
+    - `20` slices 带 `external_result`
+  - 新增 bridge runner：
+    - `scripts/codex/build_controlled_replay_conversation_manifest.py`
+    - `scripts/codex/run_active_inference_controlled_replay.py`
+  - canonical scorer 继续复用同一 frozen replay gate，而不是新建第二 scorer ontology
+  - current bridge scored result：
+    - `decision = bridge_pass`
+    - `candidate_pass = true`
+    - `T1 = 1.0`
+    - `T2 = 1.0`
+    - `T3 = 1.0`
+    - `T4 = 1.0`
+    - `T5 = 1.0`
+    - `composite = 1.0`
+    - `boundary_integrity = 1.0`
+    - `repair_closure_capture = 1.0`
+    - `trace_replayability = 1.0`
+    - `composite_delta_vs_baseline_a = 0.4667`
+  - bridge boundedness checks：
+    - `authority_drift_status = pass`
+    - `trace_contract_status = pass`
+  - 当前下一实际里程碑已切到：
+    - `Milestone 19: Controlled Observation Planning`
 
 - formal shadow-only MVS replay gate 已落地：
   - `MVS_REPLAY_CORPUS_MANIFEST.json`
@@ -325,33 +354,35 @@
 ## Last experiment
 
 - question:
-  - replay-validated winner 在不新增 authority path 的前提下，究竟能以什么 bounded surface 进入下一轮受控验证
+  - replay-validated winner 在 repo-authored conversation slices 上，能否继续通过 frozen replay gate，同时保持 zero authority drift 与 replayable trace contract
 - framing:
-  - `freeze contract before any runtime-shadow expansion`
+  - `bridge first, runtime later`
 - result:
-  - 当前宿主真实消费面已审计并冻结为：
-    - `policy_hint`
-    - `response_tendency`
-    - `trace_payload`
-  - active-inference 私有 action-map 状态继续保留在 OpenEmotion 内部，不进入 host top-level contract：
-    - `source_confidence_by_action`
-    - `agency_confidence_by_action`
-    - `uncertainty_by_action`
-    - `calibration_memory_by_action`
-    - `temporal_repair_weight_by_action`
-  - canonical trace contract 已冻结为继续依赖：
-    - `predicted_outcome`
-    - `actual_outcome`
-    - `adjustment_applied`
-    - `next_guard`
-    - `repair_closure`
-  - first bridge target 已冻结为：
-    - `replayed conversations / repo-authored conversation slices`
-  - 当前不再允许：
-    - runtime-shadow 提前扩张
-    - candidate-private host API
-    - 第二 scorer ontology
-- evidence_upgraded: no
+  - controlled replay manifest 已冻结为：
+    - `60` slices
+    - `identity_continuity / decision_conflict / failure_repair_retry = 20 / 20 / 20`
+    - `20` slices 带 `external_result`
+  - current controlled replay scored result：
+    - `decision = bridge_pass`
+    - `candidate_pass = true`
+    - `T1 = 1.0`
+    - `T2 = 1.0`
+    - `T3 = 1.0`
+    - `T4 = 1.0`
+    - `T5 = 1.0`
+    - `composite = 1.0`
+    - `boundary_integrity = 1.0`
+    - `repair_closure_capture = 1.0`
+    - `trace_replayability = 1.0`
+    - `composite_delta_vs_baseline_a = 0.4667`
+  - bridge boundedness checks：
+    - `authority_drift_status = pass`
+    - `trace_contract_status = pass`
+  - 一个 bridge false positive 已被消掉：
+    - baseline A 不是 corrective-trace carrier
+    - corrective-trace keys 只对声明使用 corrective-trace 的 variant 强制
+    - 这次修正没有放宽 winner gate，只是把 baseline lower-bound 从错误约束里移出
+- evidence_upgraded: yes
 
 ## What was learned
 
@@ -389,26 +420,15 @@
   - `MVS-aligned compact` 在多 seeds / 多 held-out splits / weight perturbations 下仍是稳健第一
   - `MVS-aligned compact` 能在现有 `OpenEmotion/proto_self` 正式主线上被最小表达
 - 当前新的未知是：
-  - replay-validated winner 能否在不新增 authority path 的前提下进入 controlled integration
-  - replay winner 的 gain 能否在 replayed conversation / controlled observation 下保持
+  - replay winner 的 gain 能否在更接近 runtime 的 controlled observation 下保持
+  - controlled observation 是否仍能继续保持 zero authority drift 与 bounded host surface
 - 当前进一步确认：
-  - 当前宿主真实消费面已经足够承接下一轮受控验证，不需要新增 runtime public API
-  - 当前 planning 阶段的最优 bridge 不是 live transport，而是 repo-authored conversation slices
-  - 当前 active-inference private action maps 只能通过既有 `policy_hint / response_tendency / trace_payload` 间接投影，不能直接泄露给宿主侧
-- representation-neutral scorer 说明：
-  - 当前 replay artifact 已足以支撑 admission 与 decision-adjacent 读数
-  - 但还不足以在 ablation separation 上压过所有关键 ablations
-- current blocker 已缩小为：
-  - strongest ablation 需要怎样重设，才能在不破坏 representation-neutral ontology 的前提下暴露 counterfactual causal value
-  - 重设后的 ablation 是否仍值得保留 `counterfactual_writeback` 作为 current mechanism claim 的组成部分
-- 当前 redesign spec 说明：
-  - strongest ablation 必须切 public path，不再以 private-state deletion 充当 strongest comparator
-  - companion ablation 需要隔离 `recent_correction_tags / viability_pressure` 这条 alternative explanation
-- redesigned strongest-ablation rerun 进一步说明：
-  - `public_path_sever` 上确实能看到 public policy separation
-  - 但 separation 只有 `0.05`，没有跨过 frozen `candidate > ablation` 阈值
-  - `alternative_explanation_isolation` 与 candidate 持平，导致 strongest-ablation rule 失败
-  - 因此当前不能再维持更强的 `counterfactual_writeback` surviving claim
+  - repo-authored conversation slices 已足够承接 first controlled bridge，不需要新增 runtime public API
+  - 当前 active-inference private action maps 仍然只通过既有 `policy_hint / response_tendency / trace_payload` 间接投影，不能直接泄露给宿主侧
+  - bridge falsification 仍然成立：如果下一阶段 observation 需要新 authority path 或 candidate-private host API，当前 framing 仍应判失败
+  - 当前 blocker 已上移为：
+    - 还没有 controlled observation 级证据
+    - 还没有更接近 formal runtime 的 bounded observation runner / bank / rollback freeze
 
 ## What was ruled out
 
@@ -435,80 +455,32 @@
 - 先做 runtime-shadow 扩张再回头补 bounded contract
 - 让 EgoCore 直接读取 active-inference candidate-private action maps
 - 为 replayed conversation bridge 新建第二 scorer ontology 或 parallel runtime lane
+- 把 baseline lower-bound 错当成 winner corrective-trace contract carrier
 
 ## Next framing
 
 - 当前下一步固定为：
-  - 保持当前 replay pass 只算 `shadow-only + proposal-only`
+  - 保持当前 bridge pass 只算 `controlled replay + bounded research evidence`
   - 不升级 repo-level runtime claim
   - 维持 bounded host-consumable surface freeze
-  - 进入 `Milestone 18: Controlled Conversation Replay Bridge`
+  - 进入 `Milestone 19: Controlled Observation Planning`
 - 继续保持：
-  - 不宣称 replay efficacy
-  - 不让 decision engine 在 replay pass 前消费 candidate output 作为行为 authority
+  - 不宣称 runtime efficacy 或 live benefit
+  - 不让 decision engine 在 controlled replay pass 后偷拿 candidate output 作为行为 authority
   - 不引入 parallel runtime mainline
 
 ## Last validation results
 
-- mode: `controlled_integration_plan_freeze`
+- mode: `controlled_replay_bridge`
 - result: `pass`
 - summary:
-- `git diff --check -- docs/codex/tasks/ai-self-awareness-minimal-framework/CONTROLLED_INTEGRATION_PLAN.md docs/codex/tasks/ai-self-awareness-minimal-framework/PLAN.md docs/codex/tasks/ai-self-awareness-minimal-framework/IMPLEMENT.md docs/codex/tasks/ai-self-awareness-minimal-framework/STATUS.md docs/codex/tasks/ai-self-awareness-minimal-framework/EXPLORE.md docs/PROGRAM_STATE_UNIFIED.yaml docs/OVERALL_PROGRESS.md artifacts/evidence_ledger/index.yaml docs/STATUS.md artifacts/reports/program_state_summary.md EgoCore/docs/PROGRAM_STATE_UNIFIED.yaml OpenEmotion/docs/PROGRAM_STATE_UNIFIED.yaml` pass
+- `python3 -m py_compile scripts/codex/build_controlled_replay_conversation_manifest.py scripts/codex/run_active_inference_controlled_replay.py scripts/codex/score_mvs_replay_validator.py EgoCore/tests/test_active_inference_controlled_replay_bridge.py EgoCore/tests/test_mvs_replay_scoring.py` pass
+- `python3 scripts/codex/build_controlled_replay_conversation_manifest.py` pass
+- `PYTHONPATH=EgoCore:EgoCore/modules:OpenEmotion python3 -m pytest EgoCore/tests/test_active_inference_controlled_replay_bridge.py EgoCore/tests/test_mvs_replay_scoring.py -q -s --basetemp=/mnt/d/Project/AIProject/MyProject/Ego/.tmp_pytest_controlled_replay` pass
+- `python3 scripts/codex/run_active_inference_controlled_replay.py` pass
+- `python3 scripts/codex/score_mvs_replay_validator.py --input artifacts/self_awareness_research/ACTIVE_INFERENCE_CONTROLLED_REPLAY_CURRENT.json --output-json artifacts/self_awareness_research/ACTIVE_INFERENCE_CONTROLLED_REPLAY_SCORED_CURRENT.json --output-md artifacts/self_awareness_research/ACTIVE_INFERENCE_CONTROLLED_REPLAY_SCORED_CURRENT.md` pass
 - `python3 scripts/codex/generate_program_state_views.py` pass
 - `python3 scripts/codex/check_program_state_integrity.py --skip-diff-check` pass
-- `python3 scripts/codex/verify_repo.py --mode fast` pass
-- `python3 -m py_compile OpenEmotion/openemotion/proto_self/state.py OpenEmotion/openemotion/proto_self/mvs_replay.py OpenEmotion/openemotion/proto_self/appraisal.py OpenEmotion/openemotion/proto_self/self_model.py OpenEmotion/openemotion/proto_self/reducers.py OpenEmotion/openemotion/proto_self/cycles.py scripts/codex/run_mvs_replay_validator.py scripts/codex/score_mvs_replay_validator.py` pass
-- `PYTHONPATH=EgoCore:EgoCore/modules:OpenEmotion python3 -m pytest EgoCore/tests/test_mvs_replay_minimal.py EgoCore/tests/test_mvs_replay_scoring.py OpenEmotion/openemotion/proto_self/tests/test_mvs_replay_contract.py -q --basetemp=/tmp/ego_mvs_pytest` pass
-- `PYTHONPATH=EgoCore:EgoCore/modules:OpenEmotion python3 scripts/codex/run_mvs_replay_validator.py` pass
-- `python3 scripts/codex/score_mvs_replay_validator.py` pass
-- `python3 scripts/codex/verify_repo.py --mode fast` pass
-- 已修复 robustness loader:
-  - `scripts/codex/run_operational_selection_robustness.py` 现在会显式注册动态模块名到 `sys.modules`
-- robustness audit 已首次跑通：
-  - `5` seeds
-  - `3` held-out splits
-  - `35` weight scenarios
-  - total = `525` ranking scenarios
-  - 当前结果：
-    - `MVS-aligned compact` win rate = `0.9867`
-    - `active-inference self-model` win rate = `0.0133`
-    - `MVS` baseline seed/split wins = `15/15`
-- 发现一个非逻辑告警：
-  - UTC 时间戳写法触发 deprecation warning
-  - 已修正为 timezone-aware 时间戳；等待无警告重跑
-- `python3 -m py_compile scripts/codex/run_operational_selection_robustness.py` rerun pass
-- `git diff --check -- docs/codex/tasks/ai-self-awareness-minimal-framework scripts/codex/run_operational_selection_robustness.py` rerun pass
-- `python3 scripts/codex/run_operational_selection_robustness.py` rerun pass without warning
-- `python3 scripts/codex/generate_program_state_views.py` pass
-- `python3 scripts/codex/check_program_state_integrity.py --skip-diff-check` pass
-- `python3 scripts/codex/verify_repo.py --mode fast` pass
-- final `git diff --check -- ...de-risking slice` pass
-- final `python3 scripts/codex/verify_repo.py --mode fast` pass
-- `git diff --check -- docs/codex/tasks/ai-self-awareness-minimal-framework/TRIAL1_ABLATION_REDESIGN_SPEC.md docs/codex/tasks/ai-self-awareness-minimal-framework/PLAN.md docs/codex/tasks/ai-self-awareness-minimal-framework/PLANS.md docs/codex/tasks/ai-self-awareness-minimal-framework/STATUS.md docs/codex/tasks/ai-self-awareness-minimal-framework/EXPLORE.md` pass
-- final `python3 scripts/codex/verify_repo.py --mode fast` pass
-- `python3 -m py_compile scripts/codex/score_trial1_shadow_replay.py` pass
-- `python3 scripts/codex/score_trial1_shadow_replay.py` pass
-- `git diff --check -- scripts/codex/score_trial1_shadow_replay.py docs/codex/tasks/ai-self-awareness-minimal-framework/TRIAL1_REPLAY_SCORER_SPEC.md artifacts/self_awareness_research/TRIAL1_SHADOW_REPLAY_SCORED_CURRENT.md artifacts/self_awareness_research/TRIAL1_SHADOW_REPLAY_SCORED_CURRENT.json artifacts/self_awareness_research/TRIAL1_SHADOW_REPLAY_CAUSAL_TABLE_CURRENT.md docs/codex/tasks/ai-self-awareness-minimal-framework/PLAN.md docs/codex/tasks/ai-self-awareness-minimal-framework/PLANS.md docs/codex/tasks/ai-self-awareness-minimal-framework/STATUS.md` pass
-- `python3 scripts/codex/verify_repo.py --mode fast` pass
-- task-doc closeout rerun:
-  - `git diff --check -- docs/codex/tasks/ai-self-awareness-minimal-framework/PLAN.md docs/codex/tasks/ai-self-awareness-minimal-framework/PLANS.md docs/codex/tasks/ai-self-awareness-minimal-framework/STATUS.md docs/codex/tasks/ai-self-awareness-minimal-framework/EXPLORE.md` pass
-  - `python3 scripts/codex/verify_repo.py --mode fast` pass
-- final closeout rerun:
-  - `git diff --check -- docs/codex/tasks/ai-self-awareness-minimal-framework/PLAN.md docs/codex/tasks/ai-self-awareness-minimal-framework/PLANS.md docs/codex/tasks/ai-self-awareness-minimal-framework/STATUS.md docs/codex/tasks/ai-self-awareness-minimal-framework/EXPLORE.md` pass
-  - `python3 scripts/codex/verify_repo.py --mode fast` pass
-- `python3 -m py_compile scripts/codex/diagnose_trial1_causal_gap.py` pass
-- `python3 scripts/codex/diagnose_trial1_causal_gap.py` pass
-- `python3 -m json.tool docs/codex/tasks/ai-self-awareness-minimal-framework/TRIAL1_COUNTERFACTUAL_HARD_SET.json` pass
-- `git diff --check -- scripts/codex/diagnose_trial1_causal_gap.py docs/codex/tasks/ai-self-awareness-minimal-framework/TRIAL1_CAUSAL_GAP_PLAN.md docs/codex/tasks/ai-self-awareness-minimal-framework/TRIAL1_COUNTERFACTUAL_HARD_SET.json docs/codex/tasks/ai-self-awareness-minimal-framework/PLAN.md docs/codex/tasks/ai-self-awareness-minimal-framework/PLANS.md docs/codex/tasks/ai-self-awareness-minimal-framework/STATUS.md docs/codex/tasks/ai-self-awareness-minimal-framework/EXPLORE.md artifacts/self_awareness_research/TRIAL1_CAUSAL_SEPARATION_CURRENT.md artifacts/self_awareness_research/TRIAL1_CAUSAL_SEPARATION_CURRENT.json artifacts/self_awareness_research/TRIAL1_CAUSAL_SEPARATION_TABLE_CURRENT.md` pass
-- final `python3 scripts/codex/verify_repo.py --mode fast` pass
-- `python3 -m py_compile OpenEmotion/openemotion/proto_self/trial1_shadow.py OpenEmotion/openemotion/proto_self/reducers.py OpenEmotion/openemotion/proto_self/kernel.py scripts/codex/run_trial1_hard_set_rerun.py scripts/codex/score_trial1_shadow_replay.py scripts/codex/diagnose_trial1_causal_gap.py scripts/codex/evaluate_trial1_redesigned_ablations.py` pass
-- `PYTHONPATH=OpenEmotion python3 -m pytest OpenEmotion/openemotion/proto_self/tests/test_trial1_shadow_contract.py -q` pass
-- `PYTHONPATH=EgoCore:EgoCore/modules:OpenEmotion python3 -m pytest EgoCore/tests/test_trial1_shadow_replay_minimal.py -q` pass
-- `python3 scripts/codex/run_trial1_hard_set_rerun.py` pass
-- `python3 scripts/codex/score_trial1_shadow_replay.py --input artifacts/self_awareness_research/TRIAL1_HARD_SET_RERUN_CURRENT.json --output-json artifacts/self_awareness_research/TRIAL1_HARD_SET_RERUN_SCORED_CURRENT.json --output-md artifacts/self_awareness_research/TRIAL1_HARD_SET_RERUN_SCORED_CURRENT.md --causal-md artifacts/self_awareness_research/TRIAL1_HARD_SET_RERUN_CAUSAL_TABLE_CURRENT.md --positive-buckets counterfactual_isolation restart_restore_boundary_cases --negative-control-buckets negative_controls` pass
-- `python3 scripts/codex/diagnose_trial1_causal_gap.py --raw-report /mnt/d/Project/AIProject/MyProject/Ego/artifacts/self_awareness_research/TRIAL1_HARD_SET_RERUN_CURRENT.json --scored-report /mnt/d/Project/AIProject/MyProject/Ego/artifacts/self_awareness_research/TRIAL1_HARD_SET_RERUN_SCORED_CURRENT.json --hard-set /mnt/d/Project/AIProject/MyProject/Ego/docs/codex/tasks/ai-self-awareness-minimal-framework/TRIAL1_COUNTERFACTUAL_HARD_SET.json --strongest-ablation-id trial1_ablation_counterfactual_public_path_sever --neighboring-ablation-id trial1_ablation_alternative_explanation_isolation --output-json /mnt/d/Project/AIProject/MyProject/Ego/artifacts/self_awareness_research/TRIAL1_HARD_SET_CAUSAL_SEPARATION_CURRENT.json --output-md /mnt/d/Project/AIProject/MyProject/Ego/artifacts/self_awareness_research/TRIAL1_HARD_SET_CAUSAL_SEPARATION_CURRENT.md --table-md /mnt/d/Project/AIProject/MyProject/Ego/artifacts/self_awareness_research/TRIAL1_HARD_SET_CAUSAL_SEPARATION_TABLE_CURRENT.md` pass
-- `python3 scripts/codex/evaluate_trial1_redesigned_ablations.py --scored-report /mnt/d/Project/AIProject/MyProject/Ego/artifacts/self_awareness_research/TRIAL1_HARD_SET_RERUN_SCORED_CURRENT.json --causal-report /mnt/d/Project/AIProject/MyProject/Ego/artifacts/self_awareness_research/TRIAL1_HARD_SET_CAUSAL_SEPARATION_CURRENT.json --output-json /mnt/d/Project/AIProject/MyProject/Ego/artifacts/self_awareness_research/TRIAL1_REDESIGNED_ABLATION_EVALUATION_CURRENT.json --output-md /mnt/d/Project/AIProject/MyProject/Ego/artifacts/self_awareness_research/TRIAL1_REDESIGNED_ABLATION_EVALUATION_CURRENT.md` pass
-- `git diff --check -- ...Trial-1 redesigned-ablation rerun slice...` pass
 - `python3 scripts/codex/verify_repo.py --mode fast` pass
 
 ## Decisions made
@@ -523,6 +495,7 @@
   - `repair_closure_capture` 低于 frozen threshold
 - replay gate fail 后，下一步只能去做 `active-inference` formal shadow slice；不能回头继续把 MVS 当当前主线磨到过线
 - replay winner 已确定后，下一步只能先冻结 bounded controlled integration contract；不能提前做 runtime-shadow 扩张
+- controlled replay bridge 通过后，下一步也仍然只能先做 controlled observation planning；不能借 bridge_pass 直接升级 runtime claim 或 transport scope
 
 - 当前任务当前只宣称：
   - replay-validated shadow-only winner 已出现
@@ -558,11 +531,11 @@
 - proof gap:
   - 当前虽已有 passing build-first candidate，但还没有 replayed conversation eval、controlled observation、主链接线、或真实用户验证
 - design gap:
-  - 当前虽已冻结 controlled integration plan，但还没有 bridge implementation 与 stronger replay transfer evidence
+  - 当前虽已有 controlled replay bridge pass，但还没有 controlled observation bank / runner / rollback freeze
 - validator gap:
-  - replayed conversation bridge 仍未实现；winner 能否在 conversation slices 上继续过线尚未验证
+  - 还没有更接近 formal runtime 的 controlled observation evidence
 - route gap:
-  - 若 winner 在 controlled replay bridge 下失真，repo 需要重构 research-first bridge framing，而不是偷渡 runtime authority
+  - 若 winner 在 controlled observation 下失真，repo 需要重构 research-first observation framing，而不是偷渡 runtime authority
 - current MVS replay gap:
   - `T4 tension causality = 0.5833 < 0.70`
   - `repair_closure_capture = 0.75 < 0.80`
@@ -572,15 +545,17 @@
 ## Next step
 
 - 下一步最小动作是：
-  - 不升级 repo-level state beyond simulation-only scope
+  - 不升级 repo-level state 到 runtime-efficacy 或 live-benefit 口径
   - 当前最高优先级 implementation lane 固定为：
     - `active-inference self-model`
   - 当前不再保留 live MVS challenger；`MVS-aligned compact` 已归档为 closed evidence
-  - 实现 `Milestone 18: Controlled Conversation Replay Bridge`
-  - 先冻结 repo-authored conversation manifest
-  - 只把 conversation turns 归一化到 canonical replay gate
-  - 继续复用同一 frozen replay threshold 与 canonical scorer
-  - 不新增 runtime authority、不新增 scorer ontology、不过早进入 controlled observation
+  - 进入 `Milestone 19: Controlled Observation Planning`
+  - 先冻结 controlled observation bank、runner contract、authority drift audit、trace contract audit 与 rollback 条件
+  - 继续保持唯一允许宿主消费面：
+    - `policy_hint`
+    - `response_tendency`
+    - `trace_payload`
+  - 不新增 runtime authority、不新增 scorer ontology、不提前扩张 transport 或 runtime-shadow
   - `WP17/MVP22` 继续保持 parked bounded lane，等待 replay-gated 结果后再决定 reintegration
 
 ## Commands run / evidence
@@ -588,6 +563,9 @@
 - `git diff --check -- docs/codex/tasks/ai-self-awareness-minimal-framework/CONTROLLED_INTEGRATION_PLAN.md docs/codex/tasks/ai-self-awareness-minimal-framework/PLAN.md docs/codex/tasks/ai-self-awareness-minimal-framework/IMPLEMENT.md docs/codex/tasks/ai-self-awareness-minimal-framework/STATUS.md docs/codex/tasks/ai-self-awareness-minimal-framework/EXPLORE.md docs/PROGRAM_STATE_UNIFIED.yaml docs/OVERALL_PROGRESS.md artifacts/evidence_ledger/index.yaml docs/STATUS.md artifacts/reports/program_state_summary.md EgoCore/docs/PROGRAM_STATE_UNIFIED.yaml OpenEmotion/docs/PROGRAM_STATE_UNIFIED.yaml`
 - `python3 scripts/codex/generate_program_state_views.py`
 - `python3 scripts/codex/check_program_state_integrity.py --skip-diff-check`
+- `python3 scripts/codex/build_controlled_replay_conversation_manifest.py`
+- `python3 scripts/codex/run_active_inference_controlled_replay.py`
+- `python3 scripts/codex/score_mvs_replay_validator.py --input artifacts/self_awareness_research/ACTIVE_INFERENCE_CONTROLLED_REPLAY_CURRENT.json --output-json artifacts/self_awareness_research/ACTIVE_INFERENCE_CONTROLLED_REPLAY_SCORED_CURRENT.json --output-md artifacts/self_awareness_research/ACTIVE_INFERENCE_CONTROLLED_REPLAY_SCORED_CURRENT.md`
 - `python3 scripts/codex/verify_repo.py --mode fast`
 - `docs/codex/tasks/ai-self-awareness-minimal-framework/CONTROLLED_INTEGRATION_PLAN.md`
 - `sed -n '1,220p' PROJECT_MEMORY.md`

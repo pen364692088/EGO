@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from scripts.codex.score_mvs_replay_validator import (
     VariantScores,
+    _bridge_selection_decision,
     _canonical_trace,
     _selection_decision,
     _trace_replayable,
@@ -172,3 +173,28 @@ def test_selection_allows_saturated_baseline_target_without_impossible_positive_
     assert selection["challenger_status"] == "pass"
     assert selection["target_delta_rules"]["T1"] == "non_regression>=-0.02"
     assert selection["challenger_target_delta_rules"]["T1"] == "non_regression>=-0.02"
+
+
+def test_bridge_selection_passes_without_ablation_requirements() -> None:
+    baseline = VariantScores(
+        target_scores={"T1": 1.0, "T2": 0.75, "T3": 0.33, "T4": 0.33, "T5": 0.25},
+        composite=0.5333,
+        boundary_integrity=1.0,
+        repair_closure_capture=0.75,
+        trace_replayability=1.0,
+    )
+    candidate = VariantScores(
+        target_scores={"T1": 1.0, "T2": 1.0, "T3": 1.0, "T4": 1.0, "T5": 1.0},
+        composite=1.0,
+        boundary_integrity=1.0,
+        repair_closure_capture=1.0,
+        trace_replayability=1.0,
+    )
+
+    selection = _bridge_selection_decision(candidate=candidate, baseline_a=baseline)
+
+    assert selection["bridge_mode"] is True
+    assert selection["candidate_pass"] is True
+    assert selection["decision"] == "bridge_pass"
+    assert selection["ablation_drops"] == {}
+    assert selection["challenger_status"] == "not_applicable"

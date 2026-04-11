@@ -974,3 +974,63 @@
 - decision for next step:
   - 关闭 `Milestone 17`
   - 进入 `Milestone 18: Controlled Conversation Replay Bridge`
+
+### Cycle 19
+
+- question:
+  - replay-validated winner 在 repo-authored conversation slices 上，能否继续通过 frozen replay gate，同时保持 zero authority drift 和 replayable trace contract
+- framing used:
+  - `bridge first, runtime later`
+- experiment:
+  - 基于 canonical `MVS_REPLAY_CORPUS_MANIFEST.json` 生成 repo-tracked `CONTROLLED_REPLAY_CONVERSATION_MANIFEST.json`
+  - 实现 `run_active_inference_controlled_replay.py`，把 conversation turns 归一化为 `KernelEvent + external_result + state snapshot`
+  - 继续复用同一 canonical scorer，对 baseline A 与 active-inference winner 出统一结果表
+  - 额外输出 authority drift audit 与 trace contract check
+- command / script / artifact:
+  - `python3 scripts/codex/build_controlled_replay_conversation_manifest.py`
+  - `python3 scripts/codex/run_active_inference_controlled_replay.py`
+  - `python3 scripts/codex/score_mvs_replay_validator.py --input artifacts/self_awareness_research/ACTIVE_INFERENCE_CONTROLLED_REPLAY_CURRENT.json --output-json artifacts/self_awareness_research/ACTIVE_INFERENCE_CONTROLLED_REPLAY_SCORED_CURRENT.json --output-md artifacts/self_awareness_research/ACTIVE_INFERENCE_CONTROLLED_REPLAY_SCORED_CURRENT.md`
+  - `docs/codex/tasks/ai-self-awareness-minimal-framework/CONTROLLED_REPLAY_CONVERSATION_MANIFEST.json`
+  - `artifacts/self_awareness_research/ACTIVE_INFERENCE_CONTROLLED_REPLAY_CURRENT.json`
+  - `artifacts/self_awareness_research/ACTIVE_INFERENCE_CONTROLLED_REPLAY_SCORED_CURRENT.json`
+- observed result:
+  - controlled replay manifest 已冻结为：
+    - `60` slices
+    - `identity_continuity / decision_conflict / failure_repair_retry = 20 / 20 / 20`
+    - `20` slices 带 `external_result`
+  - bridge scored result：
+    - `decision = bridge_pass`
+    - `candidate_pass = true`
+    - `T1 = 1.0`
+    - `T2 = 1.0`
+    - `T3 = 1.0`
+    - `T4 = 1.0`
+    - `T5 = 1.0`
+    - `composite = 1.0`
+    - `boundary_integrity = 1.0`
+    - `repair_closure_capture = 1.0`
+    - `trace_replayability = 1.0`
+    - `composite_delta_vs_baseline_a = 0.4667`
+  - bridge boundedness 结果：
+    - `authority_drift_status = pass`
+    - `trace_contract_status = pass`
+  - 一个 bridge-audit false positive 被定位并修正：
+    - baseline A 本身不声明 corrective-trace contract
+    - corrective-trace key requirement 只应强制到声明使用 corrective-trace 的 variant
+    - winner trace 仍保持完整，不是 candidate payload 缺失
+- what it proves:
+  - active-inference winner 不只在 held-out kernel replay 上通过，也已在 repo-authored controlled conversation slices 上继续通过同一 frozen replay gate
+  - bounded host surface、zero authority drift、canonical trace replayability 在 bridge 层仍成立
+  - 现阶段不需要新增 runtime public API、candidate-private host API、parallel runtime lane 或第二 scorer ontology
+- what it does not prove:
+  - formal runtime mainline efficacy
+  - live Telegram transfer
+  - real user benefit
+  - consciousness-like properties
+- what path is ruled out:
+  - 把 baseline lower-bound 误当成 winner trace contract carrier
+  - 为了 bridge 通过而新建第二 scorer ontology
+  - 在 controlled replay 已通过后跳过 planning，直接做 runtime shadow 扩张
+- decision for next step:
+  - 关闭 `Milestone 18`
+  - 进入 `Milestone 19: Controlled Observation Planning`

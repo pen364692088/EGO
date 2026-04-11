@@ -418,6 +418,34 @@ def _selection_decision(
     }
 
 
+def _bridge_selection_decision(
+    *,
+    candidate: VariantScores,
+    baseline_a: VariantScores,
+) -> Dict[str, Any]:
+    candidate_pass, target_deltas, composite_delta, _, target_delta_rules = _passes_frozen_gate(
+        candidate,
+        baseline_a=baseline_a,
+        require_ablation_drops=None,
+    )
+    return {
+        "decision": "bridge_pass" if candidate_pass else "bridge_fail",
+        "candidate_pass": candidate_pass,
+        "target_deltas_vs_baseline_a": target_deltas,
+        "target_delta_rules": target_delta_rules,
+        "composite_delta_vs_baseline_a": composite_delta,
+        "ablation_drops": {},
+        "weak_ablations": [],
+        "challenger_status": "not_applicable",
+        "challenger_pass": False,
+        "challenger_target_deltas_vs_baseline_a": {},
+        "challenger_target_delta_rules": {},
+        "challenger_composite_delta_vs_baseline_a": 0.0,
+        "challenger_switch_advantage": False,
+        "bridge_mode": True,
+    }
+
+
 def render_markdown(payload: Dict[str, Any]) -> str:
     selection = payload["selection"]
     lines = [
@@ -454,6 +482,14 @@ def render_markdown(payload: Dict[str, Any]) -> str:
             f"- challenger_switch_advantage: `{selection['challenger_switch_advantage']}`",
         ]
     )
+    authority_drift = payload.get("authority_drift_audit")
+    trace_contract = payload.get("trace_contract_check")
+    if authority_drift or trace_contract:
+        lines.extend(["", "## Bridge Checks", ""])
+        if authority_drift:
+            lines.append(f"- authority_drift_status: `{authority_drift.get('status', 'unknown')}`")
+        if trace_contract:
+            lines.append(f"- trace_contract_status: `{trace_contract.get('status', 'unknown')}`")
     return "\n".join(lines) + "\n"
 
 
@@ -468,16 +504,21 @@ def main() -> None:
         variant_scores[variant_id] = _score_variant(list(case_results))
     variant_scores[contract["baseline_b_id"]] = _baseline_b_scores()
 
-    challenger = variant_scores.get(contract["challenger_id"])
-    selection = _selection_decision(
-        candidate=variant_scores[contract["candidate_id"]],
-        baseline_a=variant_scores[contract["baseline_a_id"]],
-        ablations={
-            ablation_id: variant_scores[ablation_id]
-            for ablation_id in list(contract.get("ablation_ids") or [])
-        },
-        challenger=challenger,
-    )
+    challenger_id = contract.get("challenger_id")
+    challenger = variant_scores.get(challenger_id) if challenger_id else None
+    ablation_ids = list(contract.get("ablation_ids") or [])
+    if ablation_ids:
+        selection = _selection_decision(
+            candidate=variant_scores[contract["candidate_id"]],
+            baseline_a=variant_scores[contract["baseline_a_id"]],
+            ablations={ablation_id: variant_scores[ablation_id] for ablation_id in ablation_ids},
+            challenger=challenger,
+        )
+    else:
+        selection = _bridge_selection_decision(
+            candidate=variant_scores[contract["candidate_id"]],
+            baseline_a=variant_scores[contract["baseline_a_id"]],
+        )
 
     payload = {
         "schema_version": "mvs.replay_validator_scored.v1",
@@ -486,6 +527,10 @@ def main() -> None:
         "variant_scores": {variant_id: scores.to_dict() for variant_id, scores in variant_scores.items()},
         "selection": selection,
     }
+    if report.get("authority_drift_audit") is not None:
+        payload["authority_drift_audit"] = dict(report.get("authority_drift_audit") or {})
+    if report.get("trace_contract_check") is not None:
+        payload["trace_contract_check"] = dict(report.get("trace_contract_check") or {})
     _write_json(args.output_json, payload)
     args.output_md.write_text(render_markdown(payload), encoding="utf-8")
     print(f"wrote {args.output_json}")
