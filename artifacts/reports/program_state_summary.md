@@ -8,6 +8,6 @@
 - verification: `V5`
 - mainline_connected: `True`
 - enabled: `True`
-- next_minimal_action: Freeze the first controlled-observation plan for the replay-validated active-inference slice, keep the bounded host-consumable contract frozen to policy_hint/response_tendency/trace_payload, require zero authority drift and replayable trace at the observation bridge, and do not expand runtime or transport scope until that controlled observation path is defined.
+- next_minimal_action: Implement the first runtime-harness controlled observation runner and batch aggregate for the replay-validated active-inference slice using the frozen repo-authored observation bank, keep the bounded host-consumable contract frozen to policy_hint/response_tendency/trace_payload, require zero authority drift plus replayable trace at the observation bridge, and do not expand runtime or transport scope.
 - highest ledger entry: `mvp16_controlled_completion_current` / `E5`
 

@@ -27,8 +27,8 @@ Keep one formal mainline where EgoCore governs real-world execution, OpenEmotion
 - Keep one formal runtime mainline and one research implementation lane; do not merge candidate routing into a second runtime authority source.
 - Treat the self-awareness candidate program as the current top-priority implementation lane while keeping WP17/MVP22 parked as a bounded continuity lane until controlled evidence justifies reintegration.
 - Keep active-inference self-model as the sole build-first candidate, with the bounded host-consumable surface now frozen to policy_hint, response_tendency, and trace_payload while MVS-aligned compact remains closed evidence.
-- Use the passing controlled conversation replay bridge as the current transfer proof, and only plan controlled observation after keeping the bounded host-consumable contract and zero-authority-drift audit intact.
-- Keep the self-awareness research result below runtime-efficacy claim strength; the current replay result plus integration-plan freeze prove a shadow/proposal-only winner and bounded contract, not consciousness, live benefit, or formal-runtime enablement.
+- Use the passing controlled conversation replay bridge plus the frozen controlled observation plan as the current transfer contract, and only implement the first runtime-harness controlled observation while keeping the bounded host-consumable contract and zero-authority-drift audit intact.
+- Keep the self-awareness research result below runtime-efficacy claim strength; the current replay result plus integration-plan freeze plus controlled-observation-plan freeze prove a shadow/proposal-only winner and bounded contract, not consciousness, live benefit, or formal-runtime enablement.
 - Continue reducing live Telegram host-only subject-miss residue before making stronger live-behavior claims.
 
 ## Completed Since Last Update
@@ -50,10 +50,11 @@ Keep one formal mainline where EgoCore governs real-world execution, OpenEmotion
 - Under the corrected held-out replay gate, the active-inference challenger passes T1-T5, composite, boundary_integrity, repair_closure_capture, and trace_replayability on the same canonical corpus, so the selection decision remains `switch_to_active_inference` with a replay-validated shadow-only winner.
 - A controlled integration plan now freezes the active-inference winner's bounded host-consumable surface, canonical trace contract, authority-drift audit, and first replay-to-controlled bridge design without granting any new behavior authority.
 - A repo-authored 60-slice controlled conversation replay manifest, bridge runner, and scored bridge artifacts now exist. On replayed conversations, the active-inference winner still passes the same frozen replay gate, `authority_drift_status = pass`, and `trace_contract_status = pass`, while baseline A remains only a replayable lower-bound rather than a corrective-trace carrier.
+- A controlled observation plan plus a repo-authored runtime-harness observation bank now freeze the next bridge shape, fixed families, shared experiment-scope policy, aggregate gate, and rollback conditions for the active-inference winner without expanding runtime or transport authority.
 
 ## Blockers
 
-- No controlled observation evidence exists yet for the replay-validated active-inference winner; current proof is still bounded to held-out replay plus repo-authored controlled conversation replay and remains below runtime-efficacy claim strength.
+- No runtime-harness controlled observation result exists yet for the replay-validated active-inference winner; current proof is still bounded to held-out replay plus repo-authored controlled conversation replay and remains below runtime-efficacy claim strength.
 - Live Telegram ordinary chat still has unexpected subject-miss samples on the host path.
 
 ## Key Unknowns
@@ -65,7 +66,7 @@ Keep one formal mainline where EgoCore governs real-world execution, OpenEmotion
 
 ## Next Minimal Action
 
-Freeze the first controlled-observation plan for the replay-validated active-inference slice, keep the bounded host-consumable contract frozen to policy_hint/response_tendency/trace_payload, require zero authority drift and replayable trace at the observation bridge, and do not expand runtime or transport scope until that controlled observation path is defined.
+Implement the first runtime-harness controlled observation runner and batch aggregate for the replay-validated active-inference slice using the frozen repo-authored observation bank, keep the bounded host-consumable contract frozen to policy_hint/response_tendency/trace_payload, require zero authority drift plus replayable trace at the observation bridge, and do not expand runtime or transport scope.
 
 ## Real Trigger Evidence
 
@@ -79,7 +80,7 @@ Freeze the first controlled-observation plan for the replay-validated active-inf
 | repo_authority_cleanup | EgoCore | `closeout-complete` | `E3` | `V3` | `True` | `True` | Repo/integration boundary cleanup is reproducibly closed out in clean-clone / CI space, but that closeout does not itself prove new real-channel behavior. |
 | program_state_governance | EgoCore | `integrating` | `E3` | `V2` | `False` | `True` | Root-level program state, derived views, evidence ledger, templates, and integrity gates are being wired into the repo governance path. |
 | codex_exploration_cycles | EgoCore | `integrating` | `E3` | `V2` | `False` | `True` | Exploration-mode long-run tasks now have explicit reformulation, hypothesis, experiment, logging, and candidate-vs-proof discipline. |
-| ai_self_awareness_research | EgoCore + OpenEmotion | `active_inference_controlled_replay_bridge_pass` | `E3` | `V3` | `False` | `True` | This remains the current top-priority implementation lane. A formal shadow-only active-inference slice has already passed the same canonical OpenEmotion held-out replay gate that MVS failed, and it now also passes a repo-authored controlled conversation replay bridge under the same bounded host-consumable surface (`policy_hint / response_tendency / trace_payload`) with zero authority drift. This still does not prove runtime efficacy or live user benefit. |
+| ai_self_awareness_research | EgoCore + OpenEmotion | `active_inference_controlled_observation_plan_frozen` | `E3` | `V3` | `False` | `True` | This remains the current top-priority implementation lane. A formal shadow-only active-inference slice has already passed the same canonical OpenEmotion held-out replay gate that MVS failed, and it also passes a repo-authored controlled conversation replay bridge under the same bounded host-consumable surface (`policy_hint / response_tendency / trace_payload`) with zero authority drift. The next runtime-harness controlled observation shape and bank are now frozen, but this still does not prove runtime efficacy or live user benefit. |
 | wp17_bounded_continuity_lane | EgoCore + OpenEmotion | `parked` | `E1` | `V1` | `False` | `True` | WP17/MVP22 remains an authority-frozen bounded continuity lane with task-package readiness, but it is parked behind the current research-first candidate program and is not the default highest-priority implementation track. |
 | provider_runtime_openemotion_e2e_gate | EgoCore | `pass` | `E4` | `V4` | `True` | `True` | Recent real Telegram samples prove the formal provider/runtime/OpenEmotion path can execute end-to-end. |
 | live_subject_ingress_observation | EgoCore + OpenEmotion | `partial` | `E4` | `V4` | `True` | `True` | Live Telegram contains subject-ingress evidence, but the current audit still records host-only misses and cannot support stronger live-behavior claims. |
@@ -87,6 +88,6 @@ Freeze the first controlled-observation plan for the replay-validated active-inf
 
 ## Evidence Ledger Summary
 
-- total entries: `16`
+- total entries: `17`
 - highest entry: `mvp16_controlled_completion_current` / `E5` / `pass`
 

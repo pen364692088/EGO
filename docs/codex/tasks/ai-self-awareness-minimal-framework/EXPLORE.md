@@ -1034,3 +1034,57 @@
 - decision for next step:
   - 关闭 `Milestone 18`
   - 进入 `Milestone 19: Controlled Observation Planning`
+
+### Cycle 20
+
+- question:
+  - 在不扩张 runtime authority 的前提下，第一轮 runtime-proximal controlled observation 应该冻结成什么形态，才能继续检验 replay winner
+- framing used:
+  - `reuse the existing runtime-harness observation envelope instead of inventing a third bridge shape`
+- experiment:
+  - 审计 repo 里现有 controlled observation runner / bank / batch pattern
+  - 对比 `runtime_harness`、`dashboard chat`、`live Telegram` 三种 observation 入口的边界成本
+  - 冻结下一轮 observation bank、runner contract、aggregate gate 与 rollback 条件
+- command / script / artifact:
+  - `rg -n "controlled observation|runtime_mainline_observation_common|run_mvp1[3467]_controlled_observation" OpenEmotion/tools scripts`
+  - `scripts/runtime_mainline_observation_common.py`
+  - `OpenEmotion/tools/run_mvp13_controlled_observation_batch.py`
+  - `OpenEmotion/tools/run_mvp16_controlled_observation.py`
+  - `docs/codex/tasks/ai-self-awareness-minimal-framework/CONTROLLED_OBSERVATION_PLAN.md`
+  - `docs/codex/tasks/ai-self-awareness-minimal-framework/CONTROLLED_OBSERVATION_BANK_MANIFEST.json`
+- observed result:
+  - 当前 repo 已有成熟的 runtime-proximal observation envelope：
+    - `runtime_harness + TelegramRuntimeBridge + runtime_mainline_observation_common`
+  - 这条形态已经能生成 canonical `observation_record.v1`，且不会引入 live transport
+  - repo 里已有可复用的 bank + batch observation pattern：
+    - `mvp13`
+    - `mvp14`
+    - `mvp16`
+  - 因此第一轮 self-awareness controlled observation 最稳的形态不是：
+    - live Telegram
+    - dashboard chat
+    - 新造第三种 runner
+  - 已冻结第一轮 bank：
+    - `9` scenarios
+    - `3 / 3 / 3` family coverage
+    - `3` external-result scenarios
+  - 已冻结 runner contract：
+    - single runner + batch runner
+    - shared `experiment` scope across scenario segments
+    - fresh runtime session per segment
+    - scorer 继续复用 canonical replay gate
+- what it proves:
+  - 当前 winner 的下一轮 observation 可以建立在仓库已有 runtime observation envelope 之上，而不需要新 public API 或 parallel runtime lane
+  - `Milestone 19` 可以收口为 planning freeze，而不是继续停留在一句“下步做 observation”
+- what it does not prove:
+  - winner 已在 runtime-proximal controlled observation 上继续过线
+  - runtime efficacy
+  - live Telegram transfer
+  - consciousness-like properties
+- what path is ruled out:
+  - 先接 dashboard / live Telegram 再回补 observation contract
+  - 为 first observation 新造第二套 scorer ontology
+  - 为了 observation 去暴露 candidate-private host API
+- decision for next step:
+  - 关闭 `Milestone 19`
+  - 进入 `Milestone 20: Controlled Observation Runner`

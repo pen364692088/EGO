@@ -771,10 +771,51 @@
 - rollback note:
   - 若 planning 需要打破 `policy_hint / response_tendency / trace_payload` 之外的 bounded host surface，立即回退到 `Milestone 18` 通过后的 freeze 状态
 
+### Milestone 20: Controlled Observation Runner
+
+- type: implementation
+- question:
+  - 在保持 bounded host contract 与 zero authority drift 的前提下，winner 能否在第一层 runtime-proximal controlled observation 上继续过线
+- current framing:
+  - `Milestone 19` 已冻结：
+    - `CONTROLLED_OBSERVATION_PLAN.md`
+    - `CONTROLLED_OBSERVATION_BANK_MANIFEST.json`
+  - 当前 observation 只允许走：
+    - `runtime_harness + TelegramRuntimeBridge + runtime_mainline_observation_common`
+- hypotheses:
+  - winner 在 runtime-harness controlled observation 下仍能继续满足 frozen replay gate
+  - 现有 runtime observation envelope 足够承接本轮 research observation，不需要第二 scorer ontology
+- scope:
+  - 实现 single runner
+  - 实现 batch runner
+  - 把 runtime-proximal observation 归一化到现有 scorer 输入
+  - 产出 authority drift / trace contract / host surface bounded audit
+- experiments planned:
+  - single-scenario observation smoke
+  - full-bank batch observation
+  - canonical scorer rerun on controlled observation results
+- kill criteria:
+  - 若 runner 需要新增 runtime public API、candidate-private host API、parallel runtime lane、第二 scorer ontology、或任何 direct tool/reply/transport authority，当前 framing 失败
+- files / areas likely touched:
+  - `docs/codex/tasks/ai-self-awareness-minimal-framework/*`
+  - `scripts/codex/*`
+  - `artifacts/self_awareness_research/*`
+  - 与 observation contract 直接相关的最小测试
+- acceptance:
+  - 明确回答：
+    - winner 是否在 runtime-harness controlled observation 上继续通过 frozen replay gate
+    - authority drift 是否仍为 `0`
+    - trace contract 是否仍可 replay
+    - host surface 是否仍 bounded
+- validation:
+  - `python3 scripts/codex/verify_repo.py --mode fast`
+- rollback note:
+  - 若实现无法继续保持 `runtime_harness + bounded host surface + canonical scorer`，立即回退到 `Milestone 19` planning freeze
+
 ## Progress
 
-- current_status: `active_inference_controlled_replay_bridge_pass`
-- current_milestone: `Milestone 19: Controlled Observation Planning`
+- current_status: `active_inference_controlled_observation_plan_frozen`
+- current_milestone: `Milestone 20: Controlled Observation Runner`
 - milestone_state: `pending`
 - candidate_vs_proof: `active_inference_controlled_replay_bridge_passed`
 
@@ -1006,6 +1047,18 @@
     - baseline A 继续作为 replayable lower-bound，不再被误要求携带 winner-only corrective payload
   - 下一步进入：
     - `Milestone 19: Controlled Observation Planning`
+- 2026-04-11: `Milestone 19` 已完成：
+  - 新增 planning artifact：
+    - `CONTROLLED_OBSERVATION_PLAN.md`
+    - `CONTROLLED_OBSERVATION_BANK_MANIFEST.json`
+  - 第一轮 observation 形态已冻结为：
+    - `runtime_harness + TelegramRuntimeBridge + runtime_mainline_observation_common`
+  - observation bank 已冻结为：
+    - `9` scenarios
+    - `3 / 3 / 3` family coverage
+    - `3` external-result scenarios
+  - next implementation milestone 已固定为：
+    - `Milestone 20: Controlled Observation Runner`
 
 ## Surprises / discoveries
 
@@ -1109,7 +1162,8 @@
   - 把 `MVS-aligned compact` 直接写成 literature-informed 最终推荐方法
   - 把 `operational self-loop core` 直接写成当前 build-first candidate
 - 下一步最小闭环动作：
-  - 实现 `Milestone 18: Controlled Conversation Replay Bridge`
-  - 先冻结 repo-authored conversation manifest
-  - 只把 conversation turns 归一化到 canonical replay gate
-  - 不新增 runtime authority、不新增 scorer ontology、不过早进入 controlled observation
+  - 实现 `Milestone 20: Controlled Observation Runner`
+  - 读取已冻结的 `CONTROLLED_OBSERVATION_BANK_MANIFEST.json`
+  - 走 `runtime_harness + TelegramRuntimeBridge + runtime_mainline_observation_common`
+  - 继续把结果归一化到 canonical scorer，而不是新建第二 ontology
+  - 不新增 runtime authority、不新增 candidate-private host API、不过早进入 live transport

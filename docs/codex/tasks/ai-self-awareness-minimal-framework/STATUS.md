@@ -2,16 +2,16 @@
 
 ## Current milestone
 
-- name: `Milestone 19: Controlled Observation Planning`
+- name: `Milestone 20: Controlled Observation Runner`
 - owner: `Codex`
 - state: pending
-- type: planning
+- type: implementation
 
 ## Current state
 
-- current_layer: `active_inference_controlled_replay_bridge_pass`
+- current_layer: `active_inference_controlled_observation_plan_frozen`
 - main_chain_status: `not_connected_by_design`
-- completion_class: `partial_pending_controlled_observation_planning`
+- completion_class: `partial_pending_controlled_observation_runner`
 - candidate_vs_proof: `active_inference_controlled_replay_bridge_passed`
 - trial1_closure:
   - `Trial-1 remains closed and demoted. The formal shadow-only MVS replay gate is now complete; corrected scoring shows MVS fails the frozen gate on tension causality and repair closure, so the research build-first lane must switch to active-inference while formal runtime mainline remains unchanged.`
@@ -67,6 +67,19 @@
     - `trace_contract_status = pass`
   - 当前下一实际里程碑已切到：
     - `Milestone 19: Controlled Observation Planning`
+
+- `Milestone 19` 的 controlled observation planning 已完成：
+  - 新增 planning artifact：
+    - `CONTROLLED_OBSERVATION_PLAN.md`
+    - `CONTROLLED_OBSERVATION_BANK_MANIFEST.json`
+  - 第一轮 observation 已冻结为：
+    - `runtime_harness + TelegramRuntimeBridge + runtime_mainline_observation_common`
+  - repo-authored observation bank 已冻结为：
+    - `9` scenarios
+    - `3 / 3 / 3` family coverage
+    - `3` external-result scenarios
+  - 下一实际编码里程碑已切到：
+    - `Milestone 20: Controlled Observation Runner`
 
 - formal shadow-only MVS replay gate 已落地：
   - `MVS_REPLAY_CORPUS_MANIFEST.json`
@@ -428,7 +441,7 @@
   - bridge falsification 仍然成立：如果下一阶段 observation 需要新 authority path 或 candidate-private host API，当前 framing 仍应判失败
   - 当前 blocker 已上移为：
     - 还没有 controlled observation 级证据
-    - 还没有更接近 formal runtime 的 bounded observation runner / bank / rollback freeze
+    - 还没有更接近 formal runtime 的 bounded observation runner 与 batch aggregate 结果
 
 ## What was ruled out
 
@@ -463,7 +476,7 @@
   - 保持当前 bridge pass 只算 `controlled replay + bounded research evidence`
   - 不升级 repo-level runtime claim
   - 维持 bounded host-consumable surface freeze
-  - 进入 `Milestone 19: Controlled Observation Planning`
+  - 进入 `Milestone 20: Controlled Observation Runner`
 - 继续保持：
   - 不宣称 runtime efficacy 或 live benefit
   - 不让 decision engine 在 controlled replay pass 后偷拿 candidate output 作为行为 authority
@@ -471,14 +484,10 @@
 
 ## Last validation results
 
-- mode: `controlled_replay_bridge`
+- mode: `controlled_observation_planning_freeze`
 - result: `pass`
 - summary:
-- `python3 -m py_compile scripts/codex/build_controlled_replay_conversation_manifest.py scripts/codex/run_active_inference_controlled_replay.py scripts/codex/score_mvs_replay_validator.py EgoCore/tests/test_active_inference_controlled_replay_bridge.py EgoCore/tests/test_mvs_replay_scoring.py` pass
-- `python3 scripts/codex/build_controlled_replay_conversation_manifest.py` pass
-- `PYTHONPATH=EgoCore:EgoCore/modules:OpenEmotion python3 -m pytest EgoCore/tests/test_active_inference_controlled_replay_bridge.py EgoCore/tests/test_mvs_replay_scoring.py -q -s --basetemp=/mnt/d/Project/AIProject/MyProject/Ego/.tmp_pytest_controlled_replay` pass
-- `python3 scripts/codex/run_active_inference_controlled_replay.py` pass
-- `python3 scripts/codex/score_mvs_replay_validator.py --input artifacts/self_awareness_research/ACTIVE_INFERENCE_CONTROLLED_REPLAY_CURRENT.json --output-json artifacts/self_awareness_research/ACTIVE_INFERENCE_CONTROLLED_REPLAY_SCORED_CURRENT.json --output-md artifacts/self_awareness_research/ACTIVE_INFERENCE_CONTROLLED_REPLAY_SCORED_CURRENT.md` pass
+- `python3 -c "import json, pathlib; json.loads(pathlib.Path('docs/codex/tasks/ai-self-awareness-minimal-framework/CONTROLLED_OBSERVATION_BANK_MANIFEST.json').read_text(encoding='utf-8'))"` pass
 - `python3 scripts/codex/generate_program_state_views.py` pass
 - `python3 scripts/codex/check_program_state_integrity.py --skip-diff-check` pass
 - `python3 scripts/codex/verify_repo.py --mode fast` pass
@@ -496,10 +505,25 @@
 - replay gate fail 后，下一步只能去做 `active-inference` formal shadow slice；不能回头继续把 MVS 当当前主线磨到过线
 - replay winner 已确定后，下一步只能先冻结 bounded controlled integration contract；不能提前做 runtime-shadow 扩张
 - controlled replay bridge 通过后，下一步也仍然只能先做 controlled observation planning；不能借 bridge_pass 直接升级 runtime claim 或 transport scope
+- `Milestone 19` 已把第一层 runtime-proximal observation 固定为：
+  - `runtime_harness + TelegramRuntimeBridge + runtime_mainline_observation_common`
+- 当前第一轮 observation bank 已冻结为：
+  - `9` repo-authored scenarios
+  - `3 / 3 / 3` family coverage
+  - `3` external-result scenarios
+- 当前 shared-state policy 已冻结为：
+  - fresh runtime session per segment
+  - shared proto-self `experiment` scope per scenario
+- `Milestone 20` 只能实现：
+  - single runner
+  - batch runner
+  - canonical scorer-compatible normalization
+  - authority drift / trace contract / host surface bounded audit
 
 - 当前任务当前只宣称：
   - replay-validated shadow-only winner 已出现
   - bounded controlled integration plan 已冻结
+  - controlled observation plan 与 bank 已冻结
   - 不宣称 runtime efficacy、live benefit、或主观体验
 - `candidate_found` / `proof_pending` / `proof_passed` 必须全程分离
 - 在 synthetic result 出现前不进入正式实现切片
@@ -529,9 +553,9 @@
 - 容易退化成文案化“自我叙述”竞赛，而不是真正的对照实验
 - 若实验日志不持续更新，长任务会很快失真
 - proof gap:
-  - 当前虽已有 passing build-first candidate，但还没有 replayed conversation eval、controlled observation、主链接线、或真实用户验证
-- design gap:
-  - 当前虽已有 controlled replay bridge pass，但还没有 controlled observation bank / runner / rollback freeze
+  - 当前虽已有 passing build-first candidate，但还没有 controlled observation、主链接线、或真实用户验证
+- implementation gap:
+  - 当前虽已冻结 controlled observation plan / bank / rollback gate，但还没有 runner 与 batch aggregate 结果
 - validator gap:
   - 还没有更接近 formal runtime 的 controlled observation evidence
 - route gap:
@@ -549,20 +573,28 @@
   - 当前最高优先级 implementation lane 固定为：
     - `active-inference self-model`
   - 当前不再保留 live MVS challenger；`MVS-aligned compact` 已归档为 closed evidence
-  - 进入 `Milestone 19: Controlled Observation Planning`
-  - 先冻结 controlled observation bank、runner contract、authority drift audit、trace contract audit 与 rollback 条件
+  - 进入 `Milestone 20: Controlled Observation Runner`
+  - 读取已冻结的 `CONTROLLED_OBSERVATION_PLAN.md`
+  - 读取已冻结的 `CONTROLLED_OBSERVATION_BANK_MANIFEST.json`
+  - 实现 single runner、batch runner、canonical scorer-compatible normalization
   - 继续保持唯一允许宿主消费面：
     - `policy_hint`
     - `response_tendency`
     - `trace_payload`
-  - 不新增 runtime authority、不新增 scorer ontology、不提前扩张 transport 或 runtime-shadow
+  - 不新增 runtime authority、不新增 scorer ontology、不新增 candidate-private host API、不提前扩张 transport
   - `WP17/MVP22` 继续保持 parked bounded lane，等待 replay-gated 结果后再决定 reintegration
 
 ## Commands run / evidence
 
-- `git diff --check -- docs/codex/tasks/ai-self-awareness-minimal-framework/CONTROLLED_INTEGRATION_PLAN.md docs/codex/tasks/ai-self-awareness-minimal-framework/PLAN.md docs/codex/tasks/ai-self-awareness-minimal-framework/IMPLEMENT.md docs/codex/tasks/ai-self-awareness-minimal-framework/STATUS.md docs/codex/tasks/ai-self-awareness-minimal-framework/EXPLORE.md docs/PROGRAM_STATE_UNIFIED.yaml docs/OVERALL_PROGRESS.md artifacts/evidence_ledger/index.yaml docs/STATUS.md artifacts/reports/program_state_summary.md EgoCore/docs/PROGRAM_STATE_UNIFIED.yaml OpenEmotion/docs/PROGRAM_STATE_UNIFIED.yaml`
+- `git diff --check -- docs/codex/tasks/ai-self-awareness-minimal-framework/CONTROLLED_OBSERVATION_PLAN.md docs/codex/tasks/ai-self-awareness-minimal-framework/CONTROLLED_OBSERVATION_BANK_MANIFEST.json docs/codex/tasks/ai-self-awareness-minimal-framework/PLAN.md docs/codex/tasks/ai-self-awareness-minimal-framework/IMPLEMENT.md docs/codex/tasks/ai-self-awareness-minimal-framework/STATUS.md docs/codex/tasks/ai-self-awareness-minimal-framework/EXPLORE.md docs/PROGRAM_STATE_UNIFIED.yaml docs/OVERALL_PROGRESS.md artifacts/evidence_ledger/index.yaml docs/STATUS.md artifacts/reports/program_state_summary.md EgoCore/docs/PROGRAM_STATE_UNIFIED.yaml OpenEmotion/docs/PROGRAM_STATE_UNIFIED.yaml`
+- `python3 -c "import json, pathlib; json.loads(pathlib.Path('docs/codex/tasks/ai-self-awareness-minimal-framework/CONTROLLED_OBSERVATION_BANK_MANIFEST.json').read_text(encoding='utf-8'))"`
 - `python3 scripts/codex/generate_program_state_views.py`
 - `python3 scripts/codex/check_program_state_integrity.py --skip-diff-check`
+- `docs/codex/tasks/ai-self-awareness-minimal-framework/CONTROLLED_OBSERVATION_PLAN.md`
+- `docs/codex/tasks/ai-self-awareness-minimal-framework/CONTROLLED_OBSERVATION_BANK_MANIFEST.json`
+- `sed -n '1,260p' scripts/runtime_mainline_observation_common.py`
+- `sed -n '1,260p' OpenEmotion/tools/run_mvp13_controlled_observation_batch.py`
+- `sed -n '1,260p' OpenEmotion/tools/run_mvp16_controlled_observation.py`
 - `python3 scripts/codex/build_controlled_replay_conversation_manifest.py`
 - `python3 scripts/codex/run_active_inference_controlled_replay.py`
 - `python3 scripts/codex/score_mvs_replay_validator.py --input artifacts/self_awareness_research/ACTIVE_INFERENCE_CONTROLLED_REPLAY_CURRENT.json --output-json artifacts/self_awareness_research/ACTIVE_INFERENCE_CONTROLLED_REPLAY_SCORED_CURRENT.json --output-md artifacts/self_awareness_research/ACTIVE_INFERENCE_CONTROLLED_REPLAY_SCORED_CURRENT.md`
