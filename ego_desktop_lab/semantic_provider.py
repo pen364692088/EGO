@@ -130,6 +130,10 @@ class LiveLLMShadowProvider:
                 admission_eligible=False,
                 reason="live shadow disabled",
             )
+        openrouter_key = os.environ.get("OPENROUTER_API_KEY")
+        if openrouter_key or _uses_openrouter_base_url():
+            return _generate_openrouter_shadow(request, openrouter_key)
+
         bearer_token, auth_source, auth_reason = _resolve_live_bearer_token()
         model = os.environ.get("EGO_DESKTOP_LAB_LIVE_LLM_MODEL") or _codex_config_model()
         if not bearer_token or not model:
@@ -452,7 +456,103 @@ def _generate_shadow(
         observation=result.observation,
         admission_eligible=False,
         reason=result.reason,
+        )
+
+
+def _generate_openrouter_shadow(
+    request: SemanticProviderRequest,
+    api_key: str | None,
+) -> SemanticProviderResult:
+    base_url = os.environ.get("EGO_DESKTOP_LAB_LIVE_LLM_BASE_URL", "https://openrouter.ai/api/v1").rstrip("/")
+    model = os.environ.get("EGO_DESKTOP_LAB_LIVE_LLM_MODEL") or "tencent/hy3-preview"
+    if not api_key:
+        return SemanticProviderResult(
+            provider_name=LiveLLMShadowProvider.provider_name,
+            raw_outputs={},
+            observation={
+                "status": "skipped",
+                "reason": "OPENROUTER_API_KEY is missing",
+                "auth_source": "OPENROUTER_API_KEY",
+                "api_provider": "openrouter",
+                "base_url": base_url,
+                "model": model,
+            },
+            admission_eligible=False,
+            reason="openrouter live shadow credentials missing",
+        )
+
+    prompt = _live_prompt(request.scenario, request.core_result, request.allowed_evidence_refs)
+    body = json.dumps(
+        {
+            "model": model,
+            "messages": [{"role": "user", "content": prompt}],
+            "reasoning": {"enabled": True},
+        }
+    ).encode("utf-8")
+    http_request = urllib.request.Request(
+        f"{base_url}/chat/completions",
+        data=body,
+        headers={
+            "Authorization": f"Bearer {api_key}",
+            "Content-Type": "application/json",
+            "HTTP-Referer": os.environ.get("EGO_DESKTOP_LAB_LIVE_LLM_REFERER", "https://localhost/ego_desktop_lab"),
+            "X-Title": os.environ.get("EGO_DESKTOP_LAB_LIVE_LLM_TITLE", "ego_desktop_lab live shadow"),
+        },
+        method="POST",
     )
+    try:
+        with urllib.request.urlopen(http_request, timeout=30) as response:
+            payload = json.loads(response.read().decode("utf-8"))
+    except Exception as exc:  # pragma: no cover - live shadow is opt-in and non-deterministic.
+        return SemanticProviderResult(
+            provider_name=LiveLLMShadowProvider.provider_name,
+            raw_outputs={},
+            observation={
+                "status": "unavailable",
+                "reason": str(exc),
+                "auth_source": "OPENROUTER_API_KEY",
+                "api_provider": "openrouter",
+                "base_url": base_url,
+                "model": model,
+            },
+            admission_eligible=False,
+            reason="openrouter live shadow unavailable",
+        )
+
+    raw_text = _extract_chat_completion_text(payload)
+    if not raw_text:
+        return SemanticProviderResult(
+            provider_name=LiveLLMShadowProvider.provider_name,
+            raw_outputs={},
+            observation={
+                "status": "unavailable",
+                "reason": "OpenRouter response did not include assistant content",
+                "auth_source": "OPENROUTER_API_KEY",
+                "api_provider": "openrouter",
+                "base_url": base_url,
+                "model": model,
+            },
+            admission_eligible=False,
+            reason="openrouter live shadow empty",
+        )
+    return SemanticProviderResult(
+        provider_name=LiveLLMShadowProvider.provider_name,
+        raw_outputs={"semantic": raw_text},
+        observation={
+            "status": "observed",
+            "auth_source": "OPENROUTER_API_KEY",
+            "api_provider": "openrouter",
+            "base_url": base_url,
+            "model": model,
+        },
+        admission_eligible=False,
+        reason="openrouter live shadow observed proposal-only output",
+    )
+
+
+def _uses_openrouter_base_url() -> bool:
+    base_url = os.environ.get("EGO_DESKTOP_LAB_LIVE_LLM_BASE_URL", "")
+    return "openrouter.ai" in base_url.lower()
 
 
 def _resolve_live_bearer_token() -> tuple[str | None, str | None, str]:
@@ -717,3 +817,17 @@ def _extract_response_text(payload: dict[str, object]) -> str:
                     chunks.append(str(content_item["text"]))
         return "\n".join(chunks)
     return ""
+
+
+def _extract_chat_completion_text(payload: dict[str, object]) -> str:
+    choices = payload.get("choices")
+    if not isinstance(choices, list) or not choices:
+        return ""
+    first = choices[0]
+    if not isinstance(first, dict):
+        return ""
+    message = first.get("message")
+    if not isinstance(message, dict):
+        return ""
+    content = message.get("content")
+    return content if isinstance(content, str) else ""

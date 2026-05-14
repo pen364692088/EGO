@@ -204,6 +204,79 @@ def test_live_shadow_records_codex_oauth_source_when_unavailable(monkeypatch, tm
     assert result.semantic_policy_calibration.after_selected_intention.goal == "verify_before_claim"
 
 
+def test_live_shadow_can_use_openrouter_chat_completions(monkeypatch, tmp_path: Path) -> None:
+    monkeypatch.setenv("EGO_DESKTOP_LAB_ENABLE_LIVE_LLM", "1")
+    monkeypatch.setenv("OPENROUTER_API_KEY", "fake-openrouter-key")
+    monkeypatch.setenv("EGO_DESKTOP_LAB_LIVE_LLM_MODEL", "tencent/hy3-preview")
+    monkeypatch.delenv("OPENAI_API_KEY", raising=False)
+
+    captured: dict[str, object] = {}
+
+    class FakeHTTPResponse:
+        def __enter__(self):
+            return self
+
+        def __exit__(self, *_args):
+            return False
+
+        def read(self) -> bytes:
+            return json.dumps(
+                {
+                    "choices": [
+                        {
+                            "message": {
+                                "content": json.dumps(
+                                    {
+                                        "source_event_id": "scenario:evidence_failure",
+                                        "candidate_failure_type": "plan_failure",
+                                        "evidence_gap": 0.10,
+                                        "goal_relevance": 0.90,
+                                        "risk_hint": 0.20,
+                                        "confidence": 0.90,
+                                        "evidence_refs": ["scenario:evidence_failure"],
+                                        "related_goal_id": "goal:001",
+                                        "binding_status": "bound",
+                                        "rationale": "Fake OpenRouter shadow output remains shadow-only.",
+                                    },
+                                    sort_keys=True,
+                                )
+                            }
+                        }
+                    ]
+                },
+                sort_keys=True,
+            ).encode("utf-8")
+
+    def fake_urlopen(request, timeout=30):
+        captured["url"] = request.full_url
+        captured["authorization"] = request.headers["Authorization"]
+        captured["body"] = json.loads(request.data.decode("utf-8"))
+        captured["timeout"] = timeout
+        return FakeHTTPResponse()
+
+    monkeypatch.setattr(urllib.request, "urlopen", fake_urlopen)
+
+    result = run_semantic_scenario(
+        Path("ego_desktop_lab/semantic_scenarios/evidence_failure.txt"),
+        provider_mode="live",
+        evidence_log_path=tmp_path / "openrouter_shadow.jsonl",
+    )
+
+    assert captured["url"] == "https://openrouter.ai/api/v1/chat/completions"
+    assert captured["authorization"] == "Bearer fake-openrouter-key"
+    assert captured["body"]["model"] == "tencent/hy3-preview"
+    assert captured["body"]["reasoning"] == {"enabled": True}
+    assert result.semantic_shadow_observation is not None
+    assert result.semantic_shadow_observation["status"] == "observed"
+    assert result.semantic_shadow_observation["api_provider"] == "openrouter"
+    assert result.semantic_shadow_observation["auth_source"] == "OPENROUTER_API_KEY"
+    assert result.semantic_provider_trace["admitted_provider"] == "mock_semantic_provider"
+    assert result.semantic_proposal is not None
+    assert result.semantic_proposal.candidate_failure_type == "evidence_failure"
+    assert result.semantic_policy_calibration.after_selected_intention is not None
+    assert result.semantic_policy_calibration.after_selected_intention.goal == "verify_before_claim"
+
+
 def test_provider_interface_still_uses_validator_for_admission(tmp_path: Path) -> None:
     result = run_semantic_scenario(
         Path("ego_desktop_lab/semantic_scenarios/evidence_failure.txt"),
