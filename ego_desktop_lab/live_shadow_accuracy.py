@@ -192,6 +192,7 @@ def build_live_shadow_accuracy_payload(
         "claim_ceiling": CLAIM_CEILING,
         "live_output_admission_policy": "shadow-only; never admitted into canonical decision",
         "no_live_fallback": "missing env, missing API key, or unavailable live provider is recorded as skipped/unavailable",
+        "schema_compliance_summary": _schema_compliance_summary(observations),
         "observations": [item.to_dict() for item in observations],
     }
 
@@ -310,6 +311,27 @@ def _hallucinated_evidence_detected(
     if not isinstance(refs, (list, tuple)):
         return False
     return bool(set(str(item) for item in refs).difference(set(allowed_evidence_refs)))
+
+
+def _schema_compliance_summary(
+    observations: tuple[LiveShadowAccuracyObservation, ...],
+) -> dict[str, object]:
+    total = len(observations)
+    schema_compliant = sum(1 for item in observations if bool(item.validator_result.get("accepted")))
+    schema_rejected = total - schema_compliant
+    unknown_field_count = sum(
+        1 for item in observations if "unknown fields" in str(item.validator_result.get("reason", ""))
+    )
+    missing_required_fields_count = sum(
+        1 for item in observations if "missing required fields" in str(item.validator_result.get("reason", ""))
+    )
+    return {
+        "schema_compliant_count": schema_compliant,
+        "schema_rejected_count": schema_rejected,
+        "unknown_field_count": unknown_field_count,
+        "missing_required_fields_count": missing_required_fields_count,
+        "validator_acceptance_rate_shadow_only": round(schema_compliant / total, 6) if total else 0.0,
+    }
 
 
 def _overclassification_flag(

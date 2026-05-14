@@ -204,6 +204,69 @@ def test_live_shadow_records_codex_oauth_source_when_unavailable(monkeypatch, tm
     assert result.semantic_policy_calibration.after_selected_intention.goal == "verify_before_claim"
 
 
+def test_live_shadow_prompt_requires_full_schema(monkeypatch, tmp_path: Path) -> None:
+    monkeypatch.setenv("EGO_DESKTOP_LAB_ENABLE_LIVE_LLM", "1")
+    monkeypatch.setenv("OPENROUTER_API_KEY", "fake-openrouter-key")
+    monkeypatch.setenv("EGO_DESKTOP_LAB_LIVE_LLM_MODEL", "tencent/hy3-preview")
+    monkeypatch.delenv("OPENAI_API_KEY", raising=False)
+
+    captured: dict[str, object] = {}
+
+    class FakeHTTPResponse:
+        def __enter__(self):
+            return self
+
+        def __exit__(self, *_args):
+            return False
+
+        def read(self) -> bytes:
+            return json.dumps(
+                {
+                    "choices": [
+                        {
+                            "message": {
+                                "content": json.dumps(
+                                    {
+                                        "source_event_id": "scenario:evidence_failure",
+                                        "candidate_failure_type": "evidence_failure",
+                                        "confidence": 0.90,
+                                        "evidence_refs": ["scenario:evidence_failure"],
+                                        "rationale": "Fake schema-compliant shadow output.",
+                                    },
+                                    sort_keys=True,
+                                )
+                            }
+                        }
+                    ]
+                },
+                sort_keys=True,
+            ).encode("utf-8")
+
+    def fake_urlopen(request, timeout=30):
+        captured["body"] = json.loads(request.data.decode("utf-8"))
+        return FakeHTTPResponse()
+
+    monkeypatch.setattr(urllib.request, "urlopen", fake_urlopen)
+
+    run_semantic_scenario(
+        Path("ego_desktop_lab/semantic_scenarios/evidence_failure.txt"),
+        provider_mode="live",
+        evidence_log_path=tmp_path / "schema_prompt_shadow.jsonl",
+    )
+
+    prompt = captured["body"]["messages"][0]["content"]
+    assert "Return exactly one top-level JSON object only" in prompt
+    assert "Do not wrap the object in a field named proposal" in prompt
+    assert "Required keys: source_event_id, candidate_failure_type, confidence, evidence_refs, rationale" in prompt
+    assert "Optional keys: related_goal_id, proposed_goal_operation, risk_hint, goal_relevance, evidence_gap, binding_status" in prompt
+    assert "No other keys are allowed" in prompt
+    assert "Forbidden fields include proposal, state_update, selected_intention, pressure_update, gate_decision" in prompt
+    assert "source_event_id must be exactly one of the allowed evidence refs" in prompt
+    assert "evidence_refs must be a non-empty JSON array containing only allowed evidence refs" in prompt
+    assert "For claim_boundary_query, describe the issue as a protected status claim or claim boundary" in prompt
+    assert captured["body"]["reasoning"] == {"enabled": True}
+
+
 def test_live_shadow_can_use_openrouter_chat_completions(monkeypatch, tmp_path: Path) -> None:
     monkeypatch.setenv("EGO_DESKTOP_LAB_ENABLE_LIVE_LLM", "1")
     monkeypatch.setenv("OPENROUTER_API_KEY", "fake-openrouter-key")
