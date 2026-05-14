@@ -25,6 +25,12 @@ Phase 2B does not move files. It adds dirty-worktree triage:
 - Treat EgoCore/OpenEmotion runtime changes, formal state, formal evidence, logs, JSONL, cache, and unknown untracked paths as outside cleanup scope.
 - Add a return gate: either admit a later small cleanup class explicitly, or stop cleanup and return to `subject_system_v1_governed_proactivity` fresh live recheck.
 
+Final Return Gate Review closes the cleanup-oriented loop:
+
+- Add `RETURN_GATE_REVIEW.md` as the handoff page for what remains dirty and who owns each class.
+- Extend `audit_worktree_noise.py` with per-category `recommended_next_owner` and top-20 representative paths.
+- Tighten `verify_mainline_clarity.py` so repo-mainline-clarity cleanup staging cannot mix runtime, authority, evidence, generated output, logs, JSONL, temp, or unknown paths.
+
 ## Phase 3: Split / Restructure
 
 Deferred. Only consider if Phase 1-2 still fail onboarding, CI isolation, or authority-boundary clarity.

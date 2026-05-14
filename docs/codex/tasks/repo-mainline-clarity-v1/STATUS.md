@@ -2,7 +2,7 @@
 
 ## Current Milestone
 
-`phase2b_dirty_worktree_triage`
+`final_return_gate_review`
 
 ## Status
 
@@ -10,7 +10,7 @@
 
 ## Current Slice
 
-This slice classifies the remaining large dirty worktree into cleanup scope, runtime scope, formal authority/evidence scope, operational exhaust, generated/mirror surfaces, and unknown untracked paths.
+This slice closes the cleanup-oriented loop by mapping remaining dirty categories to next owners and by guarding repo-mainline-clarity cleanup staging against runtime/evidence/state/exhaust mixing.
 
 ## Does Not Change
 
@@ -32,6 +32,8 @@ This slice classifies the remaining large dirty worktree into cleanup scope, run
 - Current authority paths and the active default lane remain unchanged.
 - `scripts/codex/audit_worktree_noise.py --json` classifies the remaining dirty surface.
 - `WORKTREE_TRIAGE.md` records `authority_dirty`, `formal_runtime_dirty`, `operational_exhaust`, and the cleanup return gate.
+- `RETURN_GATE_REVIEW.md` records the final owner mapping and default return to fresh live recheck.
+- `audit_worktree_noise.py` emits per-category `recommended_next_owner` and `top_20_paths`.
 
 ## Verification
 
@@ -68,6 +70,18 @@ This slice classifies the remaining large dirty worktree into cleanup scope, run
 ## Phase 2B Return Gate
 
 After Phase 2B, default next action is to stop cleanup and return to `subject_system_v1_governed_proactivity` fresh live recheck unless a later explicit small cleanup slice admits one path class with its own verifier.
+
+## Final Return Gate Verification Target
+
+- `python3 -m py_compile scripts/codex/audit_worktree_noise.py scripts/codex/verify_mainline_clarity.py` passed.
+- `python3 scripts/codex/audit_worktree_noise.py --json` passed and classified `7320` dirty paths, with per-category `recommended_next_owner` and `top_20_paths`.
+- `python3 scripts/codex/verify_route_convergence.py` passed with exactly one active default lane.
+- `python3 scripts/codex/verify_mainline_clarity.py` passed with the return-gate review and cleanup staging guard.
+- `python3 scripts/codex/verify_archive_reconciliation.py` passed.
+- `python3 scripts/codex/verify_repo.py --mode fast` passed; OpenEmotion live health smoke remained skipped because the local health endpoint was unavailable.
+- `git diff --cached --name-only` showed no staged files during pre-stage verification.
+- `git diff --cached --check` passed.
+- `git diff --check -- docs/codex/tasks/repo-mainline-clarity-v1 scripts/codex` passed.
 
 ## Known Limitation
 

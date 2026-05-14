@@ -19,6 +19,7 @@ ROOT = Path(__file__).resolve().parents[2]
 README_PATH = ROOT / "README.md"
 QUICKSTART_PATH = ROOT / "docs" / "MAINLINE_QUICKSTART.md"
 WORKTREE_TRIAGE_PATH = ROOT / "docs" / "codex" / "tasks" / "repo-mainline-clarity-v1" / "WORKTREE_TRIAGE.md"
+RETURN_GATE_REVIEW_PATH = ROOT / "docs" / "codex" / "tasks" / "repo-mainline-clarity-v1" / "RETURN_GATE_REVIEW.md"
 AUDIT_WORKTREE_NOISE_PATH = ROOT / "scripts" / "codex" / "audit_worktree_noise.py"
 
 
@@ -49,16 +50,43 @@ REQUIRED_TRIAGE_REFS = (
     "subject_system_v1_governed_proactivity",
 )
 
+REQUIRED_RETURN_GATE_REFS = (
+    "subject_system_v1_governed_proactivity",
+    "fresh live recheck",
+    "mainline_runtime_review",
+    "evidence_admission",
+    "operational_exhaust_policy",
+    "unknown_manual_triage",
+    "No runtime behavior changes",
+)
+
+CLEANUP_STAGE_PREFIXES = (
+    "docs/codex/tasks/repo-mainline-clarity-v1/",
+    "scripts/codex/audit_worktree_noise.py",
+    "scripts/codex/verify_mainline_clarity.py",
+)
+
 FORBIDDEN_CLEANUP_STAGE_PATHS = (
     "docs/PROGRAM_STATE_UNIFIED.yaml",
+    "EgoCore/docs/PROGRAM_STATE_UNIFIED.yaml",
+    "OpenEmotion/docs/PROGRAM_STATE_UNIFIED.yaml",
     "artifacts/evidence_ledger/index.yaml",
 )
 
 FORBIDDEN_CLEANUP_STAGE_PREFIXES = (
+    "EgoCore/",
+    "OpenEmotion/",
+    "artifacts/evidence_ledger/",
+    "artifacts/reports/",
+    "artifacts/telegram_real_mainline_v1/",
     "temp/",
     "logs/",
-    "EgoCore/logs/",
-    "OpenEmotion/logs/",
+    ".pytest_cache/",
+)
+
+FORBIDDEN_ALWAYS_STAGE_PREFIXES = (
+    "temp/",
+    "logs/",
     ".pytest_cache/",
 )
 
@@ -88,13 +116,24 @@ def _matches_prefix(path: str, prefix: str) -> bool:
 
 
 def _check_staged_operational_exhaust(errors: list[str]) -> None:
-    staged_added = _git_lines(["diff", "--cached", "--name-only"])
+    staged_paths = _git_lines(["diff", "--cached", "--name-only"])
+    cleanup_stage_active = any(
+        any(_matches_prefix(path, prefix) for prefix in CLEANUP_STAGE_PREFIXES)
+        for path in staged_paths
+    )
     blocked: list[str] = []
-    for path in staged_added:
-        if path in FORBIDDEN_CLEANUP_STAGE_PATHS:
+    for path in staged_paths:
+        if cleanup_stage_active and path in FORBIDDEN_CLEANUP_STAGE_PATHS:
             blocked.append(f"{path} (authority_or_formal_evidence_do_not_stage_in_cleanup)")
             continue
-        if path.startswith(FORBIDDEN_CLEANUP_STAGE_PREFIXES) or path.endswith(FORBIDDEN_CLEANUP_STAGE_SUFFIXES):
+        if cleanup_stage_active:
+            if path.startswith(FORBIDDEN_CLEANUP_STAGE_PREFIXES) or path.endswith(FORBIDDEN_CLEANUP_STAGE_SUFFIXES):
+                blocked.append(f"{path} (not_allowed_in_repo_mainline_clarity_cleanup_stage)")
+                continue
+            if not any(_matches_prefix(path, prefix) for prefix in CLEANUP_STAGE_PREFIXES):
+                blocked.append(f"{path} (not_allowed_in_repo_mainline_clarity_cleanup_stage)")
+                continue
+        elif path.startswith(FORBIDDEN_ALWAYS_STAGE_PREFIXES):
             blocked.append(f"{path} (operational_exhaust)")
             continue
         for rule in HYGIENE_RULES:
@@ -155,6 +194,23 @@ def _check_worktree_audit(errors: list[str]) -> None:
     if missing:
         errors.append(f"audit_worktree_noise.py missing categories: {', '.join(missing)}")
 
+    category_summaries = payload.get("category_summaries")
+    if not isinstance(category_summaries, dict):
+        errors.append("audit_worktree_noise.py payload missing category_summaries")
+    else:
+        for category in required_categories:
+            summary = category_summaries.get(category)
+            if not isinstance(summary, dict):
+                errors.append(f"audit_worktree_noise.py category_summaries missing {category}")
+                continue
+            if "recommended_next_owner" not in summary:
+                errors.append(f"audit_worktree_noise.py {category} summary missing recommended_next_owner")
+            top_paths = summary.get("top_20_paths")
+            if not isinstance(top_paths, list):
+                errors.append(f"audit_worktree_noise.py {category} summary missing top_20_paths")
+            elif len(top_paths) > 20:
+                errors.append(f"audit_worktree_noise.py {category} top_20_paths has more than 20 entries")
+
     by_path: dict[str, str] = {}
     for category, items in categories.items():
         if not isinstance(items, list):
@@ -186,6 +242,7 @@ def main() -> int:
     _check_text_contains(README_PATH, REQUIRED_README_REFS, errors)
     _check_text_contains(QUICKSTART_PATH, REQUIRED_QUICKSTART_REFS, errors)
     _check_text_contains(WORKTREE_TRIAGE_PATH, REQUIRED_TRIAGE_REFS, errors)
+    _check_text_contains(RETURN_GATE_REVIEW_PATH, REQUIRED_RETURN_GATE_REFS, errors)
     _check_worktree_audit(errors)
 
     if not REPO_SURFACE_MAP_PATH.exists():

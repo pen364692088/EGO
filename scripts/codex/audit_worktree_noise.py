@@ -20,6 +20,16 @@ CATEGORIES = (
     "cleanup_candidate",
 )
 
+RECOMMENDED_NEXT_OWNER = {
+    "formal_runtime_dirty": "mainline_runtime_review",
+    "authority_dirty": "mainline_runtime_review",
+    "formal_evidence_dirty": "evidence_admission",
+    "operational_exhaust": "operational_exhaust_policy",
+    "generated_or_mirror": "evidence_admission",
+    "untracked_unknown": "unknown_manual_triage",
+    "cleanup_candidate": "no_action",
+}
+
 AUTHORITY_PATHS = {
     "docs/PROGRAM_STATE_UNIFIED.yaml",
     "EgoCore/docs/PROGRAM_STATE_UNIFIED.yaml",
@@ -92,6 +102,7 @@ class WorktreeItem:
     change_type: str
     category: str
     cleanup_scope: bool
+    recommended_next_owner: str
     reason: str
     old_path: str | None = None
 
@@ -171,6 +182,7 @@ def _git_status_porcelain_z() -> list[WorktreeItem]:
                 change_type=_change_type(xy),
                 category=category,
                 cleanup_scope=category == "cleanup_candidate",
+                recommended_next_owner=RECOMMENDED_NEXT_OWNER[category],
                 reason=reason,
                 old_path=old_path,
             )
@@ -185,6 +197,14 @@ def build_audit_payload() -> dict[str, object]:
         categories[item.category].append(asdict(item))
 
     counts = {category: len(categories[category]) for category in CATEGORIES}
+    category_summaries = {
+        category: {
+            "count": counts[category],
+            "recommended_next_owner": RECOMMENDED_NEXT_OWNER[category],
+            "top_20_paths": [item["path"] for item in categories[category][:20]],
+        }
+        for category in CATEGORIES
+    }
     cleanup_scope_paths = [item.path for item in items if item.cleanup_scope]
     blocked_cleanup_paths = sorted(
         path
@@ -199,6 +219,7 @@ def build_audit_payload() -> dict[str, object]:
         "status": "pass",
         "total_dirty_paths": len(items),
         "counts": counts,
+        "category_summaries": category_summaries,
         "categories": categories,
         "cleanup_scope_paths": cleanup_scope_paths,
         "blocked_cleanup_paths": blocked_cleanup_paths,

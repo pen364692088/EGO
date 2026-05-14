@@ -16,7 +16,7 @@ The helper is read-only. It reads `git status --porcelain=v1 -z`, classifies dir
 
 ## Current Dirty Surface
 
-Latest local audit after adding the Phase 2B helper/docs classified `7319` dirty paths:
+Latest local audit during the return-gate review classified `7320` dirty paths. The live count can drift as this review file changes; use the audit command above for the current snapshot.
 
 | Category | Count | Cleanup scope | Representative paths |
 | --- | ---: | --- | --- |
@@ -26,7 +26,7 @@ Latest local audit after adding the Phase 2B helper/docs classified `7319` dirty
 | `generated_or_mirror` | 5243 | No | `OpenEmotion/artifacts/*`, `EgoCore/docs/generated/*`, `artifacts/proto_self_mirror/*` |
 | `operational_exhaust` | 226 | No | `logs/*`, `EgoCore/logs/*`, `*.jsonl`, caches, session/runtime outputs |
 | `untracked_unknown` | 269 | No | untracked paths outside admitted cleanup scope |
-| `cleanup_candidate` | 5 | Yes | `scripts/codex/audit_worktree_noise.py`, `scripts/codex/verify_mainline_clarity.py`, this task's Phase 2B docs |
+| `cleanup_candidate` | 6 | Yes | `scripts/codex/audit_worktree_noise.py`, `scripts/codex/verify_mainline_clarity.py`, this task's Phase 2B / return-gate docs |
 
 ## Do Not Stage In Cleanup
 
@@ -58,6 +58,8 @@ These paths are explicitly blocked from cleanup commits:
 Default next action after Phase 2B: stop cleanup and return to `subject_system_v1_governed_proactivity` fresh live recheck.
 
 Continue cleanup only if a later explicit slice admits exactly one low-risk path class and adds a verifier for it. Runtime changes, authority state changes, formal evidence changes, and operational exhaust cleanup must not be bundled with repo-mainline clarity.
+
+See `RETURN_GATE_REVIEW.md` for the final owner mapping and staging rule.
 
 ## Claim Ceiling
 
