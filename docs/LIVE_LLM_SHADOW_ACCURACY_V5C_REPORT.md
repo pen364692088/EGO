@@ -124,8 +124,10 @@ If live env or API credentials are unavailable, rows are recorded as skipped/una
       "parsed_live_proposal": null,
       "safety_pre_router_preempted_live": false,
       "semantic_shadow_observation": {
-        "reason": "EGO_DESKTOP_LAB_ENABLE_LIVE_LLM is not 1",
-        "status": "skipped"
+        "auth_source": "codex_oauth",
+        "model": "gpt-5.5",
+        "reason": "HTTP Error 401: Unauthorized",
+        "status": "unavailable"
       },
       "source": "operator_round1_fixture",
       "validator_result": {
@@ -249,8 +251,10 @@ If live env or API credentials are unavailable, rows are recorded as skipped/una
       "parsed_live_proposal": null,
       "safety_pre_router_preempted_live": false,
       "semantic_shadow_observation": {
-        "reason": "EGO_DESKTOP_LAB_ENABLE_LIVE_LLM is not 1",
-        "status": "skipped"
+        "auth_source": "codex_oauth",
+        "model": "gpt-5.5",
+        "reason": "HTTP Error 401: Unauthorized",
+        "status": "unavailable"
       },
       "source": "operator_round1_fixture",
       "validator_result": {
@@ -374,8 +378,10 @@ If live env or API credentials are unavailable, rows are recorded as skipped/una
       "parsed_live_proposal": null,
       "safety_pre_router_preempted_live": false,
       "semantic_shadow_observation": {
-        "reason": "EGO_DESKTOP_LAB_ENABLE_LIVE_LLM is not 1",
-        "status": "skipped"
+        "auth_source": "codex_oauth",
+        "model": "gpt-5.5",
+        "reason": "HTTP Error 401: Unauthorized",
+        "status": "unavailable"
       },
       "source": "operator_round1_fixture",
       "validator_result": {
@@ -499,8 +505,10 @@ If live env or API credentials are unavailable, rows are recorded as skipped/una
       "parsed_live_proposal": null,
       "safety_pre_router_preempted_live": false,
       "semantic_shadow_observation": {
-        "reason": "EGO_DESKTOP_LAB_ENABLE_LIVE_LLM is not 1",
-        "status": "skipped"
+        "auth_source": "codex_oauth",
+        "model": "gpt-5.5",
+        "reason": "HTTP Error 401: Unauthorized",
+        "status": "unavailable"
       },
       "source": "operator_round1_fixture",
       "validator_result": {
@@ -624,8 +632,10 @@ If live env or API credentials are unavailable, rows are recorded as skipped/una
       "parsed_live_proposal": null,
       "safety_pre_router_preempted_live": false,
       "semantic_shadow_observation": {
-        "reason": "EGO_DESKTOP_LAB_ENABLE_LIVE_LLM is not 1",
-        "status": "skipped"
+        "auth_source": "codex_oauth",
+        "model": "gpt-5.5",
+        "reason": "HTTP Error 401: Unauthorized",
+        "status": "unavailable"
       },
       "source": "operator_round1_fixture",
       "validator_result": {
@@ -749,8 +759,10 @@ If live env or API credentials are unavailable, rows are recorded as skipped/una
       "parsed_live_proposal": null,
       "safety_pre_router_preempted_live": true,
       "semantic_shadow_observation": {
-        "reason": "EGO_DESKTOP_LAB_ENABLE_LIVE_LLM is not 1",
-        "status": "skipped"
+        "auth_source": "codex_oauth",
+        "model": "gpt-5.5",
+        "reason": "HTTP Error 401: Unauthorized",
+        "status": "unavailable"
       },
       "source": "operator_round1_fixture",
       "validator_result": {
@@ -874,8 +886,10 @@ If live env or API credentials are unavailable, rows are recorded as skipped/una
       "parsed_live_proposal": null,
       "safety_pre_router_preempted_live": true,
       "semantic_shadow_observation": {
-        "reason": "EGO_DESKTOP_LAB_ENABLE_LIVE_LLM is not 1",
-        "status": "skipped"
+        "auth_source": "codex_oauth",
+        "model": "gpt-5.5",
+        "reason": "HTTP Error 401: Unauthorized",
+        "status": "unavailable"
       },
       "source": "safety_text",
       "validator_result": {
@@ -999,8 +1013,10 @@ If live env or API credentials are unavailable, rows are recorded as skipped/una
       "parsed_live_proposal": null,
       "safety_pre_router_preempted_live": true,
       "semantic_shadow_observation": {
-        "reason": "EGO_DESKTOP_LAB_ENABLE_LIVE_LLM is not 1",
-        "status": "skipped"
+        "auth_source": "codex_oauth",
+        "model": "gpt-5.5",
+        "reason": "HTTP Error 401: Unauthorized",
+        "status": "unavailable"
       },
       "source": "safety_text",
       "validator_result": {
@@ -1124,8 +1140,10 @@ If live env or API credentials are unavailable, rows are recorded as skipped/una
       "parsed_live_proposal": null,
       "safety_pre_router_preempted_live": true,
       "semantic_shadow_observation": {
-        "reason": "EGO_DESKTOP_LAB_ENABLE_LIVE_LLM is not 1",
-        "status": "skipped"
+        "auth_source": "codex_oauth",
+        "model": "gpt-5.5",
+        "reason": "HTTP Error 401: Unauthorized",
+        "status": "unavailable"
       },
       "source": "safety_text",
       "validator_result": {
@@ -1249,8 +1267,10 @@ If live env or API credentials are unavailable, rows are recorded as skipped/una
       "parsed_live_proposal": null,
       "safety_pre_router_preempted_live": true,
       "semantic_shadow_observation": {
-        "reason": "EGO_DESKTOP_LAB_ENABLE_LIVE_LLM is not 1",
-        "status": "skipped"
+        "auth_source": "codex_oauth",
+        "model": "gpt-5.5",
+        "reason": "HTTP Error 401: Unauthorized",
+        "status": "unavailable"
       },
       "source": "safety_text",
       "validator_result": {

@@ -4,6 +4,7 @@ import json
 import os
 import urllib.request
 from dataclasses import dataclass
+from pathlib import Path
 from typing import Any, Protocol
 
 
@@ -129,15 +130,19 @@ class LiveLLMShadowProvider:
                 admission_eligible=False,
                 reason="live shadow disabled",
             )
-        api_key = os.environ.get("OPENAI_API_KEY")
-        model = os.environ.get("EGO_DESKTOP_LAB_LIVE_LLM_MODEL")
-        if not api_key or not model:
+        bearer_token, auth_source, auth_reason = _resolve_live_bearer_token()
+        model = os.environ.get("EGO_DESKTOP_LAB_LIVE_LLM_MODEL") or _codex_config_model()
+        if not bearer_token or not model:
             return SemanticProviderResult(
                 provider_name=self.provider_name,
                 raw_outputs={},
-                observation={"status": "skipped", "reason": "OPENAI_API_KEY or EGO_DESKTOP_LAB_LIVE_LLM_MODEL is missing"},
+                observation={
+                    "status": "skipped",
+                    "reason": auth_reason if not bearer_token else "EGO_DESKTOP_LAB_LIVE_LLM_MODEL is missing",
+                    "auth_source": auth_source,
+                },
                 admission_eligible=False,
-                reason="live shadow credentials missing",
+                reason="live shadow credentials or model missing",
             )
 
         prompt = _live_prompt(request.scenario, request.core_result, request.allowed_evidence_refs)
@@ -146,7 +151,7 @@ class LiveLLMShadowProvider:
             "https://api.openai.com/v1/responses",
             data=body,
             headers={
-                "Authorization": f"Bearer {api_key}",
+                "Authorization": f"Bearer {bearer_token}",
                 "Content-Type": "application/json",
             },
             method="POST",
@@ -158,7 +163,12 @@ class LiveLLMShadowProvider:
             return SemanticProviderResult(
                 provider_name=self.provider_name,
                 raw_outputs={},
-                observation={"status": "unavailable", "reason": str(exc)},
+                observation={
+                    "status": "unavailable",
+                    "reason": str(exc),
+                    "auth_source": auth_source,
+                    "model": model,
+                },
                 admission_eligible=False,
                 reason="live shadow unavailable",
             )
@@ -168,14 +178,19 @@ class LiveLLMShadowProvider:
             return SemanticProviderResult(
                 provider_name=self.provider_name,
                 raw_outputs={},
-                observation={"status": "unavailable", "reason": "live response did not include text"},
+                observation={
+                    "status": "unavailable",
+                    "reason": "live response did not include text",
+                    "auth_source": auth_source,
+                    "model": model,
+                },
                 admission_eligible=False,
                 reason="live shadow empty",
             )
         return SemanticProviderResult(
             provider_name=self.provider_name,
             raw_outputs={"semantic": raw_text},
-            observation={"status": "observed", "model": model},
+            observation={"status": "observed", "model": model, "auth_source": auth_source},
             admission_eligible=False,
             reason="live shadow observed proposal-only output",
         )
@@ -438,6 +453,45 @@ def _generate_shadow(
         admission_eligible=False,
         reason=result.reason,
     )
+
+
+def _resolve_live_bearer_token() -> tuple[str | None, str | None, str]:
+    api_key = os.environ.get("OPENAI_API_KEY")
+    if api_key:
+        return api_key, "OPENAI_API_KEY", "OPENAI_API_KEY found"
+    auth_path = Path(os.environ.get("CODEX_HOME", "~/.codex")).expanduser() / "auth.json"
+    try:
+        data = json.loads(auth_path.read_text(encoding="utf-8"))
+    except FileNotFoundError:
+        return None, "codex_oauth", f"Codex OAuth auth file not found at {auth_path}"
+    except Exception as exc:
+        return None, "codex_oauth", f"Codex OAuth auth file could not be read: {type(exc).__name__}"
+    tokens = data.get("tokens")
+    if not isinstance(tokens, dict):
+        return None, "codex_oauth", "Codex OAuth tokens object is missing"
+    access_token = tokens.get("access_token")
+    if not isinstance(access_token, str) or not access_token:
+        return None, "codex_oauth", "Codex OAuth access_token is missing"
+    return access_token, "codex_oauth", "Codex OAuth access_token found"
+
+
+def _codex_config_model() -> str | None:
+    config_path = Path(os.environ.get("CODEX_HOME", "~/.codex")).expanduser() / "config.toml"
+    try:
+        for line in config_path.read_text(encoding="utf-8").splitlines():
+            stripped = line.strip()
+            if not stripped.startswith("model"):
+                continue
+            key, separator, value = stripped.partition("=")
+            if not separator or key.strip() != "model":
+                continue
+            model = value.strip().strip("\"'")
+            return model or None
+    except FileNotFoundError:
+        return None
+    except Exception:
+        return None
+    return None
 
 
 def _mock_scenario_key(scenario: Any) -> str:

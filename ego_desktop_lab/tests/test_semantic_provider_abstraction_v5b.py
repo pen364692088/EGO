@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import urllib.request
 from pathlib import Path
 
 from ego_desktop_lab.semantic_intelligence import run_semantic_scenario, run_semantic_text_event
@@ -90,6 +91,117 @@ def test_live_without_api_key_uses_mock_admitted_path(monkeypatch, tmp_path: Pat
     assert result.semantic_shadow_outputs == {}
     assert result.semantic_shadow_observation is not None
     assert result.semantic_shadow_observation["status"] == "skipped"
+
+
+def test_live_shadow_can_use_codex_oauth_without_openai_api_key(monkeypatch, tmp_path: Path) -> None:
+    codex_home = tmp_path / "codex_home"
+    codex_home.mkdir()
+    (codex_home / "auth.json").write_text(
+        json.dumps(
+            {
+                "auth_mode": "oauth",
+                "tokens": {
+                    "access_token": "fake-codex-oauth-access-token",
+                    "refresh_token": "must-not-be-used",
+                },
+            }
+        ),
+        encoding="utf-8",
+    )
+    (codex_home / "config.toml").write_text('model = "fake-live-model"\n', encoding="utf-8")
+    monkeypatch.setenv("CODEX_HOME", str(codex_home))
+    monkeypatch.setenv("EGO_DESKTOP_LAB_ENABLE_LIVE_LLM", "1")
+    monkeypatch.delenv("OPENAI_API_KEY", raising=False)
+    monkeypatch.delenv("EGO_DESKTOP_LAB_LIVE_LLM_MODEL", raising=False)
+
+    captured: dict[str, str] = {}
+
+    class FakeHTTPResponse:
+        def __enter__(self):
+            return self
+
+        def __exit__(self, *_args):
+            return False
+
+        def read(self) -> bytes:
+            return json.dumps(
+                {
+                    "output_text": json.dumps(
+                        {
+                            "source_event_id": "scenario:evidence_failure",
+                            "candidate_failure_type": "plan_failure",
+                            "evidence_gap": 0.10,
+                            "goal_relevance": 0.90,
+                            "risk_hint": 0.20,
+                            "confidence": 0.90,
+                            "evidence_refs": ["scenario:evidence_failure"],
+                            "related_goal_id": "goal:001",
+                            "binding_status": "bound",
+                            "rationale": "Fake OAuth-backed live shadow output remains shadow-only.",
+                        },
+                        sort_keys=True,
+                    )
+                },
+                sort_keys=True,
+            ).encode("utf-8")
+
+    def fake_urlopen(request, timeout=30):
+        captured["authorization"] = request.headers["Authorization"]
+        captured["body"] = request.data.decode("utf-8")
+        captured["timeout"] = str(timeout)
+        return FakeHTTPResponse()
+
+    monkeypatch.setattr(urllib.request, "urlopen", fake_urlopen)
+
+    result = run_semantic_scenario(
+        Path("ego_desktop_lab/semantic_scenarios/evidence_failure.txt"),
+        provider_mode="live",
+        evidence_log_path=tmp_path / "oauth_shadow.jsonl",
+    )
+
+    assert captured["authorization"] == "Bearer fake-codex-oauth-access-token"
+    assert '"model": "fake-live-model"' in captured["body"]
+    assert result.semantic_shadow_observation is not None
+    assert result.semantic_shadow_observation["status"] == "observed"
+    assert result.semantic_shadow_observation["auth_source"] == "codex_oauth"
+    assert result.semantic_provider_trace["admitted_provider"] == "mock_semantic_provider"
+    assert result.semantic_proposal is not None
+    assert result.semantic_proposal.candidate_failure_type == "evidence_failure"
+    assert result.semantic_policy_calibration.after_selected_intention is not None
+    assert result.semantic_policy_calibration.after_selected_intention.goal == "verify_before_claim"
+
+
+def test_live_shadow_records_codex_oauth_source_when_unavailable(monkeypatch, tmp_path: Path) -> None:
+    codex_home = tmp_path / "codex_home"
+    codex_home.mkdir()
+    (codex_home / "auth.json").write_text(
+        json.dumps({"auth_mode": "chatgpt", "tokens": {"access_token": "fake-codex-oauth-access-token"}}),
+        encoding="utf-8",
+    )
+    (codex_home / "config.toml").write_text('model = "fake-live-model"\n', encoding="utf-8")
+    monkeypatch.setenv("CODEX_HOME", str(codex_home))
+    monkeypatch.setenv("EGO_DESKTOP_LAB_ENABLE_LIVE_LLM", "1")
+    monkeypatch.delenv("OPENAI_API_KEY", raising=False)
+    monkeypatch.delenv("EGO_DESKTOP_LAB_LIVE_LLM_MODEL", raising=False)
+
+    def fake_urlopen(_request, timeout=30):
+        raise RuntimeError("simulated live endpoint rejection")
+
+    monkeypatch.setattr(urllib.request, "urlopen", fake_urlopen)
+
+    result = run_semantic_scenario(
+        Path("ego_desktop_lab/semantic_scenarios/evidence_failure.txt"),
+        provider_mode="live",
+        evidence_log_path=tmp_path / "oauth_unavailable_shadow.jsonl",
+    )
+
+    assert result.semantic_shadow_observation is not None
+    assert result.semantic_shadow_observation["status"] == "unavailable"
+    assert result.semantic_shadow_observation["auth_source"] == "codex_oauth"
+    assert result.semantic_shadow_observation["model"] == "fake-live-model"
+    assert result.semantic_provider_trace["admitted_provider"] == "mock_semantic_provider"
+    assert result.semantic_policy_calibration.after_selected_intention is not None
+    assert result.semantic_policy_calibration.after_selected_intention.goal == "verify_before_claim"
 
 
 def test_provider_interface_still_uses_validator_for_admission(tmp_path: Path) -> None:
