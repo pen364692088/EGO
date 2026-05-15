@@ -102,6 +102,15 @@
 - 任务状态、验证等级、handoff 字段使用 `.agents/references/task-state-and-handoff.md`
 - 问题层级、验证/证据口径、completion claim 规则使用 `.agents/references/engineering-evidence-model.md`
 
+## Codex working gates
+
+- Prime directive: 不追求变更多，追求在最小架构损伤下形成可验证的真实行为变化。
+- Gate A: coding 前必须明确 contract / schema / authority source；不清楚就先收敛任务，不进入实现。
+- Gate B: completion claim 前必须运行与任务匹配的验证；repo-level wrapper 优先用 `scripts/run_verify.sh fast|full`，它只委托现有 canonical verifier，不另造验证逻辑。
+- Gate C: 收口前 review diff，重点检查 regression、第二套逻辑、证据缺口、过度设计、无关 temp/log/runtime JSONL。
+- 如果 required check 无法运行，报告 `unavailable` 和具体原因；不得把 unavailable 降级写成 pass。
+- 最终报告必须列出 changed files、commands run、test results、evidence paths、unresolved risks、next smallest safe step。
+
 ## Codex Memory Brain
 
 - 若当前环境已启用 `memory_brain` MCP，处理中高复杂度任务前，先把当前任务压缩成一个短 probe，再调用 `memory_build_context`
