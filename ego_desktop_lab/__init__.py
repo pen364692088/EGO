@@ -6,7 +6,26 @@ runtimes, system commands, external messaging, or user files.
 
 from ego_desktop_lab.gate import GateDecision, evaluate_gate
 from ego_desktop_lab.intention import Intention, generate_intentions, select_intention
+from ego_desktop_lab.affective_drive_loop import AffectiveDriveState, derive_affective_drive_state
 from ego_desktop_lab.appraisal import AppraisalResult, appraise
+from ego_desktop_lab.agency_decision_view import (
+    AgencyDecisionView,
+    build_agency_decision_view,
+    format_agency_decision_view,
+)
+from ego_desktop_lab.agency_kernel import (
+    SelfMaintainingAgencyCycleResult,
+    run_self_maintaining_agency_cycle,
+)
+from ego_desktop_lab.agency_contracts import (
+    AgencyEvent,
+    BehaviorPlan,
+    PerceptionFrame,
+    build_behavior_plan,
+    classify_feedback_text,
+    derive_perception_frame,
+)
+from ego_desktop_lab.behavior_options import BehaviorOption
 from ego_desktop_lab.belief_state import BeliefState
 from ego_desktop_lab.decision_view import (
     DecisionView,
@@ -14,8 +33,26 @@ from ego_desktop_lab.decision_view import (
     build_decision_view_from_evidence_record,
     build_decision_view_from_semantic_result,
 )
+from ego_desktop_lab.experience_memory import (
+    ExperienceBias,
+    ExperienceCard,
+    ExperienceContext,
+    build_current_experience_context,
+    build_experience_card,
+    derive_experience_bias,
+    resolve_experience_conflicts,
+)
 from ego_desktop_lab.motivation import MotivationState, update_motivation
 from ego_desktop_lab.outcome import OutcomeRecord
+from ego_desktop_lab.root_cause import (
+    FailureTicket,
+    RootCauseTrace,
+    build_operator_observability_report,
+    build_root_cause_operator_report,
+    build_root_cause_trace,
+    diagnose_failure,
+    format_failure_ticket,
+)
 from ego_desktop_lab.learning import LearningCycleResult, LearningUpdate, run_learning_cycle
 from ego_desktop_lab.llm_adapter import (
     LLMCognitionAdapterResult,
@@ -84,8 +121,13 @@ from ego_desktop_lab.tension import Tension, detect_tensions
 
 __all__ = [
     "AgentCycleResult",
+    "AffectiveDriveState",
+    "AgencyDecisionView",
+    "AgencyEvent",
     "AppraisalResult",
     "BeliefState",
+    "BehaviorOption",
+    "BehaviorPlan",
     "CanonicalDecision",
     "DecisionView",
     "GateDecision",
@@ -95,6 +137,7 @@ __all__ = [
     "GoalProgressState",
     "Intention",
     "FailureType",
+    "FailureTicket",
     "LearningCycleResult",
     "LearningConfig",
     "LearningUpdate",
@@ -111,7 +154,9 @@ __all__ = [
     "OutcomeRecord",
     "PlanProposal",
     "PlanProposalSet",
+    "PerceptionFrame",
     "ProposalValidationResult",
+    "RootCauseTrace",
     "SemanticHandoff",
     "SemanticProviderRequest",
     "SemanticProviderResult",
@@ -119,9 +164,13 @@ __all__ = [
     "SemanticPolicyCalibrationResult",
     "SemanticPolicyOverlay",
     "ExplanationDraft",
+    "ExperienceBias",
+    "ExperienceCard",
+    "ExperienceContext",
     "SemanticProposal",
     "SemanticScenario",
     "SemanticScenarioResult",
+    "SelfMaintainingAgencyCycleResult",
     "SubjectState",
     "StrategyMemory",
     "StructuredSubgoal",
@@ -130,22 +179,36 @@ __all__ = [
     "Tension",
     "appraise",
     "build_oscillation_control_report",
+    "build_operator_observability_report",
+    "build_behavior_plan",
+    "build_root_cause_operator_report",
+    "build_root_cause_trace",
     "build_decision_view_contract_report",
     "build_decision_view_from_evidence_record",
     "build_decision_view_from_semantic_result",
+    "build_current_experience_context",
+    "build_experience_card",
     "build_llm_cognition_adapter_report",
     "build_llm_executive_proposal_report",
     "build_live_llm_shadow_accuracy_report",
     "build_live_shadow_accuracy_cases",
     "build_live_shadow_accuracy_payload",
+    "build_agency_decision_view",
     "build_real_semantic_intelligence_report",
     "build_semantic_policy_calibration_report",
     "build_stability_generalization_report",
     "derive_semantic_policy_overlay",
     "derive_validated_semantic_handoff",
     "derive_motivation_pressure",
+    "derive_experience_bias",
+    "derive_affective_drive_state",
+    "derive_perception_frame",
+    "classify_feedback_text",
+    "diagnose_failure",
     "detect_tensions",
     "evaluate_gate",
+    "format_agency_decision_view",
+    "format_failure_ticket",
     "generate_intentions",
     "route_text_to_mock_scenario_id",
     "route_failure_type",
@@ -158,10 +221,12 @@ __all__ = [
     "run_semantic_policy_calibration_cycle",
     "run_semantic_scenario",
     "run_semantic_text_event",
+    "run_self_maintaining_agency_cycle",
     "select_intention",
     "select_semantic_provider_outputs",
     "select_with_oscillation_control",
     "render_suggestion_from_canonical",
+    "resolve_experience_conflicts",
     "update_motivation",
     "update_goal_progress",
 ]

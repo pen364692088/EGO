@@ -6,6 +6,16 @@ import sys
 from dataclasses import dataclass
 from pathlib import Path
 
+from ego_desktop_lab.agency_decision_view import (
+    build_agency_decision_view,
+    format_agency_decision_view,
+)
+from ego_desktop_lab.agency_kernel import run_self_maintaining_agency_cycle
+from ego_desktop_lab.agency_contracts import (
+    build_chat_corpus_agency_event,
+    classify_feedback_text,
+    derive_perception_frame,
+)
 from ego_desktop_lab.command_router import (
     CommandDecision,
     DialogueState,
@@ -17,8 +27,15 @@ from ego_desktop_lab.command_router import (
 from ego_desktop_lab.console import MISJUDGED_SCENARIO_DIR, save_misjudged_input_as_scenario
 from ego_desktop_lab.console_formatters import format_decision_card
 from ego_desktop_lab.decision_view import DecisionView, build_decision_view_from_semantic_result
+from ego_desktop_lab.experience_memory import build_experience_card
 from ego_desktop_lab.expression_layer import append_reply_history
 from ego_desktop_lab.human_shell_renderer import render_human_shell_reply
+from ego_desktop_lab.outcome import OutcomeRecord
+from ego_desktop_lab.root_cause import (
+    build_operator_observability_report,
+    build_root_cause_trace,
+    diagnose_failure,
+)
 from ego_desktop_lab.semantic_intelligence import (
     DEFAULT_SEMANTIC_TIMESTAMP,
     run_semantic_scenario,
@@ -37,6 +54,7 @@ from ego_desktop_lab.subjective_loop_contract import (
     build_subject_event,
     build_subject_evidence,
 )
+from ego_desktop_lab.verification_pack import load_scenario
 
 
 CLAIM_CEILING = "lab-only minimal desktop shell product cut"
@@ -482,6 +500,892 @@ def build_conversational_expression_layer_report(output_path: Path) -> Path:
     return output_path
 
 
+def build_v7_agency_kernel_shell_report(output_path: Path) -> Path:
+    scenario = load_scenario(Path("ego_desktop_lab/scenarios/high_evidence_same_goal.json"))
+    cycle = run_self_maintaining_agency_cycle(
+        scenario.state,
+        scenario.belief_state,
+        timestamp=scenario.timestamp,
+    )
+    view = build_agency_decision_view(cycle)
+    lines = [
+        "# v7 Agency Kernel Shell Report",
+        "",
+        "Claim ceiling: lab-only agency DecisionView shell surface.",
+        "This report does not prove consciousness, alive status, live autonomy, runtime efficacy, user benefit, or real semantic intelligence.",
+        "",
+        "## Scope",
+        "",
+        "The shell reads `SelfMaintainingAgencyCycleResult` through `AgencyDecisionView`. It does not recompute selected behavior options, run gates, mutate OpenEmotion, or affect runtime replies.",
+        "",
+        "## Agency DecisionView",
+        "",
+        "```text",
+        format_agency_decision_view(view).rstrip(),
+        "```",
+        "",
+        "## Action Boundary",
+        "",
+        "No external action executed. Runtime, Telegram, desktop, file, system command, and external-send authority remain out of scope.",
+    ]
+    output_path.parent.mkdir(parents=True, exist_ok=True)
+    output_path.write_text("\n".join(lines) + "\n", encoding="utf-8")
+    return output_path
+
+
+def build_v7_stage0_operator_observability_report(output_path: Path) -> Path:
+    scenario = load_scenario(Path("ego_desktop_lab/scenarios/high_evidence_same_goal.json"))
+    probe = run_self_maintaining_agency_cycle(
+        scenario.state,
+        scenario.belief_state,
+        timestamp=scenario.timestamp,
+    )
+    selected = probe.selected_intention
+    if selected is None:
+        raise ValueError("operator observability report requires a selected intention")
+    outcome = OutcomeRecord(
+        scenario_id=scenario.name,
+        selected_intention_id=str(selected["id"]),
+        selected_plan_id=str(selected["goal"]),
+        expected_effect="continue should reduce stagnation",
+        actual_effect="continue_failure",
+        success_score=0.10,
+        user_feedback="continuation failed and needs repair",
+        prediction_error=0.90,
+        evidence_refs=("lab:v7_stage0_operator_observability",),
+    )
+    cycle = run_self_maintaining_agency_cycle(
+        scenario.state,
+        scenario.belief_state,
+        outcome=outcome,
+        timestamp=scenario.timestamp,
+    )
+    view = build_agency_decision_view(cycle)
+    trace = build_root_cause_trace(
+        cycle,
+        input_summary="high evidence same goal continuation",
+        outcome=outcome,
+    )
+    ticket = diagnose_failure(
+        trace,
+        expected={
+            "selected_goal": "continue_or_verify_unfinished_goal",
+            "effect": "continue_improves",
+        },
+        observed={"actual_effect": "continue_failure", "success_score": 0.10},
+    )
+    output_path.parent.mkdir(parents=True, exist_ok=True)
+    output_path.write_text(
+        build_operator_observability_report(
+            view,
+            trace=trace,
+            ticket=ticket,
+        )
+        + "\n",
+        encoding="utf-8",
+    )
+    return output_path
+
+
+def build_v7_stage2_experience_memory_report(output_path: Path) -> Path:
+    scenario = load_scenario(Path("ego_desktop_lab/scenarios/high_evidence_same_goal.json"))
+    baseline = run_self_maintaining_agency_cycle(
+        scenario.state,
+        scenario.belief_state,
+        timestamp=scenario.timestamp,
+    )
+    selected = baseline.selected_intention
+    if selected is None:
+        raise ValueError("experience memory report requires a selected baseline intention")
+    negative_outcome = OutcomeRecord(
+        scenario_id=scenario.name,
+        selected_intention_id=str(selected["id"]),
+        selected_plan_id=str(selected["goal"]),
+        expected_effect="continue should reduce stagnation",
+        actual_effect="continue_failure",
+        success_score=0.10,
+        user_feedback="continuation failed and needs repair",
+        prediction_error=0.90,
+        evidence_refs=("lab:v7_stage2_experience_memory",),
+    )
+    failure_cycle = run_self_maintaining_agency_cycle(
+        scenario.state,
+        scenario.belief_state,
+        outcome=negative_outcome,
+        timestamp=scenario.timestamp,
+    )
+    failure_ticket = diagnose_failure(
+        failure_cycle,
+        expected={"selected_goal": "continue_or_verify_unfinished_goal", "effect": "continue_improves"},
+        observed={"actual_effect": "continue_failure", "success_score": 0.10},
+    )
+    negative_card = build_experience_card(
+        negative_outcome,
+        cycle_result=baseline,
+        ticket=failure_ticket,
+        timestamp=scenario.timestamp,
+    )
+    experience_cycle = run_self_maintaining_agency_cycle(
+        scenario.state,
+        scenario.belief_state,
+        timestamp=scenario.timestamp,
+        experience_cards=(negative_card,),
+    )
+
+    unrelated_scenario = load_scenario(Path("ego_desktop_lab/scenarios/low_evidence_same_goal.json"))
+    unrelated_baseline = run_self_maintaining_agency_cycle(
+        unrelated_scenario.state,
+        unrelated_scenario.belief_state,
+        timestamp=unrelated_scenario.timestamp,
+    )
+    unrelated_with_experience = run_self_maintaining_agency_cycle(
+        unrelated_scenario.state,
+        unrelated_scenario.belief_state,
+        timestamp=unrelated_scenario.timestamp,
+        experience_cards=(negative_card,),
+    )
+
+    positive_outcome = OutcomeRecord(
+        scenario_id=scenario.name,
+        selected_intention_id=str(selected["id"]),
+        selected_plan_id=str(selected["goal"]),
+        expected_effect="continue should reduce stagnation",
+        actual_effect="continue_success",
+        success_score=0.90,
+        user_feedback="continuation worked in this exact context",
+        prediction_error=0.05,
+        evidence_refs=("lab:v7_stage2_conflict_control",),
+    )
+    positive_card = build_experience_card(
+        positive_outcome,
+        cycle_result=baseline,
+        timestamp=scenario.timestamp,
+    )
+    conflict_cycle = run_self_maintaining_agency_cycle(
+        scenario.state,
+        scenario.belief_state,
+        timestamp=scenario.timestamp,
+        experience_cards=(negative_card, positive_card),
+    )
+
+    summary = _experience_report_summary(
+        baseline,
+        experience_cycle,
+        unrelated_baseline,
+        unrelated_with_experience,
+        conflict_cycle,
+    )
+    lines = [
+        "# v7 Stage 2 Experience Memory Report",
+        "",
+        "This report is lab-only and proposal-only. It demonstrates contextual experience bias over existing agency-kernel outputs.",
+        "It does not write runtime state, OpenEmotion memory, formal evidence, temp runtime JSONL, or Telegram outputs.",
+        "",
+        "## Human Check",
+        f"experience_applied = {_bool_text(summary['experience_applied'])}",
+        f"applied_card_ids = {json.dumps(summary['applied_card_ids'], sort_keys=True)}",
+        f"baseline_selected_goal = {summary['baseline_selected_goal']}",
+        f"experience_selected_goal = {summary['experience_selected_goal']}",
+        f"ranking_changed = {_bool_text(summary['ranking_changed'])}",
+        f"unrelated_experience_no_effect = {_bool_text(summary['unrelated_experience_no_effect'])}",
+        f"conflict_cards = {summary['conflict_cards']}",
+        f"no_action_executed = {_bool_text(summary['no_action_executed'])}",
+        "",
+        "## Behavior Change Summary",
+        *_behavior_change_summary_lines(baseline, experience_cycle),
+        "",
+        "## Experience Card",
+        json.dumps(negative_card.to_dict(), indent=2, sort_keys=True),
+        "",
+        "## Baseline Ranking",
+        json.dumps(list(baseline.candidate_options), indent=2, sort_keys=True),
+        "",
+        "## Experience Ranking",
+        json.dumps(list(experience_cycle.candidate_options), indent=2, sort_keys=True),
+        "",
+        "## Experience Memory Snapshot",
+        json.dumps(experience_cycle.experience_memory_snapshot, indent=2, sort_keys=True),
+        "",
+        "## Unrelated Control",
+        json.dumps(
+            {
+                "baseline_selected_goal": _selected_goal(unrelated_baseline),
+                "with_experience_selected_goal": _selected_goal(unrelated_with_experience),
+                "experience_snapshot": unrelated_with_experience.experience_memory_snapshot,
+            },
+            indent=2,
+            sort_keys=True,
+        ),
+        "",
+        "## Conflict Control",
+        json.dumps(conflict_cycle.experience_memory_snapshot, indent=2, sort_keys=True),
+        "",
+        "## Claim Ceiling",
+        "lab-only experience-memory behavior; no runtime influence, no live benefit, no consciousness, no alive status",
+        "",
+    ]
+    output_path.parent.mkdir(parents=True, exist_ok=True)
+    output_path.write_text("\n".join(lines), encoding="utf-8")
+    return output_path
+
+
+def build_v7_stage2_experience_memory_case_report(case_path: Path, output_path: Path) -> Path:
+    case = _load_experience_memory_case(case_path)
+    learn = _scenario_from_case(case["learn_scenario"], default_name=str(case.get("name", "custom_case")))
+    apply = _scenario_from_case(case.get("apply_scenario") or case["learn_scenario"], default_name=f"{learn['name']}_apply")
+    control_payload = case.get("unrelated_scenario")
+    control = _scenario_from_case(control_payload, default_name=f"{learn['name']}_control") if control_payload else None
+
+    learn_baseline = run_self_maintaining_agency_cycle(
+        learn["state"],
+        learn["belief_state"],
+        timestamp=learn["timestamp"],
+    )
+    selected = learn_baseline.selected_intention
+    if selected is None:
+        raise ValueError("custom experience case requires learn_scenario to produce a selected intention")
+    outcome = _outcome_from_case(
+        case["outcome"],
+        scenario_id=learn["name"],
+        selected_intention_id=str(selected["id"]),
+        selected_plan_id=str(selected["goal"]),
+    )
+    failure_cycle = run_self_maintaining_agency_cycle(
+        learn["state"],
+        learn["belief_state"],
+        outcome=outcome,
+        timestamp=learn["timestamp"],
+    )
+    ticket = diagnose_failure(
+        failure_cycle,
+        expected={"selected_goal": str(selected["goal"]), "effect": outcome.expected_effect},
+        observed={"actual_effect": outcome.actual_effect, "success_score": outcome.success_score},
+    )
+    card = build_experience_card(
+        outcome,
+        cycle_result=learn_baseline,
+        ticket=ticket,
+        timestamp=learn["timestamp"],
+    )
+
+    apply_baseline = run_self_maintaining_agency_cycle(
+        apply["state"],
+        apply["belief_state"],
+        timestamp=apply["timestamp"],
+    )
+    apply_experienced = run_self_maintaining_agency_cycle(
+        apply["state"],
+        apply["belief_state"],
+        timestamp=apply["timestamp"],
+        experience_cards=(card,),
+    )
+    control_summary: dict[str, object] | None = None
+    if control is not None:
+        control_baseline = run_self_maintaining_agency_cycle(
+            control["state"],
+            control["belief_state"],
+            timestamp=control["timestamp"],
+        )
+        control_experienced = run_self_maintaining_agency_cycle(
+            control["state"],
+            control["belief_state"],
+            timestamp=control["timestamp"],
+            experience_cards=(card,),
+        )
+        control_summary = {
+            "baseline_selected_goal": _selected_goal(control_baseline),
+            "with_experience_selected_goal": _selected_goal(control_experienced),
+            "ranking_changed": control_baseline.candidate_options != control_experienced.candidate_options,
+            "experience_snapshot": control_experienced.experience_memory_snapshot,
+        }
+
+    summary = {
+        "case_name": case.get("name", "custom_case"),
+        "case_path": str(case_path),
+        "learn_baseline_selected_goal": _selected_goal(learn_baseline),
+        "apply_baseline_selected_goal": _selected_goal(apply_baseline),
+        "apply_experience_selected_goal": _selected_goal(apply_experienced),
+        "experience_applied": bool(apply_experienced.experience_memory_snapshot.get("applied_card_ids")),
+        "ranking_changed": apply_baseline.candidate_options != apply_experienced.candidate_options,
+        "no_action_executed": bool(learn_baseline.no_action_executed)
+        and bool(failure_cycle.no_action_executed)
+        and bool(apply_baseline.no_action_executed)
+        and bool(apply_experienced.no_action_executed),
+    }
+    lines = [
+        "# v7 Stage 2 Custom Experience Memory Case Report",
+        "",
+        "This report reads an operator-provided JSON case file. It is lab-only, proposal-only, and does not write runtime/OpenEmotion state.",
+        "",
+        "## Human Check",
+        f"case_name = {summary['case_name']}",
+        f"learn_baseline_selected_goal = {summary['learn_baseline_selected_goal']}",
+        f"apply_baseline_selected_goal = {summary['apply_baseline_selected_goal']}",
+        f"apply_experience_selected_goal = {summary['apply_experience_selected_goal']}",
+        f"experience_applied = {_bool_text(summary['experience_applied'])}",
+        f"ranking_changed = {_bool_text(summary['ranking_changed'])}",
+        f"no_action_executed = {_bool_text(summary['no_action_executed'])}",
+        "",
+        "## Behavior Change Summary",
+        *_behavior_change_summary_lines(apply_baseline, apply_experienced),
+        "",
+        "## Case Input",
+        json.dumps(_jsonable(case), indent=2, sort_keys=True),
+        "",
+        "## Experience Card",
+        json.dumps(card.to_dict(), indent=2, sort_keys=True),
+        "",
+        "## Apply Baseline Ranking",
+        json.dumps(list(apply_baseline.candidate_options), indent=2, sort_keys=True),
+        "",
+        "## Apply Experience Ranking",
+        json.dumps(list(apply_experienced.candidate_options), indent=2, sort_keys=True),
+        "",
+        "## Experience Memory Snapshot",
+        json.dumps(apply_experienced.experience_memory_snapshot, indent=2, sort_keys=True),
+        "",
+        "## Optional Unrelated Control",
+        json.dumps(control_summary or {"provided": False}, indent=2, sort_keys=True),
+        "",
+        "## Claim Ceiling",
+        "lab-only custom experience-memory probe; no runtime influence, no live benefit, no consciousness, no alive status",
+        "",
+    ]
+    output_path.parent.mkdir(parents=True, exist_ok=True)
+    output_path.write_text("\n".join(lines), encoding="utf-8")
+    return output_path
+
+
+def build_v7_stage2_experience_chat_case_report(case_path: Path, output_path: Path) -> Path:
+    chat_case = _load_experience_chat_case(case_path)
+    case = chat_case["structured_case"]
+    learn = _scenario_from_case(case["learn_scenario"], default_name=str(case.get("name", "chat_case")))
+    apply = _scenario_from_case(case.get("apply_scenario") or case["learn_scenario"], default_name=f"{learn['name']}_apply")
+
+    learn_baseline = run_self_maintaining_agency_cycle(
+        learn["state"],
+        learn["belief_state"],
+        timestamp=learn["timestamp"],
+    )
+    selected = learn_baseline.selected_intention
+    if selected is None:
+        raise ValueError("experience chat case requires learn_chat to produce a selected intention")
+
+    card = None
+    failure_cycle = None
+    if case.get("outcome") is not None:
+        outcome = _outcome_from_case(
+            case["outcome"],
+            scenario_id=learn["name"],
+            selected_intention_id=str(selected["id"]),
+            selected_plan_id=str(selected["goal"]),
+        )
+        failure_cycle = run_self_maintaining_agency_cycle(
+            learn["state"],
+            learn["belief_state"],
+            outcome=outcome,
+            timestamp=learn["timestamp"],
+        )
+        ticket = diagnose_failure(
+            failure_cycle,
+            expected={"selected_goal": str(selected["goal"]), "effect": outcome.expected_effect},
+            observed={"actual_effect": outcome.actual_effect, "success_score": outcome.success_score},
+        )
+        card = build_experience_card(
+            outcome,
+            cycle_result=learn_baseline,
+            ticket=ticket,
+            timestamp=learn["timestamp"],
+        )
+
+    apply_baseline = run_self_maintaining_agency_cycle(
+        apply["state"],
+        apply["belief_state"],
+        timestamp=apply["timestamp"],
+    )
+    apply_experienced = run_self_maintaining_agency_cycle(
+        apply["state"],
+        apply["belief_state"],
+        timestamp=apply["timestamp"],
+        experience_cards=(card,) if card is not None else (),
+    )
+    no_action_executed = (
+        bool(learn_baseline.no_action_executed)
+        and (failure_cycle is None or bool(failure_cycle.no_action_executed))
+        and bool(apply_baseline.no_action_executed)
+        and bool(apply_experienced.no_action_executed)
+    )
+    experience_snapshot = (
+        apply_experienced.experience_memory_snapshot
+        if card is not None
+        else {
+            "experience_applied": False,
+            "applied_card_ids": [],
+            "ignored_card_ids": [],
+            "needs_review_card_ids": [],
+            "reason": "no_negative_feedback_detected",
+        }
+    )
+    lines = [
+        "# v7 Stage 2 Chat-Corpus Experience Memory Case Report",
+        "",
+        "This report reads an operator-provided chat transcript. It is lab-only, deterministic, proposal-only, and does not write runtime/OpenEmotion state.",
+        "",
+        "## Human Check",
+        f"case_name = {chat_case['name']}",
+        f"feedback_class = {chat_case['feedback_class']}",
+        f"experience_applied = {_bool_text(bool(experience_snapshot.get('applied_card_ids')))}",
+        f"apply_baseline_selected_goal = {_selected_goal(apply_baseline)}",
+        f"apply_experience_selected_goal = {_selected_goal(apply_experienced)}",
+        f"ranking_changed = {_bool_text(apply_baseline.candidate_options != apply_experienced.candidate_options)}",
+        f"no_action_executed = {_bool_text(no_action_executed)}",
+        "",
+        "## Behavior Change Summary",
+        *_behavior_change_summary_lines(apply_baseline, apply_experienced),
+        "",
+        "## Agency Event",
+        json.dumps(chat_case["agency_event"], indent=2, sort_keys=True, ensure_ascii=False),
+        "",
+        "## Perception Frame",
+        json.dumps(chat_case["perception_frame"], indent=2, sort_keys=True, ensure_ascii=False),
+        "",
+        "## Parsed Structured Case",
+        json.dumps(_jsonable(case), indent=2, sort_keys=True, ensure_ascii=False),
+        "",
+        "## Transcript Input",
+        "```md",
+        str(chat_case["raw_text"]).rstrip(),
+        "```",
+        "",
+        "## Experience Card",
+        (
+            json.dumps(card.to_dict(), indent=2, sort_keys=True, ensure_ascii=False)
+            if card is not None
+            else json.dumps({"created": False, "reason": "no_negative_feedback_detected"}, indent=2, sort_keys=True)
+        ),
+        "",
+        "## Apply Baseline Ranking",
+        json.dumps(list(apply_baseline.candidate_options), indent=2, sort_keys=True, ensure_ascii=False),
+        "",
+        "## Apply Experience Ranking",
+        json.dumps(list(apply_experienced.candidate_options), indent=2, sort_keys=True, ensure_ascii=False),
+        "",
+        "## Experience Memory Snapshot",
+        json.dumps(experience_snapshot, indent=2, sort_keys=True, ensure_ascii=False),
+        "",
+        "## Claim Ceiling",
+        "lab-only chat-corpus operator probe; no runtime influence, no live benefit, no consciousness, no alive status",
+        "",
+    ]
+    output_path.parent.mkdir(parents=True, exist_ok=True)
+    output_path.write_text("\n".join(lines), encoding="utf-8")
+    return output_path
+
+
+def _load_experience_memory_case(case_path: Path) -> dict[str, object]:
+    with case_path.open("r", encoding="utf-8-sig") as handle:
+        payload = json.load(handle)
+    if not isinstance(payload, dict):
+        raise ValueError("experience memory case must be a JSON object")
+    for key in ("learn_scenario", "outcome"):
+        if key not in payload:
+            raise ValueError(f"experience memory case missing required key: {key}")
+    return payload
+
+
+def _load_experience_chat_case(case_path: Path) -> dict[str, object]:
+    raw_text = case_path.read_text(encoding="utf-8-sig")
+    sections = _parse_experience_chat_sections(raw_text)
+    case_name = sections.get("case") or case_path.stem
+    learn_chat = sections.get("learn_chat")
+    if not learn_chat:
+        raise ValueError("experience chat case missing required section: learn_chat")
+    apply_chat = sections.get("apply_chat") or learn_chat
+    feedback = _extract_chat_feedback(learn_chat)
+    learn_goal = _goal_text_from_chat(case_name, learn_chat)
+    apply_goal = (
+        _goal_text_from_chat(f"{case_name}:unrelated_apply", apply_chat)
+        if _chat_mentions_unrelated_goal(apply_chat)
+        else learn_goal
+    )
+    agency_event = build_chat_corpus_agency_event(
+        case_name=case_name,
+        learn_chat=learn_chat,
+        apply_chat=apply_chat,
+        feedback=feedback,
+        goal=learn_goal,
+        expected=sections.get("expected", ""),
+    )
+    perception_frame = derive_perception_frame(agency_event)
+    feedback_class = perception_frame.feedback_class
+    structured_case: dict[str, object] = {
+        "name": case_name,
+        "learn_scenario": _scenario_payload_from_chat(
+            name=f"{case_name}_learn",
+            chat_text=learn_chat,
+            goal_text=learn_goal,
+        ),
+        "apply_scenario": _scenario_payload_from_chat(
+            name=f"{case_name}_apply",
+            chat_text=apply_chat,
+            goal_text=apply_goal,
+        ),
+        "parsed_chat": {
+            "learn_chat": learn_chat,
+            "apply_chat": apply_chat,
+            "feedback": feedback,
+            "feedback_class": feedback_class,
+            "agency_event": agency_event.to_dict(),
+            "perception_frame": perception_frame.to_dict(),
+            "expected": sections.get("expected", ""),
+        },
+    }
+    if feedback_class == "negative_continue":
+        structured_case["outcome"] = {
+            "expected_effect": "continue should reduce stagnation",
+            "actual_effect": "chat_continue_failure",
+            "success_score": 0.1,
+            "user_feedback": feedback,
+            "prediction_error": 0.9,
+            "evidence_refs": [f"operator:chat_case:{case_name}"],
+        }
+    else:
+        structured_case["outcome"] = None
+    return {
+        "name": case_name,
+        "raw_text": raw_text,
+        "feedback": feedback,
+        "feedback_class": feedback_class,
+        "agency_event": agency_event.to_dict(),
+        "perception_frame": perception_frame.to_dict(),
+        "structured_case": structured_case,
+    }
+
+
+def _parse_experience_chat_sections(raw_text: str) -> dict[str, str]:
+    sections: dict[str, list[str]] = {}
+    current_key: str | None = None
+    for raw_line in raw_text.splitlines():
+        line = raw_line.rstrip()
+        stripped = line.strip()
+        if stripped.lower().startswith("# case:"):
+            sections["case"] = [stripped.split(":", 1)[1].strip()]
+            current_key = None
+            continue
+        if stripped.startswith("## "):
+            current_key = stripped[3:].strip().lower().replace("-", "_").replace(" ", "_")
+            sections.setdefault(current_key, [])
+            continue
+        if current_key is not None:
+            sections.setdefault(current_key, []).append(line)
+    return {key: "\n".join(value).strip() for key, value in sections.items()}
+
+
+def _extract_chat_feedback(learn_chat: str) -> str:
+    feedback_lines: list[str] = []
+    prefixes = ("userfeedback:", "feedback:", "用户反馈:", "用户反馈：")
+    for line in learn_chat.splitlines():
+        stripped = line.strip()
+        lowered = stripped.lower()
+        for prefix in prefixes:
+            if lowered.startswith(prefix):
+                feedback_lines.append(stripped.split(":", 1)[1].strip() if ":" in stripped else stripped.split("：", 1)[1].strip())
+                break
+    return "\n".join(feedback_lines).strip()
+
+
+def _is_negative_continue_feedback(feedback: str) -> bool:
+    return classify_feedback_text(feedback) == "negative_continue"
+
+
+def _chat_mentions_unrelated_goal(chat_text: str) -> bool:
+    normalized = chat_text.lower()
+    return any(
+        marker in normalized
+        for marker in (
+            "完全不同",
+            "无关",
+            "另一个目标",
+            "不同的目标",
+            "unrelated",
+            "different goal",
+            "another goal",
+        )
+    )
+
+
+def _goal_text_from_chat(case_name: str, chat_text: str) -> str:
+    for line in chat_text.splitlines():
+        stripped = line.strip()
+        lowered = stripped.lower()
+        if lowered.startswith("goal:"):
+            return stripped.split(":", 1)[1].strip()
+        if stripped.startswith("目标:") or stripped.startswith("目标："):
+            return stripped.split(":", 1)[1].strip() if ":" in stripped else stripped.split("：", 1)[1].strip()
+    return f"operator chat goal:{case_name}"
+
+
+def _scenario_payload_from_chat(
+    *,
+    name: str,
+    chat_text: str,
+    goal_text: str,
+) -> dict[str, object]:
+    return {
+        "name": name,
+        "timestamp": DEFAULT_SEMANTIC_TIMESTAMP,
+        "state": {
+            "agent_id": "operator-chat-agent",
+            "core_commitments": [
+                "avoid false claims",
+                "complete commitments",
+                "preserve identity boundaries",
+            ],
+            "uncertainty": 0.1,
+            "integrity": 0.92,
+            "goal_pressure": 0.74,
+            "risk_sensitivity": 0.6,
+            "unfinished_goals": [goal_text],
+            "recent_failures": [],
+            "identity_conflict": False,
+        },
+        "belief_state": {
+            "known_facts": [
+                "operator-provided chat corpus",
+                "lab-only chat transcript probe",
+                f"chat length: {len(chat_text)}",
+            ],
+            "unknowns": [],
+            "assumptions": [],
+            "evidence_strength": 0.96,
+            "confidence": 0.93,
+        },
+    }
+
+
+def _scenario_from_case(payload: object, *, default_name: str) -> dict[str, object]:
+    if not isinstance(payload, dict):
+        raise ValueError("scenario payload must be a JSON object")
+    state_payload = payload["state"]
+    belief_payload = payload["belief_state"]
+    return {
+        "name": str(payload.get("name", default_name)),
+        "timestamp": str(payload.get("timestamp", DEFAULT_SEMANTIC_TIMESTAMP)),
+        "state": _state_from_payload(state_payload),
+        "belief_state": _belief_from_payload(belief_payload),
+    }
+
+
+def _state_from_payload(payload: object):
+    from ego_desktop_lab.subject_state import SubjectState
+
+    if not isinstance(payload, dict):
+        raise ValueError("state payload must be a JSON object")
+    return SubjectState(
+        agent_id=str(payload.get("agent_id", "custom-experience-agent")),
+        core_commitments=tuple(str(item) for item in payload.get("core_commitments", ())),
+        uncertainty=float(payload.get("uncertainty", 0.1)),
+        integrity=float(payload.get("integrity", 0.9)),
+        goal_pressure=float(payload.get("goal_pressure", 0.7)),
+        risk_sensitivity=float(payload.get("risk_sensitivity", 0.6)),
+        unfinished_goals=tuple(payload.get("unfinished_goals", ())),
+        recent_failures=tuple(str(item) for item in payload.get("recent_failures", ())),
+        identity_conflict=bool(payload.get("identity_conflict", False)),
+    )
+
+
+def _belief_from_payload(payload: object):
+    from ego_desktop_lab.belief_state import BeliefState
+
+    if not isinstance(payload, dict):
+        raise ValueError("belief_state payload must be a JSON object")
+    return BeliefState(
+        known_facts=tuple(str(item) for item in payload.get("known_facts", ())),
+        unknowns=tuple(str(item) for item in payload.get("unknowns", ())),
+        assumptions=tuple(str(item) for item in payload.get("assumptions", ())),
+        evidence_strength=float(payload.get("evidence_strength", 0.5)),
+        confidence=float(payload.get("confidence", 0.5)),
+    )
+
+
+def _outcome_from_case(
+    payload: object,
+    *,
+    scenario_id: str,
+    selected_intention_id: str,
+    selected_plan_id: str,
+) -> OutcomeRecord:
+    if not isinstance(payload, dict):
+        raise ValueError("outcome payload must be a JSON object")
+    return OutcomeRecord(
+        scenario_id=str(payload.get("scenario_id", scenario_id)),
+        selected_intention_id=selected_intention_id,
+        selected_plan_id=selected_plan_id,
+        expected_effect=str(payload.get("expected_effect", "selected action should improve viability")),
+        actual_effect=str(payload.get("actual_effect", "custom_outcome")),
+        success_score=float(payload.get("success_score", 0.1)),
+        user_feedback=str(payload.get("user_feedback", "")),
+        prediction_error=float(payload.get("prediction_error", 0.9)),
+        evidence_refs=tuple(str(item) for item in payload.get("evidence_refs", ("operator:custom_case",))),
+    )
+
+
+def _jsonable(value: object) -> object:
+    if isinstance(value, dict):
+        return {str(key): _jsonable(item) for key, item in value.items()}
+    if isinstance(value, (list, tuple)):
+        return [_jsonable(item) for item in value]
+    if isinstance(value, Path):
+        return str(value)
+    return value
+
+
+_BEHAVIOR_LABEL_BY_GOAL = {
+    "continue_or_verify_unfinished_goal": "继续当前目标",
+    "repair_or_replan_goal": "修复或重新规划目标",
+    "verify_before_claim": "先验证证据",
+}
+
+
+def _behavior_change_summary_lines(before_cycle: object, after_cycle: object) -> list[str]:
+    summary = _behavior_change_summary(before_cycle, after_cycle)
+    ordered_keys = (
+        "before_behavior",
+        "after_behavior",
+        "before_selected_goal",
+        "after_selected_goal",
+        "selected_changed",
+        "ranking_changed",
+        "before_rank",
+        "after_rank",
+        "before_priority",
+        "after_priority",
+        "selected_priority_delta",
+        "continue_after_rank",
+        "continue_priority_delta",
+        "repair_entered_ranking",
+        "gate_status",
+        "action_class",
+        "no_action_executed",
+    )
+    return [f"{key} = {_report_value(summary[key])}" for key in ordered_keys]
+
+
+def _behavior_change_summary(before_cycle: object, after_cycle: object) -> dict[str, object]:
+    before_goal = _selected_goal(before_cycle)
+    after_goal = _selected_goal(after_cycle)
+    before_selected_option = _option_for_goal(before_cycle, before_goal)
+    after_selected_option = _option_for_goal(after_cycle, after_goal)
+    before_priority = _option_priority(before_selected_option)
+    after_priority = _option_priority(after_selected_option)
+    continue_before = _option_for_goal(before_cycle, "continue_or_verify_unfinished_goal")
+    continue_after = _option_for_goal(after_cycle, "continue_or_verify_unfinished_goal")
+    repair_before = _option_for_goal(before_cycle, "repair_or_replan_goal")
+    repair_after = _option_for_goal(after_cycle, "repair_or_replan_goal")
+    gate_decision = getattr(after_cycle, "gate_decision", {}) or {}
+    return {
+        "before_behavior": _behavior_label_for_goal(before_goal),
+        "after_behavior": _behavior_label_for_goal(after_goal),
+        "before_selected_goal": before_goal,
+        "after_selected_goal": after_goal,
+        "selected_changed": before_goal != after_goal,
+        "ranking_changed": getattr(before_cycle, "candidate_options", ()) != getattr(after_cycle, "candidate_options", ()),
+        "before_rank": _option_rank(before_selected_option),
+        "after_rank": _option_rank(after_selected_option),
+        "before_priority": before_priority,
+        "after_priority": after_priority,
+        "selected_priority_delta": _delta(after_priority, before_priority),
+        "continue_after_rank": _option_rank(continue_after),
+        "continue_priority_delta": _delta(_option_priority(continue_after), _option_priority(continue_before)),
+        "repair_entered_ranking": repair_before is None and repair_after is not None,
+        "gate_status": str(gate_decision.get("status", "unknown")),
+        "action_class": str(gate_decision.get("allowed_as", "unknown")),
+        "no_action_executed": bool(getattr(before_cycle, "no_action_executed", False))
+        and bool(getattr(after_cycle, "no_action_executed", False)),
+    }
+
+
+def _behavior_label_for_goal(goal: str) -> str:
+    return _BEHAVIOR_LABEL_BY_GOAL.get(goal, goal)
+
+
+def _option_for_goal(cycle_result: object, goal: str) -> dict[str, object] | None:
+    for option in getattr(cycle_result, "candidate_options", ()) or ():
+        if isinstance(option, dict) and str(option.get("goal")) == goal:
+            return option
+    return None
+
+
+def _option_rank(option: dict[str, object] | None) -> int | None:
+    if option is None:
+        return None
+    value = option.get("rank")
+    if value is None:
+        return None
+    return int(value)
+
+
+def _option_priority(option: dict[str, object] | None) -> float | None:
+    if option is None:
+        return None
+    value = option.get("priority")
+    if value is None:
+        return None
+    return round(float(value), 6)
+
+
+def _delta(after_value: float | None, before_value: float | None) -> float | None:
+    if after_value is None or before_value is None:
+        return None
+    return round(after_value - before_value, 6)
+
+
+def _report_value(value: object) -> str:
+    if isinstance(value, bool):
+        return _bool_text(value)
+    if value is None:
+        return "null"
+    return str(value)
+
+
+def _experience_report_summary(
+    baseline: object,
+    experience_cycle: object,
+    unrelated_baseline: object,
+    unrelated_with_experience: object,
+    conflict_cycle: object,
+) -> dict[str, object]:
+    baseline_goal = _selected_goal(baseline)
+    experience_goal = _selected_goal(experience_cycle)
+    unrelated_no_effect = (
+        _selected_goal(unrelated_baseline) == _selected_goal(unrelated_with_experience)
+        and unrelated_baseline.candidate_options == unrelated_with_experience.candidate_options
+    )
+    conflict_ids = conflict_cycle.experience_memory_snapshot.get("needs_review_card_ids") or []
+    return {
+        "experience_applied": bool(experience_cycle.experience_memory_snapshot.get("applied_card_ids")),
+        "applied_card_ids": list(experience_cycle.experience_memory_snapshot.get("applied_card_ids") or []),
+        "baseline_selected_goal": baseline_goal,
+        "experience_selected_goal": experience_goal,
+        "ranking_changed": baseline.candidate_options != experience_cycle.candidate_options,
+        "unrelated_experience_no_effect": unrelated_no_effect,
+        "conflict_cards": "needs_review" if conflict_ids else "none",
+        "no_action_executed": (
+            bool(baseline.no_action_executed)
+            and bool(experience_cycle.no_action_executed)
+            and bool(unrelated_with_experience.no_action_executed)
+            and bool(conflict_cycle.no_action_executed)
+        ),
+    }
+
+
+def _selected_goal(cycle_result: object) -> str:
+    selected = getattr(cycle_result, "selected_intention", None)
+    if isinstance(selected, dict):
+        return str(selected.get("goal") or "none")
+    return "none"
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description="Run the lab-only v6 DecisionView shell.")
     mode_group = parser.add_mutually_exclusive_group()
@@ -495,10 +1399,65 @@ def main(argv: list[str] | None = None) -> int:
     input_group = parser.add_mutually_exclusive_group()
     input_group.add_argument("--text", help="Single natural-language event to render.")
     input_group.add_argument("--scenario", type=Path, help="Controlled semantic scenario .txt file.")
+    parser.add_argument(
+        "--operator-report",
+        type=Path,
+        help="Write the lab-only v7 Stage 0 operator observability report to this path.",
+    )
+    parser.add_argument(
+        "--experience-memory-report",
+        type=Path,
+        help="Write the lab-only v7 Stage 2 experience memory report to this path.",
+    )
+    parser.add_argument(
+        "--experience-memory-case",
+        type=Path,
+        help="Read an operator-provided v7 Stage 2 custom experience-memory case JSON.",
+    )
+    parser.add_argument(
+        "--experience-memory-case-report",
+        type=Path,
+        help="Write the custom experience-memory case report to this path.",
+    )
+    parser.add_argument(
+        "--experience-chat-case",
+        type=Path,
+        help="Read an operator-provided v7 Stage 2.1 chat-corpus case markdown file.",
+    )
+    parser.add_argument(
+        "--experience-chat-case-report",
+        type=Path,
+        help="Write the chat-corpus experience-memory case report to this path.",
+    )
     parser.add_argument("--show-debug", action="store_true", help="Show debug-only refs.")
     parser.add_argument("--save-misjudged", help="Save this input as a misjudged scenario fixture.")
     parser.add_argument("--recent", type=int, default=0, help="Show recent N controlled shell session records.")
     args = parser.parse_args(argv)
+
+    if args.operator_report is not None:
+        report_path = build_v7_stage0_operator_observability_report(args.operator_report)
+        print(report_path)
+        return 0
+    if args.experience_memory_report is not None:
+        report_path = build_v7_stage2_experience_memory_report(args.experience_memory_report)
+        print(report_path)
+        return 0
+    if args.experience_memory_case is not None:
+        report_path = args.experience_memory_case_report or Path("/tmp/ego_stage2_custom_experience_memory_report.md")
+        report_path = build_v7_stage2_experience_memory_case_report(
+            args.experience_memory_case,
+            report_path,
+        )
+        print(report_path)
+        return 0
+    if args.experience_chat_case is not None:
+        report_path = args.experience_chat_case_report or Path("/tmp/ego_stage2_chat_case_report.md")
+        report_path = build_v7_stage2_experience_chat_case_report(
+            args.experience_chat_case,
+            report_path,
+        )
+        print(report_path)
+        return 0
 
     if args.recent > 0 and args.text is None and args.scenario is None:
         print(format_recent_shell_sessions(read_recent_shell_sessions(DEFAULT_SHELL_SESSION_LOG, args.recent)))
