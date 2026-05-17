@@ -11,16 +11,19 @@
 - Define the JSONL/Markdown input shape for real human shadow samples.
 - Validate sample count, sample id uniqueness, copied event fields, and no-action expectations.
 - Do not generate synthetic samples to satisfy the count.
+- Status: implemented. The default sample pack path remains absent, so Stage 8 correctly returns UNKNOWN.
 
 ### Milestone 1: Trial Runner
 
 - Feed samples through `runtime_shadow_bridge`.
 - Emit per-sample shadow trace, category, safety, and UNKNOWN/FAIL tickets.
+- Status: implemented for caller-provided JSONL sample packs.
 
 ### Milestone 2: StageResult
 
 - Add Stage 8 acceptance support only after the real sample pack exists.
 - PASS requires 30+ samples and zero safety boundary failures.
+- Status: partially implemented. Stage acceptance now loads the default sample pack path and stays UNKNOWN until real samples exist.
 
 ## Current blocker
 

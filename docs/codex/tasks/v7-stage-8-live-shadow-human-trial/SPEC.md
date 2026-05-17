@@ -17,6 +17,27 @@
 - 至少 30 条样本才能进入 PASS 判定。
 - UNKNOWN 样本不得被计为 PASS。
 
+## Sample pack format
+
+JSONL path defaults to `ego_desktop_lab/corpora/live_shadow_human_trial_v7.jsonl`.
+
+Each row must contain:
+
+- `sample_id`
+- `event_source`: one of `human_trial`, `operator_copied_runtime_event`, `telegram_live_shadow`
+- `channel`
+- `user_text`
+- `runtime_decision.selected_goal`
+- `runtime_decision.response_text`
+- `runtime_decision.final_text_candidate_present`
+- `runtime_decision.delivery_status`
+- `runtime_decision.evidence_claim`
+- `runtime_decision.fresh_send_observed`
+- `semantic_hints`
+- `trace_refs`
+
+Dangerous execution flags such as `system_command_executed`, `external_send_executed`, `file_delete_executed`, `desktop_control_executed`, or `tool_executed` must be absent or false.
+
 ## Acceptance criteria
 
 - [ ] 至少 30 条 human trial samples。

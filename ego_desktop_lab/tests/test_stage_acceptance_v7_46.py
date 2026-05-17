@@ -148,7 +148,7 @@ def test_stage8_acceptance_is_unknown_until_real_human_trial_samples_exist() -> 
     blocker = _sample_result(result, "v7-stage-8:live_shadow_human_trial_missing_samples")
     assert blocker.status == UNKNOWN
     assert blocker.failure_ticket is not None
-    assert "missing_real_human_trial_sample_pack" in blocker.failure_ticket["reason"]
+    assert "sample pack missing or insufficient" in blocker.failure_ticket["reason"]
 
 
 def test_cli_writes_json_and_markdown_operator_fields(tmp_path: Path, capsys) -> None:

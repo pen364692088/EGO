@@ -31,6 +31,7 @@ from ego_desktop_lab.decision_view import DecisionView, build_decision_view_from
 from ego_desktop_lab.experience_memory import build_experience_card
 from ego_desktop_lab.expression_layer import append_reply_history
 from ego_desktop_lab.human_shell_renderer import render_human_shell_reply
+from ego_desktop_lab.live_shadow_human_trial import build_live_shadow_trial_report
 from ego_desktop_lab.outcome import OutcomeRecord
 from ego_desktop_lab.root_cause import (
     build_operator_observability_report,
@@ -1496,6 +1497,16 @@ def main(argv: list[str] | None = None) -> int:
         type=Path,
         help="Write the v7 Stage 7 permissioned runtime action contract report to this path.",
     )
+    parser.add_argument(
+        "--live-shadow-samples",
+        type=Path,
+        help="Read a v7 Stage 8 live-shadow human trial sample pack JSONL file.",
+    )
+    parser.add_argument(
+        "--live-shadow-report",
+        type=Path,
+        help="Write the v7 Stage 8 live-shadow human trial report to this path.",
+    )
     parser.add_argument("--show-debug", action="store_true", help="Show debug-only refs.")
     parser.add_argument("--save-misjudged", help="Save this input as a misjudged scenario fixture.")
     parser.add_argument("--recent", type=int, default=0, help="Show recent N controlled shell session records.")
@@ -1558,6 +1569,11 @@ def main(argv: list[str] | None = None) -> int:
         return 0
     if args.permission_contract_report is not None:
         report_path = build_permission_operator_report(args.permission_contract_report)
+        print(report_path)
+        return 0
+    if args.live_shadow_samples is not None:
+        report_path = args.live_shadow_report or Path("/tmp/ego_stage8_live_shadow_report.md")
+        report_path = build_live_shadow_trial_report(args.live_shadow_samples, report_path)
         print(report_path)
         return 0
 
