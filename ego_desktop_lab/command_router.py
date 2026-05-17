@@ -387,8 +387,12 @@ def _is_llm_open_question_query(text: str) -> bool:
             "评价一下",
             "解释一下",
             "介绍一下",
+            "你知道",
+            "你了解",
+            "听说过",
             "为什么",
             "what do you think",
+            "do you know",
             "explain",
         )
     )

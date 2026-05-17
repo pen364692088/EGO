@@ -1,4 +1,5 @@
 from pathlib import Path
+import json
 
 from ego_desktop_lab.command_router import DialogueState
 from ego_desktop_lab.llm_shadow_admission import (
@@ -128,6 +129,7 @@ def test_dangerous_answer_draft_is_rejected(tmp_path: Path) -> None:
 
 def test_live_provider_unavailable_is_explicit_for_open_question(tmp_path: Path, monkeypatch) -> None:
     monkeypatch.delenv("EGO_DESKTOP_LAB_ENABLE_LIVE_LLM", raising=False)
+    monkeypatch.delenv("OPENROUTER_API_KEY", raising=False)
     result = run_shell(
         text="你怎么看待特朗普的?",
         llm_expression_admitted=True,
@@ -139,6 +141,67 @@ def test_live_provider_unavailable_is_explicit_for_open_question(tmp_path: Path,
     assert "LLM provider unavailable; deterministic fallback used." in result.output
     assert result.llm_admission_summary is not None
     assert result.llm_admission_summary["answer_admission_status"] == "not_provided"
+
+
+def test_live_provider_reads_egocore_llm_config_without_enable_flag(tmp_path: Path, monkeypatch) -> None:
+    config_path = tmp_path / "llm.yaml"
+    config_path.write_text(
+        """
+default_provider: openrouter
+providers:
+  openrouter:
+    enabled: true
+    base_url: "https://openrouter.ai/api/v1"
+    api_key_env: TEST_OPENROUTER_KEY
+use_cases:
+  chat:
+    provider: openrouter
+    model: test/dark-souls-model
+""".strip(),
+        encoding="utf-8",
+    )
+    monkeypatch.setenv("EGO_DESKTOP_LAB_LLM_CONFIG_PATH", str(config_path))
+    monkeypatch.delenv("EGO_DESKTOP_LAB_ENABLE_LIVE_LLM", raising=False)
+    monkeypatch.setenv("TEST_OPENROUTER_KEY", "fake-key")
+
+    class _FakeResponse:
+        def __enter__(self):
+            return self
+
+        def __exit__(self, *_args):
+            return False
+
+        def read(self):
+            answer = {
+                "answer_text": "黑暗之魂是以高难度、碎片叙事和关卡压迫感著称的动作角色扮演游戏。",
+                "freshness_class": "general",
+                "uses_external_data": False,
+                "requires_tool": False,
+                "evidence_refs": ["decision:test"],
+            }
+            return json.dumps({"choices": [{"message": {"content": json.dumps(answer, ensure_ascii=False)}}]}).encode(
+                "utf-8"
+            )
+
+    monkeypatch.setattr("ego_desktop_lab.llm_shadow_admission.urllib.request.urlopen", lambda *_args, **_kwargs: _FakeResponse())
+
+    result = run_shell(
+        text="你知道黑暗之魂吗",
+        llm_expression_admitted=True,
+        llm_expression_provider="live",
+        evidence_log_path=tmp_path / "evidence.jsonl",
+        session_log_path=tmp_path / "session.jsonl",
+    )
+
+    assert result.command_decision is not None
+    assert result.command_decision.command_type == "llm_open_question_answer"
+    assert "黑暗之魂是以高难度" in result.output
+    assert result.llm_admission_summary is not None
+    assert result.llm_admission_summary["answer_admission_status"] == "admitted"
+    observation = result.llm_admission_summary["trace"]["provider_observation"]["answer_provider_observation"]
+    assert observation["model"] == "test/dark-souls-model"
+    assert observation["auth_source"] == "TEST_OPENROUTER_KEY"
+    assert observation["config_path"] == str(config_path)
 
 
 def test_stage82_acceptance_passes() -> None:

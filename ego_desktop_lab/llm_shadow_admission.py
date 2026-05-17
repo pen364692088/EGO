@@ -123,6 +123,16 @@ class LLMShadowAdmissionProvider(Protocol):
 
 
 @dataclass(frozen=True)
+class _LiveAnswerRoute:
+    provider: str
+    model: str | None
+    base_url: str | None
+    api_key_env: str | None
+    enabled: bool
+    config_path: str | None
+
+
+@dataclass(frozen=True)
 class LLMAdmissionResult:
     semantic_shadow_status: str
     expression_admission_status: str
@@ -334,7 +344,8 @@ def render_llm_admitted_expression(
         return result.admitted_expression_text, result
     data = _view_to_dict(view)
     if provider_mode == "live" and _selected_goal(data) == "llm_open_question_answer":
-        return f"{result.deterministic_text}\n\nLLM provider unavailable; deterministic fallback used.", result
+        reason = _live_unavailable_reason(result)
+        return f"{result.deterministic_text}\n\nLLM provider unavailable; deterministic fallback used. reason: {reason}", result
     return result.deterministic_text, result
 
 
@@ -628,10 +639,19 @@ def _live_answer_payload(
     selected_goal = _selected_goal(view)
     if selected_goal not in {"llm_open_question_answer", "basic_math_answer"}:
         return None, {"status": "not_requested", "reason": f"selected_goal={selected_goal}"}
-    if os.environ.get("EGO_DESKTOP_LAB_ENABLE_LIVE_LLM") != "1":
-        return None, {"status": "optional_unavailable", "reason": "EGO_DESKTOP_LAB_ENABLE_LIVE_LLM is not 1"}
+    route = _resolve_live_answer_route()
+    if not _live_answer_enabled(route):
+        return None, {
+            "status": "optional_unavailable",
+            "reason": "EGO_DESKTOP_LAB_ENABLE_LIVE_LLM is not 1 and no enabled repo LLM config was found",
+            "config_path": route.config_path,
+        }
     try:
-        raw_text, observation = _call_live_answer_model(str(view.get("user_event") or ""), evidence_ref=evidence_ref)
+        raw_text, observation = _call_live_answer_model(
+            str(view.get("user_event") or ""),
+            evidence_ref=evidence_ref,
+            route=route,
+        )
     except Exception as exc:  # pragma: no cover - live provider is optional and environment-dependent.
         return None, {"status": "optional_unavailable", "reason": str(exc)}
     payload = _parse_live_answer_payload(raw_text, source_hash)
@@ -640,21 +660,30 @@ def _live_answer_payload(
     return payload, observation
 
 
-def _call_live_answer_model(text: str, *, evidence_ref: str) -> tuple[str, dict[str, Any]]:
+def _call_live_answer_model(
+    text: str,
+    *,
+    evidence_ref: str,
+    route: _LiveAnswerRoute | None = None,
+) -> tuple[str, dict[str, Any]]:
     from ego_desktop_lab.semantic_provider import (
         _codex_config_model,
+        _extract_chat_completion_text,
         _extract_response_text,
         _resolve_live_bearer_token,
-        _uses_openrouter_base_url,
     )
 
     prompt = _live_answer_prompt(text, evidence_ref=evidence_ref)
-    openrouter_key = os.environ.get("OPENROUTER_API_KEY")
-    if openrouter_key or _uses_openrouter_base_url():
-        base_url = os.environ.get("EGO_DESKTOP_LAB_LIVE_LLM_BASE_URL", "https://openrouter.ai/api/v1").rstrip("/")
-        model = os.environ.get("EGO_DESKTOP_LAB_LIVE_LLM_MODEL") or "tencent/hy3-preview"
-        if not openrouter_key:
-            raise RuntimeError("OPENROUTER_API_KEY is missing")
+    route = route or _resolve_live_answer_route()
+    provider = route.provider.lower()
+    base_url = (os.environ.get("EGO_DESKTOP_LAB_LIVE_LLM_BASE_URL") or route.base_url or "").rstrip("/")
+    api_key_env = route.api_key_env or ("OPENROUTER_API_KEY" if "openrouter.ai" in base_url.lower() else "OPENAI_API_KEY")
+    configured_key = os.environ.get(api_key_env)
+    if provider != "openai" or "openrouter.ai" in base_url.lower():
+        base_url = base_url or "https://openrouter.ai/api/v1"
+        model = os.environ.get("EGO_DESKTOP_LAB_LIVE_LLM_MODEL") or route.model or "tencent/hy3-preview"
+        if not configured_key:
+            raise RuntimeError(f"{api_key_env} is missing")
         body = json.dumps(
             {
                 "model": model,
@@ -665,7 +694,7 @@ def _call_live_answer_model(text: str, *, evidence_ref: str) -> tuple[str, dict[
             f"{base_url}/chat/completions",
             data=body,
             headers={
-                "Authorization": f"Bearer {openrouter_key}",
+                "Authorization": f"Bearer {configured_key}",
                 "Content-Type": "application/json",
                 "HTTP-Referer": os.environ.get("EGO_DESKTOP_LAB_LIVE_LLM_REFERER", "https://localhost/ego_desktop_lab"),
                 "X-Title": os.environ.get("EGO_DESKTOP_LAB_LIVE_LLM_TITLE", "ego_desktop_lab live answer admission"),
@@ -674,11 +703,20 @@ def _call_live_answer_model(text: str, *, evidence_ref: str) -> tuple[str, dict[
         )
         with urllib.request.urlopen(request, timeout=30) as response:
             payload = json.loads(response.read().decode("utf-8"))
-        raw = _extract_response_text(payload)
-        return raw, {"status": "observed", "api_provider": "openrouter", "model": model}
+        raw = _extract_chat_completion_text(payload) or _extract_response_text(payload)
+        return raw, {
+            "status": "observed",
+            "api_provider": provider,
+            "model": model,
+            "base_url": base_url,
+            "auth_source": api_key_env,
+            "config_path": route.config_path,
+        }
 
     bearer_token, auth_source, auth_reason = _resolve_live_bearer_token()
-    model = os.environ.get("EGO_DESKTOP_LAB_LIVE_LLM_MODEL") or _codex_config_model()
+    bearer_token = configured_key or bearer_token
+    auth_source = api_key_env if configured_key else auth_source
+    model = os.environ.get("EGO_DESKTOP_LAB_LIVE_LLM_MODEL") or route.model or _codex_config_model()
     if not bearer_token or not model:
         raise RuntimeError(auth_reason if not bearer_token else "EGO_DESKTOP_LAB_LIVE_LLM_MODEL is missing")
     body = json.dumps({"model": model, "input": prompt}).encode("utf-8")
@@ -694,7 +732,82 @@ def _call_live_answer_model(text: str, *, evidence_ref: str) -> tuple[str, dict[
     with urllib.request.urlopen(request, timeout=30) as response:
         payload = json.loads(response.read().decode("utf-8"))
     raw = _extract_response_text(payload)
-    return raw, {"status": "observed", "api_provider": "openai", "auth_source": auth_source, "model": model}
+    return raw, {
+        "status": "observed",
+        "api_provider": provider,
+        "auth_source": auth_source,
+        "model": model,
+        "base_url": base_url or "https://api.openai.com/v1",
+        "config_path": route.config_path,
+    }
+
+
+def _resolve_live_answer_route() -> _LiveAnswerRoute:
+    config = _load_repo_llm_config()
+    use_case = os.environ.get("EGO_DESKTOP_LAB_LIVE_LLM_USE_CASE", "chat")
+    use_cases = _mapping(config.get("use_cases"))
+    use_case_config = _mapping(use_cases.get(use_case))
+    provider = str(
+        os.environ.get("EGO_DESKTOP_LAB_LIVE_LLM_PROVIDER")
+        or use_case_config.get("provider")
+        or config.get("default_provider")
+        or "openrouter"
+    )
+    providers = _mapping(config.get("providers"))
+    provider_config = _mapping(providers.get(provider))
+    enabled = bool(provider_config.get("enabled", False))
+    model = str(
+        os.environ.get("EGO_DESKTOP_LAB_LIVE_LLM_MODEL")
+        or use_case_config.get("model")
+        or config.get("default_model")
+        or ""
+    ) or None
+    base_url = str(os.environ.get("EGO_DESKTOP_LAB_LIVE_LLM_BASE_URL") or provider_config.get("base_url") or "") or None
+    api_key_env = str(provider_config.get("api_key_env") or "") or None
+    config_path = str(config.get("__config_path") or "") or None
+    return _LiveAnswerRoute(
+        provider=provider,
+        model=model,
+        base_url=base_url,
+        api_key_env=api_key_env,
+        enabled=enabled,
+        config_path=config_path,
+    )
+
+
+def _live_answer_enabled(route: _LiveAnswerRoute) -> bool:
+    return os.environ.get("EGO_DESKTOP_LAB_ENABLE_LIVE_LLM") == "1" or route.enabled
+
+
+def _load_repo_llm_config() -> dict[str, Any]:
+    config_path = Path(
+        os.environ.get(
+            "EGO_DESKTOP_LAB_LLM_CONFIG_PATH",
+            Path(__file__).resolve().parents[1] / "EgoCore" / "config" / "llm.yaml",
+        )
+    )
+    try:
+        import yaml
+    except Exception:
+        return {"__config_path": str(config_path)}
+    try:
+        payload = yaml.safe_load(config_path.read_text(encoding="utf-8")) or {}
+    except FileNotFoundError:
+        return {"__config_path": str(config_path)}
+    if not isinstance(payload, Mapping):
+        return {"__config_path": str(config_path)}
+    data = {str(key): _jsonable(value) for key, value in payload.items()}
+    data["__config_path"] = str(config_path)
+    return data
+
+
+def _live_unavailable_reason(result: LLMAdmissionResult) -> str:
+    observation = _mapping(_mapping(result.trace.get("provider_observation")).get("answer_provider_observation"))
+    reason = str(observation.get("reason") or "")
+    if reason:
+        return reason
+    provider_observation = _mapping(result.trace.get("provider_observation"))
+    return str(provider_observation.get("semantic_provider_reason") or "unknown")
 
 
 def _live_answer_prompt(text: str, *, evidence_ref: str) -> str:
