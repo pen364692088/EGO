@@ -8,12 +8,14 @@ repo evidence ledger.
 
 from __future__ import annotations
 
-from dataclasses import asdict, dataclass, is_dataclass
+from dataclasses import asdict, dataclass, field, is_dataclass
 from datetime import datetime, timezone
 from enum import Enum
 from pathlib import Path
 from typing import Any, Callable, Dict, List, Optional
 import json
+import hashlib
+import re
 
 
 DEFAULT_CORE_MAX_CHARS = 3000
@@ -21,6 +23,26 @@ DEFAULT_EPISODE_MAX_CHARS = 3000
 DEFAULT_KEEP_LAST_MESSAGES = 10
 DEFAULT_MAX_CONTEXT_TOKENS = 200_000
 DEFAULT_COMPACTION_THRESHOLD = 0.7
+DEFAULT_HOT_CONTEXT_MAX_ITEMS = 5
+DEFAULT_HOT_CONTEXT_MIN_HITS = 2
+DEFAULT_MEMORY_ITEM_MAX_CHARS = 800
+
+CANDIDATE_MEMORY_SIGNAL_PATTERNS = (
+    r"我喜欢",
+    r"我不喜欢",
+    r"我偏好",
+    r"我希望",
+    r"我的目标",
+    r"我正在",
+    r"我习惯",
+    r"对我来说",
+    r"以后请",
+    r"\bi prefer\b",
+    r"\bmy preference\b",
+    r"\bmy goal\b",
+    r"\bi am working on\b",
+    r"\bi'm working on\b",
+)
 
 
 Clock = Callable[[], datetime]
@@ -85,10 +107,36 @@ def _bounded(text: str, max_chars: int) -> str:
     return clean[:max_chars] + "\n...[truncated]"
 
 
+def _query_tokens(text: str) -> List[str]:
+    lowered = (text or "").lower()
+    tokens = re.findall(r"[a-z0-9_]{3,}|[\u4e00-\u9fff]{2,}", lowered)
+    return [token for token in tokens if token.strip()]
+
+
+def _relevance_score(content: str, query_tokens: List[str]) -> int:
+    if not query_tokens:
+        return 0
+    lowered = (content or "").lower()
+    return sum(25 for token in query_tokens if token in lowered)
+
+
+def extract_candidate_memory_from_turn(user_text: str) -> str:
+    text = (user_text or "").strip()
+    if not text:
+        return ""
+    lowered = text.lower()
+    if not any(re.search(pattern, lowered, flags=re.IGNORECASE) for pattern in CANDIDATE_MEMORY_SIGNAL_PATTERNS):
+        return ""
+    if "?" in text and not any(marker in text for marker in ("我喜欢", "我不喜欢", "我偏好", "我希望", "我的目标", "我正在", "我习惯")):
+        return ""
+    return "user_signal: " + _bounded(text, DEFAULT_MEMORY_ITEM_MAX_CHARS)
+
+
 @dataclass
 class MemoryContext:
     core: str = ""
     today_episode: str = ""
+    hot_items: List[Dict[str, Any]] = field(default_factory=list)
     memory_dir: str = ""
     core_max_chars: int = DEFAULT_CORE_MAX_CHARS
     episode_max_chars: int = DEFAULT_EPISODE_MAX_CHARS
@@ -96,7 +144,11 @@ class MemoryContext:
     def render_for_prompt(self) -> str:
         core = _bounded(self.core, self.core_max_chars)
         episode = _bounded(self.today_episode, self.episode_max_chars)
-        if not core and not episode:
+        hot_items = [
+            item for item in self.hot_items
+            if str(item.get("content", "")).strip()
+        ]
+        if not core and not episode and not hot_items:
             return ""
 
         parts = [
@@ -108,6 +160,18 @@ class MemoryContext:
             parts.append(f"Storage: {self.memory_dir}")
         if core:
             parts.append("\n[Core MEMORY.md]\n" + core)
+        if hot_items:
+            lines = ["\n[Hot Context Memory]"]
+            for item in hot_items:
+                memory_id = item.get("id", "unknown")
+                flags = []
+                if item.get("pinned"):
+                    flags.append("pinned")
+                if item.get("hit_count", 0):
+                    flags.append(f"hits={item.get('hit_count')}")
+                flag_text = f" ({', '.join(flags)})" if flags else ""
+                lines.append(f"- [{memory_id}]{flag_text} {_bounded(str(item.get('content', '')), DEFAULT_MEMORY_ITEM_MAX_CHARS)}")
+            parts.append("\n".join(lines))
         if episode:
             parts.append("\n[Today Episodic Summary]\n" + episode)
         return "\n".join(parts).strip()
@@ -129,9 +193,37 @@ class OperatorMemoryStore:
         self.telemetry_dir = self.memory_dir / "telemetry"
         self.tokens_file = self.telemetry_dir / "tokens.jsonl"
         self.candidate_core_updates_file = self.memory_dir / "candidate_core_updates.jsonl"
+        self.candidate_memory_file = self.memory_dir / "candidate_memory.jsonl"
+        self.memory_events_file = self.memory_dir / "memory_events.jsonl"
+        self.cold_archive_file = self.memory_dir / "cold_archive.jsonl"
 
     def _ensure_parent(self, path: Path) -> None:
         path.parent.mkdir(parents=True, exist_ok=True)
+
+    def _append_jsonl(self, path: Path, row: Dict[str, Any]) -> Dict[str, Any]:
+        self._ensure_parent(path)
+        with path.open("a", encoding="utf-8") as f:
+            f.write(json.dumps(_json_safe(row), ensure_ascii=False, sort_keys=True) + "\n")
+        return row
+
+    def _iter_jsonl(self, path: Path) -> List[Dict[str, Any]]:
+        if not path.exists():
+            return []
+        rows: List[Dict[str, Any]] = []
+        for line in path.read_text(encoding="utf-8").splitlines():
+            if not line.strip():
+                continue
+            try:
+                row = json.loads(line)
+            except json.JSONDecodeError:
+                continue
+            if isinstance(row, dict):
+                rows.append(row)
+        return rows
+
+    def _new_memory_id(self, content: str, ts: str) -> str:
+        digest = hashlib.sha1(f"{ts}\n{content}".encode("utf-8")).hexdigest()[:12]
+        return f"mem_{digest}"
 
     def append_raw_turn(
         self,
@@ -266,15 +358,217 @@ class OperatorMemoryStore:
             f.write(json.dumps(row, ensure_ascii=False, sort_keys=True) + "\n")
         return row
 
+    def propose_candidate_memory(
+        self,
+        content: str,
+        *,
+        source: str,
+        event_id: Optional[str] = None,
+        session_id: Optional[str] = None,
+        metadata: Optional[Dict[str, Any]] = None,
+    ) -> Dict[str, Any]:
+        clean = _bounded(content, DEFAULT_MEMORY_ITEM_MAX_CHARS)
+        if not clean:
+            return {"status": "skipped", "reason": "empty_candidate_memory"}
+        ts = _iso_now(self.clock)
+        row = {
+            "id": self._new_memory_id(clean, ts),
+            "ts": ts,
+            "layer": "candidate",
+            "status": "candidate",
+            "content": clean,
+            "source": source,
+            "event_id": event_id,
+            "session_id": session_id,
+            "pinned": False,
+            "archived": False,
+            "hit_count": 0,
+            "last_hit_ts": None,
+            "metadata": _json_safe(metadata or {}),
+        }
+        return self._append_jsonl(self.candidate_memory_file, row)
+
+    def auto_capture_candidate_from_turn(
+        self,
+        *,
+        session_id: str,
+        event_id: str,
+        user_text: str,
+        assistant_text: str = "",
+    ) -> Dict[str, Any]:
+        candidate = extract_candidate_memory_from_turn(user_text)
+        if not candidate:
+            return {"status": "skipped", "reason": "no_candidate_memory_signal"}
+        return self.propose_candidate_memory(
+            candidate,
+            source="auto_candidate_extractor",
+            event_id=event_id,
+            session_id=session_id,
+            metadata={
+                "raw_user_text": _bounded(user_text, DEFAULT_MEMORY_ITEM_MAX_CHARS),
+                "assistant_preview": _bounded(assistant_text, 240),
+            },
+        )
+
+    def _append_memory_event(
+        self,
+        memory_id: str,
+        *,
+        action: str,
+        event_id: Optional[str] = None,
+        reason: str = "",
+        metadata: Optional[Dict[str, Any]] = None,
+    ) -> Dict[str, Any]:
+        row = {
+            "ts": _iso_now(self.clock),
+            "memory_id": memory_id,
+            "action": action,
+            "event_id": event_id,
+            "reason": reason,
+            "metadata": _json_safe(metadata or {}),
+        }
+        return self._append_jsonl(self.memory_events_file, row)
+
+    def _candidate_state(self) -> Dict[str, Dict[str, Any]]:
+        state: Dict[str, Dict[str, Any]] = {}
+        for row in self._iter_jsonl(self.candidate_memory_file):
+            memory_id = str(row.get("id", "")).strip()
+            if not memory_id:
+                continue
+            item = dict(row)
+            item.setdefault("pinned", False)
+            item.setdefault("archived", False)
+            item.setdefault("hit_count", 0)
+            item.setdefault("status", "candidate")
+            state[memory_id] = item
+
+        for event in self._iter_jsonl(self.memory_events_file):
+            memory_id = str(event.get("memory_id", "")).strip()
+            if memory_id not in state:
+                continue
+            action = str(event.get("action", ""))
+            item = state[memory_id]
+            if action == "pin":
+                item["pinned"] = True
+                item["archived"] = False
+                item["status"] = "candidate"
+            elif action == "unpin":
+                item["pinned"] = False
+            elif action == "archive":
+                item["pinned"] = False
+                item["archived"] = True
+                item["status"] = "cold_archive"
+            elif action == "forget":
+                item["pinned"] = False
+                item["archived"] = True
+                item["status"] = "forgotten"
+            elif action == "hit":
+                item["hit_count"] = int(item.get("hit_count", 0) or 0) + 1
+                item["last_hit_ts"] = event.get("ts")
+        return state
+
+    def list_candidate_memories(
+        self,
+        *,
+        include_archived: bool = False,
+        limit: int = 20,
+    ) -> List[Dict[str, Any]]:
+        items = list(self._candidate_state().values())
+        if not include_archived:
+            items = [
+                item for item in items
+                if item.get("status") == "candidate" and not item.get("archived")
+            ]
+        items.sort(
+            key=lambda item: (
+                bool(item.get("pinned")),
+                int(item.get("hit_count", 0) or 0),
+                str(item.get("last_hit_ts") or item.get("ts") or ""),
+            ),
+            reverse=True,
+        )
+        return items[: max(0, limit)]
+
+    def pin_memory(self, memory_id: str, *, reason: str = "operator_pin") -> Dict[str, Any]:
+        if memory_id not in self._candidate_state():
+            return {"status": "failed", "reason": "unknown_memory_id", "memory_id": memory_id}
+        return {"status": "ok", "event": self._append_memory_event(memory_id, action="pin", reason=reason)}
+
+    def unpin_memory(self, memory_id: str, *, reason: str = "operator_unpin") -> Dict[str, Any]:
+        if memory_id not in self._candidate_state():
+            return {"status": "failed", "reason": "unknown_memory_id", "memory_id": memory_id}
+        return {"status": "ok", "event": self._append_memory_event(memory_id, action="unpin", reason=reason)}
+
+    def archive_memory(self, memory_id: str, *, reason: str = "operator_archive") -> Dict[str, Any]:
+        state = self._candidate_state()
+        if memory_id not in state:
+            return {"status": "failed", "reason": "unknown_memory_id", "memory_id": memory_id}
+        event = self._append_memory_event(memory_id, action="archive", reason=reason)
+        archived = dict(state[memory_id])
+        archived["archived_by_event"] = event
+        self._append_jsonl(self.cold_archive_file, archived)
+        return {"status": "ok", "event": event, "archive_path": str(self.cold_archive_file)}
+
+    def forget_memory(self, memory_id: str, *, reason: str = "operator_forget") -> Dict[str, Any]:
+        if memory_id not in self._candidate_state():
+            return {"status": "failed", "reason": "unknown_memory_id", "memory_id": memory_id}
+        return {"status": "ok", "event": self._append_memory_event(memory_id, action="forget", reason=reason)}
+
+    def record_memory_hit(
+        self,
+        memory_id: str,
+        *,
+        event_id: Optional[str] = None,
+        query: str = "",
+    ) -> Dict[str, Any]:
+        if memory_id not in self._candidate_state():
+            return {"status": "failed", "reason": "unknown_memory_id", "memory_id": memory_id}
+        return {
+            "status": "ok",
+            "event": self._append_memory_event(
+                memory_id,
+                action="hit",
+                event_id=event_id,
+                reason="context_injection",
+                metadata={"query": _bounded(query, 240)},
+            ),
+        }
+
+    def select_hot_context(
+        self,
+        *,
+        query_text: str = "",
+        max_items: int = DEFAULT_HOT_CONTEXT_MAX_ITEMS,
+        min_hits: int = DEFAULT_HOT_CONTEXT_MIN_HITS,
+    ) -> List[Dict[str, Any]]:
+        query_tokens = _query_tokens(query_text)
+        scored: List[tuple[int, Dict[str, Any]]] = []
+        for item in self._candidate_state().values():
+            if item.get("status") != "candidate" or item.get("archived"):
+                continue
+            content = str(item.get("content", ""))
+            hit_count = int(item.get("hit_count", 0) or 0)
+            relevance = _relevance_score(content, query_tokens)
+            is_hot = bool(item.get("pinned")) or hit_count >= min_hits or relevance > 0
+            if not is_hot:
+                continue
+            score = relevance + hit_count * 10 + (1000 if item.get("pinned") else 0)
+            scored.append((score, dict(item)))
+        scored.sort(key=lambda pair: (pair[0], str(pair[1].get("last_hit_ts") or pair[1].get("ts") or "")), reverse=True)
+        return [item for _, item in scored[: max(0, max_items)]]
+
     def build_context(
         self,
         *,
+        query_text: str = "",
         core_max_chars: int = DEFAULT_CORE_MAX_CHARS,
         episode_max_chars: int = DEFAULT_EPISODE_MAX_CHARS,
+        hot_context_max_items: int = DEFAULT_HOT_CONTEXT_MAX_ITEMS,
     ) -> MemoryContext:
         return MemoryContext(
             core=self.load_core(),
             today_episode=self.load_today_episode(),
+            hot_items=self.select_hot_context(query_text=query_text, max_items=hot_context_max_items),
             memory_dir=str(self.memory_dir),
             core_max_chars=core_max_chars,
             episode_max_chars=episode_max_chars,

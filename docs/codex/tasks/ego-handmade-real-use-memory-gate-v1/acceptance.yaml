@@ -1,0 +1,37 @@
+task: ego-handmade-real-use-memory-gate-v1
+claim_ceiling: Ego_handmade real-use memory gate local candidate pass
+allowed_paths:
+  - Ego_handmade/**
+  - docs/codex/tasks/ego-handmade-real-use-memory-gate-v1/**
+forbidden_paths:
+  - EgoCore/**
+  - OpenEmotion/**
+  - ego_desktop_lab/**
+  - docs/PROGRAM_STATE_UNIFIED.yaml
+  - artifacts/evidence_ledger/**
+forbidden_claims:
+  - EGO mainline replacement
+  - formal long-term memory efficacy
+  - OpenEmotion memory evolution
+  - live autonomy
+  - runtime efficacy
+  - stable user benefit
+  - consciousness
+memory_layers:
+  raw_history: append-only, not prompt default
+  candidate_memory: auto-captured, not core
+  core_memory: /remember or remember_note with explicit operator intent
+  hot_context: pinned or repeatedly used or task-relevant
+  cold_archive: retained locally, not prompt injected
+real_use_gate:
+  minimum_scenarios: 10
+  output_dir: Ego_handmade/artifacts/real_use_gate/
+checks:
+  - id: py_compile
+    command: python3 -m py_compile Ego_handmade/agent_base.py Ego_handmade/memory_system.py Ego_handmade/real_use_gate.py
+  - id: targeted_tests
+    command: TMPDIR=/tmp python3 -m pytest -q Ego_handmade/tests/test_operator_cut.py Ego_handmade/tests/test_memory_system.py Ego_handmade/tests/test_extracted_primitives.py Ego_handmade/tests/test_operator_comparison.py Ego_handmade/tests/test_permission_gates.py Ego_handmade/tests/test_real_use_memory_gate.py
+  - id: real_use_gate
+    command: python3 Ego_handmade/real_use_gate.py --out Ego_handmade/artifacts/real_use_gate/latest
+  - id: diff_check
+    command: git diff --check -- Ego_handmade docs/codex/tasks/ego-handmade-real-use-memory-gate-v1

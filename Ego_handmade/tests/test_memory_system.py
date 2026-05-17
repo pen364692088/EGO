@@ -11,7 +11,7 @@ if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
 import agent_base as agent
-from memory_system import MemoryCompactor, OperatorMemoryStore
+from memory_system import MemoryCompactor, OperatorMemoryStore, extract_candidate_memory_from_turn
 
 
 class CapturePromptLLM:
@@ -178,3 +178,81 @@ def test_malformed_llm_compaction_records_structured_error(tmp_path):
     assert row["status"] == "error"
     assert row["error"]["error_type"] in {"JSONDecodeError", "ValueError", "KeyError"}
     assert not store.episode_path().exists()
+
+
+def test_candidate_memory_does_not_enter_core_or_prompt_until_hot(tmp_path):
+    store = OperatorMemoryStore(tmp_path / "memory", containment_root=tmp_path)
+
+    candidate = store.propose_candidate_memory("用户偏好：中文结论先行", source="test")
+    context = store.build_context()
+
+    assert candidate["status"] == "candidate"
+    assert not store.core_file.exists()
+    assert "用户偏好：中文结论先行" not in context.render_for_prompt()
+    assert store.list_candidate_memories()[0]["id"] == candidate["id"]
+
+
+def test_hot_context_injects_pinned_candidate_and_records_hit(tmp_path, monkeypatch):
+    monkeypatch.setattr(agent, "EGO_HANDMADE_ROOT", tmp_path)
+    runtime = agent.build_demo_runtime(enable_operator_memory=True, operator_memory_dir=tmp_path / "memory")
+    runtime.trace_store = agent.JsonlTraceStore(tmp_path / "trace.jsonl")
+    capture = CapturePromptLLM()
+    runtime.planner.llm = capture
+
+    candidate = runtime.operator_memory.propose_candidate_memory("用户偏好：中文结论先行", source="test")
+    runtime.pin_operator_memory(candidate["id"])
+    runtime.handle_user_message("我的表达偏好是什么？")
+
+    prompt = capture.system_prompts[-1]
+    trace = json.loads((tmp_path / "trace.jsonl").read_text(encoding="utf-8").splitlines()[0])
+    assert "[Hot Context Memory]" in prompt
+    assert "用户偏好：中文结论先行" in prompt
+    assert trace["operator_memory"]["hot_context"][0]["id"] == candidate["id"]
+    assert trace["operator_memory"]["hot_context_hits"][0]["status"] == "ok"
+
+
+def test_repeated_hits_can_make_candidate_hot_without_pin(tmp_path):
+    store = OperatorMemoryStore(tmp_path / "memory", containment_root=tmp_path)
+    candidate = store.propose_candidate_memory("用户偏好：中文结论先行", source="test")
+
+    store.record_memory_hit(candidate["id"], query="中文")
+    store.record_memory_hit(candidate["id"], query="中文")
+    context = store.build_context()
+
+    assert "用户偏好：中文结论先行" in context.render_for_prompt()
+
+
+def test_archived_and_forgotten_memory_are_excluded_from_hot_context(tmp_path):
+    store = OperatorMemoryStore(tmp_path / "memory", containment_root=tmp_path)
+    archived = store.propose_candidate_memory("错误偏好：始终英文回答", source="test")
+    forgotten = store.propose_candidate_memory("错误偏好：不要使用工具", source="test")
+
+    store.pin_memory(archived["id"])
+    store.archive_memory(archived["id"])
+    store.pin_memory(forgotten["id"])
+    store.forget_memory(forgotten["id"])
+    context = store.build_context(query_text="英文 工具")
+
+    rendered = context.render_for_prompt()
+    assert "始终英文回答" not in rendered
+    assert "不要使用工具" not in rendered
+    assert store.cold_archive_file.exists()
+
+
+def test_auto_candidate_capture_from_preference_turn_does_not_write_core(tmp_path, monkeypatch):
+    monkeypatch.setattr(agent, "EGO_HANDMADE_ROOT", tmp_path)
+    runtime = agent.build_demo_runtime(enable_operator_memory=True, operator_memory_dir=tmp_path / "memory")
+    runtime.trace_store = agent.JsonlTraceStore(tmp_path / "trace.jsonl")
+    runtime.planner.llm = CapturePromptLLM()
+
+    runtime.handle_user_message("我喜欢中文结论先行，少废话。")
+
+    candidates = runtime.operator_memory.list_candidate_memories()
+    assert candidates
+    assert candidates[0]["source"] == "auto_candidate_extractor"
+    assert not (tmp_path / "memory" / "MEMORY.md").exists()
+
+
+def test_candidate_extractor_ignores_memory_questions():
+    assert extract_candidate_memory_from_turn("Do you remember me?") == ""
+    assert extract_candidate_memory_from_turn("我喜欢中文回答") != ""

@@ -55,10 +55,10 @@ except ImportError:
     yaml = None  # type: ignore[assignment]
 
 try:
-    from .memory_system import MemoryCompactor, OperatorMemoryStore, TokenTelemetry
+    from .memory_system import MemoryCompactor, MemoryContext, OperatorMemoryStore, TokenTelemetry
     from .primitives.subject_context import SubjectContextSnapshot, build_minimal_subject_context
 except ImportError:  # allow `python Ego_handmade/agent_base.py`
-    from memory_system import MemoryCompactor, OperatorMemoryStore, TokenTelemetry
+    from memory_system import MemoryCompactor, MemoryContext, OperatorMemoryStore, TokenTelemetry
     from primitives.subject_context import SubjectContextSnapshot, build_minimal_subject_context
 
 
@@ -2376,14 +2376,18 @@ class AgentRuntime:
         self.session_id = new_id("session")
         self.subagent_counter = 0
         self.team: Optional[AgentTeamManager] = None
+        self._last_operator_memory_context: Optional[MemoryContext] = None
 
     def operator_memory_enabled(self) -> bool:
         return self.operator_memory is not None
 
-    def render_operator_memory_context(self) -> str:
+    def render_operator_memory_context(self, query_text: str = "") -> str:
         if self.operator_memory is None:
+            self._last_operator_memory_context = None
             return ""
-        return self.operator_memory.build_context().render_for_prompt()
+        context = self.operator_memory.build_context(query_text=query_text)
+        self._last_operator_memory_context = context
+        return context.render_for_prompt()
 
     def build_subject_context(self, user_text: str) -> SubjectContextSnapshot:
         return build_minimal_subject_context(
@@ -2396,8 +2400,8 @@ class AgentRuntime:
             return ""
         return self.build_subject_context(user_text).render_for_prompt()
 
-    def build_runtime_system_prompt(self, subject_context: str = "") -> str:
-        return build_system_prompt(self.render_operator_memory_context(), subject_context)
+    def build_runtime_system_prompt(self, subject_context: str = "", user_text: str = "") -> str:
+        return build_system_prompt(self.render_operator_memory_context(user_text), subject_context)
 
     def remember_operator_note(self, text: str) -> Dict[str, Any]:
         if self.operator_memory is None:
@@ -2416,6 +2420,35 @@ class AgentRuntime:
         if result.get("status") == "compacted":
             self.memory.messages = list(result.get("kept_messages", self.memory.messages))
         return {k: v for k, v in result.items() if k != "kept_messages"}
+
+    def review_operator_memory(self, limit: int = 20, include_archived: bool = False) -> Dict[str, Any]:
+        if self.operator_memory is None:
+            return {"status": "blocked", "reason": "operator_memory_disabled"}
+        items = self.operator_memory.list_candidate_memories(
+            limit=max(0, min(limit, 100)),
+            include_archived=include_archived,
+        )
+        return {"status": "ok", "count": len(items), "items": items}
+
+    def pin_operator_memory(self, memory_id: str) -> Dict[str, Any]:
+        if self.operator_memory is None:
+            return {"status": "blocked", "reason": "operator_memory_disabled"}
+        return self.operator_memory.pin_memory(memory_id)
+
+    def unpin_operator_memory(self, memory_id: str) -> Dict[str, Any]:
+        if self.operator_memory is None:
+            return {"status": "blocked", "reason": "operator_memory_disabled"}
+        return self.operator_memory.unpin_memory(memory_id)
+
+    def archive_operator_memory(self, memory_id: str) -> Dict[str, Any]:
+        if self.operator_memory is None:
+            return {"status": "blocked", "reason": "operator_memory_disabled"}
+        return self.operator_memory.archive_memory(memory_id)
+
+    def forget_operator_memory(self, memory_id: str) -> Dict[str, Any]:
+        if self.operator_memory is None:
+            return {"status": "blocked", "reason": "operator_memory_disabled"}
+        return self.operator_memory.forget_memory(memory_id)
 
     def _last_llm_usage(self) -> Dict[str, Any]:
         meta = getattr(self.planner, "last_llm_meta", {}) or {}
@@ -2460,6 +2493,36 @@ class AgentRuntime:
                 },
             )
         )
+
+        candidate_result = self.operator_memory.auto_capture_candidate_from_turn(
+            session_id=self.session_id,
+            event_id=event.event_id,
+            user_text=event.raw_text or "",
+            assistant_text=reply_text,
+        )
+        memory_record["candidate_memory"] = candidate_result
+
+        hot_context = list((self._last_operator_memory_context.hot_items if self._last_operator_memory_context else []) or [])
+        memory_record["hot_context"] = [
+            {
+                "id": item.get("id"),
+                "content": item.get("content"),
+                "pinned": item.get("pinned", False),
+                "hit_count": item.get("hit_count", 0),
+            }
+            for item in hot_context
+        ]
+        memory_record["hot_context_hits"] = []
+        for item in hot_context:
+            memory_id = str(item.get("id", "")).strip()
+            if memory_id:
+                memory_record["hot_context_hits"].append(
+                    self.operator_memory.record_memory_hit(
+                        memory_id,
+                        event_id=event.event_id,
+                        query=event.raw_text or "",
+                    )
+                )
 
         usage = self._last_llm_usage()
         compact_result: Dict[str, Any] = {"status": "skipped", "reason": "operator_memory_disabled"}
@@ -2710,7 +2773,7 @@ class AgentRuntime:
                 event,
                 kernel_output,
                 memory=self.memory,
-                operator_memory_context=self.render_operator_memory_context(),
+                operator_memory_context=self.render_operator_memory_context(text),
                 subject_context=subject_context_prompt,
             )
             gate_result = self.gate.check(event, candidate)
@@ -2835,7 +2898,7 @@ class AgentRuntime:
             for loop_idx in range(DEFAULT_MAX_TOOL_LOOPS):
                 result: LLMChatResult = chat_fn(
                     messages,
-                    system_prompt=self.build_runtime_system_prompt(subject_context),
+                    system_prompt=self.build_runtime_system_prompt(subject_context, event.raw_text or ""),
                     policy_context=policy_context,
                     tools=tool_schemas,
                     stream=False,
@@ -3353,6 +3416,7 @@ def render_runtime_permission_status(runtime: AgentRuntime) -> str:
         + (f" | dir={memory_dir}" if memory_dir else ""),
         "- core_memory_write: /remember <text>"
         + (" + remember_note tool with explicit user intent" if runtime.operator_memory_enabled() else " only when operator memory is enabled"),
+        "- layered_memory_commands: /memory_review, /memory_pin, /memory_unpin, /memory_archive, /forget",
         f"- file_read_tools: {'enabled' if {'read_file', 'glob_files', 'grep_files'}.issubset(runtime.gate.allowed_tools) else 'restricted'}",
         f"- write_file: {'enabled' if DEFAULT_ENABLE_WRITE_FILE and 'write_file' in runtime.gate.allowed_tools else 'disabled'}",
         f"- run_command: {'enabled' if DEFAULT_ENABLE_RUN_COMMAND and 'run_command' in runtime.gate.allowed_tools else 'disabled'}",
@@ -3385,6 +3449,28 @@ if __name__ == "__main__":
         if msg.lower() in {"/memory_context", "memory context"}:
             context = runtime.render_operator_memory_context()
             print(context or "(operator memory empty or disabled)")
+            continue
+        if msg.lower().startswith("/memory_review"):
+            parts = msg.split()
+            limit = 20
+            include_archived = "--all" in parts
+            for part in parts[1:]:
+                if part.isdigit():
+                    limit = int(part)
+                    break
+            print(json.dumps(runtime.review_operator_memory(limit=limit, include_archived=include_archived), ensure_ascii=False, indent=2))
+            continue
+        if msg.startswith("/memory_pin "):
+            print(json.dumps(runtime.pin_operator_memory(msg.removeprefix("/memory_pin ").strip()), ensure_ascii=False, indent=2))
+            continue
+        if msg.startswith("/memory_unpin "):
+            print(json.dumps(runtime.unpin_operator_memory(msg.removeprefix("/memory_unpin ").strip()), ensure_ascii=False, indent=2))
+            continue
+        if msg.startswith("/memory_archive "):
+            print(json.dumps(runtime.archive_operator_memory(msg.removeprefix("/memory_archive ").strip()), ensure_ascii=False, indent=2))
+            continue
+        if msg.startswith("/forget "):
+            print(json.dumps(runtime.forget_operator_memory(msg.removeprefix("/forget ").strip()), ensure_ascii=False, indent=2))
             continue
         if msg.lower() in {"/compact_memory", "compact memory"}:
             print(json.dumps(runtime.force_compact_operator_memory(), ensure_ascii=False, indent=2))
