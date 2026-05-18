@@ -141,6 +141,7 @@ DEFAULT_VERBOSE_TOOLS = env_flag("AGENT_VERBOSE_TOOLS", True)
 DEFAULT_VERBOSE_TODOS = env_flag("AGENT_VERBOSE_TODOS", True)
 DEFAULT_VERBOSE_SUBAGENTS = env_flag("AGENT_VERBOSE_SUBAGENTS", True)
 DEFAULT_ENABLE_WEB_FETCH = env_flag("AGENT_ENABLE_WEB_FETCH", False)
+DEFAULT_WEB_FETCH_POLICY = os.getenv("AGENT_WEB_FETCH_POLICY", "safe-auto").strip().lower() or "safe-auto"
 DEFAULT_ENABLE_WRITE_FILE = env_flag("AGENT_ENABLE_WRITE_FILE", False)
 DEFAULT_RUNTIME_MODE = os.getenv("AGENT_RUNTIME_MODE", "approve").strip().lower() or "approve"
 DEFAULT_WRITE_ALLOWLIST = tuple(
@@ -191,8 +192,14 @@ MEMORY_WRITE_INTENT_PATTERNS = (
     r"记住",
     r"记一下",
     r"请记得",
+    r"你要记得",
+    r"要记得",
     r"以后记得",
     r"以后请记得",
+    r"以后.{0,20}记得",
+    r"下次记得",
+    r"以后.{0,20}打招呼.{0,20}(称呼|名字|叫我|带上)",
+    r"打招呼.{0,20}(带上|称呼|名字|叫我)",
     r"把.{0,20}记下来",
     r"记录到记忆",
     r"写入记忆",
@@ -793,9 +800,9 @@ def build_system_prompt(operator_memory_context: str = "", subject_context: str 
         + "\n15. 不要编造不存在的 skill；只能从当前可用技能列表中选择。"
         + "\n16. read_file / glob_files / grep_files 是 workspace 内只读工具；需要查看本地文件时优先使用它们，不要假装已经读取。"
         + "\n17. 需要创建或修改文件时，优先调用 propose_file_write 生成可审批操作包；不要让子代理直接写文件，也不要在未批准时声称已写入。"
-        + "\n18. remember_note 只能在用户明确要求“记住/记一下/以后记得/remember”时调用；普通聊天、工具结果、子代理回禀和自动总结不能写 core memory。"
+        + "\n18. remember_note 只能在用户明确要求“记住/记一下/以后记得/下次记得/remember”时调用；普通聊天、工具结果、子代理回禀和自动总结不能写 core memory。若 remember_note 返回 blocked，必须明确说“未写入”，不得声称已经记住。"
         + "\n19. operator memory 是 EgoOperator candidate-local 记忆，不是 PROJECT_MEMORY、OpenEmotion 记忆或 EGO evidence ledger。"
-        + "\n20. write_file、run_command、web_fetch 是副作用工具；需要联网读取时优先调用 propose_web_fetch 生成可审批操作包，除非 runtime mode、approval lease 和 gate 同时允许，否则只能生成 proposal 或说明受限。"
+        + "\n20. write_file、run_command、web_fetch 是受控工具；安全 public http/https GET 在 safe-auto 策略下可直接调用 web_fetch，涉及高风险、被拒或 approval-only 策略时调用 propose_web_fetch 生成可审批操作包。"
         + "\n21. 若用户明确要求稍后提醒、主动找我或定时跟进，只能调用 propose_heartbeat 生成 bounded heartbeat proposal；到期也只是候选提醒，不代表自主意识或后台独立行动。"
         + "\n\n可派遣子代理类型：xiaohuangmen, sili_suitang, dongchang_tanshi, shangbao_dianbu, neiguan_yingzao"
         + (
@@ -1214,11 +1221,11 @@ def _web_fetch_execute(url: str, extract_mode: str = "text", max_chars: int = DE
 
 
 def web_fetch_tool(url: str, extract_mode: str = "text", max_chars: int = DEFAULT_WEB_FETCH_MAX_CHARS) -> Dict[str, Any]:
-    if not DEFAULT_ENABLE_WEB_FETCH:
+    if not DEFAULT_ENABLE_WEB_FETCH and not safe_auto_web_fetch_enabled():
         return {
             "status": "blocked",
-            "reason": "web_fetch_disabled",
-            "hint": "Set AGENT_ENABLE_WEB_FETCH=1 to allow outbound HTTP reads.",
+            "reason": "web_fetch_requires_transaction_approval",
+            "hint": "Use propose_web_fetch and /approve, or set AGENT_WEB_FETCH_POLICY=safe-auto for safe public reads.",
         }
     try:
         return _web_fetch_execute(url, extract_mode, max_chars)
@@ -2102,6 +2109,7 @@ class AgentAction:
 
 
 VALID_RUNTIME_MODES = {"chat", "plan", "approve", "trusted-workspace"}
+VALID_WEB_FETCH_POLICIES = {"approval-only", "safe-auto"}
 SIDE_EFFECT_TOOLS = {"write_file", "run_command", "web_fetch"}
 WEB_FETCH_EXTRACT_MODES = {"text", "raw"}
 
@@ -2109,6 +2117,19 @@ WEB_FETCH_EXTRACT_MODES = {"text", "raw"}
 def normalize_runtime_mode(mode: Optional[str]) -> str:
     normalized = (mode or DEFAULT_RUNTIME_MODE or "approve").strip().lower()
     return normalized if normalized in VALID_RUNTIME_MODES else "approve"
+
+
+def normalize_web_fetch_policy(policy: Optional[str]) -> str:
+    normalized = (policy or DEFAULT_WEB_FETCH_POLICY or "safe-auto").strip().lower()
+    return normalized if normalized in VALID_WEB_FETCH_POLICIES else "safe-auto"
+
+
+def current_web_fetch_policy() -> str:
+    return normalize_web_fetch_policy(DEFAULT_WEB_FETCH_POLICY)
+
+
+def safe_auto_web_fetch_enabled() -> bool:
+    return current_web_fetch_policy() == "safe-auto"
 
 
 def _content_hash(content: str) -> str:
@@ -2891,6 +2912,22 @@ class SafetyGate:
                 if not str(action.tool_call.args.get("message", "")).strip():
                     return GateResult(False, "empty_heartbeat_message")
                 return GateResult(True, "operation_proposal_allowed")
+            if action.tool_call.tool_name == "web_fetch":
+                validation = validate_web_fetch_request(
+                    str(action.tool_call.args.get("url", "")),
+                    str(action.tool_call.args.get("extract_mode", "text")),
+                    action.tool_call.args.get("max_chars", DEFAULT_WEB_FETCH_MAX_CHARS),
+                    resolve_host=False,
+                )
+                if validation.get("status") != "ok":
+                    return GateResult(False, str(validation.get("reason", "invalid_web_fetch_request")))
+                if self.runtime_mode in {"chat", "plan"}:
+                    return GateResult(False, "web_fetch_requires_transaction_approval")
+                if self.runtime_mode == "approve" and safe_auto_web_fetch_enabled():
+                    return GateResult(True, "safe_auto_web_fetch_allowed")
+                if self.runtime_mode == "trusted-workspace" and (DEFAULT_ENABLE_WEB_FETCH or safe_auto_web_fetch_enabled()):
+                    return GateResult(True, "tool_call_allowed")
+                return GateResult(False, "web_fetch_requires_transaction_approval")
             if action.tool_call.tool_name in SIDE_EFFECT_TOOLS and self.runtime_mode in {"chat", "plan", "approve"}:
                 return GateResult(False, f"{action.tool_call.tool_name}_requires_transaction_approval")
             if action.tool_call.tool_name in {"read_file", "write_file"}:
@@ -2915,8 +2952,6 @@ class SafetyGate:
                     return GateResult(False, "command_prefix_not_allowed")
             if action.tool_call.tool_name == "write_file" and not DEFAULT_ENABLE_WRITE_FILE:
                 return GateResult(False, "write_file_disabled")
-            if action.tool_call.tool_name == "web_fetch" and not DEFAULT_ENABLE_WEB_FETCH:
-                return GateResult(False, "web_fetch_disabled")
             if action.tool_call.tool_name == "remember_note":
                 if not _has_explicit_memory_write_intent(event.raw_text or ""):
                     return GateResult(False, "memory_write_requires_explicit_user_intent")
@@ -3276,6 +3311,43 @@ class AgentRuntime:
             # Permission execution must not fail just because audit persistence failed.
             pass
 
+    def _record_permission_result_in_session(
+        self,
+        *,
+        proposal: OperationProposal,
+        decision: str,
+        execution: Optional[Dict[str, Any]] = None,
+    ) -> None:
+        summary: Dict[str, Any] = {
+            "type": "approved_operation_result",
+            "instruction": "This operation decision has already happened in this session. Use the result in later replies; do not ask for the same approval again.",
+            "proposal_id": proposal.proposal_id,
+            "action": proposal.action,
+            "decision": decision,
+            "status": (execution or {}).get("status") if execution else proposal.status,
+            "reason": proposal.reason,
+        }
+        if proposal.action == "write_file":
+            summary["path"] = proposal.path
+            if execution:
+                summary["path_written"] = execution.get("path")
+                summary["bytes"] = execution.get("bytes")
+                summary["content_hash"] = execution.get("content_hash")
+        elif proposal.action == "web_fetch":
+            summary["url"] = proposal.path
+            if execution:
+                summary["url"] = execution.get("url", proposal.path)
+                summary["extract_mode"] = execution.get("extract_mode")
+                summary["truncated"] = execution.get("truncated")
+                summary["content"] = str(execution.get("content") or "")[:1200]
+        elif proposal.action == "heartbeat":
+            if execution:
+                summary["heartbeat_id"] = execution.get("heartbeat_id")
+                summary["due_at"] = execution.get("due_at")
+                summary["message"] = execution.get("message")
+
+        self.memory.add("system", "[operator_runtime_decision]\n" + json.dumps(summary, ensure_ascii=False, sort_keys=True))
+
     def approve_pending_operation(self, proposal_id: str) -> Dict[str, Any]:
         approval = self.permission_broker.approve(proposal_id)
         if approval.get("status") != "approved":
@@ -3328,6 +3400,11 @@ class AgentRuntime:
             proposal_id=proposal_id,
             decision="approve",
             result=approval,
+            execution=execution,
+        )
+        self._record_permission_result_in_session(
+            proposal=proposal,
+            decision="approve",
             execution=execution,
         )
         return result
@@ -3969,7 +4046,13 @@ class AgentRuntime:
                             "status": "blocked",
                             "reason": gate_result.reason,
                             "tool_name": call.name,
+                            "do_not_claim_success": True,
                         }
+                        if call.name == "remember_note":
+                            tool_output["user_visible_correction"] = (
+                                "Memory was not written. Do not say it was remembered; "
+                                "tell the operator it was not saved and ask for explicit /remember or remember intent."
+                            )
 
                     if DEFAULT_VERBOSE_TOOLS:
                         print(f"[工具输出]: {json.dumps(to_jsonable(tool_output), ensure_ascii=False)[:1200]}")
@@ -4125,7 +4208,10 @@ def build_demo_runtime(
     tools.register(
         "web_fetch",
         web_fetch_tool,
-        description="获取指定 URL 的网页内容，支持 text/raw；默认关闭，需 AGENT_ENABLE_WEB_FETCH=1。",
+        description=(
+            "获取安全 public http/https URL 的网页内容，支持 text/raw。"
+            "approve 模式默认按 AGENT_WEB_FETCH_POLICY=safe-auto 放行低风险 GET；approval-only 时需 proposal。"
+        ),
         input_schema={
             "type": "object",
             "properties": {
@@ -4267,7 +4353,10 @@ def build_demo_runtime(
         allowed_tools.append("propose_heartbeat")
     if DEFAULT_ENABLE_RUN_COMMAND and selected_runtime_mode == "trusted-workspace":
         allowed_tools.append("run_command")
-    if DEFAULT_ENABLE_WEB_FETCH and selected_runtime_mode == "trusted-workspace":
+    if (
+        (safe_auto_web_fetch_enabled() and selected_runtime_mode in {"approve", "trusted-workspace"})
+        or (DEFAULT_ENABLE_WEB_FETCH and selected_runtime_mode == "trusted-workspace")
+    ):
         allowed_tools.append("web_fetch")
     if DEFAULT_ENABLE_WRITE_FILE and selected_runtime_mode == "trusted-workspace":
         allowed_tools.append("write_file")
@@ -4489,11 +4578,12 @@ def render_runtime_permission_status(runtime: AgentRuntime) -> str:
         "- layered_memory_commands: /memory_review, /memory_pin, /memory_unpin, /memory_archive, /forget",
         f"- file_read_tools: {'enabled' if {'read_file', 'glob_files', 'grep_files'}.issubset(runtime.gate.allowed_tools) else 'restricted'}",
         f"- file_write_proposals: {'enabled' if 'propose_file_write' in runtime.gate.allowed_tools else 'disabled'}",
+        f"- web_fetch_policy: {current_web_fetch_policy()}",
         f"- web_fetch_proposals: {'enabled' if 'propose_web_fetch' in runtime.gate.allowed_tools else 'disabled'}",
         f"- heartbeat_proposals: {'enabled' if 'propose_heartbeat' in runtime.gate.allowed_tools else 'disabled'}",
         f"- write_file: {'trusted direct enabled' if DEFAULT_ENABLE_WRITE_FILE and 'write_file' in runtime.gate.allowed_tools else 'transaction approval required'}",
         f"- run_command: {'trusted direct enabled' if DEFAULT_ENABLE_RUN_COMMAND and 'run_command' in runtime.gate.allowed_tools else 'disabled'}",
-        f"- web_fetch: {'trusted direct enabled' if DEFAULT_ENABLE_WEB_FETCH and 'web_fetch' in runtime.gate.allowed_tools else 'transaction approval required'}",
+        f"- web_fetch: {'safe public auto enabled' if safe_auto_web_fetch_enabled() and 'web_fetch' in runtime.gate.allowed_tools else ('trusted direct enabled' if DEFAULT_ENABLE_WEB_FETCH and 'web_fetch' in runtime.gate.allowed_tools else 'transaction approval required')}",
         f"- write_allowlist: {', '.join(DEFAULT_WRITE_ALLOWLIST) if DEFAULT_WRITE_ALLOWLIST else '(workspace-contained; no extra allowlist)'}",
         f"- pending_approvals: {runtime.permission_broker.describe()['pending_count']}",
         f"- pending_heartbeats: {runtime.list_heartbeats().get('count', 0)}",

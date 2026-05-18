@@ -59,6 +59,37 @@ class ToolThenFinalLLM:
         return self.final_text
 
 
+class BlockAwareRememberLLM:
+    provider = "fake"
+    model = "block-aware-remember"
+    last_usage = {}
+    last_reasoning_tokens = None
+
+    def __init__(self) -> None:
+        self.calls = 0
+
+    def chat(self, messages, *, system_prompt, policy_context="", tools=None, stream=None):
+        self.calls += 1
+        if self.calls == 1:
+            return agent.LLMChatResult(
+                content="我先尝试写记忆。",
+                tool_calls=[
+                    agent.LLMToolCall(
+                        id="call_remember",
+                        name="remember_note",
+                        arguments={"text": "不该写入的偏好"},
+                    )
+                ],
+            )
+        payload = json.loads(messages[-1]["content"])
+        if payload.get("do_not_claim_success"):
+            return agent.LLMChatResult(content="未写入记忆；需要你明确说记住或使用 /remember。", tool_calls=[])
+        return agent.LLMChatResult(content="已记下。", tool_calls=[])
+
+    def complete(self, prompt, messages=None):
+        return "未写入。"
+
+
 def _tool_names(runtime: agent.AgentRuntime) -> set[str]:
     return {
         schema["function"]["name"]
@@ -70,6 +101,7 @@ def test_main_agent_default_exposes_read_tools_but_not_side_effect_tools(monkeyp
     monkeypatch.setattr(agent, "DEFAULT_ENABLE_WRITE_FILE", False)
     monkeypatch.setattr(agent, "DEFAULT_ENABLE_RUN_COMMAND", False)
     monkeypatch.setattr(agent, "DEFAULT_ENABLE_WEB_FETCH", False)
+    monkeypatch.setattr(agent, "DEFAULT_WEB_FETCH_POLICY", "safe-auto")
     monkeypatch.setattr(agent, "DEFAULT_ENABLE_AGENT_TEAM", False)
 
     runtime = agent.build_demo_runtime(enable_operator_memory=False)
@@ -78,7 +110,8 @@ def test_main_agent_default_exposes_read_tools_but_not_side_effect_tools(monkeyp
     assert {"read_file", "glob_files", "grep_files"}.issubset(names)
     assert "write_file" not in names
     assert "run_command" not in names
-    assert "web_fetch" not in names
+    assert "web_fetch" in names
+    assert "propose_web_fetch" in names
     assert "remember_note" not in names
 
 
@@ -156,6 +189,22 @@ def test_remember_note_requires_explicit_user_intent_and_writes_core(tmp_path, m
     assert trace["tool_trace"][0]["gate"]["reason"] == "operator_memory_write_intent_allowed"
 
 
+def test_memory_correction_intent_can_write_core(tmp_path, monkeypatch):
+    monkeypatch.setattr(agent, "EGO_OPERATOR_ROOT", tmp_path)
+    runtime = agent.build_demo_runtime(enable_operator_memory=True, operator_memory_dir=tmp_path / "memory")
+    runtime.trace_store = agent.JsonlTraceStore(tmp_path / "trace.jsonl")
+    runtime.planner.llm = ToolThenFinalLLM("remember_note", {"text": "打招呼时带上用户称呼"})
+
+    result = runtime.handle_user_message("那你要记得打招呼的时候要带上称呼")
+
+    assert result.reply_text == "完成。"
+    core = (tmp_path / "memory" / "MEMORY.md").read_text(encoding="utf-8")
+    assert "打招呼时带上用户称呼" in core
+    trace = json.loads((tmp_path / "trace.jsonl").read_text(encoding="utf-8").splitlines()[0])
+    assert trace["tool_trace"][0]["gate"]["allowed"] is True
+    assert trace["tool_trace"][0]["gate"]["reason"] == "operator_memory_write_intent_allowed"
+
+
 def test_remember_note_without_explicit_intent_is_blocked_and_core_unchanged(tmp_path, monkeypatch):
     monkeypatch.setattr(agent, "EGO_OPERATOR_ROOT", tmp_path)
     runtime = agent.build_demo_runtime(enable_operator_memory=True, operator_memory_dir=tmp_path / "memory")
@@ -169,6 +218,21 @@ def test_remember_note_without_explicit_intent_is_blocked_and_core_unchanged(tmp
     trace = json.loads((tmp_path / "trace.jsonl").read_text(encoding="utf-8").splitlines()[0])
     assert trace["tool_trace"][0]["output"]["status"] == "blocked"
     assert trace["tool_trace"][0]["output"]["reason"] == "memory_write_requires_explicit_user_intent"
+    assert trace["tool_trace"][0]["output"]["do_not_claim_success"] is True
+    assert "Memory was not written" in trace["tool_trace"][0]["output"]["user_visible_correction"]
+
+
+def test_blocked_memory_write_does_not_claim_success(tmp_path, monkeypatch):
+    monkeypatch.setattr(agent, "EGO_OPERATOR_ROOT", tmp_path)
+    runtime = agent.build_demo_runtime(enable_operator_memory=True, operator_memory_dir=tmp_path / "memory")
+    runtime.trace_store = agent.JsonlTraceStore(tmp_path / "trace.jsonl")
+    runtime.planner.llm = BlockAwareRememberLLM()
+
+    result = runtime.handle_user_message("普通聊天：你好")
+
+    assert "未写入记忆" in result.reply_text
+    assert "已记下" not in result.reply_text
+    assert not (tmp_path / "memory" / "MEMORY.md").exists()
 
 
 def test_remember_question_is_not_treated_as_memory_write_intent(tmp_path, monkeypatch):
@@ -177,7 +241,7 @@ def test_remember_question_is_not_treated_as_memory_write_intent(tmp_path, monke
     runtime.trace_store = agent.JsonlTraceStore(tmp_path / "trace.jsonl")
     runtime.planner.llm = ToolThenFinalLLM("remember_note", {"text": "不该写入"})
 
-    runtime.handle_user_message("Do you remember me?")
+    runtime.handle_user_message("你还记得我吗？")
 
     assert not (tmp_path / "memory" / "MEMORY.md").exists()
     trace = json.loads((tmp_path / "trace.jsonl").read_text(encoding="utf-8").splitlines()[0])
@@ -220,4 +284,5 @@ def test_runtime_permission_status_reports_memory_and_tool_gates(tmp_path, monke
     assert "remember_note tool with explicit user intent" in status
     assert "write_file: transaction approval required" in status
     assert "file_write_proposals: enabled" in status
+    assert "web_fetch_policy:" in status
     assert "trace_path:" in status

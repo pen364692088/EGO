@@ -379,8 +379,10 @@ def _run_scenario(scenario: OperatorScenario, traces_dir: Path) -> ScenarioObser
 
     previous_verbose_tools = agent.DEFAULT_VERBOSE_TOOLS
     previous_verbose_todos = agent.DEFAULT_VERBOSE_TODOS
+    previous_web_fetch_policy = agent.DEFAULT_WEB_FETCH_POLICY
     agent.DEFAULT_VERBOSE_TOOLS = False
     agent.DEFAULT_VERBOSE_TODOS = False
+    agent.DEFAULT_WEB_FETCH_POLICY = "approval-only"
     try:
         runtime = agent.build_demo_runtime(enable_operator_memory=False)
         runtime.trace_store = agent.JsonlTraceStore(trace_path)
@@ -389,6 +391,7 @@ def _run_scenario(scenario: OperatorScenario, traces_dir: Path) -> ScenarioObser
     finally:
         agent.DEFAULT_VERBOSE_TOOLS = previous_verbose_tools
         agent.DEFAULT_VERBOSE_TODOS = previous_verbose_todos
+        agent.DEFAULT_WEB_FETCH_POLICY = previous_web_fetch_policy
 
     trace_record, trace_readable = _read_trace_record(trace_path)
     trace_blob = json.dumps(trace_record, ensure_ascii=False, sort_keys=True) if trace_record else ""

@@ -43,7 +43,7 @@ def test_real_use_gate_covers_memory_hits_and_tool_gates(tmp_path, monkeypatch):
     assert "remember_note" in by_id["explicit_core_memory"].tool_names
     assert "read_file" in by_id["read_file"].tool_names
     assert "write_file" in by_id["write_file_blocked"].blocked_tools
-    assert "web_fetch" in by_id["web_fetch_blocked"].blocked_tools
+    assert "web_fetch" in by_id["web_fetch_safe_auto"].tool_names
     assert "update_todos" in by_id["long_task_breakdown"].tool_names
     assert by_id["archived_memory_no_misuse"].memory_misuse is False
 

@@ -81,6 +81,52 @@ class WebProposalThenFinalLLM:
         return "已生成待审批联网读取 proposal。"
 
 
+class DirectWebFetchThenFinalLLM:
+    provider = "fake"
+    model = "direct-web-fetch-then-final"
+    last_usage = {}
+    last_reasoning_tokens = None
+
+    def __init__(self, url: str = "https://example.com") -> None:
+        self.url = url
+        self.calls = 0
+
+    def chat(self, messages, *, system_prompt, policy_context="", tools=None, stream=None):
+        self.calls += 1
+        if self.calls == 1:
+            return agent.LLMChatResult(
+                content="我会直接读取安全 public URL。",
+                tool_calls=[
+                    agent.LLMToolCall(
+                        id="call_web_fetch",
+                        name="web_fetch",
+                        arguments={"url": self.url, "extract_mode": "text", "max_chars": 120},
+                    )
+                ],
+            )
+        tool_payload = json.loads(messages[-1]["content"])
+        return agent.LLMChatResult(content=f"已读取：{tool_payload.get('content', '')}", tool_calls=[])
+
+    def complete(self, prompt, messages=None):
+        return "已读取。"
+
+
+class ApprovalAwareLLM:
+    provider = "fake"
+    model = "approval-aware"
+    last_usage = {}
+    last_reasoning_tokens = None
+
+    def chat(self, messages, *, system_prompt, policy_context="", tools=None, stream=None):
+        joined = json.dumps(messages, ensure_ascii=False)
+        if "Overcast" in joined and "+2°C" in joined:
+            return agent.LLMChatResult(content="好了，刚才已执行联网读取：Overcast +2°C。", tool_calls=[])
+        return agent.LLMChatResult(content="还没收到批准结果。", tool_calls=[])
+
+    def complete(self, prompt, messages=None):
+        return "好了。"
+
+
 class HeartbeatProposalThenFinalLLM:
     provider = "fake"
     model = "heartbeat-proposal-then-final"
@@ -115,12 +161,13 @@ class HeartbeatProposalThenFinalLLM:
         return "已生成待审批 heartbeat proposal。"
 
 
-def _runtime(tmp_path, monkeypatch, *, mode="approve", allowlist=()):
+def _runtime(tmp_path, monkeypatch, *, mode="approve", allowlist=(), web_policy="approval-only"):
     monkeypatch.setattr(agent, "DEFAULT_AGENT_WORKSPACE", tmp_path)
     monkeypatch.setattr(agent, "DEFAULT_WRITE_ALLOWLIST", tuple(allowlist))
     monkeypatch.setattr(agent, "DEFAULT_ENABLE_WRITE_FILE", False)
     monkeypatch.setattr(agent, "DEFAULT_ENABLE_RUN_COMMAND", False)
     monkeypatch.setattr(agent, "DEFAULT_ENABLE_WEB_FETCH", False)
+    monkeypatch.setattr(agent, "DEFAULT_WEB_FETCH_POLICY", web_policy)
     runtime = agent.build_demo_runtime(enable_operator_memory=False, runtime_mode=mode)
     runtime.trace_store = agent.JsonlTraceStore(tmp_path / "trace.jsonl")
     return runtime
@@ -238,6 +285,61 @@ def test_approve_mode_exposes_web_fetch_proposal_not_direct_tool(tmp_path, monke
     assert "web_fetch" not in names
 
 
+def test_safe_auto_policy_exposes_direct_web_fetch_in_approve_mode(tmp_path, monkeypatch):
+    runtime = _runtime(tmp_path, monkeypatch, web_policy="safe-auto")
+
+    names = _tool_names(runtime)
+
+    assert "propose_web_fetch" in names
+    assert "web_fetch" in names
+
+
+def test_safe_auto_web_fetch_executes_public_url_without_approval(tmp_path, monkeypatch):
+    runtime = _runtime(tmp_path, monkeypatch, web_policy="safe-auto")
+    runtime.planner.llm = DirectWebFetchThenFinalLLM("https://example.com")
+    calls = []
+
+    def fake_fetch(url: str, extract_mode: str = "text", max_chars: int = agent.DEFAULT_WEB_FETCH_MAX_CHARS):
+        calls.append((url, extract_mode, max_chars))
+        return {"status": "ok", "url": url, "extract_mode": extract_mode, "content": "Example Domain", "truncated": False}
+
+    monkeypatch.setattr(agent, "_web_fetch_execute", fake_fetch)
+
+    result = runtime.handle_user_message("请查一下 https://example.com")
+
+    assert "Example Domain" in result.reply_text
+    assert calls == [("https://example.com", "text", 120)]
+    trace = json.loads((tmp_path / "trace.jsonl").read_text(encoding="utf-8").splitlines()[0])
+    assert trace["tool_trace"][0]["tool_call"]["name"] == "web_fetch"
+    assert trace["tool_trace"][0]["gate"]["allowed"] is True
+    assert trace["tool_trace"][0]["gate"]["reason"] == "safe_auto_web_fetch_allowed"
+    assert trace["operator_runtime"]["permission_broker"]["pending_count"] == 0
+
+
+def test_safe_auto_web_fetch_still_blocks_localhost(tmp_path, monkeypatch):
+    runtime = _runtime(tmp_path, monkeypatch, web_policy="safe-auto")
+    event = agent.AgentEvent(
+        schema_version="agent_event.v1",
+        event_id="evt_web",
+        timestamp=agent.utc_now(),
+        actor="user",
+        source="test",
+        event_type=agent.EventType.USER_MESSAGE,
+        safety_context={"risk": "low"},
+    )
+
+    blocked = runtime.gate.check(
+        event,
+        agent.AgentAction(
+            action_type=agent.ActionType.TOOL_CALL,
+            tool_call=agent.ToolCall(tool_name="web_fetch", args={"url": "http://localhost:8000"}),
+        ),
+    )
+
+    assert blocked.allowed is False
+    assert blocked.reason == "localhost_not_allowed"
+
+
 def test_web_fetch_proposal_requires_approval_and_executes_with_lease(tmp_path, monkeypatch):
     runtime = _runtime(tmp_path, monkeypatch)
     calls = []
@@ -265,6 +367,25 @@ def test_web_fetch_proposal_requires_approval_and_executes_with_lease(tmp_path, 
     assert trace["proposal"]["action"] == "web_fetch"
     assert trace["result"]["lease_id"] == approved["approval"]["lease_id"]
     assert trace["execution"]["status"] == "ok"
+
+
+def test_approved_web_fetch_result_is_available_to_next_turn(tmp_path, monkeypatch):
+    runtime = _runtime(tmp_path, monkeypatch)
+
+    def fake_fetch(url: str, extract_mode: str = "text", max_chars: int = agent.DEFAULT_WEB_FETCH_MAX_CHARS):
+        return {"status": "ok", "url": url, "content": "Overcast +2°C", "truncated": False}
+
+    monkeypatch.setattr(agent, "_web_fetch_execute", fake_fetch)
+    proposal = runtime.propose_web_fetch("https://example.com/weather", max_chars=120, reason="weather")
+
+    approved = runtime.approve_pending_operation(proposal["proposal"]["proposal_id"])
+    runtime.planner.llm = ApprovalAwareLLM()
+    result = runtime.handle_user_message("好了吗")
+
+    assert approved["status"] == "ok"
+    assert "Overcast +2°C" in runtime.memory.render()
+    assert "Overcast +2°C" in result.reply_text
+    assert "没收到批准" not in result.reply_text
 
 
 def test_web_fetch_lease_blocks_url_and_payload_mismatch(tmp_path, monkeypatch):
