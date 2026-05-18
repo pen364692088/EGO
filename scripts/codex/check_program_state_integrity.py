@@ -31,8 +31,9 @@ from program_state_common import (
 
 
 ROOT_README = ROOT / "README.md"
-EGOCORE_README = ROOT / "EgoCore" / "README.md"
-OPENEMOTION_README = ROOT / "OpenEmotion" / "README.md"
+LEGACY_PRE_HANDMADE_ROOT = ROOT / "legacy" / "ego-pre-handmade-mainline"
+EGOCORE_README = LEGACY_PRE_HANDMADE_ROOT / "EgoCore" / "README.md"
+OPENEMOTION_README = LEGACY_PRE_HANDMADE_ROOT / "OpenEmotion" / "README.md"
 CURRENT_LOGIC_FLOW = ROOT / "docs" / "CURRENT_PROJECT_LOGIC_FLOW.md"
 ACCEPTANCE_CHAINS = ROOT / "docs" / "ACCEPTANCE_CHAINS.md"
 EXPERIENCE_SCRIPTS = ROOT / "docs" / "EXPERIENCE_SCRIPTS.md"
@@ -45,19 +46,20 @@ CORE_DIR_PREFIXES = [
     ".github/",
     "docs/",
     "scripts/codex/",
-    "EgoCore/app/runtime_v2/",
-    "EgoCore/app/openemotion_adapter/",
-    "EgoCore/app/openemotion_hooks/",
-    "EgoCore/app/dashboard/",
-    "OpenEmotion/openemotion/proto_self/",
-    "OpenEmotion/openemotion/proto_self_v2/",
-    "OpenEmotion/openemotion/self_model/",
-    "OpenEmotion/openemotion/endogenous_drives/",
-    "OpenEmotion/openemotion/reflective_self/",
-    "OpenEmotion/openemotion/developmental_self/",
+    "Ego_handmade/",
+    "legacy/ego-pre-handmade-mainline/EgoCore/app/runtime_v2/",
+    "legacy/ego-pre-handmade-mainline/EgoCore/app/openemotion_adapter/",
+    "legacy/ego-pre-handmade-mainline/EgoCore/app/openemotion_hooks/",
+    "legacy/ego-pre-handmade-mainline/EgoCore/app/dashboard/",
+    "legacy/ego-pre-handmade-mainline/OpenEmotion/openemotion/proto_self/",
+    "legacy/ego-pre-handmade-mainline/OpenEmotion/openemotion/proto_self_v2/",
+    "legacy/ego-pre-handmade-mainline/OpenEmotion/openemotion/self_model/",
+    "legacy/ego-pre-handmade-mainline/OpenEmotion/openemotion/endogenous_drives/",
+    "legacy/ego-pre-handmade-mainline/OpenEmotion/openemotion/reflective_self/",
+    "legacy/ego-pre-handmade-mainline/OpenEmotion/openemotion/developmental_self/",
     "README.md",
-    "EgoCore/README.md",
-    "OpenEmotion/README.md",
+    "legacy/ego-pre-handmade-mainline/EgoCore/README.md",
+    "legacy/ego-pre-handmade-mainline/OpenEmotion/README.md",
 ]
 
 CLAIM_PATTERNS = {
@@ -206,13 +208,13 @@ def main() -> int:
     expected_generated = {
         "docs/STATUS.md",
         "artifacts/reports/program_state_summary.md",
-        "EgoCore/docs/PROGRAM_STATE_UNIFIED.yaml",
-        "OpenEmotion/docs/PROGRAM_STATE_UNIFIED.yaml",
+        "legacy/ego-pre-handmade-mainline/EgoCore/docs/PROGRAM_STATE_UNIFIED.yaml",
+        "legacy/ego-pre-handmade-mainline/OpenEmotion/docs/PROGRAM_STATE_UNIFIED.yaml",
     }
     if declared_generated != expected_generated:
         errors.append("integrity.generated_views must exactly enumerate the generated status outputs and compatibility mirrors")
     if integrity.get("shim_register") != str(SHIM_REGISTER_PATH.relative_to(ROOT)):
-        errors.append("integrity.shim_register must point at EgoCore/SHIM_REGISTER.md")
+        errors.append("integrity.shim_register must point at legacy/ego-pre-handmade-mainline/EgoCore/SHIM_REGISTER.md")
 
     for path in [ROOT_README, EGOCORE_README, OPENEMOTION_README, CURRENT_LOGIC_FLOW]:
         if not path.exists():
@@ -261,7 +263,7 @@ def main() -> int:
         ]
         if shim_like_changes and shim_path_str not in changed_files:
             errors.append(
-                "shim/mirror/adapter-related changes detected without updating EgoCore/SHIM_REGISTER.md"
+                "shim/mirror/adapter-related changes detected without updating legacy/ego-pre-handmade-mainline/EgoCore/SHIM_REGISTER.md"
             )
 
     if errors:

@@ -1,6 +1,8 @@
 # Agent Development Playbook
 
-适用范围：`EgoCore + OpenEmotion` 双仓协作开发
+适用范围：legacy `EgoCore + OpenEmotion` 双仓协作开发。
+
+> 2026-05-18 transition note: 当前默认 human/operator 体验主线已切到 `Ego_handmade`。本 playbook 只用于读取或维护 `legacy/ego-pre-handmade-mainline/EgoCore` 与 `legacy/ego-pre-handmade-mainline/OpenEmotion` 的历史实现，不再是新任务默认入口。新任务优先看 `docs/MAINLINE_QUICKSTART.md` 与 `Ego_handmade/`。
 
 目标：让新 agent 在第一次接手任务时，能快速判断应该改哪里、按什么顺序改、怎样证明改动真正进入主链。
 

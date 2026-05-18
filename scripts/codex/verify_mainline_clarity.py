@@ -31,12 +31,12 @@ REQUIRED_README_REFS = (
 )
 
 REQUIRED_QUICKSTART_REFS = (
-    "subject_system_v1_governed_proactivity",
-    "EgoCore",
-    "OpenEmotion",
-    "ego_desktop_lab",
-    "reference harness",
-    "not a second runtime",
+    "ego_handmade_first_transition",
+    "Ego_handmade/agent_base.py",
+    "legacy/ego-pre-handmade-mainline/EgoCore",
+    "legacy/ego-pre-handmade-mainline/OpenEmotion",
+    "legacy/ego-pre-handmade-mainline/ego_desktop_lab",
+    "operator-first runtime",
     "docs/PROGRAM_STATE_UNIFIED.yaml",
     "docs/codex/tasks/TASK_LANE_INDEX.md",
 )
@@ -68,14 +68,14 @@ CLEANUP_STAGE_PREFIXES = (
 
 FORBIDDEN_CLEANUP_STAGE_PATHS = (
     "docs/PROGRAM_STATE_UNIFIED.yaml",
-    "EgoCore/docs/PROGRAM_STATE_UNIFIED.yaml",
-    "OpenEmotion/docs/PROGRAM_STATE_UNIFIED.yaml",
+    "legacy/ego-pre-handmade-mainline/EgoCore/docs/PROGRAM_STATE_UNIFIED.yaml",
+    "legacy/ego-pre-handmade-mainline/OpenEmotion/docs/PROGRAM_STATE_UNIFIED.yaml",
     "artifacts/evidence_ledger/index.yaml",
 )
 
 FORBIDDEN_CLEANUP_STAGE_PREFIXES = (
-    "EgoCore/",
-    "OpenEmotion/",
+    "legacy/ego-pre-handmade-mainline/EgoCore/",
+    "legacy/ego-pre-handmade-mainline/OpenEmotion/",
     "artifacts/evidence_ledger/",
     "artifacts/reports/",
     "artifacts/telegram_real_mainline_v1/",
@@ -115,8 +115,16 @@ def _matches_prefix(path: str, prefix: str) -> bool:
     return path == prefix.rstrip("/") or path.startswith(prefix)
 
 
+def _is_legacy_migration_addition(path: str, deleted_paths: set[str]) -> bool:
+    prefix = "legacy/ego-pre-handmade-mainline/"
+    if not path.startswith(prefix):
+        return False
+    return path[len(prefix) :] in deleted_paths
+
+
 def _check_staged_operational_exhaust(errors: list[str]) -> None:
     staged_paths = _git_lines(["diff", "--cached", "--name-only"])
+    deleted_paths = set(_git_lines(["diff", "--cached", "--name-only", "--no-renames", "--diff-filter=D"]))
     cleanup_stage_active = any(
         any(_matches_prefix(path, prefix) for prefix in CLEANUP_STAGE_PREFIXES)
         for path in staged_paths
@@ -135,6 +143,8 @@ def _check_staged_operational_exhaust(errors: list[str]) -> None:
                 continue
         elif path.startswith(FORBIDDEN_ALWAYS_STAGE_PREFIXES):
             blocked.append(f"{path} (operational_exhaust)")
+            continue
+        if _is_legacy_migration_addition(path, deleted_paths):
             continue
         for rule in HYGIENE_RULES:
             if _matches_prefix(path, rule.path_prefix):
@@ -236,8 +246,8 @@ def main() -> int:
     active = [entry for entry in entries if entry.lane == "active_default"]
     if len(active) != 1:
         errors.append(f"expected exactly one active_default lane, found {len(active)}")
-    elif active[0].key != "subject-system-v1-governed-proactivity":
-        errors.append("active_default lane must stay `subject-system-v1-governed-proactivity`")
+    elif active[0].key != "ego-mainline-demotion-v1":
+        errors.append("active_default lane must stay `ego-mainline-demotion-v1` during Ego_handmade-first transition")
 
     _check_text_contains(README_PATH, REQUIRED_README_REFS, errors)
     _check_text_contains(QUICKSTART_PATH, REQUIRED_QUICKSTART_REFS, errors)

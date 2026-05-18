@@ -13,8 +13,8 @@
 5. `docs/AGENT_DEVELOPMENT_PLAYBOOK.md`
 6. `docs/CODEX_CLOSED_LOOP_SELF_REVIEW_WORKFLOW.md`
 7. `README.md`
-8. 如果改 `EgoCore/`，再读 `EgoCore/README.md`
-9. 如果改 `OpenEmotion/`，再读 `OpenEmotion/README.md`
+8. 如果改 `Ego_handmade/`，再读 `Ego_handmade/docs/ALGORITHM_INVENTORY.md`
+9. 如果只读旧参考实现，再读 `legacy/ego-pre-handmade-mainline/EgoCore/README.md` 或 `legacy/ego-pre-handmade-mainline/OpenEmotion/README.md`
 
 读取优先级：
 
@@ -27,10 +27,21 @@
 
 历史 artifacts 只能当证据或对照，不自动成为 authority source。
 
+## Ego_handmade-first rule
+
+- 默认 human/operator 体验主线是 `Ego_handmade/`。
+- 允许在明确任务内删除旧模板、重写主循环、牺牲部分旧接口，并优先体验而不是兼容。
+- 验收标准可从“测试通过”升级为“测试通过 + 多个真实对话样本更自然”。
+- 普通实现细节由 Codex 直接收敛执行；重大项必须先给 Stage Card 并获得确认。
+- 重大项包括：主线切换、目录迁移、权限扩大、记忆晋升、删除大块旧代码、`PROGRAM_STATE_UNIFIED` 或 evidence ledger 变更。
+- 不要把旧 `semantic_route` / keyword-first route / template fallback 重新引回默认入口；默认路径应保持 `user text -> LLM understanding -> proposal/plan -> gate -> trace`。
+
 ## Directory routing
 
-- `EgoCore/`: 宿主、Telegram 入口、runtime、工具执行、安全、delivery、audit
-- `OpenEmotion/`: 主体内核、proto-self、memory、self-model、developmental projection
+- `Ego_handmade/`: 当前默认 operator-first runtime candidate、memory、permission gate、transaction approval、trace、human-trial harness
+- `legacy/ego-pre-handmade-mainline/EgoCore/`: 旧宿主参考实现；只作 legacy reference / fallback / algorithm source
+- `legacy/ego-pre-handmade-mainline/OpenEmotion/`: 旧主体内核参考实现；只作 legacy reference / algorithm source
+- `legacy/ego-pre-handmade-mainline/ego_desktop_lab/`: 旧 deterministic lab/reference harness；不得恢复为第二套 active runtime
 - `Tasks/`: 任务单、spec、plan、acceptance、status、handoff；新任务默认使用 `Tasks/templates/`
 - `docs/codex/`: Codex long-run harness 文档、模板、示例、任务目录
 - `scripts/`: 跨仓脚本与 capture runner；`scripts/codex/` 承载 long-run harness 工具
@@ -43,36 +54,33 @@
 
 仓库根目录没有统一 build 命令。按子仓执行：
 
-- `cd EgoCore && python3 -m pip install -e .[dev]`
-- `cd OpenEmotion && make venv`
-- `cd OpenEmotion && python3 -m pip install -e .`
+- 默认 operator runtime 不需要安装旧双核依赖即可做本地 NoLLM/pytest 验证。
+- 旧双核参考实现如需运行，路径已迁移到 `legacy/ego-pre-handmade-mainline/`，只在 legacy/fallback 任务中使用。
 
 ### Run
 
-- `cd EgoCore && python3 -m app.main --telegram`
-- `cd OpenEmotion && make run`
+- `cd Ego_handmade && python3 agent_base.py`
+- legacy fallback only: `cd legacy/ego-pre-handmade-mainline/EgoCore && python3 -m app.main --telegram`
+- legacy fallback only: `cd legacy/ego-pre-handmade-mainline/OpenEmotion && make run`
 
 ### Test
 
-- `cd EgoCore && python3 -m pytest tests/ -v`
-- `cd EgoCore && ./tools/run_telegram_mainline_regression.sh`
-- `cd OpenEmotion && make test`
-- `cd OpenEmotion && python3 -m pytest tests/ -q`
-- `cd OpenEmotion && python scripts/run_testbot_scenarios.py --subset pr --output artifacts/testbot/pr_summary.json`
+- `TMPDIR=/tmp python3 -m pytest -q Ego_handmade/tests`
+- legacy fallback only: `cd legacy/ego-pre-handmade-mainline/EgoCore && python3 -m pytest tests/ -v`
+- legacy fallback only: `cd legacy/ego-pre-handmade-mainline/OpenEmotion && python3 -m pytest tests/ -q`
 
 ### Lint / typecheck
 
 当前仓库的稳定 lint 入口与 OpenEmotion 专用 typecheck 如下：
 
 - `python3 scripts/codex/lint_repo.py`
-- `cd OpenEmotion && python3 verify_typecheck_simple.py`
-- `cd OpenEmotion && python3 verify_typecheck.py`
+- legacy fallback only: `cd legacy/ego-pre-handmade-mainline/OpenEmotion && python3 verify_typecheck_simple.py`
+- legacy fallback only: `cd legacy/ego-pre-handmade-mainline/OpenEmotion && python3 verify_typecheck.py`
 
 规则：
 
 - 不要编造 `ruff` / `black` / `mypy` / repo-root CI gate
-- `scripts/codex/verify_repo.py` 会优先解析 `OPENEMOTION_PYTHON`，否则按 `OpenEmotion/.venv` -> `OpenEmotion/venv` -> 当前解释器 选择 OpenEmotion Python；若没有满足验证所需模块的 runtime，会先自举 repo-local OpenEmotion runtime
-- `scripts/codex/verify_repo.py` 对 `EgoCore pytest suite` 会注入 repo-local `PYTHONPATH=EgoCore:EgoCore/modules:OpenEmotion`，避免依赖外部 shell 状态
+- 旧 `verify_repo.py` 仍可作为 legacy/fallback 检查，但默认新主线验收优先跑 `Ego_handmade/tests`
 - 在 WSL + mounted drive 环境下，OpenEmotion verifier runtime 允许优先使用 Windows Python 驱动的 `OpenEmotion/.venv`，以避开 Linux-side `venv/pip` 的 I/O 卡顿
 - 如任务需要静态预检，仍可直接使用 `python3 -m py_compile path/to/file.py`
 
@@ -208,6 +216,7 @@ Before any implementation:
 7. Never claim a conclusion stronger than the current evidence level
 
 - 保持双核边界：EgoCore 负责宿主与现实裁决；OpenEmotion 负责主体语义与状态
+- 在 `Ego_handmade-first` 迁移后，上述双核边界只约束 legacy reference；新默认 runtime 以 `Ego_handmade` 的 operator contract / gate / trace 为准
 - 一项能力只能有一个权威源；不要把 shim / mirror / cache / fallback 偷升为正式主线
 - 默认做最小必要改动，不顺手扩大 scope
 - 不要编造命令、schema、状态、验收口径

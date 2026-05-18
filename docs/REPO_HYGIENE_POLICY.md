@@ -15,28 +15,28 @@
 
 | path prefix | class | tracked policy | current tracked count | ignore snippets | next action |
 |---|---|---|---:|---|---|
-| `OpenEmotion/artifacts/mvp12/cycle_traces/` | `operational_exhaust_archive` | grandfathered legacy tracked inventory; ignore new raw cycle traces | 202 | `OpenEmotion/artifacts/mvp12/cycle_traces/` | Keep acceptance-facing CURRENT reports elsewhere; future lane may de-track legacy trace jsons in one archival pass. |
-| `EgoCore/artifacts/proto_self_store/` | `session_store_exhaust` | grandfathered seed snapshots allowed; ignore new session-store churn | 2 | `EgoCore/artifacts/proto_self_store/` | Keep only deliberate seed/session examples tracked; move live store growth out of the repo surface. |
-| `EgoCore/logs/` | `runtime_log_exhaust` | grandfathered archive logs remain for reference; ignore new runtime logs | 19 | `EgoCore/logs/` | Future cleanup may de-track archived logs after explicit archival review; new log churn stays ignored. |
-| `EgoCore/data/session_logs/` | `session_log_exhaust` | ignore new session logs; no tracked baseline is expected here | 0 | `EgoCore/data/session_logs/` | Keep session-log capture out of tracked state unless a task explicitly exports a bounded CURRENT artifact. |
+| `legacy/ego-pre-handmade-mainline/OpenEmotion/artifacts/mvp12/cycle_traces/` | `operational_exhaust_archive` | grandfathered legacy tracked inventory; ignore new raw cycle traces | 202 | `legacy/ego-pre-handmade-mainline/OpenEmotion/artifacts/mvp12/cycle_traces/` | Keep acceptance-facing CURRENT reports elsewhere; future lane may de-track legacy trace jsons in one archival pass. |
+| `legacy/ego-pre-handmade-mainline/EgoCore/artifacts/proto_self_store/` | `session_store_exhaust` | grandfathered seed snapshots allowed; ignore new session-store churn | 2 | `legacy/ego-pre-handmade-mainline/EgoCore/artifacts/proto_self_store/` | Keep only deliberate seed/session examples tracked; move live store growth out of the repo surface. |
+| `legacy/ego-pre-handmade-mainline/EgoCore/logs/` | `runtime_log_exhaust` | grandfathered archive logs remain for reference; ignore new runtime logs | 19 | `legacy/ego-pre-handmade-mainline/EgoCore/logs/` | Future cleanup may de-track archived logs after explicit archival review; new log churn stays ignored. |
+| `legacy/ego-pre-handmade-mainline/EgoCore/data/session_logs/` | `session_log_exhaust` | ignore new session logs; no tracked baseline is expected here | 0 | `legacy/ego-pre-handmade-mainline/EgoCore/data/session_logs/` | Keep session-log capture out of tracked state unless a task explicitly exports a bounded CURRENT artifact. |
 | `artifacts/dashboard_runtime_logs/` | `dashboard_runtime_exhaust` | ignore runtime-server logs and polling exhaust | 0 | `artifacts/dashboard_runtime_logs/` | Promote only explicit CURRENT reports into acceptance-facing artifact roots. |
 | `artifacts/launcher_meta/` | `launcher_meta_exhaust` | ignore launcher metadata and temp orchestration byproducts | 0 | `artifacts/launcher_meta/` | Keep launcher metadata out of the tracked repo unless a bounded task explicitly promotes it. |
 | `temp/` | `runtime_temp_exhaust` | ignore local temp outputs and runtime JSONL by default | 0 | `temp/` | Promote only explicit lab reports or accepted evidence artifacts outside temp. |
 | `.pytest_cache/` | `test_cache_exhaust` | ignore pytest cache output | 0 | `.pytest_cache/` | Never commit pytest cache directories. |
 | `logs/` | `runtime_log_exhaust` | ignore root runtime logs by default | 1 | `logs/` | Promote only bounded CURRENT reports outside raw logs. |
-| `EgoCore/temp/` | `egocore_temp_exhaust` | ignore EgoCore local temp outputs | 0 | `EgoCore/temp/`<br>`EgoCore/tmp/` | Keep local EgoCore temp output out of tracked state. |
-| `OpenEmotion/logs/` | `openemotion_log_exhaust` | ignore OpenEmotion raw runtime logs | 0 | `OpenEmotion/logs/` | Promote only bounded CURRENT reports outside raw logs. |
+| `legacy/ego-pre-handmade-mainline/EgoCore/temp/` | `egocore_temp_exhaust` | ignore EgoCore local temp outputs | 0 | `legacy/ego-pre-handmade-mainline/EgoCore/temp/`<br>`legacy/ego-pre-handmade-mainline/EgoCore/tmp/` | Keep local EgoCore temp output out of tracked state. |
+| `legacy/ego-pre-handmade-mainline/OpenEmotion/logs/` | `openemotion_log_exhaust` | ignore OpenEmotion raw runtime logs | 0 | `legacy/ego-pre-handmade-mainline/OpenEmotion/logs/` | Promote only bounded CURRENT reports outside raw logs. |
 
 ## Notes
 
-- `OpenEmotion/artifacts/mvp12/cycle_traces/`: This path is high-volume operational exhaust, not a primary authority surface.
-- `EgoCore/artifacts/proto_self_store/`: Session-store churn should not flood the worktree or compete with acceptance artifacts.
-- `EgoCore/logs/`: Runtime log output is operational exhaust unless a task explicitly promotes a CURRENT artifact elsewhere.
-- `EgoCore/data/session_logs/`: This path should not carry repo-facing acceptance state.
+- `legacy/ego-pre-handmade-mainline/OpenEmotion/artifacts/mvp12/cycle_traces/`: This path is high-volume operational exhaust, not a primary authority surface.
+- `legacy/ego-pre-handmade-mainline/EgoCore/artifacts/proto_self_store/`: Session-store churn should not flood the worktree or compete with acceptance artifacts.
+- `legacy/ego-pre-handmade-mainline/EgoCore/logs/`: Runtime log output is operational exhaust unless a task explicitly promotes a CURRENT artifact elsewhere.
+- `legacy/ego-pre-handmade-mainline/EgoCore/data/session_logs/`: This path should not carry repo-facing acceptance state.
 - `artifacts/dashboard_runtime_logs/`: Dashboard runtime logs are operational exhaust, not current evidence by default.
 - `artifacts/launcher_meta/`: Launcher/process metadata is environment exhaust, not a stable authority source.
 - `temp/`: Root temp output is local operational exhaust and must not become an authority surface.
 - `.pytest_cache/`: Pytest cache is a local acceleration artifact, not evidence.
 - `logs/`: Root log output is operational exhaust unless explicitly curated.
-- `EgoCore/temp/`: EgoCore temp directories are runtime byproducts unless a task explicitly promotes a report.
-- `OpenEmotion/logs/`: OpenEmotion logs are operational exhaust unless curated into an accepted artifact.
+- `legacy/ego-pre-handmade-mainline/EgoCore/temp/`: EgoCore temp directories are runtime byproducts unless a task explicitly promotes a report.
+- `legacy/ego-pre-handmade-mainline/OpenEmotion/logs/`: OpenEmotion logs are operational exhaust unless curated into an accepted artifact.

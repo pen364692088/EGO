@@ -53,10 +53,16 @@ class HygieneRule:
 
 
 TASK_OVERRIDES: dict[str, dict[str, Any]] = {
-    "subject-system-v1-governed-proactivity": {
+    "ego-mainline-demotion-v1": {
         "lane": "active_default",
+        "label": "Ego Handmade First Transition",
+        "why": "Current default operator-first implementation lane and repo transition owner after legacy demotion.",
+        "workstream_id": "ego_handmade_first_transition",
+    },
+    "subject-system-v1-governed-proactivity": {
+        "lane": "closed_evidence",
         "label": "Subject System v1 Governed Proactivity",
-        "why": "Current sole default implementation track and execution owner for the governed proactivity program.",
+        "why": "Legacy pre-handmade governed-proactivity evidence; preserved for reference and fallback, not the active default route.",
         "workstream_id": "subject_system_v1_governed_proactivity",
     },
     "active-inference-mainline-activation": {
@@ -168,34 +174,34 @@ EXTRA_ROUTE_ENTRIES = (
 
 HYGIENE_RULES = (
     HygieneRule(
-        path_prefix="OpenEmotion/artifacts/mvp12/cycle_traces/",
+        path_prefix="legacy/ego-pre-handmade-mainline/OpenEmotion/artifacts/mvp12/cycle_traces/",
         class_name="operational_exhaust_archive",
         tracked_policy="grandfathered legacy tracked inventory; ignore new raw cycle traces",
-        ignore_snippets=("OpenEmotion/artifacts/mvp12/cycle_traces/",),
+        ignore_snippets=("legacy/ego-pre-handmade-mainline/OpenEmotion/artifacts/mvp12/cycle_traces/",),
         next_action="Keep acceptance-facing CURRENT reports elsewhere; future lane may de-track legacy trace jsons in one archival pass.",
         note="This path is high-volume operational exhaust, not a primary authority surface.",
     ),
     HygieneRule(
-        path_prefix="EgoCore/artifacts/proto_self_store/",
+        path_prefix="legacy/ego-pre-handmade-mainline/EgoCore/artifacts/proto_self_store/",
         class_name="session_store_exhaust",
         tracked_policy="grandfathered seed snapshots allowed; ignore new session-store churn",
-        ignore_snippets=("EgoCore/artifacts/proto_self_store/",),
+        ignore_snippets=("legacy/ego-pre-handmade-mainline/EgoCore/artifacts/proto_self_store/",),
         next_action="Keep only deliberate seed/session examples tracked; move live store growth out of the repo surface.",
         note="Session-store churn should not flood the worktree or compete with acceptance artifacts.",
     ),
     HygieneRule(
-        path_prefix="EgoCore/logs/",
+        path_prefix="legacy/ego-pre-handmade-mainline/EgoCore/logs/",
         class_name="runtime_log_exhaust",
         tracked_policy="grandfathered archive logs remain for reference; ignore new runtime logs",
-        ignore_snippets=("EgoCore/logs/",),
+        ignore_snippets=("legacy/ego-pre-handmade-mainline/EgoCore/logs/",),
         next_action="Future cleanup may de-track archived logs after explicit archival review; new log churn stays ignored.",
         note="Runtime log output is operational exhaust unless a task explicitly promotes a CURRENT artifact elsewhere.",
     ),
     HygieneRule(
-        path_prefix="EgoCore/data/session_logs/",
+        path_prefix="legacy/ego-pre-handmade-mainline/EgoCore/data/session_logs/",
         class_name="session_log_exhaust",
         tracked_policy="ignore new session logs; no tracked baseline is expected here",
-        ignore_snippets=("EgoCore/data/session_logs/",),
+        ignore_snippets=("legacy/ego-pre-handmade-mainline/EgoCore/data/session_logs/",),
         next_action="Keep session-log capture out of tracked state unless a task explicitly exports a bounded CURRENT artifact.",
         note="This path should not carry repo-facing acceptance state.",
     ),
@@ -240,18 +246,18 @@ HYGIENE_RULES = (
         note="Root log output is operational exhaust unless explicitly curated.",
     ),
     HygieneRule(
-        path_prefix="EgoCore/temp/",
+        path_prefix="legacy/ego-pre-handmade-mainline/EgoCore/temp/",
         class_name="egocore_temp_exhaust",
         tracked_policy="ignore EgoCore local temp outputs",
-        ignore_snippets=("EgoCore/temp/", "EgoCore/tmp/"),
+        ignore_snippets=("legacy/ego-pre-handmade-mainline/EgoCore/temp/", "legacy/ego-pre-handmade-mainline/EgoCore/tmp/"),
         next_action="Keep local EgoCore temp output out of tracked state.",
         note="EgoCore temp directories are runtime byproducts unless a task explicitly promotes a report.",
     ),
     HygieneRule(
-        path_prefix="OpenEmotion/logs/",
+        path_prefix="legacy/ego-pre-handmade-mainline/OpenEmotion/logs/",
         class_name="openemotion_log_exhaust",
         tracked_policy="ignore OpenEmotion raw runtime logs",
-        ignore_snippets=("OpenEmotion/logs/",),
+        ignore_snippets=("legacy/ego-pre-handmade-mainline/OpenEmotion/logs/",),
         next_action="Promote only bounded CURRENT reports outside raw logs.",
         note="OpenEmotion logs are operational exhaust unless curated into an accepted artifact.",
     ),
@@ -259,16 +265,20 @@ HYGIENE_RULES = (
 
 SURFACE_MAP_ROWS = (
     {
-        "surface": "formal_runtime",
-        "paths": ("EgoCore/", "OpenEmotion/"),
-        "role": "Formal runtime implementation. EgoCore owns runtime, safety, delivery, transport, and gate; OpenEmotion owns subject semantics, memory, appraisal, reflection, and candidate semantics.",
-        "authority": "Runtime authority; changes require mainline tests and evidence discipline.",
+        "surface": "operator_runtime",
+        "paths": ("Ego_handmade/",),
+        "role": "Current default operator-first runtime candidate: natural language understanding, approvals, memory, trace, and human trial gates.",
+        "authority": "Default implementation surface for new operator experience work; claims remain local/candidate unless human-observable gates pass.",
     },
     {
-        "surface": "reference_harness",
-        "paths": ("ego_desktop_lab/",),
-        "role": "Deterministic reference kernel and acceptance harness for subjective-loop behavior.",
-        "authority": "Not a product runtime, not Telegram, and not a second core authority.",
+        "surface": "legacy_reference",
+        "paths": (
+            "legacy/ego-pre-handmade-mainline/EgoCore/",
+            "legacy/ego-pre-handmade-mainline/OpenEmotion/",
+            "legacy/ego-pre-handmade-mainline/ego_desktop_lab/",
+        ),
+        "role": "Pre-handmade runtime, subject kernel, and lab harness retained as reference/fallback/algorithm sources.",
+        "authority": "Not the default implementation lane; do not re-promote without a new Stage Card and evidence gate.",
     },
     {
         "surface": "governance",
@@ -505,8 +515,9 @@ def render_repo_surface_map() -> str:
             "",
             "## Rules",
             "",
-            "- `ego_desktop_lab/` is a reference harness, not a second runtime authority.",
-            "- Shell / Telegram must read DecisionView / ResponsePlan and must not recalculate final decisions.",
+            "- `Ego_handmade/` is the default operator-first implementation surface.",
+            "- `legacy/ego-pre-handmade-mainline/ego_desktop_lab/` is a reference harness, not a second runtime authority.",
+            "- Legacy Shell / Telegram paths are reference/fallback only unless a future task explicitly restores them.",
             "- Closed evidence and archive/reference surfaces remain findable but do not compete with the active default lane.",
             "- Operational exhaust must stay ignored unless an explicit task promotes a bounded CURRENT report.",
         ]

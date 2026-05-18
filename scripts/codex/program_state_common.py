@@ -12,12 +12,13 @@ ROOT = Path(__file__).resolve().parents[2]
 PROGRAM_STATE_PATH = ROOT / "docs" / "PROGRAM_STATE_UNIFIED.yaml"
 STATUS_MD_PATH = ROOT / "docs" / "STATUS.md"
 SUMMARY_MD_PATH = ROOT / "artifacts" / "reports" / "program_state_summary.md"
-EGOCORE_PROGRAM_STATE_MIRROR = ROOT / "EgoCore" / "docs" / "PROGRAM_STATE_UNIFIED.yaml"
-OPENEMOTION_PROGRAM_STATE_MIRROR = ROOT / "OpenEmotion" / "docs" / "PROGRAM_STATE_UNIFIED.yaml"
+LEGACY_PRE_HANDMADE_ROOT = ROOT / "legacy" / "ego-pre-handmade-mainline"
+EGOCORE_PROGRAM_STATE_MIRROR = LEGACY_PRE_HANDMADE_ROOT / "EgoCore" / "docs" / "PROGRAM_STATE_UNIFIED.yaml"
+OPENEMOTION_PROGRAM_STATE_MIRROR = LEGACY_PRE_HANDMADE_ROOT / "OpenEmotion" / "docs" / "PROGRAM_STATE_UNIFIED.yaml"
 EVIDENCE_LEDGER_DIR = ROOT / "artifacts" / "evidence_ledger"
 EVIDENCE_LEDGER_SCHEMA_PATH = EVIDENCE_LEDGER_DIR / "schema.yaml"
 EVIDENCE_LEDGER_INDEX_PATH = EVIDENCE_LEDGER_DIR / "index.yaml"
-SHIM_REGISTER_PATH = ROOT / "EgoCore" / "SHIM_REGISTER.md"
+SHIM_REGISTER_PATH = LEGACY_PRE_HANDMADE_ROOT / "EgoCore" / "SHIM_REGISTER.md"
 
 EVIDENCE_LEVELS = [f"E{index}" for index in range(0, 7)]
 VERIFICATION_LEVELS = [f"V{index}" for index in range(0, 6)]

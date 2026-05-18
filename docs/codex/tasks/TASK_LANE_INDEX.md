@@ -20,14 +20,14 @@
 | `active_default` | 1 |
 | `supporting_active` | 5 |
 | `parked` | 1 |
-| `closed_evidence` | 14 |
-| `reference_only` | 49 |
+| `closed_evidence` | 15 |
+| `reference_only` | 55 |
 
 ## Active Default
 
 | entry | kind | workstream | paths | why |
 |---|---|---|---|---|
-| Subject System v1 Governed Proactivity | `codex_task` | `subject_system_v1_governed_proactivity` | `docs/codex/tasks/subject-system-v1-governed-proactivity/` | Current sole default implementation track and execution owner for the governed proactivity program. Current workstream status: `operator_seeded_self_dm_e4_sample_pass__subject_final_text_candidate_local_pass__direct_human_continuation_local_pass__explicit_recontact_followup_repair_local_pass__weak_generic_free_jump_rebind_local_pass__bare_continue_anchor_repair_conversational_candidate_preference_local_pass__thought_probe_humanization_local_pass__telegram_fresh_fact_honesty_local_pass__fresh_live_recheck_pending`. |
+| Ego Handmade First Transition | `codex_task` | `ego_handmade_first_transition` | `docs/codex/tasks/ego-mainline-demotion-v1/` | Current default operator-first implementation lane and repo transition owner after legacy demotion. Current workstream status: `legacy_demotion_recorded__operator_first_default__human_observation_pending`. |
 
 ## Supporting Active
 
@@ -63,6 +63,7 @@
 | Runtime Proximal Post Stronger Selection Coherence Runner Implementation | `codex_task` | n/a | `docs/codex/tasks/runtime-proximal-post-stronger-selection-coherence-runner-implementation/` | Runtime-proximal runner/planning slices are now frozen bounded evidence, not active route contenders. |
 | Runtime Proximal Stronger Admission Planning | `codex_task` | n/a | `docs/codex/tasks/runtime-proximal-stronger-admission-planning/` | Runtime-proximal runner/planning slices are now frozen bounded evidence, not active route contenders. |
 | Runtime Proximal Stronger Admission Runner Implementation | `codex_task` | n/a | `docs/codex/tasks/runtime-proximal-stronger-admission-runner-implementation/` | Runtime-proximal runner/planning slices are now frozen bounded evidence, not active route contenders. |
+| Subject System v1 Governed Proactivity | `codex_task` | `subject_system_v1_governed_proactivity` | `docs/codex/tasks/subject-system-v1-governed-proactivity/` | Legacy pre-handmade governed-proactivity evidence; preserved for reference and fallback, not the active default route. Current workstream status: `legacy_reference__pre_handmade_evidence_preserved`. |
 
 ## Reference Only
 
@@ -73,6 +74,12 @@
 | Autopilot Smoke | `codex_task` | n/a | `docs/codex/tasks/autopilot-smoke/` | No current authority promotes this task as an active or parked route; keep it as reference-only by default. |
 | Codex Harness Hardening | `codex_task` | n/a | `docs/codex/tasks/codex-harness-hardening/` | Historical stabilization, sampling, or exploratory task; retained as reference/supporting history only. |
 | E4 Shadow H1 Formal Mainline Sampling | `codex_task` | n/a | `docs/codex/tasks/e4-shadow-h1-formal-mainline-sampling/` | Historical stabilization, sampling, or exploratory task; retained as reference/supporting history only. |
+| Ego Handmade Human Operator Trial V1 | `codex_task` | n/a | `docs/codex/tasks/ego-handmade-human-operator-trial-v1/` | No current authority promotes this task as an active or parked route; keep it as reference-only by default. |
+| Ego Handmade Operator Comparison V1 | `codex_task` | n/a | `docs/codex/tasks/ego-handmade-operator-comparison-v1/` | No current authority promotes this task as an active or parked route; keep it as reference-only by default. |
+| Ego Handmade Operator Cut V1 | `codex_task` | n/a | `docs/codex/tasks/ego-handmade-operator-cut-v1/` | No current authority promotes this task as an active or parked route; keep it as reference-only by default. |
+| Ego Handmade Operator Permission Gates V1 | `codex_task` | n/a | `docs/codex/tasks/ego-handmade-operator-permission-gates-v1/` | No current authority promotes this task as an active or parked route; keep it as reference-only by default. |
+| Ego Handmade Operator Runtime Contract V1 | `codex_task` | n/a | `docs/codex/tasks/ego-handmade-operator-runtime-contract-v1/` | No current authority promotes this task as an active or parked route; keep it as reference-only by default. |
+| Ego Handmade Real Use Memory Gate V1 | `codex_task` | n/a | `docs/codex/tasks/ego-handmade-real-use-memory-gate-v1/` | No current authority promotes this task as an active or parked route; keep it as reference-only by default. |
 | Egocore Pytest Suite Stabilization | `codex_task` | n/a | `docs/codex/tasks/egocore-pytest-suite-stabilization/` | Historical stabilization, sampling, or exploratory task; retained as reference/supporting history only. |
 | H1 Canonical Promotion Prep | `codex_task` | n/a | `docs/codex/tasks/h1-canonical-promotion-prep/` | Historical stabilization, sampling, or exploratory task; retained as reference/supporting history only. |
 | H1 Canonical Shadow Patch | `codex_task` | n/a | `docs/codex/tasks/h1-canonical-shadow-patch/` | Historical stabilization, sampling, or exploratory task; retained as reference/supporting history only. |
