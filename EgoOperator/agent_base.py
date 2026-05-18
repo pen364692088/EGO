@@ -129,6 +129,8 @@ WINDOWS_DRIVE_PATH_RE = re.compile(r"^([A-Za-z]):[\\/](.*)$")
 WINDOWS_ABSOLUTE_PATH_TEXT_RE = re.compile(r"([A-Za-z]:[\\/][A-Za-z0-9_. \-()\\/]+)")
 POSIX_ABSOLUTE_PATH_TEXT_RE = re.compile(r"(/mnt/[A-Za-z]/[A-Za-z0-9_. \-()/]+|/[A-Za-z0-9_. \-()/]+)")
 PATH_TEXT_TRAILING_CHARS = " \t\r\n\"'`，。；;：:、,.!?！？)]}>"
+GLOB_META_CHARS = "*?["
+GENERIC_PATH_INTENT_HINTS = {"", ".", "./", ".\\", "**", "**/*", "**\\*"}
 
 
 def _coerce_local_path(path: str | Path) -> Path:
@@ -1106,6 +1108,29 @@ def _suffix_after_anchor_name(proposed_path: Path, anchor_name: str) -> Optional
     return None
 
 
+def _is_generic_path_intent_hint(value: str) -> bool:
+    normalized = str(value or "").strip().replace("\\", "/")
+    return normalized in {hint.replace("\\", "/") for hint in GENERIC_PATH_INTENT_HINTS}
+
+
+def _split_glob_static_prefix(pattern: str) -> tuple[str, str]:
+    raw = str(pattern or "").strip()
+    first_meta = min((idx for idx in (raw.find(ch) for ch in GLOB_META_CHARS) if idx >= 0), default=-1)
+    if first_meta < 0:
+        return raw, ""
+    return raw[:first_meta].rstrip("/\\"), raw[first_meta:].lstrip("/\\")
+
+
+def _join_glob_suffix(base: Path, suffix: str) -> str:
+    if not suffix:
+        return str(base.resolve())
+    current = base.resolve()
+    for part in re.split(r"[\\/]+", suffix):
+        if part:
+            current = current / part
+    return str(current)
+
+
 def _path_intent_adjustment(user_text: str, proposed_path: str) -> tuple[str, Dict[str, Any]]:
     intents = _extract_local_path_intents(user_text)
     if not intents:
@@ -1176,6 +1201,101 @@ def _path_intent_adjustment(user_text: str, proposed_path: str) -> tuple[str, Di
         "intended_path": intent.resolved_path,
         "proposed_path": str(resolved_proposed),
         "corrected_path": str(corrected),
+    }
+
+
+def _read_scope_path_intent_adjustment(user_text: str, proposed_path: str) -> tuple[str, Dict[str, Any]]:
+    intents = _extract_local_path_intents(user_text)
+    if len(intents) == 1 and _is_generic_path_intent_hint(proposed_path):
+        intent = intents[0]
+        return intent.resolved_path, {
+            "status": "corrected",
+            "reason": "path_intent_read_scope",
+            "raw_intent_path": intent.raw_path,
+            "intended_path": intent.resolved_path,
+            "proposed_path": proposed_path,
+            "corrected_path": intent.resolved_path,
+        }
+    return _path_intent_adjustment(user_text, proposed_path)
+
+
+def _glob_path_intent_adjustment(user_text: str, proposed_pattern: str) -> tuple[str, Dict[str, Any]]:
+    intents = _extract_local_path_intents(user_text)
+    if not intents:
+        return proposed_pattern, {"status": "not_applicable"}
+    if len(intents) != 1:
+        return proposed_pattern, {
+            "status": "blocked",
+            "reason": "path_intent_ambiguous",
+            "intended_paths": [intent.resolved_path for intent in intents],
+            "proposed_pattern": proposed_pattern,
+        }
+
+    intent = intents[0]
+    intended = Path(intent.resolved_path)
+    static_prefix, glob_suffix = _split_glob_static_prefix(proposed_pattern)
+    raw_pattern = str(proposed_pattern or "").strip()
+    needs_normalization = ".." in _coerce_local_path(raw_pattern or ".").parts
+
+    if _is_generic_path_intent_hint(raw_pattern):
+        corrected = _join_glob_suffix(intended, glob_suffix or "**/*")
+        return corrected, {
+            "status": "corrected",
+            "reason": "path_intent_glob_scope",
+            "raw_intent_path": intent.raw_path,
+            "intended_path": intent.resolved_path,
+            "proposed_pattern": proposed_pattern,
+            "corrected_pattern": corrected,
+        }
+
+    try:
+        resolved_prefix = _resolve_workspace_path(static_prefix or ".")
+    except ValueError as exc:
+        return proposed_pattern, {
+            "status": "blocked",
+            "reason": "proposed_glob_outside_allowed_roots",
+            "proposed_pattern": proposed_pattern,
+            "error": str(exc),
+        }
+
+    if _path_is_relative_to(resolved_prefix, intended):
+        if needs_normalization:
+            corrected = _join_glob_suffix(resolved_prefix, glob_suffix)
+            return corrected, {
+                "status": "corrected",
+                "reason": "path_intent_glob_normalized",
+                "raw_intent_path": intent.raw_path,
+                "intended_path": intent.resolved_path,
+                "proposed_pattern": proposed_pattern,
+                "corrected_pattern": corrected,
+            }
+        return proposed_pattern, {
+            "status": "matched",
+            "intended_path": intent.resolved_path,
+            "proposed_pattern": str(resolved_prefix),
+        }
+
+    if not intent.is_directory:
+        corrected = _join_glob_suffix(intended, glob_suffix)
+    else:
+        corrected = _join_glob_suffix(intended, glob_suffix or "**/*")
+
+    if _matching_allowed_root(Path(corrected)) is None:
+        return proposed_pattern, {
+            "status": "blocked",
+            "reason": "corrected_glob_outside_allowed_roots",
+            "intended_path": intent.resolved_path,
+            "proposed_pattern": proposed_pattern,
+            "corrected_pattern": corrected,
+        }
+
+    return corrected, {
+        "status": "corrected",
+        "reason": "path_intent_glob_fidelity",
+        "raw_intent_path": intent.raw_path,
+        "intended_path": intent.resolved_path,
+        "proposed_pattern": proposed_pattern,
+        "corrected_pattern": corrected,
     }
 
 
@@ -4116,6 +4236,20 @@ class AgentRuntime:
                     external_result = {"status": "sent"}
                     reply_text = action.content
 
+        if not str(reply_text or "").strip():
+            reply_text = "模型返回了空回复；我没有执行任何外部动作。请重试或换一个更稳定的模型。"
+            action = AgentAction(
+                action_type=ActionType.RESPOND,
+                content=reply_text,
+                reason="empty_reply_guard",
+            )
+            gate_result = self.gate.check(event, action)
+            external_result = {
+                "status": "empty_reply_recovered",
+                "side_effects_executed": False,
+                "previous_external_result": external_result,
+            }
+
         # Write visible assistant reply back into simple conversation memory.
         self.memory.add_assistant(reply_text)
         operator_memory_record = self._record_operator_memory_turn(
@@ -4216,6 +4350,7 @@ class AgentRuntime:
             soft_cap = max(1, int(DEFAULT_MAX_TOOL_LOOPS))
             hard_cap = max(soft_cap, int(DEFAULT_TOOL_LOOP_HARD_CAP))
             loop_idx = 0
+            empty_final_repairs = 0
             while loop_idx < hard_cap:
                 if loop_idx > 0 and loop_idx % soft_cap == 0:
                     messages.append({
@@ -4247,9 +4382,37 @@ class AgentRuntime:
                 }
 
                 if not result.tool_calls:
+                    content = (result.content or "").strip()
+                    if not content:
+                        if empty_final_repairs < 1:
+                            empty_final_repairs += 1
+                            messages.append({
+                                "role": "system",
+                                "content": (
+                                    "[empty_response_repair]\n"
+                                    "The previous model response had no tool calls and no visible content. "
+                                    "Continue by either calling the appropriate tool/proposal or returning a non-empty "
+                                    "Chinese reply that states exactly what is still incomplete. Do not return empty content."
+                                ),
+                            })
+                            loop_idx += 1
+                            continue
+                        content = self._format_empty_llm_recovery_reply(tool_trace)
+                        final_action = AgentAction(
+                            action_type=ActionType.RESPOND,
+                            content=content,
+                            reason="llm_empty_response_recovered",
+                        )
+                        final_gate = self.gate.check(event, final_action)
+                        return final_action, final_gate, {
+                            "status": "llm_empty_response",
+                            "side_effects_executed": False,
+                            "tool_calls": len(tool_trace),
+                        }, content, tool_trace
+
                     final_action = AgentAction(
                         action_type=ActionType.RESPOND,
-                        content=result.content,
+                        content=content,
                         reason="llm_tool_loop_final_response",
                     )
                     final_gate = self.gate.check(event, final_action)
@@ -4260,7 +4423,7 @@ class AgentRuntime:
                             reason="gate_block_final_text",
                         )
                         return blocked, final_gate, {"status": "blocked", "reason": final_gate.reason}, blocked.content, tool_trace
-                    return final_action, final_gate, last_external_result, result.content, tool_trace
+                    return final_action, final_gate, last_external_result, content, tool_trace
 
                 assistant_tool_calls = []
                 for call in result.tool_calls:
@@ -4282,24 +4445,38 @@ class AgentRuntime:
                 def _execute_main_tool_call(call: LLMToolCall) -> tuple[str, GateResult, Dict[str, Any], Dict[str, Any]]:
                     effective_arguments = dict(call.arguments)
                     path_intent: Dict[str, Any] = {"status": "not_applicable"}
-                    if call.name == "propose_file_write":
-                        corrected_path, path_intent = _path_intent_adjustment(
-                            event.raw_text or "",
-                            str(effective_arguments.get("path", "")),
-                        )
+                    if call.name in {"propose_file_write", "read_file", "grep_files", "glob_files"}:
+                        if call.name == "glob_files":
+                            corrected_value, path_intent = _glob_path_intent_adjustment(
+                                event.raw_text or "",
+                                str(effective_arguments.get("pattern", "")),
+                            )
+                            argument_name = "pattern"
+                        else:
+                            argument_name = "path"
+                            adjustment_fn = (
+                                _path_intent_adjustment
+                                if call.name == "propose_file_write"
+                                else _read_scope_path_intent_adjustment
+                            )
+                            corrected_value, path_intent = adjustment_fn(
+                                event.raw_text or "",
+                                str(effective_arguments.get(argument_name, "")),
+                            )
                         if path_intent.get("status") == "corrected":
-                            effective_arguments["path"] = corrected_path
+                            effective_arguments[argument_name] = corrected_value
                         elif path_intent.get("status") == "blocked":
-                            gate_result = GateResult(False, str(path_intent.get("reason", "path_intent_mismatch")))
+                            reason = str(path_intent.get("reason", "path_intent_mismatch"))
+                            gate_result = GateResult(False, reason)
                             tool_output = {
                                 "status": "blocked",
-                                "reason": "path_intent_mismatch",
+                                "reason": reason,
                                 "tool_name": call.name,
                                 "path_intent": path_intent,
                                 "do_not_claim_success": True,
                                 "user_visible_correction": (
-                                    "File write path did not match the user's explicit path intent. "
-                                    "Do not say the file was created; ask for correction or propose the exact intended path."
+                                    "The tool path did not match the user's explicit path intent. "
+                                    "Do not claim success; retry with the exact intended path or ask for clarification."
                                 ),
                             }
                             trace_entry = {
@@ -4443,10 +4620,64 @@ class AgentRuntime:
                 "provider": getattr(llm, "provider", "unknown"),
                 "model": getattr(llm, "model", "unknown"),
                 "error": repr(exc),
-                "fallback_used": True,
+                "fallback_used": False,
+                "error_recovered": True,
                 "tool_loop": True,
             }
-            return None
+            content = self._format_llm_tool_loop_error_reply(exc, tool_trace)
+            action = AgentAction(
+                action_type=ActionType.RESPOND,
+                content=content,
+                reason="llm_tool_loop_provider_error",
+            )
+            gate = self.gate.check(event, action)
+            return action, gate, {
+                "status": "llm_error",
+                "reason": "provider_exception",
+                "error": repr(exc),
+                "tool_calls": len(tool_trace),
+                "side_effects_executed": False,
+            }, content, tool_trace
+
+    def _format_empty_llm_recovery_reply(self, tool_trace: List[Dict[str, Any]]) -> str:
+        lines = [
+            "模型连续返回了空回复，我没有把它当成成功结果。",
+            f"当前已完成工具调用：{len(tool_trace)} 次。",
+            "没有执行文件创建或修改；这个任务仍未完成。",
+            "你可以直接重试同一句请求，或稍后切换到更稳定的模型后继续。",
+        ]
+        if tool_trace:
+            last = tool_trace[-1]
+            tool_name = ((last.get("tool_call") or {}).get("name") or "unknown")
+            output = last.get("output") or {}
+            status = output.get("status") if isinstance(output, dict) else "unknown"
+            lines.insert(2, f"最后一次工具结果：{tool_name} -> {status}。")
+        return "\n".join(lines)
+
+    def _format_llm_tool_loop_error_reply(self, exc: Exception, tool_trace: List[Dict[str, Any]]) -> str:
+        error_text = repr(exc)
+        is_rate_limited = "429" in error_text or "Too Many Requests" in error_text
+        first_line = (
+            "模型/API 当前返回 429 限流，EgoOperator 已停止本轮文件操作恢复。"
+            if is_rate_limited
+            else "模型/API 当前调用失败，EgoOperator 已停止本轮工具循环。"
+        )
+        lines = [
+            first_line,
+            f"当前已完成工具调用：{len(tool_trace)} 次。",
+            "没有执行文件创建或修改；这个任务仍未完成。",
+        ]
+        if tool_trace:
+            last = tool_trace[-1]
+            tool_name = ((last.get("tool_call") or {}).get("name") or "unknown")
+            output = last.get("output") or {}
+            status = output.get("status") if isinstance(output, dict) else "unknown"
+            lines.append(f"最后一次工具结果：{tool_name} -> {status}。")
+        if is_rate_limited:
+            lines.append("建议稍后重试，或切换到非 free 模型/API key 后继续。")
+        else:
+            lines.append("建议重试；如果连续出现，请检查 provider/API key/model 配置。")
+        return "\n".join(lines)
 
     def _format_pending_approval_reply(self, pending_outputs: List[Dict[str, Any]]) -> str:
         cards: List[str] = []

@@ -80,6 +80,115 @@ class WrongRelativeFileProposalLLM:
         return "已生成待审批写入 proposal。"
 
 
+class WrongGlobThenWrongProposalLLM:
+    provider = "fake"
+    model = "wrong-glob-then-wrong-proposal"
+    last_usage = {}
+    last_reasoning_tokens = None
+
+    def __init__(self) -> None:
+        self.calls = 0
+
+    def chat(self, messages, *, system_prompt, policy_context="", tools=None, stream=None):
+        self.calls += 1
+        if self.calls == 1:
+            return agent.LLMChatResult(
+                content="我先查看目标目录。",
+                tool_calls=[
+                    agent.LLMToolCall(
+                        id="call_wrong_glob",
+                        name="glob_files",
+                        arguments={"pattern": "../../Test/**/*", "max_results": 30},
+                    )
+                ],
+            )
+        if self.calls == 2:
+            return agent.LLMChatResult(
+                content="我会生成写入 proposal。",
+                tool_calls=[
+                    agent.LLMToolCall(
+                        id="call_wrong_write_path",
+                        name="propose_file_write",
+                        arguments={
+                            "path": "../Test/index.html",
+                            "content": "<!doctype html><html><head><title>T</title></head><body>ok</body></html>",
+                            "reason": "operator requested a simple test page",
+                            "create_parents": True,
+                        },
+                    )
+                ],
+            )
+        return agent.LLMChatResult(content="已生成待审批写入 proposal，请使用 /approve 执行。", tool_calls=[])
+
+    def complete(self, prompt, messages=None):
+        return "已生成待审批写入 proposal。"
+
+
+class EmptyThenProposalLLM:
+    provider = "fake"
+    model = "empty-then-proposal"
+    last_usage = {}
+    last_reasoning_tokens = None
+
+    def __init__(self) -> None:
+        self.calls = 0
+
+    def chat(self, messages, *, system_prompt, policy_context="", tools=None, stream=None):
+        self.calls += 1
+        if self.calls == 1:
+            return agent.LLMChatResult(content="", tool_calls=[])
+        joined = json.dumps(messages, ensure_ascii=False)
+        assert "empty_response_repair" in joined
+        return agent.LLMChatResult(
+            content="空回复已修复，我会生成写入 proposal。",
+            tool_calls=[
+                agent.LLMToolCall(
+                    id="call_after_empty_repair",
+                    name="propose_file_write",
+                    arguments={
+                        "path": "test/index.html",
+                        "content": "<!doctype html><html><head><title>T</title></head><body>ok</body></html>",
+                        "reason": "operator requested a simple test page",
+                        "create_parents": True,
+                    },
+                )
+            ],
+        )
+
+    def complete(self, prompt, messages=None):
+        return "已生成待审批写入 proposal。"
+
+
+class AlwaysEmptyLLM:
+    provider = "fake"
+    model = "always-empty"
+    last_usage = {}
+    last_reasoning_tokens = None
+
+    def __init__(self) -> None:
+        self.calls = 0
+
+    def chat(self, messages, *, system_prompt, policy_context="", tools=None, stream=None):
+        self.calls += 1
+        return agent.LLMChatResult(content="   ", tool_calls=[])
+
+    def complete(self, prompt, messages=None):
+        return ""
+
+
+class RateLimitedLLM:
+    provider = "fake"
+    model = "rate-limited"
+    last_usage = {}
+    last_reasoning_tokens = None
+
+    def chat(self, messages, *, system_prompt, policy_context="", tools=None, stream=None):
+        raise RuntimeError("429 Client Error: Too Many Requests for url: https://openrouter.ai/api/v1/chat/completions")
+
+    def complete(self, prompt, messages=None):
+        raise RuntimeError("429 Client Error: Too Many Requests")
+
+
 class WebProposalThenFinalLLM:
     provider = "fake"
     model = "web-proposal-then-final"
@@ -334,6 +443,41 @@ def test_file_path_intent_corrects_wrong_relative_proposal(tmp_path, monkeypatch
     assert path_intent["intended_path"] == str(intended_dir.resolve())
     assert path_intent["proposed_path"] == str((wrong_dir / "index.html").resolve())
     assert path_intent["corrected_path"] == str((intended_dir / "index.html").resolve())
+
+
+def test_file_path_intent_corrects_wrong_relative_glob_then_write_proposal(tmp_path, monkeypatch):
+    workspace = tmp_path / "MyProject" / "Ego" / "EgoOperator"
+    allowed_root = tmp_path / "MyProject"
+    intended_dir = allowed_root / "Test"
+    wrong_dir = allowed_root / "Ego" / "Test"
+    intended_dir.mkdir(parents=True)
+    (intended_dir / "CLAUDE.md").write_text("target marker", encoding="utf-8")
+    workspace.mkdir(parents=True)
+    monkeypatch.setattr(agent, "DEFAULT_AGENT_WORKSPACE", workspace)
+    monkeypatch.setattr(agent, "DEFAULT_AGENT_ALLOWED_ROOTS", (workspace, allowed_root))
+    runtime = agent.build_demo_runtime(enable_operator_memory=False, runtime_mode="approve")
+    runtime.trace_store = agent.JsonlTraceStore(tmp_path / "trace.jsonl")
+    runtime.planner.llm = WrongGlobThenWrongProposalLLM()
+
+    result = runtime.handle_user_message(f"帮我在{intended_dir}下创建一个简单的测试网页")
+    proposal = runtime.list_pending_approvals()["items"][0]
+
+    assert result.external_result["status"] == "pending_approval"
+    assert proposal["path"] == str((intended_dir / "index.html").resolve())
+    assert not (wrong_dir / "index.html").exists()
+
+    trace = json.loads((tmp_path / "trace.jsonl").read_text(encoding="utf-8").splitlines()[0])
+    glob_trace = trace["tool_trace"][0]
+    write_trace = trace["tool_trace"][1]
+    assert glob_trace["tool_call"]["name"] == "glob_files"
+    assert glob_trace["gate"]["reason"] == "tool_call_allowed"
+    assert glob_trace["output"]["status"] == "ok"
+    assert glob_trace["tool_call"]["arguments"]["pattern"] == str((intended_dir / "**" / "*").resolve())
+    assert glob_trace["tool_call"]["path_intent"]["status"] == "corrected"
+    assert "invalid_glob_pattern" not in json.dumps(glob_trace, ensure_ascii=False)
+    assert write_trace["tool_call"]["name"] == "propose_file_write"
+    assert write_trace["tool_call"]["arguments"]["path"] == str((intended_dir / "index.html").resolve())
+    assert write_trace["tool_call"]["path_intent"]["status"] == "corrected"
 
 
 def test_windows_path_intent_extracts_as_wsl_normalized_allowed_path(monkeypatch):
@@ -704,6 +848,59 @@ def test_pending_approval_finalizes_without_hitting_tool_loop_limit(tmp_path, mo
     assert "/approve" in result.reply_text
     assert "hard cap" not in result.reply_text
     assert "工具调用循环超过上限" not in result.reply_text
+
+
+def test_empty_llm_response_triggers_repair_turn_and_can_generate_proposal(tmp_path, monkeypatch):
+    runtime = _runtime(tmp_path, monkeypatch)
+    llm = EmptyThenProposalLLM()
+    runtime.planner.llm = llm
+
+    result = runtime.handle_user_message("帮我创建 test/index.html")
+
+    assert llm.calls == 2
+    assert result.external_result["status"] == "pending_approval"
+    assert "待审批" in result.reply_text
+    assert runtime.list_pending_approvals()["count"] == 1
+    assistant_messages = [message for message in runtime.memory.as_messages() if message["role"] == "assistant"]
+    assert assistant_messages
+    assert all(str(message.get("content", "")).strip() for message in assistant_messages)
+
+
+def test_consecutive_empty_llm_response_returns_non_empty_recovery_without_side_effect(tmp_path, monkeypatch):
+    runtime = _runtime(tmp_path, monkeypatch)
+    llm = AlwaysEmptyLLM()
+    runtime.planner.llm = llm
+
+    result = runtime.handle_user_message("帮我创建 test/index.html")
+
+    assert llm.calls == 2
+    assert result.external_result["status"] == "llm_empty_response"
+    assert "模型连续返回了空回复" in result.reply_text
+    assert "没有执行文件创建或修改" in result.reply_text
+    assert runtime.list_pending_approvals()["count"] == 0
+    assert not (tmp_path / "test" / "index.html").exists()
+    assistant_messages = [message for message in runtime.memory.as_messages() if message["role"] == "assistant"]
+    assert assistant_messages
+    assert all(str(message.get("content", "")).strip() for message in assistant_messages)
+
+
+def test_provider_429_in_tool_loop_returns_chinese_error_not_nollm_fallback(tmp_path, monkeypatch):
+    runtime = _runtime(tmp_path, monkeypatch)
+    runtime.planner.llm = RateLimitedLLM()
+
+    result = runtime.handle_user_message("帮我创建 test/index.html")
+
+    assert result.external_result["status"] == "llm_error"
+    assert result.action.reason == "llm_tool_loop_provider_error"
+    assert "429" in result.reply_text
+    assert "模型/API" in result.reply_text
+    assert "没有执行文件创建或修改" in result.reply_text
+    assert "I can help with that" not in result.reply_text
+    assert runtime.list_pending_approvals()["count"] == 0
+    assert not (tmp_path / "test" / "index.html").exists()
+    assistant_messages = [message for message in runtime.memory.as_messages() if message["role"] == "assistant"]
+    assert assistant_messages
+    assert all(str(message.get("content", "")).strip() for message in assistant_messages)
 
 
 def test_approved_file_write_result_is_available_to_next_turn(tmp_path, monkeypatch):
