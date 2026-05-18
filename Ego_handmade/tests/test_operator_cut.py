@@ -90,7 +90,10 @@ def test_default_gate_blocks_side_effect_tools(monkeypatch):
             ),
         )
         assert result.allowed is False
-        assert result.reason == f"{tool_name}_disabled"
+        assert result.reason in {
+            f"{tool_name}_disabled",
+            f"{tool_name}_requires_transaction_approval",
+        }
 
 
 def test_workspace_path_containment_blocks_parent_escape(tmp_path, monkeypatch):

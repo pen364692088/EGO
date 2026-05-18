@@ -1,0 +1,35 @@
+task: ego-handmade-operator-runtime-contract-v1
+claim_ceiling: Ego_handmade operator runtime contract local candidate pass
+allowed_paths:
+  - Ego_handmade/**
+  - docs/codex/tasks/ego-handmade-operator-runtime-contract-v1/**
+forbidden_paths:
+  - EgoCore/**
+  - OpenEmotion/**
+  - ego_desktop_lab/**
+  - docs/PROGRAM_STATE_UNIFIED.yaml
+  - artifacts/evidence_ledger/**
+forbidden_claims:
+  - EGO mainline replacement
+  - EgoCore/OpenEmotion/ego_desktop_lab demotion
+  - live autonomy
+  - live runtime efficacy
+  - stable long-term memory efficacy
+  - stable user benefit
+  - consciousness
+runtime_contract:
+  default_mode: approve
+  modes:
+    - chat
+    - plan
+    - approve
+    - trusted-workspace
+  file_write_flow: proposal -> operator decision -> one-shot lease -> path/hash matched execution
+  subagent_side_effects: disabled
+checks:
+  - id: py_compile
+    command: python3 -m py_compile Ego_handmade/agent_base.py Ego_handmade/memory_system.py Ego_handmade/real_use_gate.py Ego_handmade/human_operator_trial.py
+  - id: targeted_tests
+    command: TMPDIR=/tmp python3 -m pytest -q Ego_handmade/tests/test_operator_cut.py Ego_handmade/tests/test_memory_system.py Ego_handmade/tests/test_extracted_primitives.py Ego_handmade/tests/test_operator_comparison.py Ego_handmade/tests/test_permission_gates.py Ego_handmade/tests/test_real_use_memory_gate.py Ego_handmade/tests/test_human_operator_trial.py Ego_handmade/tests/test_operator_runtime_contract.py
+  - id: diff_check
+    command: git diff --check -- Ego_handmade docs/codex/tasks/ego-handmade-operator-runtime-contract-v1

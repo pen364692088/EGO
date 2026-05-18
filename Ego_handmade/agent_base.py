@@ -32,6 +32,7 @@ from enum import Enum
 from html.parser import HTMLParser
 from pathlib import Path
 from typing import Any, Callable, Deque, Dict, List, Optional, Protocol
+import fnmatch
 import hashlib
 import json
 import os
@@ -138,6 +139,12 @@ DEFAULT_VERBOSE_TODOS = env_flag("AGENT_VERBOSE_TODOS", True)
 DEFAULT_VERBOSE_SUBAGENTS = env_flag("AGENT_VERBOSE_SUBAGENTS", True)
 DEFAULT_ENABLE_WEB_FETCH = env_flag("AGENT_ENABLE_WEB_FETCH", False)
 DEFAULT_ENABLE_WRITE_FILE = env_flag("AGENT_ENABLE_WRITE_FILE", False)
+DEFAULT_RUNTIME_MODE = os.getenv("AGENT_RUNTIME_MODE", "approve").strip().lower() or "approve"
+DEFAULT_WRITE_ALLOWLIST = tuple(
+    item.strip().replace("\\", "/")
+    for item in os.getenv("AGENT_WRITE_ALLOWLIST", "").split(",")
+    if item.strip()
+)
 DEFAULT_AGENT_WORKSPACE = Path(os.getenv("AGENT_WORKSPACE", str(EGO_HANDMADE_ROOT))).resolve()
 DEFAULT_FILE_TOOL_MAX_CHARS = int(os.getenv("AGENT_FILE_TOOL_MAX_CHARS", "12000"))
 DEFAULT_GLOB_MAX_RESULTS = int(os.getenv("AGENT_GLOB_MAX_RESULTS", "200"))
@@ -767,9 +774,10 @@ def build_system_prompt(operator_memory_context: str = "", subject_context: str 
         + "\n14. 固定队友回禀也只是工作报告，不等于事实已验证；关键结论仍要看工具证据和主 agent 判断。"
         + "\n15. 不要编造不存在的 skill；只能从当前可用技能列表中选择。"
         + "\n16. read_file / glob_files / grep_files 是 workspace 内只读工具；需要查看本地文件时优先使用它们，不要假装已经读取。"
-        + "\n17. write_file、run_command、web_fetch 只有在对应工具出现在工具列表且 gate 允许时才可使用；未出现时必须说明当前禁用。"
+        + "\n17. 需要创建或修改文件时，优先调用 propose_file_write 生成可审批操作包；不要让子代理直接写文件，也不要在未批准时声称已写入。"
         + "\n18. remember_note 只能在用户明确要求“记住/记一下/以后记得/remember”时调用；普通聊天、工具结果、子代理回禀和自动总结不能写 core memory。"
         + "\n19. operator memory 是 Ego_handmade candidate-local 记忆，不是 PROJECT_MEMORY、OpenEmotion 记忆或 EGO evidence ledger。"
+        + "\n20. write_file、run_command、web_fetch 是副作用工具；除非 runtime mode、approval lease 和 gate 同时允许，否则只能生成 proposal 或说明受限。"
         + "\n\n可派遣子代理类型：xiaohuangmen, sili_suitang, dongchang_tanshi, shangbao_dianbu, neiguan_yingzao"
         + (
             "\n\nAgent Team 工具：spawn_teammate, list_teammates, send_message, read_inbox, broadcast, shutdown_teammate"
@@ -1104,8 +1112,8 @@ SUBAGENT_SPECS: Dict[str, SubAgentSpec] = {
     "dongchang_tanshi": SubAgentSpec(
         title="东厂探事小太监",
         duty="外出查访、抓取网页、搜罗线索、比对资料来源。",
-        boundary="只读不写；联网读取必须被 runtime gate 允许，不能改动本地文件。",
-        allowed_tools=["current_time", "web_fetch", "load_skill", "read_file", "glob_files", "grep_files"],
+        boundary="只读不写；不得直接联网或改动本地文件，需要外部动作时回传 proposed_action。",
+        allowed_tools=["current_time", "load_skill", "read_file", "glob_files", "grep_files"],
         max_turns=15,
     ),
     "shangbao_dianbu": SubAgentSpec(
@@ -1118,8 +1126,8 @@ SUBAGENT_SPECS: Dict[str, SubAgentSpec] = {
     "neiguan_yingzao": SubAgentSpec(
         title="内官监营造小太监",
         duty="修造工程、改写文件、搭建目录、跑命令验收。",
-        boundary="可读写可执行；但写文件、命令、联网仍必须通过 runtime gate 和环境变量开关。",
-        allowed_tools=["current_time", "run_command", "web_fetch", "load_skill", "read_file", "write_file", "glob_files", "grep_files"],
+        boundary="只能设计拟写方案和回传 proposed_action；不得直接写文件、执行命令或联网。",
+        allowed_tools=["current_time", "load_skill", "read_file", "glob_files", "grep_files"],
         max_turns=20,
     ),
 }
@@ -1140,6 +1148,7 @@ def build_subagent_prompt(agent_type: str) -> str:
         f"- 边界：{spec.boundary}\n"
         "- 不必使用“奉天承运皇帝诏曰”前缀，那是总管对皇上的礼数。\n"
         "- 用工具尽快把差事办妥，最后用一段简短中文向总管回禀结果。\n"
+        "- 如果差事需要写文件、执行命令或联网，只能回传 proposed_action，不能直接执行副作用。\n"
         "- 只回禀结论、关键证据、失败点和下一步建议，不要复述每一步细节。\n"
         "- 你不能再派遣其他子代理，不能调用 dispatch_subagent，不能修改主 agent 的记忆或 todo。\n"
         "- 结论强度不得高于工具证据；不确定处写 unknown / 待验证。"
@@ -1951,6 +1960,338 @@ class AgentAction:
     reason: str = ""
 
 
+VALID_RUNTIME_MODES = {"chat", "plan", "approve", "trusted-workspace"}
+SIDE_EFFECT_TOOLS = {"write_file", "run_command", "web_fetch"}
+
+
+def normalize_runtime_mode(mode: Optional[str]) -> str:
+    normalized = (mode or DEFAULT_RUNTIME_MODE or "approve").strip().lower()
+    return normalized if normalized in VALID_RUNTIME_MODES else "approve"
+
+
+def _content_hash(content: str) -> str:
+    return hashlib.sha256((content or "").encode("utf-8")).hexdigest()
+
+
+def _workspace_relative_posix(path: str) -> str:
+    return _resolve_workspace_path(path).relative_to(DEFAULT_AGENT_WORKSPACE).as_posix()
+
+
+@dataclass
+class OperationProposal:
+    proposal_id: str
+    action: str
+    path: str
+    resolved_path: str
+    content: str
+    content_hash: str
+    create_parents: bool
+    overwrite: bool
+    reason: str
+    status: str = "pending"
+    created_at: str = field(default_factory=lambda: utc_now())
+    source: str = "tool"
+    decision: Optional[str] = None
+    decision_reason: str = ""
+    lease_id: Optional[str] = None
+    execution_result: Optional[Dict[str, Any]] = None
+
+    def preview(self, max_chars: int = 800) -> str:
+        text = self.content or ""
+        return text[:max_chars] + ("\n...[truncated]" if len(text) > max_chars else "")
+
+    def to_dict(self, *, include_content: bool = False) -> Dict[str, Any]:
+        data = asdict(self)
+        if not include_content:
+            data.pop("content", None)
+            data["content_preview"] = self.preview()
+        return data
+
+
+@dataclass
+class CapabilityLease:
+    lease_id: str
+    proposal_id: str
+    action: str
+    path: str
+    content_hash: str
+    created_at: str = field(default_factory=lambda: utc_now())
+    consumed: bool = False
+
+    def to_dict(self) -> Dict[str, Any]:
+        return asdict(self)
+
+
+class PermissionBroker:
+    """
+    Candidate-local approval broker.
+
+    It creates reviewable operation proposals and one-shot leases. The LLM may
+    propose an operation, but only operator approval can create a lease.
+    """
+
+    def __init__(
+        self,
+        *,
+        runtime_mode: str = DEFAULT_RUNTIME_MODE,
+        write_allowlist: Optional[tuple[str, ...]] = None,
+    ) -> None:
+        self.runtime_mode = normalize_runtime_mode(runtime_mode)
+        self.write_allowlist = DEFAULT_WRITE_ALLOWLIST if write_allowlist is None else write_allowlist
+        self.proposals: Dict[str, OperationProposal] = {}
+        self.leases: Dict[str, CapabilityLease] = {}
+
+    def set_mode(self, runtime_mode: str) -> str:
+        self.runtime_mode = normalize_runtime_mode(runtime_mode)
+        return self.runtime_mode
+
+    def describe(self) -> Dict[str, Any]:
+        return {
+            "runtime_mode": self.runtime_mode,
+            "write_allowlist": list(self.write_allowlist),
+            "pending_count": len([p for p in self.proposals.values() if p.status == "pending"]),
+            "pending": [p.to_dict() for p in self.proposals.values() if p.status == "pending"],
+        }
+
+    def list_proposals(self, *, include_closed: bool = False) -> Dict[str, Any]:
+        items = [
+            proposal.to_dict()
+            for proposal in self.proposals.values()
+            if include_closed or proposal.status == "pending"
+        ]
+        return {"status": "ok", "count": len(items), "items": items}
+
+    def propose_file_write(
+        self,
+        *,
+        path: str,
+        content: str,
+        reason: str = "",
+        create_parents: bool = True,
+        overwrite: bool = False,
+        source: str = "tool",
+    ) -> Dict[str, Any]:
+        if self.runtime_mode == "chat":
+            return {"status": "blocked", "reason": "runtime_mode_chat_blocks_operation_proposals"}
+        try:
+            resolved = _resolve_workspace_path(path)
+            rel_path = resolved.relative_to(DEFAULT_AGENT_WORKSPACE).as_posix()
+        except ValueError:
+            return {"status": "blocked", "reason": "path_outside_workspace", "path": path}
+
+        allowlist_result = self._write_allowlist_result(rel_path)
+        if allowlist_result is not None:
+            return allowlist_result
+        if resolved.exists() and not overwrite:
+            return {
+                "status": "blocked",
+                "reason": "overwrite_requires_explicit_flag",
+                "path": str(resolved),
+                "hint": "Set overwrite=true in a reviewed proposal if replacing this file is intended.",
+            }
+
+        proposal = OperationProposal(
+            proposal_id=new_id("proposal"),
+            action="write_file",
+            path=rel_path,
+            resolved_path=str(resolved),
+            content=content or "",
+            content_hash=_content_hash(content or ""),
+            create_parents=bool(create_parents),
+            overwrite=bool(overwrite),
+            reason=reason or "file write requested by operator task",
+            source=source,
+        )
+        self.proposals[proposal.proposal_id] = proposal
+
+        if self.runtime_mode == "trusted-workspace" and self._trusted_workspace_auto_allowed(proposal):
+            lease = self.approve(proposal.proposal_id, reason="trusted_workspace_auto_lease")
+            if lease.get("status") == "approved":
+                execution = self.execute_file_write_with_lease(
+                    str(lease["lease_id"]),
+                    path=proposal.path,
+                    content=proposal.content,
+                    create_parents=proposal.create_parents,
+                    overwrite=proposal.overwrite,
+                )
+                return {
+                    "status": execution.get("status", "failed"),
+                    "proposal": proposal.to_dict(),
+                    "lease": lease,
+                    "execution": execution,
+                    "approval": "trusted_workspace_auto",
+                }
+
+        return {
+            "status": "pending_approval",
+            "proposal": proposal.to_dict(),
+            "action_card": self.format_action_card(proposal.proposal_id),
+            "next": f"Use /approve {proposal.proposal_id}, /reject {proposal.proposal_id}, or /edit_approval {proposal.proposal_id} {{...}}.",
+        }
+
+    def approve(self, proposal_id: str, *, reason: str = "operator_approved") -> Dict[str, Any]:
+        proposal = self.proposals.get(proposal_id)
+        if proposal is None:
+            return {"status": "failed", "reason": "unknown_proposal", "proposal_id": proposal_id}
+        if proposal.status != "pending":
+            return {"status": "failed", "reason": f"proposal_not_pending:{proposal.status}", "proposal": proposal.to_dict()}
+        lease = CapabilityLease(
+            lease_id=new_id("lease"),
+            proposal_id=proposal.proposal_id,
+            action=proposal.action,
+            path=proposal.path,
+            content_hash=proposal.content_hash,
+        )
+        self.leases[lease.lease_id] = lease
+        proposal.status = "approved"
+        proposal.decision = "approve"
+        proposal.decision_reason = reason
+        proposal.lease_id = lease.lease_id
+        return {"status": "approved", "proposal": proposal.to_dict(), "lease_id": lease.lease_id, "lease": lease.to_dict()}
+
+    def reject(self, proposal_id: str, *, reason: str = "operator_rejected") -> Dict[str, Any]:
+        proposal = self.proposals.get(proposal_id)
+        if proposal is None:
+            return {"status": "failed", "reason": "unknown_proposal", "proposal_id": proposal_id}
+        if proposal.status not in {"pending", "approved"}:
+            return {"status": "failed", "reason": f"proposal_not_rejectable:{proposal.status}", "proposal": proposal.to_dict()}
+        proposal.status = "rejected"
+        proposal.decision = "reject"
+        proposal.decision_reason = reason
+        return {"status": "rejected", "proposal": proposal.to_dict()}
+
+    def edit_file_write_proposal(
+        self,
+        proposal_id: str,
+        *,
+        path: Optional[str] = None,
+        content: Optional[str] = None,
+        reason: Optional[str] = None,
+        create_parents: Optional[bool] = None,
+        overwrite: Optional[bool] = None,
+    ) -> Dict[str, Any]:
+        proposal = self.proposals.get(proposal_id)
+        if proposal is None:
+            return {"status": "failed", "reason": "unknown_proposal", "proposal_id": proposal_id}
+        if proposal.status != "pending":
+            return {"status": "failed", "reason": f"proposal_not_editable:{proposal.status}", "proposal": proposal.to_dict()}
+        new_path = path if path is not None else proposal.path
+        new_content = content if content is not None else proposal.content
+        new_create_parents = proposal.create_parents if create_parents is None else bool(create_parents)
+        new_overwrite = proposal.overwrite if overwrite is None else bool(overwrite)
+        try:
+            resolved = _resolve_workspace_path(new_path)
+            rel_path = resolved.relative_to(DEFAULT_AGENT_WORKSPACE).as_posix()
+        except ValueError:
+            return {"status": "blocked", "reason": "path_outside_workspace", "path": new_path}
+        allowlist_result = self._write_allowlist_result(rel_path)
+        if allowlist_result is not None:
+            return allowlist_result
+        if resolved.exists() and not new_overwrite:
+            return {"status": "blocked", "reason": "overwrite_requires_explicit_flag", "path": str(resolved)}
+
+        proposal.path = rel_path
+        proposal.resolved_path = str(resolved)
+        proposal.content = new_content or ""
+        proposal.content_hash = _content_hash(proposal.content)
+        proposal.create_parents = new_create_parents
+        proposal.overwrite = new_overwrite
+        proposal.reason = reason if reason is not None else proposal.reason
+        return {"status": "edited", "proposal": proposal.to_dict(), "action_card": self.format_action_card(proposal_id)}
+
+    def execute_file_write_with_lease(
+        self,
+        lease_id: str,
+        *,
+        path: str,
+        content: str,
+        create_parents: bool = True,
+        overwrite: bool = False,
+    ) -> Dict[str, Any]:
+        lease = self.leases.get(lease_id)
+        if lease is None:
+            return {"status": "blocked", "reason": "unknown_lease", "lease_id": lease_id}
+        if lease.consumed:
+            return {"status": "blocked", "reason": "lease_already_consumed", "lease_id": lease_id}
+        proposal = self.proposals.get(lease.proposal_id)
+        if proposal is None:
+            return {"status": "blocked", "reason": "proposal_missing_for_lease", "lease_id": lease_id}
+        if proposal.action != "write_file" or lease.action != "write_file":
+            return {"status": "blocked", "reason": "unsupported_lease_action", "lease_id": lease_id}
+        try:
+            rel_path = _workspace_relative_posix(path)
+        except ValueError:
+            return {"status": "blocked", "reason": "path_outside_workspace", "path": path}
+        if rel_path != lease.path:
+            return {"status": "blocked", "reason": "lease_path_mismatch", "expected": lease.path, "actual": rel_path}
+        actual_hash = _content_hash(content or "")
+        if actual_hash != lease.content_hash:
+            return {
+                "status": "blocked",
+                "reason": "lease_content_hash_mismatch",
+                "expected": lease.content_hash,
+                "actual": actual_hash,
+            }
+        try:
+            resolved = _resolve_workspace_path(rel_path)
+            if resolved.exists() and not overwrite:
+                return {"status": "blocked", "reason": "overwrite_requires_explicit_flag", "path": str(resolved)}
+            if create_parents:
+                resolved.parent.mkdir(parents=True, exist_ok=True)
+            resolved.write_text(content or "", encoding="utf-8")
+            lease.consumed = True
+            result = {
+                "status": "ok",
+                "path": str(resolved),
+                "bytes": len((content or "").encode("utf-8")),
+                "lease_id": lease.lease_id,
+                "proposal_id": proposal.proposal_id,
+                "content_hash": actual_hash,
+            }
+            proposal.status = "executed"
+            proposal.execution_result = result
+            return result
+        except Exception as exc:
+            result = {"status": "failed", "error": repr(exc), "path": path}
+            proposal.execution_result = result
+            return result
+
+    def format_action_card(self, proposal_id: str) -> str:
+        proposal = self.proposals.get(proposal_id)
+        if proposal is None:
+            return f"[unknown proposal: {proposal_id}]"
+        return "\n".join([
+            "Pending operation approval:",
+            f"- id: {proposal.proposal_id}",
+            f"- action: {proposal.action}",
+            f"- path: {proposal.path}",
+            f"- overwrite: {proposal.overwrite}",
+            f"- content_sha256: {proposal.content_hash}",
+            f"- reason: {proposal.reason}",
+            "- preview:",
+            proposal.preview(),
+        ])
+
+    def _write_allowlist_result(self, rel_path: str) -> Optional[Dict[str, Any]]:
+        if not self.write_allowlist:
+            return None
+        if any(fnmatch.fnmatch(rel_path, pattern) for pattern in self.write_allowlist):
+            return None
+        return {
+            "status": "blocked",
+            "reason": "path_not_in_write_allowlist",
+            "path": rel_path,
+            "write_allowlist": list(self.write_allowlist),
+        }
+
+    def _trusted_workspace_auto_allowed(self, proposal: OperationProposal) -> bool:
+        if proposal.overwrite:
+            return False
+        if len(proposal.content.encode("utf-8")) > 200_000:
+            return False
+        return True
+
+
 @dataclass
 class ConversationMemory:
     """
@@ -2093,8 +2434,13 @@ class SafetyGate:
     Gate is the final admission controller for outward action.
     """
 
-    def __init__(self, allowed_tools: Optional[List[str]] = None) -> None:
+    def __init__(self, allowed_tools: Optional[List[str]] = None, runtime_mode: str = DEFAULT_RUNTIME_MODE) -> None:
         self.allowed_tools = set(allowed_tools or ["current_time"])
+        self.runtime_mode = normalize_runtime_mode(runtime_mode)
+
+    def set_mode(self, runtime_mode: str) -> str:
+        self.runtime_mode = normalize_runtime_mode(runtime_mode)
+        return self.runtime_mode
 
     def check(self, event: AgentEvent, action: AgentAction) -> GateResult:
         risk = event.safety_context.get("risk", "low")
@@ -2106,6 +2452,15 @@ class SafetyGate:
                 return GateResult(False, f"tool_not_allowed:{action.tool_call.tool_name}")
             if risk == "high":
                 return GateResult(False, "high_risk_tool_call_blocked")
+            if action.tool_call.tool_name == "propose_file_write":
+                if self.runtime_mode == "chat":
+                    return GateResult(False, "runtime_mode_chat_blocks_operation_proposals")
+                path_result = _gate_workspace_path("path", str(action.tool_call.args.get("path", "")))
+                if path_result is not None:
+                    return path_result
+                return GateResult(True, "operation_proposal_allowed")
+            if action.tool_call.tool_name in SIDE_EFFECT_TOOLS and self.runtime_mode in {"chat", "plan", "approve"}:
+                return GateResult(False, f"{action.tool_call.tool_name}_requires_transaction_approval")
             if action.tool_call.tool_name in {"read_file", "write_file"}:
                 path_result = _gate_workspace_path("path", str(action.tool_call.args.get("path", "")))
                 if path_result is not None:
@@ -2361,6 +2716,8 @@ class AgentRuntime:
         operator_memory: Optional[OperatorMemoryStore] = None,
         memory_compactor: Optional[MemoryCompactor] = None,
         subject_context_enabled: bool = True,
+        runtime_mode: str = DEFAULT_RUNTIME_MODE,
+        permission_broker: Optional[PermissionBroker] = None,
     ) -> None:
         self.kernel = kernel or ProtoSelfKernel()
         self.planner = planner or Planner()
@@ -2373,6 +2730,9 @@ class AgentRuntime:
         self.operator_memory = operator_memory
         self.memory_compactor = memory_compactor or (MemoryCompactor(operator_memory) if operator_memory else None)
         self.subject_context_enabled = subject_context_enabled
+        self.runtime_mode = normalize_runtime_mode(runtime_mode)
+        self.permission_broker = permission_broker or PermissionBroker(runtime_mode=self.runtime_mode)
+        self.gate.set_mode(self.runtime_mode)
         self.session_id = new_id("session")
         self.subagent_counter = 0
         self.team: Optional[AgentTeamManager] = None
@@ -2402,6 +2762,62 @@ class AgentRuntime:
 
     def build_runtime_system_prompt(self, subject_context: str = "", user_text: str = "") -> str:
         return build_system_prompt(self.render_operator_memory_context(user_text), subject_context)
+
+    def set_runtime_mode(self, mode: str) -> Dict[str, Any]:
+        self.runtime_mode = normalize_runtime_mode(mode)
+        self.gate.set_mode(self.runtime_mode)
+        self.permission_broker.set_mode(self.runtime_mode)
+        return {"status": "ok", "runtime_mode": self.runtime_mode}
+
+    def propose_file_write(
+        self,
+        path: str,
+        content: str,
+        reason: str = "",
+        create_parents: bool = True,
+        overwrite: bool = False,
+    ) -> Dict[str, Any]:
+        return self.permission_broker.propose_file_write(
+            path=path,
+            content=content,
+            reason=reason,
+            create_parents=create_parents,
+            overwrite=overwrite,
+            source="main_agent_tool",
+        )
+
+    def list_pending_approvals(self, include_closed: bool = False) -> Dict[str, Any]:
+        return self.permission_broker.list_proposals(include_closed=include_closed)
+
+    def approve_pending_operation(self, proposal_id: str) -> Dict[str, Any]:
+        approval = self.permission_broker.approve(proposal_id)
+        if approval.get("status") != "approved":
+            return approval
+        proposal = self.permission_broker.proposals.get(proposal_id)
+        lease_id = str(approval.get("lease_id") or "")
+        if proposal is None or not lease_id:
+            return {"status": "failed", "reason": "approved_proposal_missing"}
+        execution = self.permission_broker.execute_file_write_with_lease(
+            lease_id,
+            path=proposal.path,
+            content=proposal.content,
+            create_parents=proposal.create_parents,
+            overwrite=proposal.overwrite,
+        )
+        return {"status": execution.get("status", "failed"), "approval": approval, "execution": execution}
+
+    def reject_pending_operation(self, proposal_id: str, reason: str = "operator_rejected") -> Dict[str, Any]:
+        return self.permission_broker.reject(proposal_id, reason=reason)
+
+    def edit_pending_file_write(self, proposal_id: str, updates: Dict[str, Any]) -> Dict[str, Any]:
+        return self.permission_broker.edit_file_write_proposal(
+            proposal_id,
+            path=updates.get("path"),
+            content=updates.get("content"),
+            reason=updates.get("reason"),
+            create_parents=updates.get("create_parents") if "create_parents" in updates else None,
+            overwrite=updates.get("overwrite") if "overwrite" in updates else None,
+        )
 
     def remember_operator_note(self, text: str) -> Dict[str, Any]:
         if self.operator_memory is None:
@@ -2840,6 +3256,10 @@ class AgentRuntime:
             "operator_memory": operator_memory_record,
             "subject_context": subject_context_snapshot,
             "todo": self.todo_list.summary(),
+            "operator_runtime": {
+                "runtime_mode": self.runtime_mode,
+                "permission_broker": self.permission_broker.describe(),
+            },
             "outcome_event": outcome_event,
             "outcome_kernel_output": outcome_kernel_output,
             "state_digest": {
@@ -3087,8 +3507,10 @@ def build_demo_runtime(
     enable_operator_memory: bool = False,
     operator_memory_dir: Optional[str | Path] = None,
     subject_context_enabled: bool = True,
+    runtime_mode: Optional[str] = None,
 ) -> AgentRuntime:
     tools = ToolRegistry()
+    selected_runtime_mode = normalize_runtime_mode(runtime_mode)
 
     tools.register(
         "current_time",
@@ -3247,7 +3669,8 @@ def build_demo_runtime(
         },
     )
 
-    # Main agent sees low-risk read tools by default. Side-effect tools stay opt-in.
+    # Main agent sees low-risk read tools by default. Side effects go through
+    # transaction proposals unless trusted workspace mode explicitly narrows it.
     allowed_tools = [
         "current_time",
         "read_file",
@@ -3257,11 +3680,13 @@ def build_demo_runtime(
         "update_todos",
         "dispatch_subagent",
     ]
-    if DEFAULT_ENABLE_RUN_COMMAND:
+    if selected_runtime_mode in {"plan", "approve", "trusted-workspace"}:
+        allowed_tools.append("propose_file_write")
+    if DEFAULT_ENABLE_RUN_COMMAND and selected_runtime_mode == "trusted-workspace":
         allowed_tools.append("run_command")
-    if DEFAULT_ENABLE_WEB_FETCH:
+    if DEFAULT_ENABLE_WEB_FETCH and selected_runtime_mode == "trusted-workspace":
         allowed_tools.append("web_fetch")
-    if DEFAULT_ENABLE_WRITE_FILE:
+    if DEFAULT_ENABLE_WRITE_FILE and selected_runtime_mode == "trusted-workspace":
         allowed_tools.append("write_file")
     if operator_memory is not None:
         allowed_tools.append("remember_note")
@@ -3276,7 +3701,7 @@ def build_demo_runtime(
         ])
 
     planner = Planner(llm=build_llm_from_config())
-    gate = SafetyGate(allowed_tools=allowed_tools)
+    gate = SafetyGate(allowed_tools=allowed_tools, runtime_mode=selected_runtime_mode)
     runtime = AgentRuntime(
         tools=tools,
         planner=planner,
@@ -3284,6 +3709,28 @@ def build_demo_runtime(
         todo_list=todo_list,
         operator_memory=operator_memory,
         subject_context_enabled=subject_context_enabled,
+        runtime_mode=selected_runtime_mode,
+    )
+
+    tools.register(
+        "propose_file_write",
+        runtime.propose_file_write,
+        description=(
+            "生成一个待 operator 审批的文件写入 proposal。"
+            "不会直接写磁盘；批准后 runtime 用一次性 lease 执行。"
+        ),
+        input_schema={
+            "type": "object",
+            "properties": {
+                "path": {"type": "string", "description": "workspace 内相对路径或 workspace 内绝对路径。"},
+                "content": {"type": "string", "description": "拟写入的完整内容。"},
+                "reason": {"type": "string", "description": "为什么需要写这个文件。"},
+                "create_parents": {"type": "boolean", "description": "是否创建父目录。"},
+                "overwrite": {"type": "boolean", "description": "是否明确请求覆盖已有文件。"},
+            },
+            "required": ["path", "content"],
+            "additionalProperties": False,
+        },
     )
 
     tools.register(
@@ -3412,15 +3859,20 @@ def render_runtime_permission_status(runtime: AgentRuntime) -> str:
         memory_dir = str(runtime.operator_memory.memory_dir)
     lines = [
         "Runtime permission status:",
+        f"- runtime_mode: {runtime.runtime_mode}",
         f"- operator_memory: {memory_status}"
         + (f" | dir={memory_dir}" if memory_dir else ""),
         "- core_memory_write: /remember <text>"
         + (" + remember_note tool with explicit user intent" if runtime.operator_memory_enabled() else " only when operator memory is enabled"),
         "- layered_memory_commands: /memory_review, /memory_pin, /memory_unpin, /memory_archive, /forget",
         f"- file_read_tools: {'enabled' if {'read_file', 'glob_files', 'grep_files'}.issubset(runtime.gate.allowed_tools) else 'restricted'}",
-        f"- write_file: {'enabled' if DEFAULT_ENABLE_WRITE_FILE and 'write_file' in runtime.gate.allowed_tools else 'disabled'}",
-        f"- run_command: {'enabled' if DEFAULT_ENABLE_RUN_COMMAND and 'run_command' in runtime.gate.allowed_tools else 'disabled'}",
-        f"- web_fetch: {'enabled' if DEFAULT_ENABLE_WEB_FETCH and 'web_fetch' in runtime.gate.allowed_tools else 'disabled'}",
+        f"- file_write_proposals: {'enabled' if 'propose_file_write' in runtime.gate.allowed_tools else 'disabled'}",
+        f"- write_file: {'trusted direct enabled' if DEFAULT_ENABLE_WRITE_FILE and 'write_file' in runtime.gate.allowed_tools else 'transaction approval required'}",
+        f"- run_command: {'trusted direct enabled' if DEFAULT_ENABLE_RUN_COMMAND and 'run_command' in runtime.gate.allowed_tools else 'disabled'}",
+        f"- web_fetch: {'trusted direct enabled' if DEFAULT_ENABLE_WEB_FETCH and 'web_fetch' in runtime.gate.allowed_tools else 'disabled'}",
+        f"- write_allowlist: {', '.join(DEFAULT_WRITE_ALLOWLIST) if DEFAULT_WRITE_ALLOWLIST else '(workspace-contained; no extra allowlist)'}",
+        f"- pending_approvals: {runtime.permission_broker.describe()['pending_count']}",
+        "- subagent_side_effects: disabled; subagents may only report proposed_action",
         f"- workspace: {DEFAULT_AGENT_WORKSPACE}",
         f"- trace_path: {DEFAULT_TRACE_PATH}",
     ]
@@ -3442,6 +3894,40 @@ if __name__ == "__main__":
             operator_context = runtime.render_operator_memory_context()
             if operator_context:
                 print("\n" + operator_context)
+            continue
+        if msg.lower() in {"/mode", "mode"}:
+            print(render_runtime_permission_status(runtime))
+            continue
+        if msg.lower().startswith("/mode "):
+            print(json.dumps(runtime.set_runtime_mode(msg.split(maxsplit=1)[1]), ensure_ascii=False, indent=2))
+            print(render_runtime_permission_status(runtime))
+            continue
+        if msg.lower() in {"/approvals", "approvals"}:
+            print(json.dumps(runtime.list_pending_approvals(), ensure_ascii=False, indent=2))
+            continue
+        if msg.lower().startswith("/approve "):
+            proposal_id = msg.split(maxsplit=1)[1].strip()
+            print(json.dumps(runtime.approve_pending_operation(proposal_id), ensure_ascii=False, indent=2))
+            continue
+        if msg.lower().startswith("/reject "):
+            parts = msg.split(maxsplit=2)
+            proposal_id = parts[1].strip() if len(parts) > 1 else ""
+            reason = parts[2].strip() if len(parts) > 2 else "operator_rejected"
+            print(json.dumps(runtime.reject_pending_operation(proposal_id, reason=reason), ensure_ascii=False, indent=2))
+            continue
+        if msg.lower().startswith("/edit_approval "):
+            parts = msg.split(maxsplit=2)
+            proposal_id = parts[1].strip() if len(parts) > 1 else ""
+            raw_updates = parts[2].strip() if len(parts) > 2 else "{}"
+            try:
+                updates = json.loads(raw_updates)
+            except json.JSONDecodeError as exc:
+                print(json.dumps({"status": "failed", "reason": "invalid_json_updates", "error": str(exc)}, ensure_ascii=False, indent=2))
+                continue
+            if not isinstance(updates, dict):
+                print(json.dumps({"status": "failed", "reason": "updates_must_be_json_object"}, ensure_ascii=False, indent=2))
+                continue
+            print(json.dumps(runtime.edit_pending_file_write(proposal_id, updates), ensure_ascii=False, indent=2))
             continue
         if msg.startswith("/remember "):
             print(json.dumps(runtime.remember_operator_note(msg.removeprefix("/remember ").strip()), ensure_ascii=False, indent=2))

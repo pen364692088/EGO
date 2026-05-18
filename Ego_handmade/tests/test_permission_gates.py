@@ -82,14 +82,15 @@ def test_main_agent_default_exposes_read_tools_but_not_side_effect_tools(monkeyp
     assert "remember_note" not in names
 
 
-def test_write_file_opt_in_exposes_tool_and_blocks_path_escape(tmp_path, monkeypatch):
+def test_write_file_opt_in_now_uses_transaction_proposal_by_default(tmp_path, monkeypatch):
     monkeypatch.setattr(agent, "DEFAULT_AGENT_WORKSPACE", tmp_path)
     monkeypatch.setattr(agent, "DEFAULT_ENABLE_WRITE_FILE", True)
     monkeypatch.setattr(agent, "DEFAULT_ENABLE_RUN_COMMAND", False)
     monkeypatch.setattr(agent, "DEFAULT_ENABLE_WEB_FETCH", False)
 
     runtime = agent.build_demo_runtime(enable_operator_memory=False)
-    assert "write_file" in _tool_names(runtime)
+    assert "write_file" not in _tool_names(runtime)
+    assert "propose_file_write" in _tool_names(runtime)
 
     event = agent.AgentEvent(
         schema_version="agent_event.v1",
@@ -105,8 +106,14 @@ def test_write_file_opt_in_exposes_tool_and_blocks_path_escape(tmp_path, monkeyp
         action_type=agent.ActionType.TOOL_CALL,
         tool_call=agent.ToolCall(tool_name="write_file", args={"path": "note.txt", "content": "你好"}),
     )
-    assert runtime.gate.check(event, inside).allowed is True
-    result = runtime.tools.execute(inside.tool_call)
+    blocked_direct = runtime.gate.check(event, inside)
+    assert blocked_direct.allowed is False
+    assert blocked_direct.reason == "tool_not_allowed:write_file"
+
+    proposal = runtime.propose_file_write("note.txt", "你好", reason="test write")
+    assert proposal["status"] == "pending_approval"
+    proposal_id = proposal["proposal"]["proposal_id"]
+    result = runtime.approve_pending_operation(proposal_id)
     assert result["status"] == "ok"
     assert (tmp_path / "note.txt").read_text(encoding="utf-8") == "你好"
 
@@ -116,7 +123,8 @@ def test_write_file_opt_in_exposes_tool_and_blocks_path_escape(tmp_path, monkeyp
     )
     blocked = runtime.gate.check(event, outside)
     assert blocked.allowed is False
-    assert blocked.reason == "path_outside_workspace"
+    assert blocked.reason == "tool_not_allowed:write_file"
+    assert runtime.propose_file_write("../outside.txt", "bad")["reason"] == "path_outside_workspace"
     assert not (tmp_path.parent / "outside.txt").exists()
 
 
@@ -210,5 +218,6 @@ def test_runtime_permission_status_reports_memory_and_tool_gates(tmp_path, monke
 
     assert "operator_memory: enabled" in status
     assert "remember_note tool with explicit user intent" in status
-    assert "write_file: disabled" in status
+    assert "write_file: transaction approval required" in status
+    assert "file_write_proposals: enabled" in status
     assert "trace_path:" in status
