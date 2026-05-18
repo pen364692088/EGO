@@ -47,9 +47,11 @@ def test_empty_report_prepares_protocol_without_claiming_pass(tmp_path):
     markdown = markdown_path.read_text(encoding="utf-8")
     scenarios = json.loads(scenarios_path.read_text(encoding="utf-8"))
     assert payload["status"] == "needs_human_trial"
+    assert payload["schema_version"] == "ego_operator.human_operator_trial.v2"
     assert payload["observation_count"] == 0
     assert len(scenarios) == report.scenario_count
-    assert "cannot prove EGO mainline replacement" in markdown
+    assert "# EgoOperator Human Operator Trial v2" in markdown
+    assert "cannot prove stable user benefit" in markdown
     assert "ä½" not in markdown
 
 
@@ -61,14 +63,32 @@ def test_real_provider_observations_can_reach_candidate_pass():
     assert report.known_scenario_coverage == len(trial.human_trial_scenarios())
     assert report.invalid_observation_count == 0
     assert report.average_operator_score == 5.0
-    assert report.claim_ceiling == "EgoOperator human operator trial local candidate report"
+    assert report.claim_ceiling == "EgoOperator human-operator trial local observation pass"
 
 
-def test_no_llm_observations_remain_smoke_only():
+def test_no_llm_observations_remain_provider_unavailable():
     report = trial.build_trial_report(_passing_observations(), provider_mode="none")
 
-    assert report.status == "local_smoke_only"
-    assert "real LLM provider" in report.next_action
+    assert report.status == "real_provider_unavailable"
+    assert "real provider key" in report.next_action
+
+
+def test_scripted_observations_do_not_auto_pass_real_provider():
+    observations = [
+        trial.HumanTrialObservation(
+            scenario_id=scenario.scenario_id,
+            prompt=scenario.prompt,
+            reply_text="自然理解优先，工具和记忆都按 gate 处理。",
+            operator_score=5,
+            failure_notes=("scripted_observation_requires_human_review",),
+        )
+        for scenario in trial.human_trial_scenarios()
+    ]
+
+    report = trial.build_trial_report(observations, provider_mode="openrouter")
+
+    assert report.status == "scripted_trial_needs_human_review"
+    assert "human operator scores" in report.next_action
 
 
 def test_memory_misuse_or_gate_violation_blocks_pass():
@@ -135,3 +155,21 @@ def test_load_observations_jsonl_round_trip(tmp_path):
     assert observations[0].scenario_id == "opinion_dark_souls_direct"
     assert observations[0].operator_score == 4
     assert "ä½" not in observations[0].reply_text
+
+
+def test_scripted_trial_without_real_provider_cannot_pass(tmp_path, monkeypatch):
+    import agent_base
+
+    monkeypatch.setattr(agent_base, "EGO_OPERATOR_ROOT", tmp_path)
+    monkeypatch.setattr(agent_base, "DEFAULT_AGENT_WORKSPACE", tmp_path)
+    (tmp_path / ".gitignore").write_text("artifacts/human_operator_trial/\nmemory/*.jsonl\n", encoding="utf-8")
+
+    report = trial.run_scripted_operator_trial(output_dir=tmp_path, scenario_limit=3)
+
+    payload = json.loads((tmp_path / "human_operator_trial_report.json").read_text(encoding="utf-8"))
+    markdown = (tmp_path / "human_operator_trial_report.md").read_text(encoding="utf-8")
+    assert report.status == "real_provider_unavailable"
+    assert payload["provider_mode"] == "none"
+    assert payload["observation_count"] == 3
+    assert payload["observations"][0]["failure_notes"][0] == "scripted_observation_requires_human_review"
+    assert "scripted_observation_requires_human_review" in markdown

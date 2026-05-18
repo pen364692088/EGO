@@ -24,7 +24,7 @@ Derived route view: `docs/codex/tasks/TASK_LANE_INDEX.md`.
 2. `docs/MAINLINE_QUICKSTART.md`
 3. `docs/codex/tasks/TASK_LANE_INDEX.md`
 4. `docs/REPO_HYGIENE_POLICY.md`
-5. `docs/codex/tasks/ego-operator-rename-docs-safety-v1/STATUS.md`
+5. `docs/codex/tasks/ego-operator-human-operator-trial-v2/STATUS.md`
 
 ## Do Not Reopen By Default
 
@@ -37,7 +37,7 @@ Derived route view: `docs/codex/tasks/TASK_LANE_INDEX.md`.
 
 ## Claim Ceiling
 
-The current transition can prove only `EgoOperator naming/docs safety transition recorded` plus local operator-candidate behavior. It does not prove consciousness, alive status, live autonomy, runtime efficacy, stable long-term memory, or real user benefit.
+The current trial can prove at most `EgoOperator human-operator trial local observation pass` after enough real-provider human observations. It does not prove consciousness, alive status, live autonomy, runtime efficacy, stable long-term memory, or stable real user benefit.
 
 ## Minimal Verification
 

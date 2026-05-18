@@ -62,8 +62,8 @@ def main() -> int:
     active_default_entries = [entry for entry in entries if entry.lane == "active_default"]
     if len(active_default_entries) != 1:
         errors.append(f"expected exactly one active_default entry, found {len(active_default_entries)}")
-    elif active_default_entries[0].key != "ego-operator-rename-docs-safety-v1":
-        errors.append("active_default entry must remain `ego-operator-rename-docs-safety-v1` during EgoOperator naming/docs safety transition")
+    elif active_default_entries[0].key != "ego-operator-human-operator-trial-v2":
+        errors.append("active_default entry must be `ego-operator-human-operator-trial-v2` during EgoOperator human-observation gate")
 
     workstreams = {item.get("id"): item for item in program_state.get("workstreams") or []}
     active_ws = workstreams.get("ego_operator_first_transition") or {}

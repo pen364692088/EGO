@@ -20,14 +20,14 @@
 | `active_default` | 1 |
 | `supporting_active` | 5 |
 | `parked` | 1 |
-| `closed_evidence` | 16 |
+| `closed_evidence` | 17 |
 | `reference_only` | 55 |
 
 ## Active Default
 
 | entry | kind | workstream | paths | why |
 |---|---|---|---|---|
-| EgoOperator Rename + Docs Safety v1 | `codex_task` | `ego_operator_first_transition` | `docs/codex/tasks/ego-operator-rename-docs-safety-v1/` | Current EgoOperator naming and reader-safety transition owner; records the active operator-first route name and current-doc cross-links. Current workstream status: `naming_docs_safety_recorded__operator_first_default__human_observation_pending`. |
+| EgoOperator Human Operator Trial v2 | `codex_task` | `ego_operator_first_transition` | `docs/codex/tasks/ego-operator-human-operator-trial-v2/` | Current EgoOperator human-observation gate; records whether the operator-first runtime is actually usable in continuous Chinese operator work. Current workstream status: `human_operator_trial_v2_protocol_ready__real_provider_recheck_pending`. |
 
 ## Supporting Active
 
@@ -51,7 +51,8 @@
 |---|---|---|---|---|
 | Active-Inference Mainline Activation | `codex_task` | `active_inference_mainline_activation` | `docs/codex/tasks/active-inference-mainline-activation/` | Frozen dashboard-only bounded predecessor tranche; preserve as closed evidence, not the active default route. Current workstream status: `closed_evidence__dashboard_stage1_3_frozen`. |
 | AI Self-Awareness Minimal Framework | `codex_task` | `ai_self_awareness_research` | `docs/codex/tasks/ai-self-awareness-minimal-framework/` | Selection closeout and MVS demotion authority live here; this is closed research evidence, not the current runtime owner. Current workstream status: `selection_closed_handoff`. |
-| Ego Mainline Demotion v1 | `codex_task` | `ego_operator_first_transition` | `docs/codex/tasks/ego-mainline-demotion-v1/` | Previous operator-first transition record; superseded by the EgoOperator rename/docs-safety task while preserving legacy demotion evidence. Current workstream status: `naming_docs_safety_recorded__operator_first_default__human_observation_pending`. |
+| Ego Mainline Demotion v1 | `codex_task` | `ego_operator_first_transition` | `docs/codex/tasks/ego-mainline-demotion-v1/` | Previous operator-first transition record; superseded by the EgoOperator rename/docs-safety task while preserving legacy demotion evidence. Current workstream status: `human_operator_trial_v2_protocol_ready__real_provider_recheck_pending`. |
+| EgoOperator Rename + Docs Safety v1 | `codex_task` | `ego_operator_first_transition` | `docs/codex/tasks/ego-operator-rename-docs-safety-v1/` | Previous EgoOperator naming and reader-safety transition record; superseded by the human operator trial v2 task as the active observation owner. Current workstream status: `human_operator_trial_v2_protocol_ready__real_provider_recheck_pending`. |
 | MVS-Aligned Compact Closed Evidence | `authority_refs` | n/a | `docs/codex/tasks/ai-self-awareness-minimal-framework/SELECTION_CLOSEOUT.md`<br>`docs/codex/tasks/ai-self-awareness-minimal-framework/MVS_ALIGNED_COMPACT_PROTOTYPE_DESIGN.md` | Closed evidence only; selection closeout keeps it out of the default implementation track. |
 | Repo Authority Cleanup | `codex_task` | `repo_authority_cleanup` | `docs/codex/tasks/repo-authority-cleanup/` | Repo/integration boundary cleanup is closed out and no longer competes for current execution ownership. Current workstream status: `closeout-complete`. |
 | Runtime Proximal Basic Standard Admission Planning | `codex_task` | n/a | `docs/codex/tasks/runtime-proximal-basic-standard-admission-planning/` | Runtime-proximal runner/planning slices are now frozen bounded evidence, not active route contenders. |

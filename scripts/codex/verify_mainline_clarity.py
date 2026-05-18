@@ -70,6 +70,11 @@ READER_SAFETY_STAGE_PREFIXES = (
     "docs/codex/tasks/ego-operator-rename-docs-safety-v1/",
 )
 
+HUMAN_TRIAL_STAGE_PREFIXES = (
+    "docs/codex/tasks/ego-operator-human-operator-trial-v2/",
+    "EgoOperator/",
+)
+
 FORBIDDEN_CLEANUP_STAGE_PATHS = (
     "docs/PROGRAM_STATE_UNIFIED.yaml",
     "legacy/ego-pre-handmade-mainline/EgoCore/docs/PROGRAM_STATE_UNIFIED.yaml",
@@ -133,7 +138,11 @@ def _check_staged_operational_exhaust(errors: list[str]) -> None:
         any(_matches_prefix(path, prefix) for prefix in READER_SAFETY_STAGE_PREFIXES)
         for path in staged_paths
     )
-    cleanup_stage_active = not reader_safety_stage_active and any(
+    human_trial_stage_active = any(
+        any(_matches_prefix(path, prefix) for prefix in HUMAN_TRIAL_STAGE_PREFIXES)
+        for path in staged_paths
+    )
+    cleanup_stage_active = not (reader_safety_stage_active or human_trial_stage_active) and any(
         any(_matches_prefix(path, prefix) for prefix in CLEANUP_STAGE_PREFIXES)
         for path in staged_paths
     )
@@ -254,8 +263,8 @@ def main() -> int:
     active = [entry for entry in entries if entry.lane == "active_default"]
     if len(active) != 1:
         errors.append(f"expected exactly one active_default lane, found {len(active)}")
-    elif active[0].key != "ego-operator-rename-docs-safety-v1":
-        errors.append("active_default lane must stay `ego-operator-rename-docs-safety-v1` during EgoOperator naming/docs safety transition")
+    elif active[0].key != "ego-operator-human-operator-trial-v2":
+        errors.append("active_default lane must be `ego-operator-human-operator-trial-v2` during EgoOperator human-observation gate")
 
     _check_text_contains(README_PATH, REQUIRED_README_REFS, errors)
     _check_text_contains(QUICKSTART_PATH, REQUIRED_QUICKSTART_REFS, errors)

@@ -4,29 +4,32 @@
 
 program:
   version: 1
-  north_star: Keep one default operator-first path where Ego_handmade preserves natural-language
+  north_star: Keep one default operator-first path where EgoOperator preserves natural-language
     understanding before gates, while legacy EgoCore/OpenEmotion evidence remains
     reference-only and repo-level claims never outrun evidence.
-  current_phase: ego_handmade_first_transition_legacy_demotion_recorded_local_candidate_pending_human_observation
+  current_phase: ego_operator_human_operator_trial_v2_protocol_ready_real_provider_recheck_pending
   current_layer: transition / operator-first
   highest_evidence_level: E3
   verification_level: V3
   mainline_connected: true
   enabled: true
   real_trigger_evidence:
-  - evidence_id: ego_handmade_mainline_demotion_v1_local_transition
-    note: Repo-level docs, route views, and directory layout record `Ego_handmade`
+  - evidence_id: ego_operator_rename_docs_safety_v1_local_transition
+    note: Repo-level docs, route views, runtime path naming, and reader-safety banners
+      record `EgoOperator` as the current operator-first route name, formerly `Ego_handmade`.
+  - evidence_id: ego_operator_mainline_demotion_v1_local_transition
+    note: Repo-level docs, route views, and directory layout record `EgoOperator`
       as the default operator-first transition lane while preserving legacy projects
       as reference/fallback material.
-  - evidence_id: ego_handmade_operator_runtime_contract_local_candidate_pass
-    note: Local Ego_handmade tests previously passed for runtime modes, transaction
+  - evidence_id: ego_operator_operator_runtime_contract_local_candidate_pass
+    note: Local EgoOperator tests previously passed for runtime modes, transaction
       approval, memory, permission gates, comparison harness, and human-trial scaffolding.
   current_focus:
-  - Treat `Ego_handmade` as the active default operator-first implementation lane
-    and current execution owner.
+  - Treat `EgoOperator` as the active default operator-first implementation lane and
+    current execution owner.
   - Keep legacy `EgoCore / OpenEmotion / ego_desktop_lab` under `legacy/ego-pre-handmade-mainline/`
     as reference/fallback/algorithm sources only.
-  - 'Preserve `Ego_handmade`''s core path: `user text -> LLM understanding -> proposal/plan
+  - 'Preserve `EgoOperator`''s core path: `user text -> LLM understanding -> proposal/plan
     -> runtime gate -> trace`, and do not reintroduce keyword-first semantic routing
     or template fallback as the default entry.'
   - Future work may delete old templates, rewrite the main loop, sacrifice legacy
@@ -37,13 +40,24 @@ program:
   - Keep all claims bounded to local candidate / transition evidence until real user
     operation proves stable behavior.
   completed_since_last:
-  - 'The repo now records an `Ego_handmade-first` transition: `Ego_handmade` is the
-    default operator runtime candidate, old `EgoCore / OpenEmotion / ego_desktop_lab`
-    have been moved under `legacy/ego-pre-handmade-mainline/`, and route/state/docs
-    now treat the old governed-proactivity lane as legacy evidence rather than the
-    active default. This is a repo transition record only; it does not prove stable
-    real user benefit, live autonomy, durable memory efficacy, runtime efficacy, or
-    consciousness.'
+  - The current EgoOperator human-observation gate has moved from the old `ego-handmade-human-operator-trial-v1`
+    historical protocol to `docs/codex/tasks/ego-operator-human-operator-trial-v2/`.
+    The v2 harness records `EgoOperator`-named JSON/Markdown trial reports and can
+    run a scripted local session, but a real-provider run is still required before
+    any natural-understanding or user-benefit claim.
+  - 'The repo now records the `EgoOperator` naming and docs reader-safety transition:
+    tracked runtime files moved from `Ego_handmade/` to `EgoOperator/`, current authority/docs/scripts
+    point at `ego_operator_first_transition`, and high-risk pre-EgoOperator reader
+    entry docs carry safety banners/cross-links. This is a naming/docs safety transition
+    record only; it does not prove stable real user benefit, live autonomy, durable
+    memory efficacy, runtime efficacy, or consciousness.'
+  - 'The repo previously recorded an `EgoOperator-first` transition under the former
+    `Ego_handmade` name: `EgoOperator` is the default operator runtime candidate,
+    old `EgoCore / OpenEmotion / ego_desktop_lab` have been moved under `legacy/ego-pre-handmade-mainline/`,
+    and route/state/docs treat the old governed-proactivity lane as legacy evidence
+    rather than the active default. This is a repo transition record only; it does
+    not prove stable real user benefit, live autonomy, durable memory efficacy, runtime
+    efficacy, or consciousness.'
   - 'The current lane now has a bounded local `subject final text candidate ownership`
     pass: OpenEmotion `subject_system_v1` candidates expose `final_text_candidate
     / language_hint / style_intent / content_grounding / generation_trace`, thought-probe
@@ -279,48 +293,49 @@ program:
     sample is admitted yet.'
   blocked_by: []
   key_unknowns:
-  - Whether `Ego_handmade` remains more natural after longer real LLM sessions, not
+  - Whether `EgoOperator` remains more natural after longer real LLM sessions, not
     just deterministic NoLLM tests.
   - Whether local memory stays useful without prompt pollution across multi-day operator
     use.
-  - Which legacy algorithms should be reimplemented as Ego_handmade primitives, and
+  - Which legacy algorithms should be reimplemented as EgoOperator primitives, and
     which should remain reference-only.
   - Whether future command/network transaction approvals should be added after file-write
     transaction approval has proved ergonomic.
   - What evidence threshold should trigger any future deletion of legacy code rather
     than reference preservation.
-  next_minimal_action: 'Run a focused Ego_handmade human-operator trial on the new
-    default path: collect multiple Chinese natural-dialogue samples, memory write/recall,
-    file approval, debugging, and refusal-recovery cases. Keep the claim ceiling at
-    `Ego_handmade-first repo transition / legacy demotion recorded` until those samples
-    show stable natural interaction without memory pollution or gate confusion.'
-  last_verified_commit: 0ea8c21
-  last_verified_at: '2026-05-18T01:42:12Z'
-  status_owner: Ego_handmade
-  status_note: Default repo work is now `Ego_handmade-first`. Legacy `EgoCore / OpenEmotion
-    / ego_desktop_lab` are preserved under `legacy/ego-pre-handmade-mainline/` as
-    reference/fallback/algorithm sources. The previous subject-system-v1 evidence
+  next_minimal_action: Rerun `python3 EgoOperator/human_operator_trial.py --out EgoOperator/artifacts/human_operator_trial/v2_latest
+    --run-scripted --auto-approve-writes` from an environment with a real provider
+    key, then import or review 15-20 Chinese operator observations before any next
+    feature or demotion decision. Keep the claim ceiling at `EgoOperator human-operator
+    trial local observation pass`.
+  last_verified_commit: af561e0d
+  last_verified_at: '2026-05-18T03:48:22Z'
+  status_owner: EgoOperator
+  status_note: Default repo work is now `EgoOperator-first` (formerly `Ego_handmade-first`).
+    Legacy `EgoCore / OpenEmotion / ego_desktop_lab` are preserved under `legacy/ego-pre-handmade-mainline/`
+    as reference/fallback/algorithm sources. The previous subject-system-v1 evidence
     chain remains historical support, but no longer owns the active default implementation
-    lane. This transition is local/repo-level only and does not prove stable real
-    user benefit, runtime efficacy, live autonomy, durable memory efficacy, or consciousness.
+    lane. This naming/docs safety transition is local/repo-level only and does not
+    prove stable real user benefit, runtime efficacy, live autonomy, durable memory
+    efficacy, or consciousness.
   claim_thresholds:
     mainline_claim_requires: E4
     enabled_claim_requires: E4
     stable_claim_requires: E5
     institutionalized_claim_requires: E6
 workstreams:
-- id: ego_handmade_first_transition
-  owner: Ego_handmade
-  status: legacy_demotion_recorded__operator_first_default__human_observation_pending
+- id: ego_operator_first_transition
+  owner: EgoOperator
+  status: human_operator_trial_v2_protocol_ready__real_provider_recheck_pending
   evidence_level: E3
   verification_level: V3
   mainline_connected: true
   enabled: true
-  summary: '`Ego_handmade` is now the default operator-first implementation lane.
-    The transition preserves old `EgoCore / OpenEmotion / ego_desktop_lab` under `legacy/ego-pre-handmade-mainline/`
-    and records the repo rule shift toward natural-language understanding first, transaction
-    gates, candidate-local memory, trace, and human-observable trial evidence. Current
-    proof is local/repo-level only and does not establish stable real user benefit,
+  summary: '`EgoOperator` is now the default operator-first implementation lane, formerly
+    tracked as `Ego_handmade`. The current active gate is human-operator trial v2:
+    collect real-provider Chinese operator samples across conversation, memory, file
+    approval, debugging, planning, and refusal recovery. Current proof is local/repo-level
+    plus protocol readiness only and does not establish stable real user benefit,
     live autonomy, runtime efficacy, durable memory efficacy, or consciousness.'
 - id: repo_authority_cleanup
   owner: EgoCore
@@ -383,15 +398,15 @@ workstreams:
     and any consciousness-like claim.
 - id: subject_system_v1_governed_proactivity
   owner: EgoCore + OpenEmotion
-  status: legacy_reference__pre_handmade_evidence_preserved
+  status: legacy_reference__pre_ego_operator_evidence_preserved
   evidence_level: E4
   verification_level: V4
   mainline_connected: false
   enabled: true
-  summary: Pre-handmade governed-proactivity evidence is preserved as legacy/reference
+  summary: Pre-EgoOperator governed-proactivity evidence is preserved as legacy/reference
     material under `legacy/ego-pre-handmade-mainline/`. It no longer owns the default
     implementation lane. Its local and live samples remain useful for comparison and
-    rollback, but the user-visible experience regressions that motivated `Ego_handmade-first`
+    rollback, but the user-visible experience regressions that motivated `EgoOperator-first`
     are not treated as the current route to continue patching.
 - id: active_inference_mainline_activation
   owner: EgoCore + OpenEmotion
@@ -431,7 +446,7 @@ workstreams:
   mainline_connected: false
   enabled: true
   summary: WP17/MVP22 remains an authority-frozen bounded continuity lane with task-package
-    readiness, but it is parked behind `ego_handmade_first_transition` and is not
+    readiness, but it is parked behind `ego_operator_first_transition` and is not
     the default highest-priority implementation track.
 - id: provider_runtime_openemotion_e2e_gate
   owner: EgoCore

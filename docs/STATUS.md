@@ -8,7 +8,7 @@
 
 | field | value |
 |---|---|
-| current_phase | `ego_operator_first_transition_naming_docs_safety_recorded_local_candidate_pending_human_observation` |
+| current_phase | `ego_operator_human_operator_trial_v2_protocol_ready_real_provider_recheck_pending` |
 | current_layer | `transition / operator-first` |
 | highest_evidence_level | `E3` |
 | verification_level | `V3` |
@@ -32,6 +32,7 @@ Keep one default operator-first path where EgoOperator preserves natural-languag
 
 ## Completed Since Last Update
 
+- The current EgoOperator human-observation gate has moved from the old `ego-handmade-human-operator-trial-v1` historical protocol to `docs/codex/tasks/ego-operator-human-operator-trial-v2/`. The v2 harness records `EgoOperator`-named JSON/Markdown trial reports and can run a scripted local session, but a real-provider run is still required before any natural-understanding or user-benefit claim.
 - The repo now records the `EgoOperator` naming and docs reader-safety transition: tracked runtime files moved from `Ego_handmade/` to `EgoOperator/`, current authority/docs/scripts point at `ego_operator_first_transition`, and high-risk pre-EgoOperator reader entry docs carry safety banners/cross-links. This is a naming/docs safety transition record only; it does not prove stable real user benefit, live autonomy, durable memory efficacy, runtime efficacy, or consciousness.
 - The repo previously recorded an `EgoOperator-first` transition under the former `Ego_handmade` name: `EgoOperator` is the default operator runtime candidate, old `EgoCore / OpenEmotion / ego_desktop_lab` have been moved under `legacy/ego-pre-handmade-mainline/`, and route/state/docs treat the old governed-proactivity lane as legacy evidence rather than the active default. This is a repo transition record only; it does not prove stable real user benefit, live autonomy, durable memory efficacy, runtime efficacy, or consciousness.
 - The current lane now has a bounded local `subject final text candidate ownership` pass: OpenEmotion `subject_system_v1` candidates expose `final_text_candidate / language_hint / style_intent / content_grounding / generation_trace`, thought-probe synthesis binds generated visible candidates to their topic anchor, EgoCore delivery consumes only `final_text_candidate` for proactive visible text, and missing/template-like/unanchored/rejected candidates become `retry_later` or `held` instead of host-generated fallback templates. Public dialogue corpora are recorded only in an offline-eval manifest (`DailyDialog / XDailyDialog / CS-Dialogue / LCCC`) and are not imported into runtime prompts or product logic. This remains local proof only; no fresh always-on-listener live closeout is admitted.
@@ -84,7 +85,7 @@ Keep one default operator-first path where EgoOperator preserves natural-languag
 
 ## Next Minimal Action
 
-Run a focused EgoOperator human-operator trial on the renamed default path: collect multiple Chinese natural-dialogue samples, memory write/recall, file approval, debugging, and refusal-recovery cases. Keep the claim ceiling at `EgoOperator naming/docs safety transition recorded` until those samples show stable natural interaction without memory pollution or gate confusion.
+Rerun `python3 EgoOperator/human_operator_trial.py --out EgoOperator/artifacts/human_operator_trial/v2_latest --run-scripted --auto-approve-writes` from an environment with a real provider key, then import or review 15-20 Chinese operator observations before any next feature or demotion decision. Keep the claim ceiling at `EgoOperator human-operator trial local observation pass`.
 
 ## Real Trigger Evidence
 
@@ -96,7 +97,7 @@ Run a focused EgoOperator human-operator trial on the renamed default path: coll
 
 | id | owner | status | evidence | verification | mainline_connected | enabled | summary |
 |---|---|---|---|---|---|---|---|
-| ego_operator_first_transition | EgoOperator | `naming_docs_safety_recorded__operator_first_default__human_observation_pending` | `E3` | `V3` | `True` | `True` | `EgoOperator` is now the default operator-first implementation lane, formerly tracked as `Ego_handmade`. The transition preserves old `EgoCore / OpenEmotion / ego_desktop_lab` under `legacy/ego-pre-handmade-mainline/`, records the repo rule shift toward natural-language understanding first, and adds reader-safety banners to high-risk pre-EgoOperator entry docs. Current proof is local/repo-level only and does not establish stable real user benefit, live autonomy, runtime efficacy, durable memory efficacy, or consciousness. |
+| ego_operator_first_transition | EgoOperator | `human_operator_trial_v2_protocol_ready__real_provider_recheck_pending` | `E3` | `V3` | `True` | `True` | `EgoOperator` is now the default operator-first implementation lane, formerly tracked as `Ego_handmade`. The current active gate is human-operator trial v2: collect real-provider Chinese operator samples across conversation, memory, file approval, debugging, planning, and refusal recovery. Current proof is local/repo-level plus protocol readiness only and does not establish stable real user benefit, live autonomy, runtime efficacy, durable memory efficacy, or consciousness. |
 | repo_authority_cleanup | EgoCore | `closeout-complete` | `E3` | `V3` | `True` | `True` | Repo/integration boundary cleanup is reproducibly closed out in clean-clone / CI space, but that closeout does not itself prove new real-channel behavior. |
 | program_state_governance | EgoCore | `pass` | `E3` | `V3` | `False` | `True` | Root-level program state, derived views, evidence ledger, templates, integrity gates, and a fixed collaboration-loop contract are being wired into the repo governance path. |
 | codex_exploration_cycles | EgoCore | `integrating` | `E3` | `V2` | `False` | `True` | Exploration-mode long-run tasks now have explicit reformulation, hypothesis, experiment, logging, and candidate-vs-proof discipline, and the current `Ego` repo now also has a bounded `codex-autopilot` reconnect proof (`doctor` + fresh smoke closeout + `file_first` resume confirmation) on a formal repo-root config. |

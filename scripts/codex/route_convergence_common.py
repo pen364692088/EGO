@@ -53,10 +53,16 @@ class HygieneRule:
 
 
 TASK_OVERRIDES: dict[str, dict[str, Any]] = {
-    "ego-operator-rename-docs-safety-v1": {
+    "ego-operator-human-operator-trial-v2": {
         "lane": "active_default",
+        "label": "EgoOperator Human Operator Trial v2",
+        "why": "Current EgoOperator human-observation gate; records whether the operator-first runtime is actually usable in continuous Chinese operator work.",
+        "workstream_id": "ego_operator_first_transition",
+    },
+    "ego-operator-rename-docs-safety-v1": {
+        "lane": "closed_evidence",
         "label": "EgoOperator Rename + Docs Safety v1",
-        "why": "Current EgoOperator naming and reader-safety transition owner; records the active operator-first route name and current-doc cross-links.",
+        "why": "Previous EgoOperator naming and reader-safety transition record; superseded by the human operator trial v2 task as the active observation owner.",
         "workstream_id": "ego_operator_first_transition",
     },
     "ego-mainline-demotion-v1": {

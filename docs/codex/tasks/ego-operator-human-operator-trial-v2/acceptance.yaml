@@ -1,0 +1,40 @@
+task: ego-operator-human-operator-trial-v2
+claim_ceiling: EgoOperator human-operator trial local observation pass
+allowed_paths:
+  - EgoOperator/**
+  - docs/codex/tasks/ego-operator-human-operator-trial-v2/**
+  - docs/PROGRAM_STATE_UNIFIED.yaml
+  - README.md
+  - docs/MAINLINE_QUICKSTART.md
+  - docs/STATUS.md
+  - docs/codex/tasks/TASK_LANE_INDEX.md
+  - scripts/codex/route_convergence_common.py
+  - scripts/codex/verify_route_convergence.py
+  - scripts/codex/verify_mainline_clarity.py
+  - legacy/ego-pre-handmade-mainline/EgoCore/docs/PROGRAM_STATE_UNIFIED.yaml
+  - legacy/ego-pre-handmade-mainline/OpenEmotion/docs/PROGRAM_STATE_UNIFIED.yaml
+forbidden_paths:
+  - legacy/ego-pre-handmade-mainline/EgoCore/app/**
+  - legacy/ego-pre-handmade-mainline/EgoCore/tests/**
+  - legacy/ego-pre-handmade-mainline/OpenEmotion/openemotion/**
+  - legacy/ego-pre-handmade-mainline/OpenEmotion/tests/**
+  - artifacts/evidence_ledger/**
+  - docs/codex/tasks/ego-handmade-human-operator-trial-v1/**
+acceptance_gates:
+  - v2_task_source_created
+  - old_handmade_trial_remains_reference_only
+  - report_schema_uses_ego_operator_v2
+  - scripted_runtime_trial_records_provider_availability
+  - nollm_or_fallback_cannot_pass_human_observation
+  - static_and_regression_tests_pass
+  - route_and_mainline_clarity_pass
+rollback:
+  - revert tracked v2 trial harness and task-doc changes
+  - delete ignored EgoOperator/artifacts/human_operator_trial runtime outputs if desired
+cannot_claim:
+  - stable_user_benefit
+  - formal_long_term_memory_efficacy
+  - runtime_efficacy
+  - live_autonomy
+  - mainline_replacement_success
+  - consciousness
