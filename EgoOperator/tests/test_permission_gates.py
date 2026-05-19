@@ -195,6 +195,106 @@ def test_run_command_proposal_approval_executes_and_enters_session_memory(tmp_pa
     assert approved["execution"]["stdout"].strip() == "approved"
     assert "approved_operation_result" in runtime.memory.render()
     assert "echo approved" in runtime.memory.render()
+    assert "operator_summary" in approved
+    assert "审批命令已执行成功" in approved["operator_summary"]
+    assert "approved" in approved["operator_summary"]
+
+
+def test_run_command_approval_summary_keeps_stdout_on_nonzero_return(tmp_path, monkeypatch):
+    monkeypatch.setattr(agent, "DEFAULT_AGENT_WORKSPACE", tmp_path)
+    monkeypatch.setattr(agent, "DEFAULT_AGENT_ALLOWED_ROOTS", (tmp_path,))
+    runtime = agent.build_demo_runtime(enable_operator_memory=False, runtime_mode="approve")
+
+    def fake_run(command: str):
+        return {
+            "status": "failed",
+            "returncode": 1,
+            "stdout": "SizeMB    : 7263.23\nSizeBytes : 7616051307\nFileCount : 338157\n",
+            "stderr": "",
+            "command": command,
+        }
+
+    monkeypatch.setattr(agent, "_run_command_execute", fake_run)
+
+    proposal = runtime.propose_run_command("powershell size check", reason="accurate size check")
+    approved = runtime.approve_pending_operation(proposal["proposal"]["proposal_id"])
+
+    assert approved["status"] == "failed"
+    assert "operator_summary" in approved
+    assert "命令返回非零状态" in approved["operator_summary"]
+    assert "SizeMB" in approved["operator_summary"]
+    assert "7263.23" in approved["operator_summary"]
+
+
+def test_write_file_approval_summary_includes_path_and_bytes(tmp_path, monkeypatch):
+    monkeypatch.setattr(agent, "DEFAULT_AGENT_WORKSPACE", tmp_path)
+    monkeypatch.setattr(agent, "DEFAULT_AGENT_ALLOWED_ROOTS", (tmp_path,))
+    runtime = agent.build_demo_runtime(enable_operator_memory=False, runtime_mode="approve")
+
+    proposal = runtime.propose_file_write("note.txt", "你好", reason="summary smoke")
+    approved = runtime.approve_pending_operation(proposal["proposal"]["proposal_id"])
+
+    assert approved["status"] == "ok"
+    assert "operator_summary" in approved
+    assert "审批文件写入已执行" in approved["operator_summary"]
+    assert "note.txt" in approved["operator_summary"]
+    assert "bytes" in approved["operator_summary"]
+
+
+def test_web_fetch_approval_summary_includes_url_and_content_preview(tmp_path, monkeypatch):
+    monkeypatch.setattr(agent, "DEFAULT_AGENT_WORKSPACE", tmp_path)
+    monkeypatch.setattr(agent, "DEFAULT_AGENT_ALLOWED_ROOTS", (tmp_path,))
+    runtime = agent.build_demo_runtime(enable_operator_memory=False, runtime_mode="approve")
+
+    def fake_fetch(url: str, extract_mode: str, max_chars: int):
+        return {
+            "status": "ok",
+            "url": url,
+            "extract_mode": extract_mode,
+            "truncated": False,
+            "content": "Example Domain content",
+        }
+
+    monkeypatch.setattr(agent, "_web_fetch_execute", fake_fetch)
+
+    proposal = runtime.propose_web_fetch("https://example.com", reason="summary smoke")
+    approved = runtime.approve_pending_operation(proposal["proposal"]["proposal_id"])
+
+    assert approved["status"] == "ok"
+    assert "operator_summary" in approved
+    assert "https://example.com" in approved["operator_summary"]
+    assert "Example Domain" in approved["operator_summary"]
+
+
+def test_heartbeat_approval_summary_includes_due_time_and_message(tmp_path, monkeypatch):
+    monkeypatch.setattr(agent, "DEFAULT_AGENT_WORKSPACE", tmp_path)
+    monkeypatch.setattr(agent, "DEFAULT_AGENT_ALLOWED_ROOTS", (tmp_path,))
+    runtime = agent.build_demo_runtime(enable_operator_memory=False, runtime_mode="approve")
+
+    proposal = runtime.propose_heartbeat(60, "稍后提醒继续测试", reason="summary smoke")
+    approved = runtime.approve_pending_operation(proposal["proposal"]["proposal_id"])
+
+    assert approved["status"] == "ok"
+    assert "operator_summary" in approved
+    assert "heartbeat" in approved["operator_summary"]
+    assert "稍后提醒继续测试" in approved["operator_summary"]
+
+
+def test_failed_or_rejected_approval_does_not_invent_summary(tmp_path, monkeypatch):
+    monkeypatch.setattr(agent, "DEFAULT_AGENT_WORKSPACE", tmp_path)
+    monkeypatch.setattr(agent, "DEFAULT_AGENT_ALLOWED_ROOTS", (tmp_path,))
+    runtime = agent.build_demo_runtime(enable_operator_memory=False, runtime_mode="approve")
+
+    unknown = runtime.approve_pending_operation("proposal_missing")
+    proposal = runtime.propose_run_command("echo rejected", reason="reject smoke")
+    rejected = runtime.reject_pending_operation(proposal["proposal"]["proposal_id"])
+    after_reject = runtime.approve_pending_operation(proposal["proposal"]["proposal_id"])
+
+    assert unknown["status"] == "failed"
+    assert "operator_summary" not in unknown
+    assert rejected["status"] == "rejected"
+    assert after_reject["status"] == "failed"
+    assert "operator_summary" not in after_reject
 
 
 def test_write_file_opt_in_now_uses_transaction_proposal_by_default(tmp_path, monkeypatch):

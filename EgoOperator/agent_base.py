@@ -4126,6 +4126,84 @@ class AgentRuntime:
 
         self.memory.add("system", "[operator_runtime_decision]\n" + json.dumps(summary, ensure_ascii=False, sort_keys=True))
 
+    def _approval_summary_excerpt(self, value: Any, max_chars: int = 1200) -> str:
+        text = str(value or "").strip()
+        if len(text) > max_chars:
+            return text[:max_chars] + "\n...[truncated]"
+        return text
+
+    def format_approval_execution_summary(self, approval_result: Dict[str, Any]) -> str:
+        approval = approval_result.get("approval") or {}
+        proposal = approval.get("proposal") or {}
+        execution = approval_result.get("execution") or {}
+        if not isinstance(proposal, dict) or not isinstance(execution, dict):
+            return ""
+        action = str(proposal.get("action") or "")
+        status = str(execution.get("status") or approval_result.get("status") or "unknown")
+
+        if action == "run_command":
+            returncode = execution.get("returncode")
+            stdout = self._approval_summary_excerpt(execution.get("stdout"))
+            stderr = self._approval_summary_excerpt(execution.get("stderr"))
+            if status == "ok":
+                lines = ["审批命令已执行成功。"]
+            elif stdout:
+                lines = ["审批命令已执行，但命令返回非零状态；stdout 中有可用输出。"]
+            else:
+                lines = ["审批命令已执行，但结果为失败。"]
+            lines.extend([
+                f"- action: {action}",
+                f"- status: {status}",
+                f"- returncode: {returncode}",
+                f"- command: {execution.get('command', proposal.get('path', ''))}",
+            ])
+            if stdout:
+                lines.extend(["- stdout:", stdout])
+            if stderr:
+                lines.extend(["- stderr:", stderr])
+            return "\n".join(lines)
+
+        if action == "write_file":
+            lines = [
+                "审批文件写入已执行。" if status == "ok" else "审批文件写入已执行，但结果为失败。",
+                f"- action: {action}",
+                f"- status: {status}",
+                f"- path: {execution.get('path', proposal.get('path', ''))}",
+            ]
+            if execution.get("bytes") is not None:
+                lines.append(f"- bytes: {execution.get('bytes')}")
+            return "\n".join(lines)
+
+        if action == "web_fetch":
+            lines = [
+                "审批网页读取已执行。" if status == "ok" else "审批网页读取已执行，但结果为失败。",
+                f"- action: {action}",
+                f"- status: {status}",
+                f"- url: {execution.get('url', proposal.get('path', ''))}",
+            ]
+            if execution.get("truncated") is not None:
+                lines.append(f"- truncated: {execution.get('truncated')}")
+            content = self._approval_summary_excerpt(execution.get("content"), max_chars=800)
+            if content:
+                lines.extend(["- content_preview:", content])
+            return "\n".join(lines)
+
+        if action == "heartbeat":
+            lines = [
+                "审批 heartbeat 已登记。" if status == "ok" else "审批 heartbeat 已执行，但结果为失败。",
+                f"- action: {action}",
+                f"- status: {status}",
+            ]
+            if execution.get("heartbeat_id"):
+                lines.append(f"- heartbeat_id: {execution.get('heartbeat_id')}")
+            if execution.get("due_at"):
+                lines.append(f"- due_at: {execution.get('due_at')}")
+            if execution.get("message"):
+                lines.append(f"- message: {execution.get('message')}")
+            return "\n".join(lines)
+
+        return ""
+
     def approve_pending_operation(self, proposal_id: str) -> Dict[str, Any]:
         approval = self.permission_broker.approve(proposal_id)
         if approval.get("status") != "approved":
@@ -4195,6 +4273,9 @@ class AgentRuntime:
             decision="approve",
             execution=execution,
         )
+        summary = self.format_approval_execution_summary(result)
+        if summary:
+            result["operator_summary"] = summary
         return result
 
     def reject_pending_operation(self, proposal_id: str, reason: str = "operator_rejected") -> Dict[str, Any]:
@@ -5884,7 +5965,11 @@ if __name__ == "__main__":
             continue
         if msg.lower().startswith("/approve "):
             proposal_id = msg.split(maxsplit=1)[1].strip()
-            print(json.dumps(runtime.approve_pending_operation(proposal_id), ensure_ascii=False, indent=2))
+            approval_result = runtime.approve_pending_operation(proposal_id)
+            print(json.dumps(approval_result, ensure_ascii=False, indent=2))
+            operator_summary = str(approval_result.get("operator_summary") or "").strip()
+            if operator_summary:
+                print("\n" + operator_summary)
             continue
         if msg.lower().startswith("/reject "):
             parts = msg.split(maxsplit=2)
