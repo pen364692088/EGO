@@ -21,7 +21,7 @@
 | `supporting_active` | 5 |
 | `parked` | 1 |
 | `closed_evidence` | 17 |
-| `reference_only` | 55 |
+| `reference_only` | 56 |
 
 ## Active Default
 
@@ -74,6 +74,7 @@
 | Autopilot Doctor Auth Check | `codex_task` | n/a | `docs/codex/tasks/autopilot-doctor-auth-check/` | No current authority promotes this task as an active or parked route; keep it as reference-only by default. |
 | Autopilot Ego Reconnect Smoke | `codex_task` | n/a | `docs/codex/tasks/autopilot-ego-reconnect-smoke/` | No current authority promotes this task as an active or parked route; keep it as reference-only by default. |
 | Autopilot Smoke | `codex_task` | n/a | `docs/codex/tasks/autopilot-smoke/` | No current authority promotes this task as an active or parked route; keep it as reference-only by default. |
+| Codex Cross Project Devloop Toolkit V1 | `codex_task` | n/a | `docs/codex/tasks/codex-cross-project-devloop-toolkit-v1/` | No current authority promotes this task as an active or parked route; keep it as reference-only by default. |
 | Codex Harness Hardening | `codex_task` | n/a | `docs/codex/tasks/codex-harness-hardening/` | Historical stabilization, sampling, or exploratory task; retained as reference/supporting history only. |
 | E4 Shadow H1 Formal Mainline Sampling | `codex_task` | n/a | `docs/codex/tasks/e4-shadow-h1-formal-mainline-sampling/` | Historical stabilization, sampling, or exploratory task; retained as reference/supporting history only. |
 | Ego Handmade Human Operator Trial V1 | `codex_task` | n/a | `docs/codex/tasks/ego-handmade-human-operator-trial-v1/` | No current authority promotes this task as an active or parked route; keep it as reference-only by default. |
