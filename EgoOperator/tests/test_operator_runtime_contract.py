@@ -4,6 +4,8 @@ import json
 import sys
 from pathlib import Path
 
+import pytest
+
 ROOT = Path(__file__).resolve().parents[1]
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
@@ -367,6 +369,52 @@ class RateLimitedLLM:
 
     def complete(self, prompt, messages=None):
         raise RuntimeError("429 Client Error: Too Many Requests")
+
+
+class StructuredProviderErrorLLM:
+    provider = "openrouter"
+    last_usage = {}
+    last_reasoning_tokens = None
+    last_fallback_used = False
+    last_fallback_chain = []
+
+    def __init__(self, error: agent.OpenRouterProviderError) -> None:
+        self.error = error
+        self.model = error.model
+        self.configured_model = error.model
+        self.last_provider_error = error.to_metadata()
+
+    def chat(self, messages, *, system_prompt, policy_context="", tools=None, stream=None):
+        raise self.error
+
+    def complete(self, prompt, messages=None):
+        raise self.error
+
+
+class FakeHTTPResponse:
+    def __init__(self, status_code: int, payload=None, headers=None, text: str = "", reason: str = "") -> None:
+        self.status_code = status_code
+        self._payload = payload
+        self.headers = headers or {}
+        self.text = text
+        self.reason = reason
+
+    def json(self):
+        if self._payload is None:
+            raise ValueError("no json")
+        return self._payload
+
+
+class FakeRequests:
+    def __init__(self, responses) -> None:
+        self.responses = list(responses)
+        self.calls = []
+
+    def post(self, url, *, headers=None, json=None, timeout=None, stream=False):
+        self.calls.append({"url": url, "model": (json or {}).get("model"), "stream": stream})
+        if not self.responses:
+            raise AssertionError("unexpected extra request")
+        return self.responses.pop(0)
 
 
 class WebProposalThenFinalLLM:
@@ -1184,13 +1232,160 @@ def test_provider_429_in_tool_loop_returns_chinese_error_not_nollm_fallback(tmp_
     assert result.action.reason == "llm_tool_loop_provider_error"
     assert "429" in result.reply_text
     assert "模型/API" in result.reply_text
-    assert "没有执行文件创建或修改" in result.reply_text
+    assert "文件操作恢复" not in result.reply_text
+    assert "没有执行外部副作用" in result.reply_text
+    assert "非 free 模型" not in result.reply_text
     assert "I can help with that" not in result.reply_text
     assert runtime.list_pending_approvals()["count"] == 0
     assert not (tmp_path / "test" / "index.html").exists()
     assistant_messages = [message for message in runtime.memory.as_messages() if message["role"] == "assistant"]
     assert assistant_messages
     assert all(str(message.get("content", "")).strip() for message in assistant_messages)
+
+
+def test_openrouter_429_error_preserves_retry_after_body_and_model(monkeypatch):
+    fake_requests = FakeRequests([
+        FakeHTTPResponse(
+            429,
+            {"error": {"message": "Provider rate limited upstream", "code": 429, "status": 429}},
+            headers={"Retry-After": "60"},
+        )
+    ])
+    monkeypatch.setattr(agent, "requests", fake_requests)
+    llm = agent.OpenRouterLLM(agent.LLMConfig(api_key="sk-test", model="tencent/hy3-preview", stream=False))
+
+    with pytest.raises(agent.OpenRouterProviderError) as exc_info:
+        llm.chat([{"role": "user", "content": "你好"}], system_prompt="system", stream=False)
+
+    error = exc_info.value
+    metadata = error.to_metadata()
+    assert error.status_code == 429
+    assert error.model == "tencent/hy3-preview"
+    assert error.retry_after == "60"
+    assert "Provider rate limited upstream" in error.message
+    assert metadata["status_code"] == 429
+    assert metadata["retry_after"] == "60"
+    assert "sk-test" not in json.dumps(metadata, ensure_ascii=False)
+
+
+def test_openrouter_fallback_on_503_records_chain(monkeypatch):
+    fake_requests = FakeRequests([
+        FakeHTTPResponse(503, {"error": {"message": "provider unavailable", "code": 503}}, headers={"Retry-After": "10"}),
+        FakeHTTPResponse(
+            200,
+            {
+                "choices": [{"message": {"content": "备用模型回复", "tool_calls": []}}],
+                "usage": {"prompt_tokens": 1, "completion_tokens": 2},
+            },
+        ),
+    ])
+    monkeypatch.setattr(agent, "requests", fake_requests)
+    llm = agent.OpenRouterLLM(agent.LLMConfig(
+        api_key="sk-test",
+        model="primary/model",
+        fallback_mode="on",
+        fallback_models=("fallback/model",),
+        stream=False,
+    ))
+
+    result = llm.chat([{"role": "user", "content": "你好"}], system_prompt="system", stream=False)
+
+    assert result.content == "备用模型回复"
+    assert [call["model"] for call in fake_requests.calls] == ["primary/model", "fallback/model"]
+    assert llm.model == "fallback/model"
+    assert llm.last_fallback_used is True
+    assert llm.last_fallback_chain[0]["status"] == "error"
+    assert llm.last_fallback_chain[0]["status_code"] == 503
+    assert llm.last_fallback_chain[1] == {"model": "fallback/model", "status": "ok"}
+
+
+def test_openrouter_fallback_on_429_records_chain(monkeypatch):
+    fake_requests = FakeRequests([
+        FakeHTTPResponse(429, {"error": {"message": "rate limited", "code": 429}}, headers={"Retry-After": "30"}),
+        FakeHTTPResponse(200, {"choices": [{"message": {"content": "fallback ok", "tool_calls": []}}]}),
+    ])
+    monkeypatch.setattr(agent, "requests", fake_requests)
+    llm = agent.OpenRouterLLM(agent.LLMConfig(
+        api_key="sk-test",
+        model="primary/model",
+        fallback_mode="on",
+        fallback_models=("fallback/model",),
+        stream=False,
+    ))
+
+    result = llm.chat([{"role": "user", "content": "你好"}], system_prompt="system", stream=False)
+
+    assert result.content == "fallback ok"
+    assert [call["model"] for call in fake_requests.calls] == ["primary/model", "fallback/model"]
+    assert llm.last_fallback_used is True
+    assert llm.last_fallback_chain[0]["status_code"] == 429
+    assert llm.last_fallback_chain[0]["retry_after"] == "30"
+    assert llm.last_fallback_chain[1]["status"] == "ok"
+
+
+def test_openrouter_does_not_fallback_on_400_401_or_403(monkeypatch):
+    for status_code in (400, 401, 403):
+        fake_requests = FakeRequests([
+            FakeHTTPResponse(status_code, {"error": {"message": f"error {status_code}", "code": status_code}}),
+            FakeHTTPResponse(200, {"choices": [{"message": {"content": "should not happen"}}]}),
+        ])
+        monkeypatch.setattr(agent, "requests", fake_requests)
+        llm = agent.OpenRouterLLM(agent.LLMConfig(
+            api_key="sk-test",
+            model="primary/model",
+            fallback_mode="on",
+            fallback_models=("fallback/model",),
+            stream=False,
+        ))
+
+        with pytest.raises(agent.OpenRouterProviderError) as exc_info:
+            llm.chat([{"role": "user", "content": "你好"}], system_prompt="system", stream=False)
+
+        assert exc_info.value.status_code == status_code
+        assert [call["model"] for call in fake_requests.calls] == ["primary/model"]
+
+
+def test_structured_paid_model_429_reply_has_diagnostics_without_free_model_advice(tmp_path, monkeypatch):
+    runtime = _runtime(tmp_path, monkeypatch)
+    error = agent.OpenRouterProviderError(
+        status_code=429,
+        model="tencent/hy3-preview",
+        message="Provider returned rate limit",
+        response_body='{"error":{"message":"Provider returned rate limit","code":429}}',
+        retry_after="45",
+    )
+    runtime.planner.llm = StructuredProviderErrorLLM(error)
+
+    result = runtime.handle_user_message("你好")
+
+    assert result.external_result["status"] == "llm_error"
+    assert result.external_result["provider_error"]["status_code"] == 429
+    assert result.external_result["provider_error"]["model"] == "tencent/hy3-preview"
+    assert "文件操作恢复" not in result.reply_text
+    assert "effective model：tencent/hy3-preview" in result.reply_text
+    assert "Provider returned rate limit" in result.reply_text
+    assert "Retry-After：45 秒" in result.reply_text
+    assert "非 free 模型" not in result.reply_text
+    assert "没有执行外部副作用" in result.reply_text
+
+
+def test_structured_402_reply_points_to_credits_not_fallback(tmp_path, monkeypatch):
+    runtime = _runtime(tmp_path, monkeypatch)
+    error = agent.OpenRouterProviderError(
+        status_code=402,
+        model="tencent/hy3-preview",
+        message="Insufficient credits",
+        response_body='{"error":{"message":"Insufficient credits","code":402}}',
+    )
+    runtime.planner.llm = StructuredProviderErrorLLM(error)
+
+    result = runtime.handle_user_message("你好")
+
+    assert result.external_result["provider_error"]["status_code"] == 402
+    assert "402" in result.reply_text
+    assert "credits" in result.reply_text
+    assert "补足余额" in result.reply_text
+    assert "开启 fallback" not in result.reply_text
 
 
 def test_approved_file_write_result_is_available_to_next_turn(tmp_path, monkeypatch):

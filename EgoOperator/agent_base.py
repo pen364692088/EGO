@@ -125,6 +125,10 @@ def env_flag(name: str, default: bool) -> bool:
     return raw.strip().lower() in {"1", "true", "yes", "on"}
 
 
+def env_mode_enabled(raw: str) -> bool:
+    return str(raw or "").strip().lower() in {"1", "true", "yes", "on"}
+
+
 WINDOWS_DRIVE_PATH_RE = re.compile(r"^([A-Za-z]):[\\/](.*)$")
 WINDOWS_ABSOLUTE_PATH_TEXT_RE = re.compile(r"([A-Za-z]:[\\/][A-Za-z0-9_. \-()\\/]+)")
 POSIX_ABSOLUTE_PATH_TEXT_RE = re.compile(r"(/mnt/[A-Za-z]/[A-Za-z0-9_. \-()/]+|/[A-Za-z0-9_. \-()/]+)")
@@ -168,6 +172,12 @@ DEFAULT_OPENROUTER_BASE_URL = os.getenv(
 # Optional OpenRouter headers. Leave blank if you do not need leaderboard/referrer metadata.
 DEFAULT_OPENROUTER_SITE_URL = os.getenv("OPENROUTER_SITE_URL", "")
 DEFAULT_OPENROUTER_APP_NAME = os.getenv("OPENROUTER_APP_NAME", "EgoOperator")
+DEFAULT_OPENROUTER_FALLBACK_MODE = os.getenv("OPENROUTER_FALLBACK_MODE", "off").strip().lower() or "off"
+DEFAULT_OPENROUTER_FALLBACK_MODELS = tuple(
+    item.strip()
+    for item in os.getenv("OPENROUTER_FALLBACK_MODELS", "").split(",")
+    if item.strip()
+)
 DEFAULT_MEMORY_MAX_MESSAGES = int(os.getenv("AGENT_MEMORY_MAX_MESSAGES", "20"))
 DEFAULT_MEMORY_MAX_CHARS_PER_MESSAGE = int(os.getenv("AGENT_MEMORY_MAX_CHARS_PER_MESSAGE", "2000"))
 DEFAULT_MAX_TOOL_LOOPS = int(os.getenv("AGENT_MAX_TOOL_LOOPS", "50"))
@@ -2226,6 +2236,8 @@ class LLMConfig:
     timeout_seconds: int = 90
     site_url: str = DEFAULT_OPENROUTER_SITE_URL
     app_name: str = DEFAULT_OPENROUTER_APP_NAME
+    fallback_mode: str = DEFAULT_OPENROUTER_FALLBACK_MODE
+    fallback_models: tuple[str, ...] = DEFAULT_OPENROUTER_FALLBACK_MODELS
     system_prompt: str = DEFAULT_SYSTEM_PROMPT
 
     # Optional reasoning config supported by reasoning-capable OpenRouter models.
@@ -2245,6 +2257,49 @@ class LLMChatResult:
     content: str = ""
     tool_calls: List[LLMToolCall] = field(default_factory=list)
     raw_message: Dict[str, Any] = field(default_factory=dict)
+
+
+class OpenRouterProviderError(RuntimeError):
+    def __init__(
+        self,
+        *,
+        status_code: int,
+        model: str,
+        message: str,
+        response_body: str = "",
+        retry_after: Optional[str] = None,
+        error_code: Optional[Any] = None,
+        error_status: Optional[Any] = None,
+        fallback_chain: Optional[List[Dict[str, Any]]] = None,
+    ) -> None:
+        self.status_code = int(status_code)
+        self.model = model
+        self.message = message
+        self.response_body = response_body[:2000]
+        self.retry_after = retry_after
+        self.error_code = error_code
+        self.error_status = error_status
+        self.fallback_chain = list(fallback_chain or [])
+        super().__init__(self._build_message())
+
+    def _build_message(self) -> str:
+        parts = [f"OpenRouter HTTP {self.status_code}", f"model={self.model}", self.message]
+        if self.retry_after:
+            parts.append(f"retry_after={self.retry_after}")
+        return " | ".join(str(part) for part in parts if str(part).strip())
+
+    def to_metadata(self) -> Dict[str, Any]:
+        return {
+            "provider": "openrouter",
+            "status_code": self.status_code,
+            "model": self.model,
+            "message": self.message,
+            "error_code": self.error_code,
+            "error_status": self.error_status,
+            "retry_after": self.retry_after,
+            "response_body": self.response_body,
+            "fallback_chain": self.fallback_chain,
+        }
 
 
 class LLMClient(Protocol):
@@ -2290,9 +2345,13 @@ class OpenRouterLLM:
 
     def __init__(self, config: Optional[LLMConfig] = None) -> None:
         self.config = config or LLMConfig()
+        self.configured_model = self.config.model
         self.model = self.config.model
         self.last_usage: Dict[str, Any] = {}
         self.last_reasoning_tokens: Optional[int] = None
+        self.last_provider_error: Optional[Dict[str, Any]] = None
+        self.last_fallback_used: bool = False
+        self.last_fallback_chain: List[Dict[str, Any]] = []
 
         if not self.config.api_key:
             raise ValueError(
@@ -2350,7 +2409,6 @@ class OpenRouterLLM:
             use_stream = False
 
         payload: Dict[str, Any] = {
-            "model": self.config.model,
             "messages": chat_messages,
             "stream": use_stream,
         }
@@ -2369,9 +2427,66 @@ class OpenRouterLLM:
         if self.config.app_name:
             headers["X-Title"] = self.config.app_name
 
-        if use_stream:
-            return LLMChatResult(content=self._complete_streaming(payload, headers))
-        return self._chat_non_streaming(payload, headers)
+        return self._chat_with_fallback(payload, headers, use_stream=use_stream)
+
+    def _fallback_enabled(self) -> bool:
+        return env_mode_enabled(self.config.fallback_mode)
+
+    def _candidate_models(self) -> List[str]:
+        models: List[str] = [self.config.model]
+        if self._fallback_enabled():
+            models.extend(str(model).strip() for model in self.config.fallback_models if str(model).strip())
+        return list(dict.fromkeys(models))
+
+    def _chat_with_fallback(
+        self,
+        payload: Dict[str, Any],
+        headers: Dict[str, str],
+        *,
+        use_stream: bool,
+    ) -> LLMChatResult:
+        self.last_provider_error = None
+        self.last_fallback_used = False
+        self.last_fallback_chain = []
+        last_error: Optional[OpenRouterProviderError] = None
+
+        for index, model in enumerate(self._candidate_models()):
+            attempt_payload = dict(payload)
+            attempt_payload["model"] = model
+            self.model = model
+            try:
+                result = (
+                    LLMChatResult(content=self._complete_streaming(attempt_payload, headers))
+                    if use_stream
+                    else self._chat_non_streaming(attempt_payload, headers)
+                )
+            except OpenRouterProviderError as exc:
+                last_error = exc
+                self.last_provider_error = exc.to_metadata()
+                self.last_fallback_chain.append({
+                    "model": model,
+                    "status": "error",
+                    "status_code": exc.status_code,
+                    "message": exc.message,
+                    "retry_after": exc.retry_after,
+                })
+                has_next = index < len(self._candidate_models()) - 1
+                if exc.status_code not in {429, 503} or not has_next:
+                    exc.fallback_chain = list(self.last_fallback_chain)
+                    self.last_provider_error = exc.to_metadata()
+                    raise exc
+                continue
+
+            self.last_fallback_used = index > 0
+            self.last_fallback_chain.append({"model": model, "status": "ok"})
+            self.last_provider_error = None
+            return result
+
+        if last_error is not None:
+            last_error.fallback_chain = list(self.last_fallback_chain)
+            self.last_provider_error = last_error.to_metadata()
+            raise last_error
+        raise RuntimeError("OpenRouter model candidate list was empty")
 
     def _chat_non_streaming(self, payload: Dict[str, Any], headers: Dict[str, str]) -> LLMChatResult:
         assert requests is not None
@@ -2381,7 +2496,7 @@ class OpenRouterLLM:
             json=payload,
             timeout=self.config.timeout_seconds,
         )
-        resp.raise_for_status()
+        self._raise_for_error_response(resp, str(payload.get("model") or self.config.model))
         data = resp.json()
         self.last_usage = data.get("usage") or {}
         self.last_reasoning_tokens = self._extract_reasoning_tokens(self.last_usage)
@@ -2426,7 +2541,7 @@ class OpenRouterLLM:
             json=payload,
             timeout=self.config.timeout_seconds,
         )
-        resp.raise_for_status()
+        self._raise_for_error_response(resp, str(payload.get("model") or self.config.model))
         data = resp.json()
         self.last_usage = data.get("usage") or {}
         self.last_reasoning_tokens = self._extract_reasoning_tokens(self.last_usage)
@@ -2442,7 +2557,7 @@ class OpenRouterLLM:
             stream=True,
             timeout=self.config.timeout_seconds,
         ) as resp:
-            resp.raise_for_status()
+            self._raise_for_error_response(resp, str(payload.get("model") or self.config.model))
 
             # Critical fix:
             # Do NOT use iter_lines(decode_unicode=True) here.
@@ -2482,6 +2597,49 @@ class OpenRouterLLM:
                     parts.append(repair_mojibake(content))
 
         return repair_mojibake("".join(parts))
+
+    def _raise_for_error_response(self, resp: Any, model: str) -> None:
+        status_code = int(getattr(resp, "status_code", 0) or 0)
+        if status_code < 400:
+            return
+
+        retry_after = None
+        headers = getattr(resp, "headers", {}) or {}
+        if hasattr(headers, "get"):
+            retry_after = headers.get("Retry-After") or headers.get("retry-after")
+
+        body_text = ""
+        error_payload: Dict[str, Any] = {}
+        try:
+            parsed = resp.json()
+            if isinstance(parsed, dict):
+                error_payload = parsed
+                body_text = json.dumps(parsed, ensure_ascii=False)
+        except Exception:
+            body_text = str(getattr(resp, "text", "") or "")
+
+        if not body_text:
+            body_text = str(getattr(resp, "text", "") or "")
+
+        error_obj = error_payload.get("error") if isinstance(error_payload, dict) else None
+        if not isinstance(error_obj, dict):
+            error_obj = {}
+        message = str(
+            error_obj.get("message")
+            or error_obj.get("status")
+            or getattr(resp, "reason", "")
+            or "OpenRouter request failed"
+        )
+        raise OpenRouterProviderError(
+            status_code=status_code,
+            model=model,
+            message=message,
+            response_body=body_text,
+            retry_after=str(retry_after) if retry_after is not None else None,
+            error_code=error_obj.get("code"),
+            error_status=error_obj.get("status"),
+            fallback_chain=list(self.last_fallback_chain),
+        )
 
     def _extract_reasoning_tokens(self, usage: Dict[str, Any]) -> Optional[int]:
         # OpenRouter/model providers may use snake_case or camelCase.
@@ -3249,15 +3407,20 @@ class Planner:
                 "provider": getattr(self.llm, "provider", "unknown"),
                 "model": getattr(self.llm, "model", "unknown"),
                 "error": repr(exc),
+                "provider_error": getattr(exc, "to_metadata", lambda: None)(),
+                "fallback_chain": getattr(self.llm, "last_fallback_chain", []),
                 "fallback_used": True,
             }
         else:
             self.last_llm_meta = {
                 "provider": getattr(self.llm, "provider", "unknown"),
                 "model": getattr(self.llm, "model", "unknown"),
+                "configured_model": getattr(self.llm, "configured_model", getattr(self.llm, "model", "unknown")),
                 "usage": getattr(self.llm, "last_usage", {}),
                 "reasoning_tokens": getattr(self.llm, "last_reasoning_tokens", None),
-                "fallback_used": False,
+                "fallback_used": bool(getattr(self.llm, "last_fallback_used", False)),
+                "fallback_chain": getattr(self.llm, "last_fallback_chain", []),
+                "provider_error": getattr(self.llm, "last_provider_error", None),
             }
 
         return AgentAction(
@@ -3948,6 +4111,24 @@ class AgentRuntime:
         llm_usage = getattr(self.planner.llm, "last_usage", {})
         return llm_usage if isinstance(llm_usage, dict) else {}
 
+    def provider_status(self) -> Dict[str, Any]:
+        llm = self.planner.llm
+        config = getattr(llm, "config", None)
+        fallback_mode = str(getattr(config, "fallback_mode", "off") or "off")
+        fallback_models = list(getattr(config, "fallback_models", []) or [])
+        return {
+            "provider": getattr(llm, "provider", "unknown"),
+            "configured_model": getattr(llm, "configured_model", getattr(llm, "model", "unknown")),
+            "effective_model": getattr(llm, "model", "unknown"),
+            "fallback_mode": fallback_mode,
+            "fallback_enabled": env_mode_enabled(fallback_mode),
+            "fallback_models": fallback_models,
+            "last_fallback_used": bool(getattr(llm, "last_fallback_used", False)),
+            "last_fallback_chain": getattr(llm, "last_fallback_chain", []),
+            "last_provider_error": getattr(llm, "last_provider_error", None),
+            "last_llm_meta": getattr(self.planner, "last_llm_meta", {}),
+        }
+
     def _record_operator_memory_turn(
         self,
         *,
@@ -4432,9 +4613,12 @@ class AgentRuntime:
                 self.planner.last_llm_meta = {
                     "provider": getattr(llm, "provider", "unknown"),
                     "model": getattr(llm, "model", "unknown"),
+                    "configured_model": getattr(llm, "configured_model", getattr(llm, "model", "unknown")),
                     "usage": getattr(llm, "last_usage", {}),
                     "reasoning_tokens": getattr(llm, "last_reasoning_tokens", None),
-                    "fallback_used": False,
+                    "fallback_used": bool(getattr(llm, "last_fallback_used", False)),
+                    "fallback_chain": getattr(llm, "last_fallback_chain", []),
+                    "provider_error": getattr(llm, "last_provider_error", None),
                     "tool_loop": True,
                     "loop_idx": loop_idx,
                 }
@@ -4749,8 +4933,11 @@ class AgentRuntime:
             self.planner.last_llm_meta = {
                 "provider": getattr(llm, "provider", "unknown"),
                 "model": getattr(llm, "model", "unknown"),
+                "configured_model": getattr(llm, "configured_model", getattr(llm, "model", "unknown")),
                 "error": repr(exc),
-                "fallback_used": False,
+                "provider_error": getattr(exc, "to_metadata", lambda: None)(),
+                "fallback_chain": getattr(llm, "last_fallback_chain", []),
+                "fallback_used": bool(getattr(llm, "last_fallback_used", False)),
                 "error_recovered": True,
                 "tool_loop": True,
             }
@@ -4765,6 +4952,9 @@ class AgentRuntime:
                 "status": "llm_error",
                 "reason": "provider_exception",
                 "error": repr(exc),
+                "provider_error": getattr(exc, "to_metadata", lambda: None)(),
+                "fallback_chain": getattr(llm, "last_fallback_chain", []),
+                "fallback_used": bool(getattr(llm, "last_fallback_used", False)),
                 "tool_calls": len(tool_trace),
                 "side_effects_executed": False,
             }, content, tool_trace
@@ -4848,25 +5038,46 @@ class AgentRuntime:
 
     def _format_llm_tool_loop_error_reply(self, exc: Exception, tool_trace: List[Dict[str, Any]]) -> str:
         error_text = repr(exc)
-        is_rate_limited = "429" in error_text or "Too Many Requests" in error_text
-        first_line = (
-            "模型/API 当前返回 429 限流，EgoOperator 已停止本轮文件操作恢复。"
-            if is_rate_limited
-            else "模型/API 当前调用失败，EgoOperator 已停止本轮工具循环。"
-        )
+        provider_error = exc if isinstance(exc, OpenRouterProviderError) else None
+        status_code = provider_error.status_code if provider_error else None
+        model = provider_error.model if provider_error else str(getattr(self.planner.llm, "model", "unknown"))
+        retry_after = provider_error.retry_after if provider_error else None
+        message = provider_error.message if provider_error else error_text
+        is_rate_limited = status_code == 429 or "429" in error_text or "Too Many Requests" in error_text
+        if status_code == 402:
+            first_line = "模型/API 当前返回 402，账号或 API key credits 不足。"
+        elif status_code == 503:
+            first_line = "模型/API 当前返回 503，所选模型或 provider 暂时不可用。"
+        elif is_rate_limited:
+            first_line = "模型/API 当前返回 429 限流，EgoOperator 已停止本轮回复生成。"
+        else:
+            first_line = "模型/API 当前调用失败，EgoOperator 已停止本轮工具循环。"
         lines = [
             first_line,
+            f"effective model：{model}。",
+            f"provider message：{message[:500]}。",
             f"当前已完成工具调用：{len(tool_trace)} 次。",
-            "没有执行文件创建或修改；这个任务仍未完成。",
+            "没有执行外部副作用；这条回复未完成。",
         ]
+        if retry_after:
+            lines.append(f"Retry-After：{retry_after} 秒；建议等待后再重试。")
         if tool_trace:
             last = tool_trace[-1]
             tool_name = ((last.get("tool_call") or {}).get("name") or "unknown")
             output = last.get("output") or {}
             status = output.get("status") if isinstance(output, dict) else "unknown"
             lines.append(f"最后一次工具结果：{tool_name} -> {status}。")
-        if is_rate_limited:
-            lines.append("建议稍后重试，或切换到非 free 模型/API key 后继续。")
+        fallback_models = getattr(self.planner.llm, "config", None)
+        fallback_model_list = list(getattr(fallback_models, "fallback_models", []) or [])
+        if status_code == 402:
+            lines.append("建议检查 OpenRouter credits / key limit，补足余额后继续。")
+        elif is_rate_limited:
+            if fallback_model_list and not bool(getattr(self.planner.llm, "last_fallback_used", False)):
+                lines.append("建议检查 key limit / provider 容量，或开启 fallback 后切换备用模型。")
+            else:
+                lines.append("建议检查 key limit / provider 容量，或配置 OPENROUTER_FALLBACK_MODELS 后继续。")
+        elif status_code == 503:
+            lines.append("建议稍后重试，或开启 fallback 使用备用模型。")
         else:
             lines.append("建议重试；如果连续出现，请检查 provider/API key/model 配置。")
         return "\n".join(lines)
@@ -4917,6 +5128,8 @@ def build_llm_from_config() -> LLMClient:
             stream=True,
             site_url=DEFAULT_OPENROUTER_SITE_URL,
             app_name=DEFAULT_OPENROUTER_APP_NAME,
+            fallback_mode=DEFAULT_OPENROUTER_FALLBACK_MODE,
+            fallback_models=DEFAULT_OPENROUTER_FALLBACK_MODELS,
             system_prompt=build_system_prompt(),
             # Example if you want reasoning metadata on supported models:
             # reasoning={"effort": "low", "exclude": False},
@@ -5352,6 +5565,8 @@ def render_runtime_permission_status(runtime: AgentRuntime) -> str:
     lines = [
         "Runtime permission status:",
         f"- runtime_mode: {runtime.runtime_mode}",
+        f"- llm_effective_model: {getattr(runtime.planner.llm, 'model', 'unknown')}",
+        f"- openrouter_fallback: mode={DEFAULT_OPENROUTER_FALLBACK_MODE} | models={', '.join(DEFAULT_OPENROUTER_FALLBACK_MODELS) if DEFAULT_OPENROUTER_FALLBACK_MODELS else '(none)'}",
         f"- operator_memory: {memory_status}"
         + (f" | dir={memory_dir}" if memory_dir else ""),
         "- core_memory_write: /remember <text>"
@@ -5395,6 +5610,9 @@ if __name__ == "__main__":
             continue
         if msg.lower() in {"/mode", "mode"}:
             print(render_runtime_permission_status(runtime))
+            continue
+        if msg.lower() in {"/provider_status", "provider status"}:
+            print(json.dumps(runtime.provider_status(), ensure_ascii=False, indent=2))
             continue
         if msg.lower().startswith("/mode "):
             print(json.dumps(runtime.set_runtime_mode(msg.split(maxsplit=1)[1]), ensure_ascii=False, indent=2))
