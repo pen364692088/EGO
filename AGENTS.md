@@ -228,6 +228,7 @@ Before any implementation:
 
 ## Skill routing
 
+- 跨项目 GitHub Project / 任务板 / 自动推进 / 无人值守 / 扫 Todo / bounded autopilot 控制面：优先使用 `codex-project-autopilot`；先读取 `.codex/project_contract.yaml`，只做 report / plan-next / dry-run loop，除非项目 contract 和当前任务明确允许更高自治级别；EGO 内具体 EgoOperator human-trial/comment/log 修复仍转入 `ego-operator-devloop`
 - EgoOperator human-trial / GitHub issue comment / test log / Project closeout / file-web_fetch-approval-memory gate repair loops：优先使用 `ego-operator-devloop`；若同时是 runtime bug / regression，再叠加 `ego-bugfix-root-cause`；若用户给出锁定实现计划，再叠加 `ego-implement-milestone`
 - 高风险 EGO/Codex 规划、架构、agent 设计、实现顺序、记忆/权限/工具/状态决策、重复失败，或用户指出“没找到最优解 / framing 不对”时：叠加使用 `ego-reflective-quality-gate`；它是 overlay gate，不替代更具体的 plan / bugfix / implementation / review skill；普通小修只做轻量自检，不强制多轮 reviewer；高风险或反复失败任务在 closeout 前必须做 critic pass，subagent / reviewer 只在当前环境和用户授权允许时启用
 - legacy EgoCore/OpenEmotion/OpenClaw 边界、owner、authority source、receipt/main-chain、enablement、trigger evidence 或跨系统漂移问题：使用 `ai-architecture-boundary`；普通 EgoOperator runtime 修复不默认触发该 skill

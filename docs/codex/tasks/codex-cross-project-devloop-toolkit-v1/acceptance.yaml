@@ -1,0 +1,30 @@
+version: 1
+task: codex-cross-project-devloop-toolkit-v1
+github_issue: 17
+claim_ceiling: Codex cross-project autopilot L0/L1 local workflow candidate pass
+allowed_paths:
+  - .codex/project_contract.yaml
+  - .agents/skills/codex-project-autopilot/**
+  - AGENTS.md
+  - scripts/**
+  - scripts/tests/**
+  - docs/codex/tasks/codex-cross-project-devloop-toolkit-v1/**
+forbidden_paths:
+  - EgoOperator/**
+  - legacy/ego-pre-handmade-mainline/**
+  - docs/PROGRAM_STATE_UNIFIED.yaml
+  - artifacts/evidence_ledger/**
+acceptance:
+  - project_contract_loads
+  - autopilot_doctor_report_plan_next_classify_issue_work
+  - run_loop_dry_run_is_non_mutating
+  - issue_classification_skips_human_aggregate_parked_supporting_by_default
+  - tests_pass
+  - diff_check_passes_for_scoped_paths
+cannot_claim:
+  - unattended_autonomous_development
+  - stable_efficiency_gain
+  - egoperator_human_trial_pass
+  - runtime_efficacy
+  - live_autonomy
+  - consciousness

@@ -1,0 +1,120 @@
+version: 1
+
+project:
+  name: EGO
+  repo: pen364692088/EGO
+  default_branch: main
+
+github_project:
+  owner: pen364692088
+  number: 1
+  status_field: Status
+
+verify_profiles:
+  autopilot_target:
+    commands:
+      - label: autopilot_py_compile
+        command:
+          - python3
+          - -m
+          - py_compile
+          - scripts/codex_project_autopilot.py
+          - scripts/github_project_task.py
+          - scripts/ego_operator_devloop.py
+      - label: autopilot_tests
+        command:
+          - python3
+          - -m
+          - pytest
+          - -q
+          - scripts/tests/test_codex_project_autopilot.py
+        env:
+          TMPDIR: /tmp
+  autopilot_full:
+    commands:
+      - label: script_tests
+        command:
+          - python3
+          - -m
+          - pytest
+          - -q
+          - scripts/tests/test_github_project_task.py
+          - scripts/tests/test_ego_operator_devloop.py
+          - scripts/tests/test_codex_project_autopilot.py
+        env:
+          TMPDIR: /tmp
+      - label: diff_check
+        command:
+          - git
+          - diff
+          - --check
+          - --
+          - .codex
+          - .agents/skills/codex-project-autopilot
+          - AGENTS.md
+          - scripts
+          - scripts/tests
+          - docs/codex/tasks/codex-cross-project-devloop-toolkit-v1
+
+protected_paths:
+  - EgoOperator/
+  - legacy/ego-pre-handmade-mainline/
+  - docs/PROGRAM_STATE_UNIFIED.yaml
+  - artifacts/evidence_ledger/
+
+allowed_mutation_paths:
+  - .codex/project_contract.yaml
+  - .agents/skills/codex-project-autopilot/
+  - AGENTS.md
+  - scripts/
+  - scripts/tests/
+  - docs/codex/tasks/codex-cross-project-devloop-toolkit-v1/
+
+commit_policy:
+  mode: direct-main
+  push: true
+  require_scoped_staging: true
+
+task_classification:
+  ready_project_statuses:
+    - In Progress
+    - Todo
+  ready_title_prefixes:
+    - "Codex Toolkit:"
+    - "EgoOperator:"
+  ready_body_markers:
+    - "Acceptance gate"
+    - "Claim ceiling"
+    - "Rollback"
+  supporting_title_prefixes:
+    - "Supporting:"
+    - "Supporting Done:"
+  parked_title_prefixes:
+    - "Parked:"
+  aggregate_title_contains:
+    - "backlog"
+    - "trial observation review"
+    - "task board bootstrap"
+  human_required_title_contains:
+    - "human operator trial"
+    - "human trial"
+    - "real-provider human"
+  high_impact_title_contains:
+    - "program state"
+    - "evidence ledger"
+    - "mainline demotion"
+    - "memory promotion"
+
+observation_classes:
+  deterministic_local:
+    closeout_allowed: true
+    description: Unit tests or local deterministic scripts provide a direct oracle.
+  scripted_real_entry:
+    closeout_allowed: true
+    description: The same user-facing entrypoint can be scripted and judged deterministically.
+  scripted_with_llm_judge:
+    closeout_allowed: false
+    description: Batchable but still needs weaker claim ceiling or human review for subjective quality.
+  human_required:
+    closeout_allowed: false
+    description: Requires human preference, external account observation, or high-impact route decision.
