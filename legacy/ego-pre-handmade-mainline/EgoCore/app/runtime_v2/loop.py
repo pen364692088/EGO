@@ -1,9 +1,12 @@
 from __future__ import annotations
 
+import inspect
 import uuid
+import time
+from contextlib import contextmanager
 from pathlib import PurePosixPath, PureWindowsPath
 from typing import Any, Awaitable, Callable, Dict, Optional
-from datetime import datetime
+from datetime import datetime, timezone
 import re
 
 from .action_protocol import RuntimeV2Action
@@ -243,6 +246,93 @@ class RuntimeV2Loop:
                     logger.warning(f"[PSK-RESET] Failed to record initial session reset for {session_id}: {exc}")
             return self._states[session_id]
 
+    def _emit_loop_phase_probe(
+        self,
+        loop_phase_probe: Optional[Callable[[dict[str, Any]], None]],
+        *,
+        session_id: str,
+        turn_id: str,
+        generation_id: int,
+        phase: str,
+        status: str,
+        started_at: str,
+        elapsed_ms: Optional[int],
+        error_kind: Optional[str] = None,
+        error_message: Optional[str] = None,
+        extra: Optional[Dict[str, Any]] = None,
+    ) -> None:
+        if not callable(loop_phase_probe):
+            return
+        try:
+            payload = {
+                "session_id": session_id,
+                "turn_id": turn_id,
+                "generation_id": generation_id,
+                "phase": phase,
+                "status": status,
+                "started_at": started_at,
+                "elapsed_ms": elapsed_ms,
+                "error_kind": error_kind,
+                "error_message": error_message,
+            }
+            if extra:
+                payload.update(dict(extra))
+            loop_phase_probe(
+                payload
+            )
+        except Exception as exc:
+            logger.warning("runtime_v2.loop.phase_probe_failed err=%s", exc)
+
+    @contextmanager
+    def _loop_phase_probe_span(
+        self,
+        loop_phase_probe: Optional[Callable[[dict[str, Any]], None]],
+        *,
+        session_id: str,
+        turn_id: str,
+        generation_id: int,
+        phase: str,
+    ):
+        started_at = datetime.now(timezone.utc).isoformat()
+        started_monotonic = time.monotonic()
+        self._emit_loop_phase_probe(
+            loop_phase_probe,
+            session_id=session_id,
+            turn_id=turn_id,
+            generation_id=generation_id,
+            phase=phase,
+            status="started",
+            started_at=started_at,
+            elapsed_ms=None,
+        )
+        try:
+            yield
+        except BaseException as exc:
+            self._emit_loop_phase_probe(
+                loop_phase_probe,
+                session_id=session_id,
+                turn_id=turn_id,
+                generation_id=generation_id,
+                phase=phase,
+                status="failed",
+                started_at=started_at,
+                elapsed_ms=int((time.monotonic() - started_monotonic) * 1000),
+                error_kind=type(exc).__name__,
+                error_message=str(exc),
+            )
+            raise
+        else:
+            self._emit_loop_phase_probe(
+                loop_phase_probe,
+                session_id=session_id,
+                turn_id=turn_id,
+                generation_id=generation_id,
+                phase=phase,
+                status="completed",
+                started_at=started_at,
+                elapsed_ms=int((time.monotonic() - started_monotonic) * 1000),
+            )
+
     async def run_turn_typed(
         self,
         session_id: str,
@@ -253,6 +343,7 @@ class RuntimeV2Loop:
         evidence_collector: Optional[Any] = None,
         progress_callback: Optional[Callable[[ProgressEvent], Awaitable[None]]] = None,
         run_event_callback: Optional[Callable[[RunEvent], Awaitable[None]]] = None,
+        loop_phase_probe: Optional[Callable[[dict[str, Any]], None]] = None,
     ) -> RuntimeV2TurnResult:
         logger.info(f"[PSK-TG-TRACE-01] run_turn_typed called session_id={session_id}, user_input={user_input[:50]}...")
         state = self.get_state(session_id)
@@ -267,6 +358,8 @@ class RuntimeV2Loop:
         # 截断后再存储，防止文件内容进入 state
         truncated_input = _truncate_user_input(user_input)
         state.clear_pending_proactive_followup()
+        if hasattr(state, "clear_proactive_outbox_events"):
+            state.clear_proactive_outbox_events()
         state.last_user_turn = truncated_input
         state.record("user", {"text": truncated_input})
 
@@ -275,14 +368,21 @@ class RuntimeV2Loop:
         if self.proto_self_runtime:
             try:
                 logger.info(f"[PSK-TG-TRACE-04] Processing proto-self ingress for {session_id}_{turn_id}")
-                self.proto_self_runtime.process_ingress(
+                with self._loop_phase_probe_span(
+                    loop_phase_probe,
                     session_id=session_id,
                     turn_id=turn_id,
-                    source=source,
-                    user_input=truncated_input,
-                    state=state,
-                    evidence_collector=evidence_collector,
-                )
+                    generation_id=generation_id,
+                    phase="process_proto_self_ingress",
+                ):
+                    self.proto_self_runtime.process_ingress(
+                        session_id=session_id,
+                        turn_id=turn_id,
+                        source=source,
+                        user_input=truncated_input,
+                        state=state,
+                        evidence_collector=evidence_collector,
+                    )
                 logger.info(f"[PSK-TG-TRACE-10] Proto-Self processing completed")
             except Exception as e:
                 # Proto-Self Kernel 失败不影响主流程
@@ -299,6 +399,7 @@ class RuntimeV2Loop:
             generation_id=generation_id,
             progress_callback=progress_callback,
             run_event_callback=run_event_callback,
+            loop_phase_probe=loop_phase_probe,
         )
 
     async def continue_turn_typed(
@@ -311,6 +412,7 @@ class RuntimeV2Loop:
         state: Optional[RuntimeV2State] = None,
         progress_callback: Optional[Callable[[ProgressEvent], Awaitable[None]]] = None,
         run_event_callback: Optional[Callable[[RunEvent], Awaitable[None]]] = None,
+        loop_phase_probe: Optional[Callable[[dict[str, Any]], None]] = None,
     ) -> RuntimeV2TurnResult:
         state = state or self.get_state(session_id)
         if not state.task_id:
@@ -332,6 +434,7 @@ class RuntimeV2Loop:
             generation_id=generation_id,
             progress_callback=progress_callback,
             run_event_callback=run_event_callback,
+            loop_phase_probe=loop_phase_probe,
         )
 
     async def _advance_turn(
@@ -346,26 +449,102 @@ class RuntimeV2Loop:
         generation_id: int,
         progress_callback: Optional[Callable[[ProgressEvent], Awaitable[None]]],
         run_event_callback: Optional[Callable[[RunEvent], Awaitable[None]]],
+        loop_phase_probe: Optional[Callable[[dict[str, Any]], None]],
     ) -> RuntimeV2TurnResult:
+        with self._loop_phase_probe_span(
+            loop_phase_probe,
+            session_id=session_id,
+            turn_id=turn_id,
+            generation_id=generation_id,
+            phase="advance_turn_entry",
+        ):
+            pass
+
         if str(((state.ingress_context or {}).get("interaction_kind") or "")).strip() == "chat":
-            result = await self.chat_reply_engine.reply(state)
+            with self._loop_phase_probe_span(
+                loop_phase_probe,
+                session_id=session_id,
+                turn_id=turn_id,
+                generation_id=generation_id,
+                phase="chat_reply_engine_reply",
+            ):
+                chat_reply_parameters = inspect.signature(self.chat_reply_engine.reply).parameters
+                if "chat_phase_probe" in chat_reply_parameters:
+                    def _chat_phase_probe(event: dict[str, Any]) -> None:
+                        self._emit_loop_phase_probe(
+                            loop_phase_probe,
+                            session_id=session_id,
+                            turn_id=turn_id,
+                            generation_id=generation_id,
+                            phase="chat_reply_engine_reply",
+                            status=str(event.get("status") or "unknown"),
+                            started_at=str(event.get("started_at") or datetime.now(timezone.utc).isoformat()),
+                            elapsed_ms=event.get("elapsed_ms"),
+                            error_kind=event.get("error_kind"),
+                            error_message=event.get("error_message"),
+                            extra={
+                                "engine_phase": event.get("phase"),
+                                "provider": event.get("provider"),
+                                "model": event.get("model"),
+                                "provider_attempt": event.get("provider_attempt"),
+                                "message_count": event.get("message_count"),
+                                "serialized_context_bytes": event.get("serialized_context_bytes"),
+                                "chat_compaction_mode": event.get("chat_compaction_mode"),
+                                "timeout_seconds": event.get("timeout_seconds"),
+                                "stage": event.get("stage"),
+                                "finish_reason": event.get("finish_reason"),
+                                "content_present": event.get("content_present"),
+                                "content_length": event.get("content_length"),
+                                "raw_has_choices": event.get("raw_has_choices"),
+                                "raw_has_message": event.get("raw_has_message"),
+                                "raw_message_content_present": event.get("raw_message_content_present"),
+                                "raw_message_content_length": event.get("raw_message_content_length"),
+                                "content_source": event.get("content_source"),
+                            },
+                        )
+
+                    result = await self.chat_reply_engine.reply(state, chat_phase_probe=_chat_phase_probe)
+                else:
+                    result = await self.chat_reply_engine.reply(state)
             if result.reply:
                 result.reply.generation_id = generation_id
                 result.reply.turn_id = turn_id
-            self._capture_proto_self_response_plan(result=result, evidence_collector=evidence_collector)
+            with self._loop_phase_probe_span(
+                loop_phase_probe,
+                session_id=session_id,
+                turn_id=turn_id,
+                generation_id=generation_id,
+                phase="capture_proto_self_response_plan",
+            ):
+                self._capture_proto_self_response_plan(result=result, evidence_collector=evidence_collector)
             return result
 
-        blocked_result = await self._promote_host_owned_frontier(
-            state=state,
-            run_event_callback=run_event_callback,
-            generation_id=generation_id,
+        with self._loop_phase_probe_span(
+            loop_phase_probe,
+            session_id=session_id,
             turn_id=turn_id,
-        )
+            generation_id=generation_id,
+            phase="promote_host_owned_frontier",
+        ):
+            blocked_result = await self._promote_host_owned_frontier(
+                state=state,
+                run_event_callback=run_event_callback,
+                generation_id=generation_id,
+                turn_id=turn_id,
+                loop_phase_probe=loop_phase_probe,
+            )
         if blocked_result is not None:
             return blocked_result
         invalid_json_retries = 0
         for step in range(max_steps):
-            action = await self._decide(state)
+            with self._loop_phase_probe_span(
+                loop_phase_probe,
+                session_id=session_id,
+                turn_id=turn_id,
+                generation_id=generation_id,
+                phase="decision_engine_decide",
+            ):
+                action = await self._decide(state)
             action = self._normalize_action_for_host_contract(state, action)
             state.last_model_action = action.raw
             state.record("assistant", action.raw)
@@ -418,16 +597,38 @@ class RuntimeV2Loop:
                     checkpoint_payload={"state_snapshot": state.to_snapshot()},
                 )
 
-            transition = await self.transition_engine.apply(state, action)
-            blocked_result = await self._promote_host_owned_frontier(
-                state=state,
-                run_event_callback=run_event_callback,
-                generation_id=generation_id,
+            with self._loop_phase_probe_span(
+                loop_phase_probe,
+                session_id=session_id,
                 turn_id=turn_id,
-            )
+                generation_id=generation_id,
+                phase="transition_engine_apply",
+            ):
+                transition = await self.transition_engine.apply(state, action)
+            with self._loop_phase_probe_span(
+                loop_phase_probe,
+                session_id=session_id,
+                turn_id=turn_id,
+                generation_id=generation_id,
+                phase="promote_host_owned_frontier",
+            ):
+                blocked_result = await self._promote_host_owned_frontier(
+                    state=state,
+                    run_event_callback=run_event_callback,
+                    generation_id=generation_id,
+                    turn_id=turn_id,
+                    loop_phase_probe=loop_phase_probe,
+                )
             if blocked_result is not None:
                 return blocked_result
-            await self._emit_progress_events(state, progress_callback)
+            with self._loop_phase_probe_span(
+                loop_phase_probe,
+                session_id=session_id,
+                turn_id=turn_id,
+                generation_id=generation_id,
+                phase="emit_progress_events",
+            ):
+                await self._emit_progress_events(state, progress_callback)
 
             if self.proto_self_runtime and action.type == "act" and state.last_tool_result:
                 try:
@@ -450,16 +651,31 @@ class RuntimeV2Loop:
                     result.reply.turn_id = turn_id
 
                 if self.proto_self_runtime:
-                    self._capture_proto_self_response_plan(result=result, evidence_collector=evidence_collector)
+                    with self._loop_phase_probe_span(
+                        loop_phase_probe,
+                        session_id=session_id,
+                        turn_id=turn_id,
+                        generation_id=generation_id,
+                        phase="capture_proto_self_response_plan",
+                    ):
+                        self._capture_proto_self_response_plan(result=result, evidence_collector=evidence_collector)
 
                 return result
 
-        blocked_result = await self._promote_host_owned_frontier(
-            state=state,
-            run_event_callback=run_event_callback,
-            generation_id=generation_id,
+        with self._loop_phase_probe_span(
+            loop_phase_probe,
+            session_id=session_id,
             turn_id=turn_id,
-        )
+            generation_id=generation_id,
+            phase="promote_host_owned_frontier",
+        ):
+            blocked_result = await self._promote_host_owned_frontier(
+                state=state,
+                run_event_callback=run_event_callback,
+                generation_id=generation_id,
+                turn_id=turn_id,
+                loop_phase_probe=loop_phase_probe,
+            )
         if blocked_result is not None:
             return blocked_result
 
@@ -527,13 +743,21 @@ class RuntimeV2Loop:
         run_event_callback: Optional[Callable[[RunEvent], Awaitable[None]]],
         generation_id: int,
         turn_id: str,
+        loop_phase_probe: Optional[Callable[[dict[str, Any]], None]] = None,
     ) -> Optional[RuntimeV2TurnResult]:
         if not hasattr(state, "get_run_items") or not state.get_run_items():
             return None
 
         state.ensure_active_run_item_started()
         promotion = state.advance_run_item_frontier()
-        await self._emit_run_events(state, run_event_callback)
+        with self._loop_phase_probe_span(
+            loop_phase_probe,
+            session_id=state.session_id,
+            turn_id=turn_id,
+            generation_id=generation_id,
+            phase="emit_run_events",
+        ):
+            await self._emit_run_events(state, run_event_callback)
 
         if not promotion.get("blocked"):
             return None

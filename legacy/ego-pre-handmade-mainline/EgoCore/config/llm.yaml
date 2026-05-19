@@ -107,9 +107,11 @@ use_cases:
   
   chat:
     provider: openrouter
-    model: stepfun/step-3.5-flash
+    model: qwen/qwen3.6-plus
     temperature: 0.8
     max_tokens: 2000
+    fallback:
+      enabled: false
 
 # Request settings
 request:
@@ -119,7 +121,7 @@ request:
   
 # Fallback configuration
 fallback:
-  enabled: false
+  enabled: true
   providers:
     - openai
     - anthropic

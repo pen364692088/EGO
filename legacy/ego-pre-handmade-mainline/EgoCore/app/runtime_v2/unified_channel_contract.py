@@ -118,6 +118,8 @@ def _compact_response_plan_metadata_for_contract(metadata: Optional[dict]) -> Di
         compact["response_tendency_summary"] = dict(source.get("response_tendency_summary") or {})
     if source.get("chat_degradation"):
         compact["chat_degradation"] = dict(source.get("chat_degradation") or {})
+    if source.get("intent_contract_source_status"):
+        compact["intent_contract_source_status"] = source.get("intent_contract_source_status")
     return compact
 
 
@@ -252,6 +254,12 @@ def build_host_contract_snapshot(
                 "authority_source": getattr(response_plan, "authority_source", None),
                 "reply_authority": getattr(response_plan, "reply_authority", None),
                 "chat_cadence_mode": getattr(response_plan, "chat_cadence_mode", None),
+                "speaker_mode": getattr(response_plan, "speaker_mode", None),
+                "epistemic_status": getattr(response_plan, "epistemic_status", None),
+                "commitment_level": getattr(response_plan, "commitment_level", None),
+                "must_include": list(getattr(response_plan, "must_include", ()) or ()),
+                "must_not_upgrade": dict(getattr(response_plan, "must_not_upgrade", {}) or {}),
+                "tone_bounds": dict(getattr(response_plan, "tone_bounds", {}) or {}),
                 "reply_text_preview": _trim_contract_text(getattr(response_plan, "reply_text", None)),
                 "metadata": _compact_response_plan_metadata_for_contract(response_metadata),
             },

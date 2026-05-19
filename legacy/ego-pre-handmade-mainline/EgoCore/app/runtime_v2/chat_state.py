@@ -6,12 +6,15 @@ from typing import Any, Dict, List, Literal, Optional
 
 from app.response.relationship_context import RelationshipContext, RelationshipEvent
 from app.response.style_profile import StyleProfile
+from .topic_anchor import build_user_turn_record, coerce_recent_user_turn_records
 
 
 ChatAct = Literal[
     "presence_check",
     "tone_feedback",
     "thread_continue",
+    "solicited_view",
+    "direct_share",
     "light_chitchat",
     "social_keepalive",
     "task_bridge_request",
@@ -41,6 +44,7 @@ def _trim_recent(values: List[str], *, limit: int = _MAX_CHAT_TURNS) -> List[str
 class ChatState:
     session_id: str = ""
     recent_user_turns: List[str] = field(default_factory=list)
+    recent_user_turn_records: List[Dict[str, Any]] = field(default_factory=list)
     recent_assistant_replies: List[str] = field(default_factory=list)
     last_user_turn_at: Optional[float] = None
     last_assistant_reply_at: Optional[float] = None
@@ -50,6 +54,11 @@ class ChatState:
     style_profile: Dict[str, Any] = field(default_factory=dict)
     active_task_summary: Optional[Dict[str, Any]] = None
     last_chat_act: Optional[str] = None
+    stance_present: bool = False
+    stance_label: Optional[str] = None
+    stance_text: Optional[str] = None
+    stance_source_turn: Optional[str] = None
+    stance_revision_basis: Optional[str] = None
 
     def ensure_defaults(self, session_id: str) -> None:
         if not self.session_id:
@@ -63,6 +72,7 @@ class ChatState:
         return {
             "session_id": self.session_id,
             "recent_user_turns": list(self.recent_user_turns),
+            "recent_user_turn_records": [dict(item) for item in self.recent_user_turn_records],
             "recent_assistant_replies": list(self.recent_assistant_replies),
             "last_user_turn_at": self.last_user_turn_at,
             "last_assistant_reply_at": self.last_assistant_reply_at,
@@ -72,6 +82,11 @@ class ChatState:
             "style_profile": dict(self.style_profile or {}),
             "active_task_summary": dict(self.active_task_summary or {}) if self.active_task_summary else None,
             "last_chat_act": self.last_chat_act,
+            "stance_present": bool(self.stance_present),
+            "stance_label": self.stance_label,
+            "stance_text": self.stance_text,
+            "stance_source_turn": self.stance_source_turn,
+            "stance_revision_basis": self.stance_revision_basis,
         }
 
     @classmethod
@@ -79,6 +94,7 @@ class ChatState:
         state = cls(
             session_id=session_id,
             recent_user_turns=list((payload or {}).get("recent_user_turns") or []),
+            recent_user_turn_records=list((payload or {}).get("recent_user_turn_records") or []),
             recent_assistant_replies=list((payload or {}).get("recent_assistant_replies") or []),
             last_user_turn_at=(payload or {}).get("last_user_turn_at"),
             last_assistant_reply_at=(payload or {}).get("last_assistant_reply_at"),
@@ -88,9 +104,18 @@ class ChatState:
             style_profile=dict((payload or {}).get("style_profile") or {}),
             active_task_summary=(payload or {}).get("active_task_summary"),
             last_chat_act=(payload or {}).get("last_chat_act"),
+            stance_present=bool((payload or {}).get("stance_present")),
+            stance_label=(payload or {}).get("stance_label"),
+            stance_text=(payload or {}).get("stance_text"),
+            stance_source_turn=(payload or {}).get("stance_source_turn"),
+            stance_revision_basis=(payload or {}).get("stance_revision_basis"),
         )
         state.ensure_defaults(session_id)
         state.recent_user_turns = _trim_recent(state.recent_user_turns)
+        state.recent_user_turn_records = coerce_recent_user_turn_records(
+            state.recent_user_turn_records,
+            state.recent_user_turns,
+        )
         state.recent_assistant_replies = _trim_recent(state.recent_assistant_replies)
         return state
 
@@ -106,6 +131,16 @@ class ChatState:
         now_ts = time.time()
         if text:
             self.recent_user_turns = _trim_recent(self.recent_user_turns + [text])
+            self.recent_user_turn_records = coerce_recent_user_turn_records(
+                list(self.recent_user_turn_records)
+                + [
+                    build_user_turn_record(
+                        text=text,
+                        conversation_act=chat_act,
+                        timestamp=now_ts,
+                    )
+                ]
+            )
             self.last_user_turn_at = now_ts
             self.last_activity_at = now_ts
         self.last_chat_act = chat_act or self.last_chat_act
@@ -176,3 +211,30 @@ class ChatState:
             return 0.0
         current = time.time() if now_ts is None else float(now_ts)
         return max(0.0, current - float(anchor))
+
+    def stance_snapshot(self) -> Dict[str, Any]:
+        return {
+            "stance_present": bool(self.stance_present),
+            "stance_label": self.stance_label,
+            "stance_text": self.stance_text,
+            "stance_source_turn": self.stance_source_turn,
+            "revision_basis": self.stance_revision_basis,
+        }
+
+    def update_stance_memory(
+        self,
+        *,
+        stance_label: Optional[str],
+        stance_text: Optional[str],
+        stance_source_turn: Optional[str],
+        revision_basis: Optional[str],
+    ) -> None:
+        cleaned_label = str(stance_label or "").strip() or None
+        cleaned_text = str(stance_text or "").strip() or None
+        cleaned_source_turn = str(stance_source_turn or "").strip() or None
+        cleaned_revision_basis = str(revision_basis or "").strip() or None
+        self.stance_present = bool(cleaned_label or cleaned_text)
+        self.stance_label = cleaned_label
+        self.stance_text = cleaned_text
+        self.stance_source_turn = cleaned_source_turn
+        self.stance_revision_basis = cleaned_revision_basis

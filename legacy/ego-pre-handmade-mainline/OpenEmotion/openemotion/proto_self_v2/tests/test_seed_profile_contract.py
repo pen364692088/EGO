@@ -93,6 +93,7 @@ def test_seed_state_dependence_prefers_pending_commitment():
     output = process_update_packet(state, packet)
 
     assert output.candidate_actions[0]["action_type"] == "continue_pending_commitment"
+    assert output.trace_payload["perceived"]["pending_commitment_source"] == "runtime"
 
 
 def test_seed_feedback_writeback_does_not_generate_new_candidate():
@@ -219,6 +220,64 @@ def test_seed_continuity_lite_reuses_pending_commitment_across_turns():
 
     assert state.seed_state.focus_goal.pending_commitment == "finish_seed_contract"
     assert output.policy_hint["closure_bias"] is True
+    assert output.trace_payload["perceived"]["pending_commitment_source"] == "state_fallback"
+
+
+def test_seed_explicit_followup_request_clears_stale_pending_commitment():
+    state = _seed_state(curiosity=0.45, completion=0.70, caution=0.05)
+    state.seed_state.focus_goal.pending_commitment = "修改 test.html 配色"
+    state.seed_state.focus_goal.current_focus = "complete_pending"
+
+    packet = _seed_packet(
+        event_id="seed_idle_followup_001",
+        event_type="idle_check",
+        payload={},
+        runtime_summary={
+            "active_task": False,
+            "initiative_context": {
+                "chat_followup_source": "explicit_same_thread_followup_request",
+                "initiative_trigger": "bounded_reminder",
+                "pending_commitment_refs": ["chat_followup:abc123"],
+            },
+        },
+    )
+
+    output = process_update_packet(state, packet)
+
+    assert state.seed_state.focus_goal.pending_commitment is None
+    assert state.seed_state.focus_goal.current_focus != "complete_pending"
+    assert output.policy_hint["closure_bias"] is False
+    assert output.trace_payload["perceived"]["pending_commitment_source"] == "suppressed_for_explicit_followup"
+    assert all(
+        action["action_type"] != "continue_pending_commitment"
+        for action in output.candidate_actions
+    )
+
+
+def test_seed_user_turn_followup_request_clears_stale_pending_commitment_without_idle_context():
+    state = _seed_state(curiosity=0.45, completion=0.70, caution=0.05)
+    state.seed_state.focus_goal.pending_commitment = "修改 test.html 配色"
+    state.seed_state.focus_goal.current_focus = "complete_pending"
+
+    packet = _seed_packet(
+        event_id="seed_user_followup_001",
+        event_type="user_event",
+        payload={"raw_text": "我等下会回来继续这个话题，你之后可以提醒我继续。"},
+        runtime_summary={
+            "active_task": False,
+            "pending_commitment": None,
+        },
+    )
+
+    output = process_update_packet(state, packet)
+
+    assert state.seed_state.focus_goal.pending_commitment is None
+    assert output.policy_hint["closure_bias"] is False
+    assert output.trace_payload["perceived"]["pending_commitment_source"] == "suppressed_for_explicit_followup"
+    assert all(
+        action["action_type"] != "continue_pending_commitment"
+        for action in output.candidate_actions
+    )
 
 
 def test_seed_lite_recovery_after_failed_exec_result():

@@ -1,7 +1,7 @@
 # SHIM_REGISTER.md
 
 > 注册日期: 2026-03-16
-> 最后更新: 2026-03-19
+> 最后更新: 2026-04-27
 > 目的: 登记所有过渡期 shim 实现
 
 ---
@@ -137,6 +137,22 @@
 
 ---
 
+### SHIM-009: telegram proactive visible-text send-admission quarantine (NEW - 2026-04-27)
+
+| 字段 | 值 |
+|------|-----|
+| 名称 | proactive visible-text send-admission gate |
+| 路径 | EgoCore/app/telegram_bot.py::drain_pending_proactive_outbox_to_telegram |
+| 类型 | quarantine shim (host transport send-admission) |
+| 正式归属 | EgoCore host-owned transport governance；主动可见文本 authority source 为 `runtime_v2.subject_system_v1_delivery_bridge` |
+| 为什么存在 | legacy proactive outbox / pending followup 仍可能把非 current-lane 文本送到 Telegram transport；本 gate 在发送前 fail-closed quarantine，避免 legacy / unknown source 继续成为主动可见文本来源 |
+| 到期版本 | v1.1.0-quarantine-closeout |
+| 迁移计划 | current-lane `subject_system_v1_delivery_bridge` 成为唯一 proactive outbox 生产者后，删除 legacy scheduler 可发送路径，并把 transport gate 收敛为普通 contract assertion 或移除 |
+| 删除前提 | 1) legacy `runtime_v2.initiative_arbiter` / unknown proactive outbox 不能再进入 sendable queue；2) pending/outbox replay 样本均带 current-lane delivery record；3) focused tests 与 live recheck 均证明非 current-lane source 不再到达 transport send path |
+| 删除动作 | 删除 `drain_pending_proactive_outbox_to_telegram` 内 quarantine admission shim，并保留/迁移必要的普通 contract regression tests |
+
+---
+
 ## 非 Shim 保留项
 
 以下实现保留在 EgoCore，不是 shim：
@@ -173,8 +189,9 @@ User/Telegram → EgoCore ingress/runtime → OpenEmotion /cycle → EgoCore 决
 
 ## 统计
 
-- 总 shim 数: 8
+- 总 shim 数: 9
 - 需删除 shim: 8 (全部在 v1.1.0 删除)
+- transport quarantine shim: 1 (SHIM-009，待 legacy proactive sendable path 清退后删除)
 - 保留非 shim: 11
 
 ---

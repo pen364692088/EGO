@@ -9,7 +9,11 @@ from openemotion.proto_self.h1_shadow import (
     normalize_h1_action_key,
 )
 from openemotion.proto_self.schemas import ReflectionNote, ResponseTendency
-from openemotion.proto_self_v2.seed_affordances import Affordance, extract_affordances
+from openemotion.proto_self_v2.seed_affordances import (
+    Affordance,
+    extract_affordances,
+    resolve_pending_commitment,
+)
 from openemotion.proto_self_v2.seed_governor_lite import GovernorLite
 from openemotion.proto_self_v2.seed_schemas import ActionSpec, ExecResultEvent, KernelEvent
 from openemotion.proto_self_v2.seed_state import ProtoSelfSeedState, RecentOutcomeRecord, clamp01
@@ -195,7 +199,11 @@ class ProtoSelfSeedKernel:
         payload = event.payload or {}
         runtime = event.runtime_summary or {}
         safety = event.safety_context or {}
-        pending_commitment = runtime.get("pending_commitment") or state.focus_goal.pending_commitment
+        pending_commitment, clear_stale_pending_commitment, pending_commitment_source = resolve_pending_commitment(
+            runtime,
+            state.focus_goal.pending_commitment,
+            raw_text=payload.get("raw_text"),
+        )
         h1_shadow_active = is_h1_shadow_enabled(runtime)
         return {
             "event_type": event.event_type,
@@ -205,6 +213,8 @@ class ProtoSelfSeedKernel:
             "active_task": bool(runtime.get("active_task", False)),
             "confirm_pending": bool(runtime.get("confirm_pending", False)),
             "pending_commitment": pending_commitment,
+            "pending_commitment_source": pending_commitment_source,
+            "clear_stale_pending_commitment": clear_stale_pending_commitment,
             "resolved_target_path": runtime.get("resolved_target_path") or payload.get("resolved_target_path"),
             "resolved_target_name": runtime.get("resolved_target_name") or payload.get("resolved_target_name"),
             "recent_failure_target": runtime.get("recent_failure_target"),
@@ -248,6 +258,10 @@ class ProtoSelfSeedKernel:
             state.drives.repair = clamp01(state.drives.repair - 0.04)
 
     def _refresh_focus_goal(self, state: ProtoSelfSeedState, event: KernelEvent, perceived: Dict[str, Any]) -> None:
+        if perceived.get("clear_stale_pending_commitment"):
+            state.focus_goal.pending_commitment = None
+            if state.focus_goal.current_focus == "complete_pending":
+                state.focus_goal.current_focus = None
         if perceived["pending_commitment"] is not None:
             state.focus_goal.pending_commitment = str(perceived["pending_commitment"])
         if perceived["resolved_target_path"]:

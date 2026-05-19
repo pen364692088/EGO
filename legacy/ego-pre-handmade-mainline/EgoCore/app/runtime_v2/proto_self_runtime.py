@@ -2,10 +2,12 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from datetime import datetime
+import hashlib
 from typing import Any, Dict, Optional
 
 import logging
 import os
+import re
 
 from openemotion.proto_self_v2.seed_schemas import SEED_SCHEMA_VERSION, SEED_SUBJECT_PROFILE
 from openemotion.embodied_self import (
@@ -85,7 +87,22 @@ from app.risk_signal import (
     assess_message_risk_level,
     risk_level_from_external_result,
 )
+from .host_proactive_candidate_arbiter import arbitrate_host_proactive_candidate
+from .proactive_identity import (
+    build_proactive_outreach_epoch,
+    current_proactive_outreach_history,
+)
 from .state import RuntimeV2State
+from .topic_anchor import (
+    coerce_recent_user_turn_records,
+    extract_recent_substantive_topic_anchor,
+    is_meta_or_control_topic_turn,
+)
+from .subject_system_bridge import (
+    clear_host_proactive_decision,
+    set_host_proactive_decision,
+    write_subject_system_v1_context,
+)
 
 logger = logging.getLogger(__name__)
 ENABLE_MVP12_SANDBOX = os.environ.get("EGO_ENABLE_MVP12_SANDBOX", "false").lower() == "true"
@@ -101,6 +118,97 @@ DEFAULT_EMBODIED_SELF_IDENTITY_HANDLE = "openemotion"
 DEFAULT_SELFHOOD_INTEGRATION_IDENTITY_HANDLE = "openemotion"
 DEFAULT_INITIATIVE_SELF_IDENTITY_HANDLE = "openemotion"
 DEFAULT_INITIATIVE_REALIZATION_IDENTITY_HANDLE = "openemotion"
+_CHAT_FOLLOWUP_REMINDER_TOKENS = (
+    "提醒我",
+    "提醒一下",
+    "提醒下",
+    "回头提醒",
+    "之后提醒",
+    "到时候提醒",
+    "轻提醒",
+    "gentle reminder",
+    "remind me",
+    "ping me",
+    "nudge me",
+)
+_CHAT_FOLLOWUP_CONTINUATION_TOKENS = (
+    "回来继续",
+    "继续这个话题",
+    "继续聊",
+    "接着聊",
+    "回头继续",
+    "等下会回来",
+    "稍后继续",
+    "过会儿继续",
+    "之后可以提醒我继续",
+    "continue this topic",
+    "continue this thread",
+    "resume this topic",
+    "resume this thread",
+    "pick this up later",
+)
+_CHAT_FOLLOWUP_RECONTACT_TIME_TOKENS = (
+    "待会",
+    "待会儿",
+    "等下",
+    "等会",
+    "等会儿",
+    "一会",
+    "一会儿",
+    "稍后",
+    "过会",
+    "过会儿",
+    "回头",
+    "晚点",
+)
+_CHAT_FOLLOWUP_RECONTACT_TOKENS = (
+    "主动找我来聊",
+    "主动来找我聊",
+    "主动找我聊",
+    "找我来聊",
+    "来找我聊",
+    "找我继续聊",
+    "找我接着聊",
+    "主动找我继续",
+    "主动找我接着",
+    "主动接着说",
+    "主动继续说",
+    "主动接着讲",
+    "主动继续讲",
+)
+_PROACTIVE_TOPIC_PERMISSION_ALLOW = "long_term_allow"
+_OUTREACH_AGGRESSION_HIGH_EXPLORATION = "high_exploration"
+_OUTREACH_FEEDBACK_ADAPTATION_ENABLED = "enabled"
+_QUIET_STATE_NORMAL = "normal"
+_QUIET_STATE_REDUCED = "reduced"
+_QUIET_STATE_PAUSED = "paused"
+_THOUGHT_PROBE_EMERGENCY_FLOOR_SECONDS = 240.0
+_THOUGHT_PROBE_REDUCED_IDLE_SECONDS = 900.0
+_COOLING_REPLY_TOKENS = (
+    "嗯",
+    "哦",
+    "好",
+    "行",
+    "知道了",
+)
+_COOLING_DISENGAGE_TOKENS = (
+    "先别",
+    "不想继续",
+    "别聊了",
+    "不用继续",
+    "晚点再说",
+)
+_REENGAGED_MARKERS = (
+    "为什么",
+    "怎么",
+    "具体",
+    "展开",
+    "继续",
+    "那是不是",
+    "是不是",
+)
+
+
 def assess_risk_level(user_input: str) -> str:
     return assess_message_risk_level(user_input)
 
@@ -430,12 +538,191 @@ def _resolve_initiative_realization_identity_handle(state: RuntimeV2State) -> st
     )
 
 
-def _build_idle_window(state: RuntimeV2State) -> Dict[str, Any]:
+def _build_idle_window(
+    state: RuntimeV2State,
+    *,
+    idle_seconds_override: Optional[float] = None,
+) -> Dict[str, Any]:
     return {
-        "idle_seconds": round(state.idle_seconds_since_chat_activity(), 3),
+        "idle_seconds": round(
+            float(idle_seconds_override)
+            if idle_seconds_override is not None
+            else state.idle_seconds_since_chat_activity(),
+            3,
+        ),
         "active_turn_status": state.active_turn_status,
         "task_status": state.task_status,
     }
+
+
+def _parse_iso_timestamp(value: Any) -> Optional[float]:
+    if not value:
+        return None
+    try:
+        return datetime.fromisoformat(str(value)).timestamp()
+    except (TypeError, ValueError):
+        return None
+
+
+def _normalize_chat_followup_text(text: Any) -> str:
+    return re.sub(r"\s+", "", str(text or "").strip().lower())
+
+
+def _clamp01(value: Any) -> float:
+    try:
+        numeric = float(value)
+    except (TypeError, ValueError):
+        numeric = 0.0
+    return max(0.0, min(1.0, numeric))
+
+
+def _has_chat_followup_reminder_request(normalized_turns: list[str]) -> bool:
+    return any(
+        token in text
+        for text in normalized_turns
+        for token in _CHAT_FOLLOWUP_REMINDER_TOKENS
+    )
+
+
+def _has_chat_followup_continuation_request(normalized_turns: list[str]) -> bool:
+    return any(
+        token in text
+        for text in normalized_turns
+        for token in _CHAT_FOLLOWUP_CONTINUATION_TOKENS
+    ) or (
+        any("继续" in text for text in normalized_turns)
+        and any(
+            marker in text
+            for text in normalized_turns
+            for marker in ("话题", "回来", "回头", "等下", "稍后", "过会儿", "接着")
+        )
+    )
+
+
+def _has_chat_followup_recontact_request(normalized_turns: list[str]) -> bool:
+    return any(
+        any(time_token in text for time_token in _CHAT_FOLLOWUP_RECONTACT_TIME_TOKENS)
+        and any(recontact_token in text for recontact_token in _CHAT_FOLLOWUP_RECONTACT_TOKENS)
+        for text in normalized_turns
+    )
+
+
+def _matches_explicit_chat_followup_text(text: Any) -> bool:
+    normalized = _normalize_chat_followup_text(text)
+    if not normalized:
+        return False
+    normalized_turns = [normalized]
+    if _has_chat_followup_recontact_request(normalized_turns):
+        return True
+    return _has_chat_followup_reminder_request(normalized_turns) and _has_chat_followup_continuation_request(
+        normalized_turns
+    )
+
+
+def _infer_explicit_chat_followup_request(
+    state: RuntimeV2State,
+    *,
+    idle_seconds: float,
+) -> Optional[Dict[str, Any]]:
+    if idle_seconds < 600.0:
+        return None
+
+    recent_user_turns = list(state.get_chat_state().recent_user_turns[-3:])
+    if not recent_user_turns:
+        return None
+
+    normalized_turns = [_normalize_chat_followup_text(text) for text in recent_user_turns if str(text or "").strip()]
+    if not normalized_turns:
+        return None
+
+    has_reminder_request = _has_chat_followup_reminder_request(normalized_turns)
+    has_continuation_request = _has_chat_followup_continuation_request(normalized_turns)
+    has_recontact_request = _has_chat_followup_recontact_request(normalized_turns)
+    if not has_recontact_request and (not has_reminder_request or not has_continuation_request):
+        return None
+
+    seed = "||".join(normalized_turns)
+    digest = hashlib.sha1(seed.encode("utf-8")).hexdigest()[:12]
+    anchor_preview = str(recent_user_turns[-1] or "").strip()[:80]
+    return {
+        "continuity_ref": f"chat_followup:{digest}",
+        "initiative_trigger": "bounded_reminder",
+        "source": "explicit_same_thread_followup_request",
+        "anchor_preview": anchor_preview,
+    }
+
+
+def _build_recent_dialogue_reflection(state: RuntimeV2State) -> Dict[str, Any]:
+    chat_state = state.get_chat_state()
+    recent_user_turn_records = coerce_recent_user_turn_records(
+        getattr(chat_state, "recent_user_turn_records", None),
+        getattr(chat_state, "recent_user_turns", None),
+    )
+    recent_user_turns = [str(turn or "").strip() for turn in list(chat_state.recent_user_turns or []) if str(turn or "").strip()]
+    recent_assistant_replies = [
+        str(turn or "").strip() for turn in list(chat_state.recent_assistant_replies or []) if str(turn or "").strip()
+    ]
+    anchor_resolution = extract_recent_substantive_topic_anchor(
+        recent_user_turn_records,
+        skip_turn=lambda text: is_meta_or_control_topic_turn(text, include_prompt_like=False)
+        or _matches_explicit_chat_followup_text(text),
+    )
+    return {
+        "topic_anchor": str(anchor_resolution.get("topic_anchor") or ""),
+        "topic_anchor_source": str(anchor_resolution.get("topic_anchor_source") or "none"),
+        "topic_anchor_kind": str(anchor_resolution.get("topic_anchor_kind") or "none"),
+        "prompt_like_turn_preview": str(anchor_resolution.get("prompt_like_turn_preview") or ""),
+        "last_assistant_take": (recent_assistant_replies[-1][:160] if recent_assistant_replies else ""),
+        "recent_user_turn_count": len(recent_user_turns),
+        "recent_assistant_reply_count": len(recent_assistant_replies),
+    }
+
+
+def _looks_like_cooling_short_reply(text: Any) -> bool:
+    normalized = _normalize_chat_followup_text(text)
+    if not normalized:
+        return False
+    if any(token in normalized for token in _COOLING_DISENGAGE_TOKENS):
+        return True
+    if "?" in str(text) or "？" in str(text):
+        return False
+    if any(marker in normalized for marker in _REENGAGED_MARKERS):
+        return False
+    if normalized in _COOLING_REPLY_TOKENS:
+        return True
+    return len(normalized) <= 6
+
+
+def _looks_like_reengaged_reply(text: Any) -> bool:
+    raw = str(text or "").strip()
+    normalized = _normalize_chat_followup_text(raw)
+    if not normalized:
+        return False
+    if "?" in raw or "？" in raw:
+        return True
+    if any(marker in normalized for marker in _REENGAGED_MARKERS):
+        return True
+    return len(normalized) >= 14
+
+
+def _infer_outreach_feedback_signal(state: RuntimeV2State) -> str:
+    proto_self_context = dict(state.proto_self_context or {})
+    last_sent = dict(proto_self_context.get("last_sent_proactive") or {})
+    if not last_sent:
+        return ""
+    chat_state = state.get_chat_state()
+    recent_user_turns = list(chat_state.recent_user_turns or [])
+    sent_turn_count = int(last_sent.get("recent_user_turn_count") or 0)
+    if len(recent_user_turns) <= sent_turn_count:
+        return ""
+    post_send_turns = [str(turn or "").strip() for turn in recent_user_turns[sent_turn_count:] if str(turn or "").strip()]
+    if not post_send_turns:
+        return ""
+    if len(post_send_turns) >= 2 and all(_looks_like_cooling_short_reply(turn) for turn in post_send_turns[:2]):
+        return "inferred_cooling"
+    if any(_looks_like_reengaged_reply(turn) for turn in post_send_turns):
+        return "inferred_reengaged"
+    return ""
 
 
 def _build_recent_delivery_outcome(state: RuntimeV2State) -> Dict[str, Any]:
@@ -489,6 +776,48 @@ def normalize_chat_subject_surface(proto_self_result: Dict[str, Any]) -> Dict[st
             normalized_trace_payload[field] = dict(normalized_trace_payload.get(field) or {})
         normalized["trace_payload"] = normalized_trace_payload
 
+    return normalized
+
+
+def _build_candidate_only_runtime_guard(state: RuntimeV2State) -> Dict[str, Any]:
+    last_tool_result = dict(state.last_tool_result or {})
+    return {
+        "delivery_failure": bool(last_tool_result) and not bool(last_tool_result.get("success")),
+        "tool_execution_requested": False,
+        "transport_authority_requested": False,
+        "direct_reply_authority_requested": False,
+        "candidate_only": True,
+    }
+
+
+def _apply_subject_system_v1_bridge(
+    *,
+    state: RuntimeV2State,
+    proto_self_result: Dict[str, Any],
+    runtime_summary: Dict[str, Any] | None,
+    run_candidate_arbiter: bool = False,
+    idle_eligible: bool = False,
+) -> Dict[str, Any]:
+    normalized = write_subject_system_v1_context(
+        state=state,
+        proto_self_result=proto_self_result,
+        runtime_summary=runtime_summary,
+    )
+    proto_self_result["subject_system_v1"] = normalized
+
+    if not run_candidate_arbiter:
+        clear_host_proactive_decision(state)
+        proto_self_result.pop("host_proactive_decision", None)
+        return normalized
+
+    decision = arbitrate_host_proactive_candidate(
+        subject_system_v1=normalized,
+        idle_eligible=idle_eligible,
+        active_task_present=bool(state.build_active_task_summary()),
+        runtime_guard=_build_candidate_only_runtime_guard(state),
+    )
+    set_host_proactive_decision(state=state, decision=decision)
+    proto_self_result["host_proactive_decision"] = dict(decision)
     return normalized
 
 
@@ -785,33 +1114,117 @@ def _build_environment_context(state: RuntimeV2State) -> Dict[str, Any]:
     }
 
 
-def _build_initiative_context(state: RuntimeV2State) -> Dict[str, Any]:
+def _build_initiative_context(
+    state: RuntimeV2State,
+    *,
+    idle_seconds_override: Optional[float] = None,
+) -> Dict[str, Any]:
     ingress_context = state.ingress_context or {}
     provided = dict(ingress_context.get("initiative_context") or {})
     proto_self_context = dict(state.proto_self_context or {})
     resource_budget_hint = _build_resource_budget_hint(state)
     delivery_outcome = _build_recent_delivery_outcome(state)
-    idle_window = _build_idle_window(state)
+    idle_window = _build_idle_window(state, idle_seconds_override=idle_seconds_override)
+    inferred_chat_followup = _infer_explicit_chat_followup_request(
+        state,
+        idle_seconds=float(idle_window.get("idle_seconds") or 0.0),
+    )
+    recent_user_turns = list(state.get_chat_state().recent_user_turns or [])
+    latest_user_turn = recent_user_turns[-1] if recent_user_turns else state.last_user_turn
+    explicit_followup_text_matched = _matches_explicit_chat_followup_text(latest_user_turn)
     integration_snapshot = dict(proto_self_context.get("cross_axis_priority_snapshot") or {})
     selected_priority = str(
         integration_snapshot.get("selected_priority")
         or (proto_self_context.get("integrated_policy_hints") or {}).get("integrated_priority")
         or ""
     ).strip()
+    proactive_topic_permission = str(
+        provided.get("proactive_topic_permission")
+        or ingress_context.get("proactive_topic_permission")
+        or ""
+    ).strip()
+    outreach_aggression_mode = str(
+        provided.get("outreach_aggression_mode")
+        or ingress_context.get("outreach_aggression_mode")
+        or (_OUTREACH_AGGRESSION_HIGH_EXPLORATION if proactive_topic_permission == _PROACTIVE_TOPIC_PERMISSION_ALLOW else "")
+    ).strip()
+    outreach_feedback_adaptation = str(
+        provided.get("outreach_feedback_adaptation")
+        or ingress_context.get("outreach_feedback_adaptation")
+        or (_OUTREACH_FEEDBACK_ADAPTATION_ENABLED if proactive_topic_permission == _PROACTIVE_TOPIC_PERMISSION_ALLOW else "")
+    ).strip()
+    quiet_state = str(
+        provided.get("quiet_state")
+        or ingress_context.get("quiet_state")
+        or (_QUIET_STATE_NORMAL if proactive_topic_permission == _PROACTIVE_TOPIC_PERMISSION_ALLOW else "")
+    ).strip()
+    quiet_until = str(provided.get("quiet_until") or ingress_context.get("quiet_until") or "").strip() or None
+    explicit_feedback_signal = str(
+        ((ingress_context.get("outreach_policy_update") or {}).get("feedback_signal"))
+        or provided.get("feedback_signal")
+        or ingress_context.get("feedback_signal")
+        or ""
+    ).strip()
+
+    quiet_until_ts = _parse_iso_timestamp(quiet_until)
+    now_ts = datetime.now().astimezone().timestamp()
+    if quiet_state == _QUIET_STATE_PAUSED and quiet_until_ts is not None and now_ts >= quiet_until_ts:
+        quiet_state = _QUIET_STATE_NORMAL
+        quiet_until = None
+
+    feedback_signal = explicit_feedback_signal
+    if not feedback_signal and outreach_feedback_adaptation == _OUTREACH_FEEDBACK_ADAPTATION_ENABLED:
+        feedback_signal = _infer_outreach_feedback_signal(state)
+
+    effective_quiet_state = quiet_state
+    if outreach_feedback_adaptation == _OUTREACH_FEEDBACK_ADAPTATION_ENABLED:
+        if feedback_signal == "inferred_cooling" and effective_quiet_state == _QUIET_STATE_NORMAL:
+            effective_quiet_state = _QUIET_STATE_REDUCED
+        elif feedback_signal == "inferred_reengaged" and effective_quiet_state == _QUIET_STATE_REDUCED:
+            effective_quiet_state = _QUIET_STATE_NORMAL
+
+    thought_probe_idle_floor = (
+        _THOUGHT_PROBE_REDUCED_IDLE_SECONDS
+        if effective_quiet_state == _QUIET_STATE_REDUCED
+        else _THOUGHT_PROBE_EMERGENCY_FLOOR_SECONDS
+    )
+    current_outreach_history = current_proactive_outreach_history(state)
+    current_window_last_sent = dict(current_outreach_history[-1] or {}) if current_outreach_history else {}
+    current_outreach_epoch = build_proactive_outreach_epoch(state)
 
     pending_commitment_refs = list(provided.get("pending_commitment_refs") or [])
+    pending_commitment_source = ""
+    if not pending_commitment_refs and inferred_chat_followup and explicit_followup_text_matched:
+        pending_commitment_refs = [str(inferred_chat_followup["continuity_ref"])]
+        pending_commitment_source = "suppressed_for_explicit_followup"
     if not pending_commitment_refs and state.current_goal:
         pending_commitment_refs = [f"goal:{state.current_goal}"]
+        pending_commitment_source = "runtime"
+    if not pending_commitment_refs and inferred_chat_followup:
+        pending_commitment_refs = [str(inferred_chat_followup["continuity_ref"])]
+        pending_commitment_source = (
+            "suppressed_for_explicit_followup" if explicit_followup_text_matched else "runtime"
+        )
+    if pending_commitment_refs and not pending_commitment_source:
+        pending_commitment_source = "runtime"
     blocked_commitment_refs = list(provided.get("blocked_commitment_refs") or [])
     if not blocked_commitment_refs and state.task_status == "blocked" and state.current_goal:
         blocked_commitment_refs = [f"goal:{state.current_goal}"]
 
     initiative_trigger = str(provided.get("initiative_trigger") or "").strip()
     if not initiative_trigger:
-        if state.current_goal and idle_window.get("idle_seconds", 0.0) >= 600.0:
+        if inferred_chat_followup:
+            initiative_trigger = str(inferred_chat_followup["initiative_trigger"])
+        elif state.current_goal and idle_window.get("idle_seconds", 0.0) >= 600.0:
             initiative_trigger = "commitment_followup"
         elif delivery_outcome.get("status") in {"failed", "blocked"}:
             initiative_trigger = "delivery_repair_review"
+        elif (
+            proactive_topic_permission == _PROACTIVE_TOPIC_PERMISSION_ALLOW
+            and effective_quiet_state != _QUIET_STATE_PAUSED
+            and idle_window.get("idle_seconds", 0.0) >= thought_probe_idle_floor
+        ):
+            initiative_trigger = "thought_probe"
         elif selected_priority:
             initiative_trigger = f"integration_{selected_priority}"
         else:
@@ -830,11 +1243,15 @@ def _build_initiative_context(state: RuntimeV2State) -> Dict[str, Any]:
     promotion_budget = str(provided.get("promotion_budget") or "").strip()
     if not promotion_budget:
         promotion_budget = "review_only" if selected_priority in {"review", "guard", "stabilize"} else "controlled_axis"
+    continuity_confidence = _clamp01(provided.get("continuity_confidence"))
+    if continuity_confidence == 0.0 and inferred_chat_followup:
+        continuity_confidence = 0.72
 
     return {
         "source": str(provided.get("source") or "runtime_v2"),
         "initiative_trigger": initiative_trigger,
         "continuity_ref": continuity_ref,
+        "continuity_confidence": continuity_confidence,
         "pending_commitment_refs": pending_commitment_refs,
         "blocked_commitment_refs": blocked_commitment_refs,
         "reserve_level": str(provided.get("reserve_level") or resource_budget_hint.get("reserve_level") or "normal"),
@@ -849,13 +1266,51 @@ def _build_initiative_context(state: RuntimeV2State) -> Dict[str, Any]:
         "idle_seconds": float(provided.get("idle_seconds") or idle_window.get("idle_seconds") or 0.0),
         "host_lane_hint": host_lane_hint,
         "promotion_budget": promotion_budget,
+        "chat_followup_source": (
+            str(inferred_chat_followup.get("source") or "") if inferred_chat_followup else ""
+        ),
+        "chat_followup_inferred": bool(inferred_chat_followup),
+        "chat_followup_anchor_preview": (
+            str(inferred_chat_followup.get("anchor_preview") or "") if inferred_chat_followup else ""
+        ),
+        "explicit_followup_text_matched": explicit_followup_text_matched,
+        "pending_commitment_source": pending_commitment_source,
+        "proactive_topic_permission": proactive_topic_permission,
+        "outreach_aggression_mode": outreach_aggression_mode,
+        "outreach_feedback_adaptation": outreach_feedback_adaptation,
+        "quiet_state": effective_quiet_state,
+        "durable_quiet_state": quiet_state,
+        "quiet_until": quiet_until,
+        "feedback_signal": feedback_signal,
+        "thought_probe_emergency_floor_seconds": thought_probe_idle_floor,
+        "last_sent_proactive_source_ref": str(current_window_last_sent.get("source_ref") or ""),
+        "proactive_outreach_epoch": current_outreach_epoch,
+        "sent_topic_fingerprints_since_user_turn": [
+            str(marker.get("topic_fingerprint") or "").strip()
+            for marker in current_outreach_history
+            if str(marker.get("topic_fingerprint") or "").strip()
+        ],
+        "sent_topic_clusters_since_user_turn": [
+            str(marker.get("topic_cluster_ref") or "").strip()
+            for marker in current_outreach_history
+            if str(marker.get("topic_cluster_ref") or "").strip()
+        ],
+        "sent_text_fingerprints_since_user_turn": [
+            str(marker.get("sent_text_fingerprint") or "").strip()
+            for marker in current_outreach_history
+            if str(marker.get("sent_text_fingerprint") or "").strip()
+        ],
     }
 
 
-def _build_host_proactive_context(state: RuntimeV2State) -> Dict[str, Any]:
+def _build_host_proactive_context(
+    state: RuntimeV2State,
+    *,
+    idle_seconds_override: Optional[float] = None,
+) -> Dict[str, Any]:
     ingress_context = state.ingress_context or {}
     provided = dict(ingress_context.get("host_proactive_context") or {})
-    initiative_context = _build_initiative_context(state)
+    initiative_context = _build_initiative_context(state, idle_seconds_override=idle_seconds_override)
     proto_self_context = dict(state.proto_self_context or {})
     commitment_snapshot = dict(proto_self_context.get("commitment_execution_snapshot") or {})
     initiative_policy_hints = dict(proto_self_context.get("initiative_policy_hints") or {})
@@ -1159,12 +1614,24 @@ def _inject_environment_context(
     return runtime_summary
 
 
+def _inject_recent_dialogue_reflection(
+    runtime_summary: Dict[str, Any],
+    *,
+    state: RuntimeV2State,
+) -> Dict[str, Any]:
+    runtime_summary["recent_dialogue_reflection"] = _build_recent_dialogue_reflection(state)
+    return runtime_summary
+
+
 def _inject_initiative_context(
     runtime_summary: Dict[str, Any],
     *,
     state: RuntimeV2State,
 ) -> Dict[str, Any]:
-    runtime_summary["initiative_context"] = _build_initiative_context(state)
+    runtime_summary["initiative_context"] = _build_initiative_context(
+        state,
+        idle_seconds_override=runtime_summary.get("idle_seconds"),
+    )
     return runtime_summary
 
 
@@ -1173,7 +1640,10 @@ def _inject_host_proactive_context(
     *,
     state: RuntimeV2State,
 ) -> Dict[str, Any]:
-    runtime_summary["host_proactive_context"] = _build_host_proactive_context(state)
+    runtime_summary["host_proactive_context"] = _build_host_proactive_context(
+        state,
+        idle_seconds_override=runtime_summary.get("idle_seconds"),
+    )
     return runtime_summary
 
 
@@ -1963,6 +2433,7 @@ def build_developmental_tick_event(
         state=state,
     )
     runtime_summary = _inject_environment_context(runtime_summary, state=state)
+    runtime_summary = _inject_recent_dialogue_reflection(runtime_summary, state=state)
     runtime_summary = _inject_initiative_context(runtime_summary, state=state)
     runtime_summary = _inject_host_proactive_context(runtime_summary, state=state)
     runtime_summary = _inject_h1_canonical_shadow_context(runtime_summary, state=state)
@@ -2009,6 +2480,7 @@ def build_developmental_tick_event(
 
 def build_response_plan_payload(*, result: Any) -> Dict[str, Any]:
     reply = getattr(result, "reply", None)
+    response_plan = getattr(result, "response_plan", None)
     reply_metadata = dict(getattr(reply, "metadata", None) or {})
     final_text = str(getattr(result, "reply_text", "") or "").strip()
     final_text_preview = str(reply_metadata.get("final_text_preview") or "").strip() or None
@@ -2024,6 +2496,24 @@ def build_response_plan_payload(*, result: Any) -> Dict[str, Any]:
         "output_check_reason": reply_metadata.get("output_check_reason"),
         "intent_gate_reason": reply_metadata.get("intent_gate_reason"),
     }
+    speaker_mode = getattr(response_plan, "speaker_mode", None) or reply_metadata.get("speaker_mode")
+    epistemic_status = getattr(response_plan, "epistemic_status", None) or reply_metadata.get("epistemic_status")
+    commitment_level = getattr(response_plan, "commitment_level", None) or reply_metadata.get("commitment_level")
+    must_include = getattr(response_plan, "must_include", None) or reply_metadata.get("must_include")
+    must_not_upgrade = getattr(response_plan, "must_not_upgrade", None) or reply_metadata.get("must_not_upgrade")
+    tone_bounds = getattr(response_plan, "tone_bounds", None) or reply_metadata.get("tone_bounds")
+    if speaker_mode:
+        payload["speaker_mode"] = speaker_mode
+    if epistemic_status:
+        payload["epistemic_status"] = epistemic_status
+    if commitment_level:
+        payload["commitment_level"] = commitment_level
+    if must_include:
+        payload["must_include"] = list(must_include)
+    if isinstance(must_not_upgrade, dict) and must_not_upgrade:
+        payload["must_not_upgrade"] = dict(must_not_upgrade)
+    if isinstance(tone_bounds, dict) and tone_bounds:
+        payload["tone_bounds"] = dict(tone_bounds)
     metadata: Dict[str, Any] = {}
     if reply_metadata.get("chat_expression_hint"):
         metadata["chat_expression_hint"] = dict(reply_metadata.get("chat_expression_hint") or {})
@@ -2049,6 +2539,8 @@ def build_response_plan_payload(*, result: Any) -> Dict[str, Any]:
         metadata["final_text_length"] = final_text_length
     elif final_text:
         metadata["final_text_length"] = len(final_text)
+    if reply_metadata.get("intent_contract_source_status"):
+        metadata["intent_contract_source_status"] = reply_metadata.get("intent_contract_source_status")
     if metadata:
         payload["metadata"] = metadata
     state = getattr(result, "state", None)
@@ -4322,6 +4814,12 @@ class RuntimeV2ProtoSelfRuntime:
         }
         if shadow_h1 is not None:
             state.proto_self_context["shadow_h1"] = shadow_h1
+        _apply_subject_system_v1_bridge(
+            state=state,
+            proto_self_result=proto_self_result,
+            runtime_summary=proto_self_event.get("runtime_summary"),
+            run_candidate_arbiter=False,
+        )
         state.record(
             "proto_self",
             {
@@ -4557,6 +5055,12 @@ class RuntimeV2ProtoSelfRuntime:
             state.proto_self_context["policy_hint"] = external_result.get("policy_hint")
             state.proto_self_context["governor_hint"] = external_result.get("policy_hint", {}).get("governor_hint")
         _update_shadow_h1_proto_self_context(state, external_result, preserve_existing=False)
+        _apply_subject_system_v1_bridge(
+            state=state,
+            proto_self_result=external_result,
+            runtime_summary=external_result_event.get("runtime_summary"),
+            run_candidate_arbiter=False,
+        )
         if external_result.get("reflection_note"):
             state.record(
                 "proto_self_reflection",
@@ -4766,6 +5270,12 @@ class RuntimeV2ProtoSelfRuntime:
             state.proto_self_context["policy_hint"] = finalized_result.get("policy_hint")
             state.proto_self_context["governor_hint"] = finalized_result.get("policy_hint", {}).get("governor_hint")
         _update_shadow_h1_proto_self_context(state, finalized_result, preserve_existing=True)
+        _apply_subject_system_v1_bridge(
+            state=state,
+            proto_self_result=finalized_result,
+            runtime_summary=finalized_event.get("runtime_summary"),
+            run_candidate_arbiter=False,
+        )
 
     def process_idle_check(
         self,
@@ -4954,6 +5464,13 @@ class RuntimeV2ProtoSelfRuntime:
             state.proto_self_context["policy_hint"] = idle_result.get("policy_hint")
             state.proto_self_context["governor_hint"] = idle_result.get("policy_hint", {}).get("governor_hint")
         _update_shadow_h1_proto_self_context(state, idle_result, preserve_existing=False)
+        _apply_subject_system_v1_bridge(
+            state=state,
+            proto_self_result=idle_result,
+            runtime_summary=idle_event.get("runtime_summary"),
+            run_candidate_arbiter=True,
+            idle_eligible=True,
+        )
 
     def process_developmental_tick(
         self,
@@ -5182,6 +5699,13 @@ class RuntimeV2ProtoSelfRuntime:
         state.proto_self_context["initiative_realization_writeback"] = initiative_realization_writeback
         state.proto_self_context["background_thought_candidates"] = list(
             developmental_summary.get("background_thought_candidates") or []
+        )
+        _apply_subject_system_v1_bridge(
+            state=state,
+            proto_self_result=developmental_result,
+            runtime_summary=developmental_event.get("runtime_summary"),
+            run_candidate_arbiter=True,
+            idle_eligible=True,
         )
         state.record(
             "proto_self_developmental",

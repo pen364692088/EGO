@@ -1,0 +1,64 @@
+schema_version: subject_system_v1.proactive_expression_eval_manifest.v1
+purpose: offline_eval_only
+runtime_use: forbidden
+notes:
+  - Public dialogue corpora listed here may be used to design offline evaluation rubrics or local samples.
+  - Raw public corpus text is not committed here and must not be copied into runtime prompts or hard-coded replies.
+  - Runtime proactive text must come from OpenEmotion candidate fields such as final_text_candidate, then pass EgoCore host judgment.
+sources:
+  - id: DailyDialog
+    url: https://arxiv.org/abs/1710.03957
+    intended_use: offline naturalness and askback/template regression evaluation
+    raw_text_committed: false
+    license_review_status: manifest_only
+  - id: XDailyDialog
+    url: https://github.com/liuzeming01/XDailyDialog
+    intended_use: offline multilingual/code-switching proactive expression evaluation
+    raw_text_committed: false
+    license_review_status: manifest_only
+  - id: CS-Dialogue
+    url: https://huggingface.co/datasets/BAAI/CS-Dialogue
+    intended_use: offline Chinese conversational naturalness rubric calibration
+    raw_text_committed: false
+    license_review_status: manifest_only
+  - id: LCCC-CDial-GPT
+    url: https://github.com/thu-coai/CDial-GPT
+    intended_use: offline Chinese dialogue robustness and template-rejection evaluation
+    raw_text_committed: false
+    license_review_status: manifest_only
+repo_authored_cases:
+  - id: zh_direct_share_no_askback
+    language: zh
+    family: bounded_reminder
+    reject:
+      - 现在继续吗
+      - 你接着起个头
+      - 你想聊什么
+    require:
+      - concrete_content
+      - no_followup_question
+  - id: en_no_chinese_fallback
+    language: en
+    family: thought_probe
+    reject:
+      - 现在继续吗
+      - 轻轻接回来
+    require:
+      - language_match
+      - topic_anchor_bound
+  - id: mixed_code_switching
+    language: mixed
+    family: thought_probe
+    reject:
+      - generic_askback
+      - template_phrase
+    require:
+      - context_grounding
+      - natural_code_switching
+  - id: llm_failure_or_judge_reject
+    language: any
+    family: any
+    reject:
+      - degraded_visible_template
+    require:
+      - hold_or_retry_later

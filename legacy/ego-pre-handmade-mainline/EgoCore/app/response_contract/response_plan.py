@@ -104,6 +104,7 @@ def build_direct_response_plan(
     )
     metadata_dict.setdefault("conversation_act", conversation_act)
     metadata_dict.setdefault("reply_origin", _infer_reply_origin(state, kind, final_authority))
+    metadata_dict.setdefault("fallback_origin", "none")
     if chat_cadence_mode:
         metadata_dict.setdefault("chat_cadence_mode", chat_cadence_mode)
     metadata_dict["memory_claim_reason"] = verdict.reason
@@ -191,6 +192,11 @@ def build_runtime_result_response_plan(result: Any, state: Any) -> ResponsePlan:
         "task_status": getattr(state, "task_status", None),
         "conversation_act": conversation_act,
         "reply_origin": reply_origin,
+        "fallback_origin": str(
+            reply_metadata.get("fallback_origin")
+            or ("degraded_only" if reply_metadata.get("degraded") else "none")
+        ).strip()
+        or "none",
         "chat_cadence_mode": chat_cadence_mode,
         "memory_claim_reason": verdict.reason,
         "memory_claim_allowed": verdict.allowed,
@@ -214,6 +220,11 @@ def build_runtime_result_response_plan(result: Any, state: Any) -> ResponsePlan:
         metadata["result_binding_source_turn"] = recent_result_context.get("source_turn_id")
     if "chat_expression_hint" in reply_metadata:
         metadata["chat_expression_hint"] = dict(reply_metadata.get("chat_expression_hint") or {})
+    ingress_context = dict(getattr(state, "ingress_context", None) or {})
+    if ingress_context.get("chat_output_contract"):
+        metadata["chat_output_contract"] = dict(ingress_context.get("chat_output_contract") or {})
+    if ingress_context.get("solicited_view_topic_anchor"):
+        metadata["solicited_view_topic_anchor"] = str(ingress_context.get("solicited_view_topic_anchor") or "")
     if "response_tendency_summary" in reply_metadata:
         metadata["response_tendency_summary"] = dict(reply_metadata.get("response_tendency_summary") or {})
     if "chat_degradation" in reply_metadata:
@@ -757,6 +768,8 @@ def _build_chat_must_include(conversation_act: str) -> tuple[str, ...]:
         return ("回应当前在线确认", "不主动拉回任务")
     if conversation_act == "tone_feedback":
         return ("先接住用户对语气或重复的反馈",)
+    if conversation_act == "solicited_view":
+        return ("先给一个实质观点", "再给一个推进问题", "不要把话题丢回给用户重新起头")
     if conversation_act == "task_bridge_request":
         return ("只在用户明确要求时桥接到任务",)
     return ("回应当前聊天意图",)

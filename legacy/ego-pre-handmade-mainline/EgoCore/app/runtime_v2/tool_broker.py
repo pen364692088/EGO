@@ -21,6 +21,7 @@ from pathlib import Path
 from typing import Any, Dict
 
 from app.config import get_config, load_config
+from app.repo_paths import get_egocore_root
 from app.tools import execute_tool, setup_tools
 from app.ingestion.artifact_store import get_artifact_store
 from app.compaction import get_compaction_manager, ReadRequest
@@ -59,13 +60,13 @@ class RuntimeV2ToolBroker:
     """
 
     def __init__(self) -> None:
-        repo_root = Path(__file__).resolve().parents[2]
+        ego_root = get_egocore_root()
         try:
             cfg = get_config()
         except Exception:
             cfg = load_config(
-                config_dir=str(repo_root / "config"),
-                env_file=str(repo_root / ".env"),
+                config_dir=str(ego_root / "config"),
+                env_file=str(ego_root / ".env"),
                 validate=False,
             )
         setup_tools(cfg.get("tools", {}) if hasattr(cfg, "get") else {})

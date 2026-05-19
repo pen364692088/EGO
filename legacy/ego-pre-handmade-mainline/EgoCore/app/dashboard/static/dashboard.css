@@ -603,6 +603,110 @@ pre {
   gap: 10px;
 }
 
+.chat-flow-empty,
+.chat-flow-story {
+  margin-top: 18px;
+}
+
+.chat-flow-story {
+  display: grid;
+  gap: 16px;
+}
+
+.chat-flow-grid {
+  display: grid;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  gap: 16px;
+  align-items: stretch;
+  margin-top: 18px;
+}
+
+.chat-flow-step {
+  position: relative;
+  display: grid;
+  gap: 12px;
+  min-height: 100%;
+  padding: 18px;
+  overflow: visible;
+}
+
+.chat-flow-step::after {
+  content: "";
+  position: absolute;
+  top: 46px;
+  left: calc(100% + 2px);
+  width: 12px;
+  height: 2px;
+  background: rgba(20, 32, 39, 0.18);
+}
+
+.chat-flow-step:last-child::after {
+  display: none;
+}
+
+.chat-flow-step.ok {
+  border-color: rgba(15, 118, 110, 0.24);
+  background:
+    linear-gradient(180deg, rgba(15, 118, 110, 0.09), rgba(255, 255, 255, 0.68)),
+    var(--bg-soft);
+}
+
+.chat-flow-step.warning {
+  border-color: rgba(180, 83, 9, 0.24);
+  background:
+    linear-gradient(180deg, rgba(180, 83, 9, 0.08), rgba(255, 255, 255, 0.7)),
+    var(--bg-soft);
+}
+
+.chat-flow-step.danger {
+  border-color: rgba(185, 28, 28, 0.22);
+  background:
+    linear-gradient(180deg, rgba(185, 28, 28, 0.07), rgba(255, 255, 255, 0.72)),
+    var(--bg-soft);
+}
+
+.chat-flow-step-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.chat-flow-step-head strong {
+  font-size: 0.92rem;
+}
+
+.chat-flow-step-headline {
+  font-family: var(--font-display);
+  font-size: 1.05rem;
+  line-height: 1.25;
+}
+
+.chat-flow-metric-list {
+  display: grid;
+  gap: 8px;
+  margin-top: auto;
+}
+
+.chat-flow-metric {
+  display: grid;
+  gap: 4px;
+  padding: 10px 12px;
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.74);
+  border: 1px solid rgba(20, 32, 39, 0.08);
+}
+
+.chat-flow-metric span {
+  color: var(--muted);
+  font-size: 0.78rem;
+}
+
+.chat-flow-metric strong {
+  font-size: 0.9rem;
+  word-break: break-word;
+}
+
 .chat-debug-grid {
   grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
 }
@@ -669,5 +773,13 @@ pre {
   .chat-shell,
   .chat-create-row {
     grid-template-columns: 1fr;
+  }
+
+  .chat-flow-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .chat-flow-step::after {
+    display: none;
   }
 }

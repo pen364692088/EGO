@@ -5,6 +5,7 @@ import pytest
 
 from app.runtime_v2.action_protocol import RuntimeV2Action
 from app.runtime_v2.loop import RuntimeV2Loop
+from app.runtime_v2.runtime_reply import RuntimeV2Reply, RuntimeV2TurnResult
 from app.runtime_v2.run_items import (
     RunConflictState,
     RunItem,
@@ -133,6 +134,38 @@ async def test_runtime_v2_loop_emits_progress_callback_during_turn(monkeypatch, 
         ("executing_changes", "我先处理需要的文件。"),
         ("verifying", "我先验证一下结果。"),
     ]
+
+
+@pytest.mark.asyncio
+async def test_run_turn_typed_cancels_pending_proactive_followup_and_outbox_on_new_user_input(monkeypatch):
+    loop = RuntimeV2Loop()
+    loop.proto_self_runtime = None
+    state = loop.get_state("session:cancel-proactive")
+    state.set_pending_proactive_followup({"schema_version": "mvp12.pending_proactive_followup.v1"})
+    state.push_proactive_outbox_event(
+        {
+            "schema_version": "mvp12.proactive_outbox_event.v1",
+            "initiative_candidate_id": "candidate-old",
+        }
+    )
+    observed = {}
+
+    async def fake_advance_turn(*_args, **_kwargs):
+        observed["pending"] = state.get_pending_proactive_followup()
+        observed["outbox"] = state.peek_proactive_outbox_events()
+        return RuntimeV2TurnResult(
+            status="chat",
+            state=state,
+            reply=RuntimeV2Reply(reply_text="ok", delivery_kind="chat", status="chat"),
+        )
+
+    monkeypatch.setattr(loop, "_advance_turn", fake_advance_turn)
+
+    result = await loop.run_turn_typed("session:cancel-proactive", "继续")
+
+    assert result.status == "chat"
+    assert observed["pending"] is None
+    assert observed["outbox"] == []
 
 
 @pytest.mark.asyncio
@@ -930,3 +963,85 @@ async def test_runtime_v2_loop_transient_decision_error_returns_resumable_pause(
     assert result.status == "resumable_pause"
     assert result.finish_reason == "transient_decision_error"
     assert result.checkpoint_payload["state_snapshot"]["task_status"] == "resumable_pause"
+
+
+@pytest.mark.asyncio
+async def test_runtime_v2_loop_phase_probe_marks_proto_self_ingress(monkeypatch):
+    loop = RuntimeV2Loop()
+    events = []
+
+    class _FakeProtoSelfRuntime:
+        def process_ingress(self, **kwargs):
+            return None
+
+    loop.proto_self_runtime = _FakeProtoSelfRuntime()
+
+    async def fake_chat_reply(_state):
+        return RuntimeV2TurnResult(
+            status="chat",
+            state=_state,
+            reply=RuntimeV2Reply(
+                reply_text="我在。",
+                delivery_kind="chat",
+                status="chat",
+            ),
+        )
+
+    monkeypatch.setattr(loop.chat_reply_engine, "reply", fake_chat_reply)
+    state = loop.get_state("session:proto-self-phase")
+    state.ingress_context = {"interaction_kind": "chat"}
+
+    await loop.run_turn_typed(
+        "session:proto-self-phase",
+        "你好",
+        loop_phase_probe=lambda event: events.append(dict(event)),
+    )
+
+    ingress_events = [event for event in events if event["phase"] == "process_proto_self_ingress"]
+    assert [event["status"] for event in ingress_events] == ["started", "completed"]
+
+
+@pytest.mark.asyncio
+async def test_runtime_v2_loop_phase_probe_marks_decide_and_transition(monkeypatch):
+    loop = RuntimeV2Loop()
+    events = []
+    actions = iter(
+        [
+            RuntimeV2Action.from_model_output(
+                json.dumps({"type": "plan", "goal": "继续推进", "steps": ["a", "b"]}, ensure_ascii=False)
+            )
+        ]
+    )
+
+    async def fake_decide(_state):
+        return next(actions)
+
+    async def fake_apply(_state, _action):
+        return {
+            "done": True,
+            "result": RuntimeV2TurnResult(
+                status="completed_verified",
+                state=_state,
+                reply=RuntimeV2Reply(
+                    reply_text="已完成",
+                    delivery_kind="final",
+                    status="completed_verified",
+                ),
+            ),
+        }
+
+    monkeypatch.setattr(loop, "_decide", fake_decide)
+    monkeypatch.setattr(loop.transition_engine, "apply", fake_apply)
+
+    result = await loop.run_turn_typed(
+        "session:decision-transition-phase",
+        "请继续执行",
+        loop_phase_probe=lambda event: events.append(dict(event)),
+    )
+
+    decide_events = [event for event in events if event["phase"] == "decision_engine_decide"]
+    transition_events = [event for event in events if event["phase"] == "transition_engine_apply"]
+
+    assert result.status == "completed_verified"
+    assert [event["status"] for event in decide_events] == ["started", "completed"]
+    assert [event["status"] for event in transition_events] == ["started", "completed"]

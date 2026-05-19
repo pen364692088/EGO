@@ -13,6 +13,8 @@ from typing import Any, Dict, List, Optional, Set
 import yaml
 from dotenv import load_dotenv
 
+from app.repo_paths import get_egocore_root
+
 
 class ConfigError(Exception):
     """Raised when configuration is invalid or missing."""
@@ -62,8 +64,9 @@ class ConfigLoader:
             config_dir: Directory containing YAML config files
             env_file: Path to .env file
         """
-        self.config_dir = Path(config_dir or self.DEFAULTS['config_dir'])
-        self.env_file = Path(env_file or self.DEFAULTS['env_file'])
+        self._egocore_root = get_egocore_root()
+        self.config_dir = self._resolve_path(config_dir or self.DEFAULTS['config_dir'])
+        self.env_file = self._resolve_path(env_file or self.DEFAULTS['env_file'])
         
         # Loaded configuration storage
         self._config: Dict[str, Any] = {}
@@ -71,6 +74,12 @@ class ConfigLoader:
         
         # Track if loaded
         self._loaded = False
+
+    def _resolve_path(self, value: str) -> Path:
+        path = Path(value)
+        if path.is_absolute():
+            return path
+        return (self._egocore_root / path).resolve()
     
     def load(self, validate: bool = True) -> 'ConfigLoader':
         """
@@ -324,7 +333,7 @@ class ConfigLoader:
         """
         paths = self._config.get('app', {}).get('paths', {})
         path_value = paths.get(path_name, self.DEFAULTS.get('data_dir', './data'))
-        return Path(path_value).resolve()
+        return self._resolve_path(path_value)
     
     def __repr__(self) -> str:
         return f"<ConfigLoader loaded={self._loaded}>"

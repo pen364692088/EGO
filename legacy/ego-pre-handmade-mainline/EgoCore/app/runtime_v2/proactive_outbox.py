@@ -4,6 +4,8 @@ from dataclasses import dataclass
 from datetime import UTC, datetime
 from typing import Any, Dict, List, Optional
 
+from .proactive_identity import build_sent_text_fingerprint
+
 
 def _queued_candidate_ids(state: Any) -> List[str]:
     if not hasattr(state, "peek_proactive_outbox_events"):
@@ -89,6 +91,26 @@ def enqueue_controlled_proactive_outbox(
         "initiative_source_cycle": delivery.get("initiative_source_cycle"),
         "initiative_source_hash": delivery.get("initiative_source_hash"),
         "initiative_score": delivery.get("initiative_score"),
+        "topic_source": delivery.get("topic_source"),
+        "topic_fingerprint": delivery.get("topic_fingerprint"),
+        "topic_cluster_ref": delivery.get("topic_cluster_ref"),
+        "topic_anchor_summary": delivery.get("topic_anchor_summary"),
+        "topic_anchor_source": delivery.get("topic_anchor_source"),
+        "topic_anchor_kind": delivery.get("topic_anchor_kind"),
+        "topic_binding_mode": delivery.get("topic_binding_mode"),
+        "topic_sendability": delivery.get("topic_sendability"),
+        "topic_conversation_grade": delivery.get("topic_conversation_grade"),
+        "topic_summary": delivery.get("topic_summary"),
+        "message_shape_hint": delivery.get("message_shape_hint"),
+        "source_ref": delivery.get("source_ref"),
+        "sent_text_fingerprint": build_sent_text_fingerprint(delivery.get("reply_text")),
+        "proactive_outreach_epoch": delivery.get("proactive_outreach_epoch"),
+        "timing_contract": dict(delivery.get("timing_contract") or {}),
+        "transport_retry_count": 0,
+        "last_transport_error_signature": None,
+        "last_transport_error_at": None,
+        "next_transport_retry_at": None,
+        "transport_retry_status": None,
         "delivery_record": delivery,
     }
     if hasattr(state, "push_proactive_outbox_event"):
@@ -101,6 +123,7 @@ def enqueue_controlled_proactive_outbox(
                 "initiative_candidate_id": queued_event.get("initiative_candidate_id"),
                 "reply_origin": queued_event.get("reply_origin"),
                 "reply_authority": queued_event.get("reply_authority"),
+                "timing_mode": (queued_event.get("timing_contract") or {}).get("timing_mode"),
                 "text_preview": str(queued_event.get("reply_text") or "")[:120],
             },
         )

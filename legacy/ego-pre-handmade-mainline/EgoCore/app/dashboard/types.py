@@ -30,6 +30,8 @@ class RunIndexRecord:
     repair_closure: bool
     artifact_refs: Dict[str, str]
     source_type: Optional[str] = None
+    source_kind: Optional[str] = None
+    entrypoint: Optional[str] = None
     sample_scope: str = "real_user"
     sample_scope_reason: Optional[str] = None
     response_plan_status: Optional[str] = None
@@ -72,6 +74,8 @@ class GrowthSignalRecord:
     cycle_summary: Dict[str, Any]
     session_id: Optional[str] = None
     thread_id: Optional[str] = None
+    source_kind: Optional[str] = None
+    entrypoint: Optional[str] = None
     closure_family_id: Optional[str] = None
     focus_goal: Optional[str] = None
     revision_counter: int = 0
@@ -90,6 +94,8 @@ class AgencyRunRecord:
     sample_id: str
     timestamp: str
     session_id: Optional[str]
+    source_kind: Optional[str]
+    entrypoint: Optional[str]
     subject_profile: str
     idle_check: bool
     idle_eligible: bool

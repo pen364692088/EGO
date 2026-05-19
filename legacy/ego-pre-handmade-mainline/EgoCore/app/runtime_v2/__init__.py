@@ -24,6 +24,17 @@ from .telegram_bridge import (
 from .fallback_runner import RuntimeV2FallbackRunner
 from .loop import RuntimeV2Loop
 from .cli import run_cli
+from .unified_channel_contract import (
+    UnifiedEgressEnvelope,
+    UnifiedIngressBundle,
+    UnifiedIngressRequest,
+    UnifiedTurnResult,
+    build_telegram_transport_meta,
+    build_telegram_unified_request,
+    build_unified_egress,
+    build_unified_ingress,
+    build_unified_turn_result,
+)
 
 __all__ = [
     "RuntimeV2Action",
@@ -51,4 +62,13 @@ __all__ = [
     "RuntimeV2FallbackRunner",
     "RuntimeV2Loop",
     "run_cli",
+    "UnifiedIngressRequest",
+    "UnifiedIngressBundle",
+    "UnifiedTurnResult",
+    "UnifiedEgressEnvelope",
+    "build_telegram_transport_meta",
+    "build_telegram_unified_request",
+    "build_unified_ingress",
+    "build_unified_turn_result",
+    "build_unified_egress",
 ]

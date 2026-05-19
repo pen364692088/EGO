@@ -4,6 +4,7 @@ from types import SimpleNamespace
 from app.config import load_config
 from app.runtime_v2.proto_self_runtime import (
     RuntimeV2ProtoSelfRuntime,
+    _build_recent_dialogue_reflection,
     assess_risk_level,
     build_developmental_tick_event,
     build_external_result_event,
@@ -17,6 +18,7 @@ from app.runtime_v2.proto_self_runtime import (
 )
 from app.runtime_v2.runtime_reply import RuntimeV2Reply, RuntimeV2TurnResult
 from app.runtime_v2.state import RuntimeV2State
+from app.runtime_v2.topic_anchor import build_user_turn_record, extract_recent_substantive_topic_anchor
 from app.telegram_evidence_collector import TelegramEvidenceCollector
 from openemotion.developmental_self import (
     DevelopmentalSelfOwner,
@@ -122,6 +124,172 @@ def test_build_proto_self_ingress_event_supports_v2_shape():
     assert event["safety_context"]["risk_level"] == "low"
     assert event["prediction_snapshot_prev"]["expected_success"] is True
     assert event["external_outcome"] is None
+
+
+def test_recent_topic_anchor_skips_proactive_permission_turns_from_live_no_send_regression() -> None:
+    records = [
+        build_user_turn_record(text="你好", conversation_act="light_chitchat", timestamp=None),
+        build_user_turn_record(
+            text="以后可以主动来找我，也可以自己找新话题，不用每次都问我。",
+            conversation_act="light_chitchat",
+            timestamp=None,
+        ),
+        build_user_turn_record(
+            text="你觉得AI实现自主性最大的瓶颈是什么？",
+            conversation_act="light_chitchat",
+            timestamp=None,
+        ),
+        build_user_turn_record(
+            text="以后可以主动来找我，也可以自己找新话题，不用每次都问我。",
+            conversation_act="light_chitchat",
+            timestamp=None,
+        ),
+        build_user_turn_record(text="你有没有什么想法 可以告诉我", conversation_act="solicited_view", timestamp=None),
+    ]
+
+    anchor = extract_recent_substantive_topic_anchor(records)
+
+    assert anchor["topic_anchor"] == "你觉得AI实现自主性最大的瓶颈是什么？"
+    assert anchor["topic_anchor_source"] == "prior_user_turn"
+    assert anchor["topic_anchor_kind"] == "substantive_topic"
+    assert anchor["prompt_like_turn_preview"] == "你有没有什么想法 可以告诉我"
+
+
+def test_recent_dialogue_reflection_skips_proactive_permission_turns_from_live_no_send_regression() -> None:
+    state = RuntimeV2State(session_id="telegram:dm:test")
+    turns = [
+        ("你好", "light_chitchat", "你好，我在。今天有什么想聊的，或者需要协助的直接说就行。"),
+        (
+            "以后可以主动来找我，也可以自己找新话题，不用每次都问我。",
+            "light_chitchat",
+            "收到，以后我会更主动地开启对话或分享新话题，不再总等你先开口。",
+        ),
+        (
+            "你觉得AI实现自主性最大的瓶颈是什么？",
+            "light_chitchat",
+            "最大的瓶颈在于缺乏对复杂现实环境的长期因果推理能力。",
+        ),
+        (
+            "以后可以主动来找我，也可以自己找新话题，不用每次都问我。",
+            "light_chitchat",
+            "收到，以后我会更主动地开启对话或分享新话题，不再总等你先开口。",
+        ),
+        (
+            "你有没有什么想法 可以告诉我",
+            "solicited_view",
+            "我认为最大的瓶颈在于开放环境下的长程目标规划与自我纠错能力。",
+        ),
+    ]
+    for user_text, chat_act, assistant_reply in turns:
+        state.prepare_chat_turn(user_text=user_text, chat_act=chat_act)
+        state.finalize_chat_turn(assistant_reply=assistant_reply, chat_act=chat_act)
+
+    reflection = _build_recent_dialogue_reflection(state)
+
+    assert reflection["topic_anchor"] == "你觉得AI实现自主性最大的瓶颈是什么？"
+    assert reflection["topic_anchor_source"] == "prior_user_turn"
+    assert reflection["topic_anchor_kind"] == "substantive_topic"
+    assert reflection["prompt_like_turn_preview"] == "你有没有什么想法 可以告诉我"
+
+
+def test_recent_dialogue_reflection_recovers_ai_autonomy_anchor_from_20260426_live_no_send() -> None:
+    state = RuntimeV2State(session_id="telegram:dm:test")
+    turns = [
+        (
+            "以后可以主动来找我，也可以自己找新话题，不用每次都问我。",
+            "light_chitchat",
+            "明白，以后我会更主动地开启话题或分享想法，不用每次都等你确认。",
+        ),
+        (
+            "你觉得AI实现自主性最大的瓶颈是什么？",
+            "light_chitchat",
+            "按目前的技术路径看，我倾向于认为最大的瓶颈可能还是稳定可泛化的世界模型与长期目标对齐能力。",
+        ),
+        (
+            "你有没有什么想法 可以告诉我",
+            "solicited_view",
+            "我觉得AI实现自主性最大的瓶颈在于缺乏内在的目标生成机制。",
+        ),
+    ]
+    for user_text, chat_act, assistant_reply in turns:
+        state.prepare_chat_turn(user_text=user_text, chat_act=chat_act)
+        state.finalize_chat_turn(assistant_reply=assistant_reply, chat_act=chat_act)
+
+    reflection = _build_recent_dialogue_reflection(state)
+
+    assert reflection["topic_anchor"] == "你觉得AI实现自主性最大的瓶颈是什么？"
+    assert reflection["topic_anchor_source"] == "prior_user_turn"
+    assert reflection["topic_anchor_kind"] == "substantive_topic"
+    assert reflection["prompt_like_turn_preview"] == "你有没有什么想法 可以告诉我"
+
+
+def test_recent_topic_anchor_skips_bare_continue_from_live_no_send_regression() -> None:
+    records = [
+        build_user_turn_record(
+            text="以后可以主动来找我，也可以自己找新话题，不用每次都问我。",
+            conversation_act="light_chitchat",
+            timestamp=None,
+        ),
+        build_user_turn_record(
+            text="以后可以主动来找我，也可以自己找新话题，不用每次都问我。",
+            conversation_act="light_chitchat",
+            timestamp=None,
+        ),
+        build_user_turn_record(
+            text="你觉得AI实现自主性最大的瓶颈是什么？",
+            conversation_act="light_chitchat",
+            timestamp=None,
+        ),
+        build_user_turn_record(
+            text="你有没有什么想法 可以告诉我",
+            conversation_act="solicited_view",
+            timestamp=None,
+        ),
+        build_user_turn_record(text="继续", conversation_act="thread_continue", timestamp=None),
+    ]
+
+    anchor = extract_recent_substantive_topic_anchor(records)
+
+    assert anchor["topic_anchor"] == "你觉得AI实现自主性最大的瓶颈是什么？"
+    assert anchor["topic_anchor_source"] == "prior_user_turn"
+    assert anchor["topic_anchor_kind"] == "substantive_topic"
+    assert anchor["prompt_like_turn_preview"] == "你有没有什么想法 可以告诉我"
+
+
+def test_recent_dialogue_reflection_skips_bare_continue_from_live_no_send_regression() -> None:
+    state = RuntimeV2State(session_id="telegram:dm:test")
+    turns = [
+        (
+            "以后可以主动来找我，也可以自己找新话题，不用每次都问我。",
+            "light_chitchat",
+            "明白了，以后我会更主动些。",
+        ),
+        (
+            "你觉得AI实现自主性最大的瓶颈是什么？",
+            "light_chitchat",
+            "我觉得最大的瓶颈还是复杂环境下的可靠泛化与价值对齐。",
+        ),
+        (
+            "你有没有什么想法 可以告诉我",
+            "solicited_view",
+            "AI现在能生成计划，但很难脱离人类持续干预去验证结果。",
+        ),
+        (
+            "继续",
+            "thread_continue",
+            "既然你提到继续，那我们就顺着之前的节奏往下展开。",
+        ),
+    ]
+    for user_text, chat_act, assistant_reply in turns:
+        state.prepare_chat_turn(user_text=user_text, chat_act=chat_act)
+        state.finalize_chat_turn(assistant_reply=assistant_reply, chat_act=chat_act)
+
+    reflection = _build_recent_dialogue_reflection(state)
+
+    assert reflection["topic_anchor"] == "你觉得AI实现自主性最大的瓶颈是什么？"
+    assert reflection["topic_anchor_source"] == "prior_user_turn"
+    assert reflection["topic_anchor_kind"] == "substantive_topic"
+    assert reflection["prompt_like_turn_preview"] == "你有没有什么想法 可以告诉我"
 
 
 def test_build_proto_self_ingress_event_injects_h1_shadow_context(monkeypatch):
@@ -2447,12 +2615,34 @@ def test_capture_response_plan_uses_same_payload_shape():
             status="completed_verified",
         ),
     )
+    result.response_plan = type(
+        "ResponsePlanStub",
+        (),
+        {
+            "speaker_mode": "reflect",
+            "epistemic_status": "interpreted",
+            "commitment_level": "soft",
+            "must_include": ("回应当前在线确认",),
+            "must_not_upgrade": {
+                "epistemic_upgrade": True,
+                "commitment_upgrade": True,
+                "tone_upgrade": True,
+            },
+            "tone_bounds": {"allowed_tones": ["warm", "supportive"], "intensity_cap": 0.6},
+        },
+    )()
     runtime.capture_response_plan(result=result, evidence_collector=Collector())
     assert captured == build_response_plan_payload(result=result)
     assert captured["restore_observation"]["restore_id"] == "restore_001"
     assert captured["proto_self_subject_profile"] == SEED_SUBJECT_PROFILE
     assert captured["candidate_action_types"] == ["inspect_file"]
     assert captured["proto_self_governor_hint"]["status"] == "approved"
+    assert captured["speaker_mode"] == "reflect"
+    assert captured["epistemic_status"] == "interpreted"
+    assert captured["commitment_level"] == "soft"
+    assert captured["must_include"] == ["回应当前在线确认"]
+    assert captured["must_not_upgrade"]["tone_upgrade"] is True
+    assert captured["tone_bounds"]["allowed_tones"] == ["warm", "supportive"]
 
 
 def test_process_ingress_prefers_collector_for_trace_capture():

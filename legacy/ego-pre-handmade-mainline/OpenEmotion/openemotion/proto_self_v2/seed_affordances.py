@@ -6,6 +6,24 @@ from typing import Any, Dict, List, Optional
 from openemotion.proto_self_v2.seed_schemas import KernelEvent
 from openemotion.proto_self_v2.seed_state import ProtoSelfSeedState
 
+_EXPLICIT_FOLLOWUP_REMINDER_TOKENS = (
+    "提醒我",
+    "轻提醒",
+    "提醒",
+    "remindme",
+    "reminder",
+)
+
+_EXPLICIT_FOLLOWUP_CONTINUATION_TOKENS = (
+    "继续这个话题",
+    "继续聊",
+    "回来继续",
+    "回头继续",
+    "接着聊",
+    "followup",
+    "continue",
+)
+
 
 @dataclass(slots=True)
 class Affordance:
@@ -25,6 +43,45 @@ def _pick_target(runtime_summary: Dict[str, Any], payload: Dict[str, Any]) -> Op
         or runtime_summary.get("resolved_target_name")
         or runtime_summary.get("recent_failure_target")
     )
+
+
+def _normalize_text(text: Any) -> str:
+    return "".join(str(text or "").strip().lower().split())
+
+
+def _is_explicit_same_thread_followup_request(runtime_summary: Dict[str, Any], raw_text: Any) -> bool:
+    initiative_context = dict(runtime_summary.get("initiative_context") or {})
+    if str(initiative_context.get("chat_followup_source") or "").strip() == "explicit_same_thread_followup_request":
+        return True
+
+    normalized = _normalize_text(raw_text)
+    if not normalized:
+        return False
+    has_reminder_request = any(token in normalized for token in _EXPLICIT_FOLLOWUP_REMINDER_TOKENS)
+    has_continuation_request = any(token in normalized for token in _EXPLICIT_FOLLOWUP_CONTINUATION_TOKENS) or (
+        "继续" in normalized and any(marker in normalized for marker in ("话题", "回来", "回头", "等下", "稍后", "过会儿", "接着"))
+    )
+    return has_reminder_request and has_continuation_request
+
+
+def resolve_pending_commitment(
+    runtime_summary: Dict[str, Any],
+    state_pending_commitment: Optional[str],
+    *,
+    raw_text: Any = None,
+) -> tuple[Optional[str], bool, str]:
+    runtime_pending_commitment = str(runtime_summary.get("pending_commitment") or "").strip()
+    if runtime_pending_commitment:
+        return runtime_pending_commitment, False, "runtime"
+
+    explicit_same_thread_followup = _is_explicit_same_thread_followup_request(runtime_summary, raw_text)
+    if explicit_same_thread_followup:
+        return None, bool(str(state_pending_commitment or "").strip()), "suppressed_for_explicit_followup"
+
+    state_pending = str(state_pending_commitment or "").strip()
+    if state_pending:
+        return state_pending, False, "state_fallback"
+    return None, False, ""
 
 
 def extract_affordances(event: KernelEvent, state: ProtoSelfSeedState) -> List[Affordance]:
@@ -68,7 +125,11 @@ def extract_affordances(event: KernelEvent, state: ProtoSelfSeedState) -> List[A
             )
         )
 
-    pending_commitment = runtime.get("pending_commitment") or state.focus_goal.pending_commitment
+    pending_commitment, _, _ = resolve_pending_commitment(
+        runtime,
+        state.focus_goal.pending_commitment,
+        raw_text=payload.get("raw_text"),
+    )
     if pending_commitment:
         affordances.append(
             Affordance(

@@ -80,6 +80,18 @@ def _summarize_ingress_context(ingress_context: Optional[Dict[str, Any]]) -> Opt
         summary["risk_level"] = ingress_context.get("risk_level")
     if ingress_context.get("rule_enforcement"):
         summary["rule_enforcement"] = ingress_context.get("rule_enforcement")
+    if ingress_context.get("proactive_topic_permission"):
+        summary["proactive_topic_permission"] = ingress_context.get("proactive_topic_permission")
+    for key in (
+        "outreach_aggression_mode",
+        "outreach_feedback_adaptation",
+        "quiet_state",
+        "quiet_until",
+        "feedback_signal",
+    ):
+        value = ingress_context.get(key)
+        if value not in (None, "", [], {}):
+            summary[key] = value
     if ingress_context.get("resume_hint_eligible") is not None:
         summary["resume_hint_eligible"] = bool(ingress_context.get("resume_hint_eligible"))
     return summary
@@ -462,10 +474,12 @@ class RuntimeV2State:
             "conversation_act": str(((self.ingress_context or {}).get("conversation_act") or "")).strip(),
             "last_user_turn": self.last_user_turn,
             "recent_user_turns": list(chat_state.recent_user_turns[-4:]),
+            "recent_user_turn_records": [dict(item) for item in list(chat_state.recent_user_turn_records or [])[-4:]],
             "recent_assistant_replies": list(chat_state.recent_assistant_replies[-4:]),
             "last_user_tone_feedback": chat_state.last_user_tone_feedback,
             "relationship_context": dict(chat_state.relationship_context or {}),
             "style_profile": dict(chat_state.style_profile or {}),
+            "stance_memory": chat_state.stance_snapshot(),
             "active_task_summary": self.build_active_task_summary(),
             "proto_self_context": dict(self.proto_self_context or {}),
             "recent_delivered_result_context": dict(self.recent_delivered_result_context or {}),
@@ -911,6 +925,9 @@ class RuntimeV2State:
 
     def clear_pending_proactive_followup(self) -> None:
         self.pending_proactive_followup = None
+
+    def clear_proactive_outbox_events(self) -> None:
+        self.pending_proactive_outbox_events = []
 
     def push_proactive_outbox_event(self, payload: Dict[str, Any]) -> None:
         self.pending_proactive_outbox_events.append(dict(payload or {}))
@@ -1416,6 +1433,21 @@ class RuntimeV2State:
 
     def finalize_chat_turn(self, *, assistant_reply: str, chat_act: str) -> None:
         self.get_chat_state().finalize_turn(assistant_reply=assistant_reply, chat_act=chat_act)
+
+    def update_chat_stance_memory(
+        self,
+        *,
+        stance_label: Optional[str],
+        stance_text: Optional[str],
+        stance_source_turn: Optional[str],
+        revision_basis: Optional[str],
+    ) -> None:
+        self.get_chat_state().update_stance_memory(
+            stance_label=stance_label,
+            stance_text=stance_text,
+            stance_source_turn=stance_source_turn,
+            revision_basis=revision_basis,
+        )
 
     def clear_last_delivered_evidence_context(self) -> None:
         self.last_delivered_evidence_context = None

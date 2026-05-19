@@ -263,10 +263,13 @@ def test_build_dashboard_indexes_creates_required_indexes(tmp_path: Path) -> Non
     host_only = next(item for item in runs if item["sample_id"] == "sample_20260327_100200_cccccccc")
     assert host_only["host_only"] is True
     assert host_only["oe_available"] is False
+    assert host_only["entrypoint"] == "telegram"
+    assert host_only["source_kind"] == "telegram_prepared"
     assert "control_plane_host_only" in host_only["gap_types"]
     unexpected_host_only = next(item for item in runs if item["sample_id"] == "sample_20260327_100250_dddddddd")
     assert unexpected_host_only["host_only"] is True
     assert unexpected_host_only["oe_available"] is False
+    assert unexpected_host_only["entrypoint"] == "telegram"
     assert "unexpected_pre_runtime_intercept" in unexpected_host_only["gap_types"]
     assert host_only["semantic"]["headline_code"] == "host_only_turn"
 
@@ -274,6 +277,8 @@ def test_build_dashboard_indexes_creates_required_indexes(tmp_path: Path) -> Non
         "sample_20260327_100000_aaaaaaaa",
         "sample_20260327_100100_bbbbbbbb",
     }
+    assert all(item["entrypoint"] == "telegram" for item in growth)
+    assert all(item["source_kind"] == "telegram_prepared" for item in growth)
     assert growth[0]["semantic"]["headline_code"] in {
         "reflecting_on_result",
         "steady_growth",
@@ -424,6 +429,8 @@ def test_build_dashboard_indexes_emits_agency_rollup_and_mirror_fallback(tmp_pat
     agency_rollup = json.loads((output_dir / "agency_rollup.json").read_text(encoding="utf-8"))
     by_id = {item["sample_id"]: item for item in agency_runs}
 
+    assert by_id["sample_20260329_175737_7ca3cfb6"]["entrypoint"] == "telegram"
+    assert by_id["sample_20260329_175737_7ca3cfb6"]["source_kind"] == "telegram_prepared"
     assert by_id["sample_20260329_175737_7ca3cfb6"]["evidence_source"] == "ledger_events"
     assert by_id["sample_20260329_175737_7ca3cfb6"]["candidate_actions"] == ["inspect_file"]
     assert by_id["sample_20260329_175737_7ca3cfb6"]["final_host_action"] == "file"
@@ -439,3 +446,50 @@ def test_build_dashboard_indexes_emits_agency_rollup_and_mirror_fallback(tmp_pat
     assert agency_rollup["excluded_counts"]["host_only"] == 1
     assert agency_rollup["headline_code"] == "wants_to_inspect"
     assert agency_rollup["story_cards"]
+
+
+def test_build_dashboard_indexes_tags_dashboard_chat_entrypoint_from_session_prefix(tmp_path: Path) -> None:
+    real_dir = tmp_path / "artifacts" / "telegram_real_mainline_v1" / "real_telegram"
+    failure_dir = tmp_path / "artifacts" / "telegram_real_mainline_v1" / "failure_cases"
+    observation_dir = tmp_path / "artifacts" / "mvs_e5_observation"
+    output_dir = tmp_path / "artifacts" / "telegram_real_mainline_v1" / "dashboard_v1"
+    validation_doc = tmp_path / "docs" / "TELEGRAM_REAL_MAINLINE_VALIDATION_V1.md"
+    validation_doc.parent.mkdir(parents=True, exist_ok=True)
+    validation_doc.write_text("restore 仍缺\n", encoding="utf-8")
+
+    _make_sample(
+        real_dir,
+        "sample_20260412_100000_feedbeef",
+        timestamp="2026-04-12T10:00:00+00:00",
+        session_id="dashboard:test:default",
+        response_plan_status="complete",
+        completeness={
+            "raw_update": True,
+            "normalized_event": True,
+            "openemotion_result": True,
+            "openemotion_trace": True,
+            "response_plan": True,
+            "outbox_record": True,
+            "timeline": True,
+            "tape": True,
+            "replay": True,
+        },
+        result_payload={"response_tendency": {"preferred_mode": "ask"}},
+        trace_payload={"seed_state_snapshot": {"revision_counter": 0}, "cycle_delta": {}},
+    )
+
+    build_dashboard_indexes(
+        real_dir=real_dir,
+        failure_dir=failure_dir,
+        observation_dir=observation_dir,
+        output_dir=output_dir,
+        validation_doc=validation_doc,
+    )
+
+    runs = load_jsonl(output_dir / "runs.jsonl")
+    growth = load_jsonl(output_dir / "growth_signals.jsonl")
+
+    assert runs[0]["entrypoint"] == "dashboard_chat"
+    assert runs[0]["source_kind"] == "dashboard_local"
+    assert growth[0]["entrypoint"] == "dashboard_chat"
+    assert growth[0]["source_kind"] == "dashboard_local"

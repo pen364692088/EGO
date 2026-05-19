@@ -115,8 +115,22 @@ def consume_pending_proactive_followup(
         "initiative_source_cycle": response_metadata.get("initiative_source_cycle") or selected_candidate.get("source_cycle"),
         "initiative_source_hash": response_metadata.get("initiative_source_hash") or selected_candidate.get("source_candidate_hash"),
         "initiative_score": response_metadata.get("initiative_score") or selected_candidate.get("initiative_score"),
+        "topic_source": response_metadata.get("topic_source") or selected_candidate.get("topic_source"),
+        "topic_fingerprint": response_metadata.get("topic_fingerprint") or selected_candidate.get("topic_fingerprint"),
+        "topic_cluster_ref": response_metadata.get("topic_cluster_ref") or selected_candidate.get("topic_cluster_ref"),
+        "topic_anchor_summary": response_metadata.get("topic_anchor_summary") or selected_candidate.get("topic_anchor_summary"),
+        "topic_anchor_source": response_metadata.get("topic_anchor_source") or selected_candidate.get("topic_anchor_source"),
+        "topic_anchor_kind": response_metadata.get("topic_anchor_kind") or selected_candidate.get("topic_anchor_kind"),
+        "topic_binding_mode": response_metadata.get("topic_binding_mode") or selected_candidate.get("topic_binding_mode"),
+        "topic_sendability": response_metadata.get("topic_sendability") or selected_candidate.get("topic_sendability"),
+        "topic_conversation_grade": response_metadata.get("topic_conversation_grade") or selected_candidate.get("topic_conversation_grade"),
+        "topic_summary": response_metadata.get("topic_summary") or selected_candidate.get("topic_summary"),
+        "message_shape_hint": response_metadata.get("message_shape_hint") or selected_candidate.get("message_shape_hint"),
+        "source_ref": response_metadata.get("source_ref") or selected_candidate.get("source_ref"),
+        "proactive_outreach_epoch": pending.get("proactive_outreach_epoch"),
         "pending_created_at": pending.get("created_at"),
         "idle_seconds": pending.get("idle_seconds"),
+        "timing_contract": dict(pending.get("timing_contract") or {}),
     }
 
     consumed_pending = dict(pending)

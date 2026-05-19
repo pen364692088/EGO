@@ -2,15 +2,17 @@ from __future__ import annotations
 
 import asyncio
 import hashlib
+import inspect
 import logging
 import os
 import re
 import threading
 import time
 import uuid
+from contextlib import contextmanager
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
-from typing import Any, Dict, Optional
+from typing import Any, Callable, Dict, Iterator, Optional
 
 from openemotion.proto_self_v2.seed_schemas import SEED_SUBJECT_PROFILE
 
@@ -189,15 +191,79 @@ class DashboardChatService:
         runner: Optional[Any] = None,
         subject_gate: Optional[Any] = None,
         llm_client_resolver: Optional[Any] = None,
+        phase_probe: Optional[Callable[[dict[str, Any]], None]] = None,
     ) -> None:
         self.bridge = bridge or TelegramRuntimeBridge()
         self.runner = runner or TelegramRuntimeFallbackRunner()
         self.subject_gate = subject_gate or MandatorySubjectGate(hooks=NativeOpenEmotionHooks())
         self._llm_client_resolver = llm_client_resolver or self._default_semantic_parse_client
+        self._phase_probe = phase_probe
         self._process_nonce = uuid.uuid4().hex[:10]
         self._sessions: dict[str, DashboardChatSession] = {}
         self._sessions_lock = threading.RLock()
         self.default_session_id = self.ensure_session("default").session_id
+
+    def set_phase_probe(self, phase_probe: Optional[Callable[[dict[str, Any]], None]]) -> None:
+        self._phase_probe = phase_probe
+
+    def _emit_phase_probe(self, event: dict[str, Any]) -> None:
+        if not callable(self._phase_probe):
+            return
+        try:
+            self._phase_probe(dict(event))
+        except Exception as exc:
+            logger.warning("dashboard_chat.phase_probe_failed err=%s", exc)
+
+    @contextmanager
+    def _phase_probe_span(
+        self,
+        *,
+        session_id: str,
+        trace_id: str,
+        turn_id: int,
+        phase: str,
+    ) -> Iterator[None]:
+        started_at = _utc_now_iso()
+        started_monotonic = time.monotonic()
+        base_event = {
+            "session_id": session_id,
+            "turn_id": turn_id,
+            "trace_id": trace_id,
+            "phase": phase,
+            "started_at": started_at,
+        }
+        self._emit_phase_probe(
+            {
+                **base_event,
+                "status": "started",
+                "elapsed_ms": None,
+                "error_kind": None,
+                "error_message": None,
+            }
+        )
+        try:
+            yield
+        except BaseException as exc:
+            self._emit_phase_probe(
+                {
+                    **base_event,
+                    "status": "failed",
+                    "elapsed_ms": int((time.monotonic() - started_monotonic) * 1000),
+                    "error_kind": type(exc).__name__,
+                    "error_message": _trim_text(exc, limit=800),
+                }
+            )
+            raise
+        else:
+            self._emit_phase_probe(
+                {
+                    **base_event,
+                    "status": "completed",
+                    "elapsed_ms": int((time.monotonic() - started_monotonic) * 1000),
+                    "error_kind": None,
+                    "error_message": None,
+                }
+            )
 
     def _default_semantic_parse_client(self) -> Optional[Any]:
         try:
@@ -307,17 +373,36 @@ class DashboardChatService:
             has_update = normalized_after_revision is None or session.session_revision > normalized_after_revision
             return self._build_session_payload_locked(session, has_update=has_update)
 
-    def send_message(self, session_id: str, text: str) -> Dict[str, Any]:
+    def send_message(
+        self,
+        session_id: str,
+        text: str,
+        *,
+        ingress_overrides: Optional[Dict[str, Any]] = None,
+    ) -> Dict[str, Any]:
         body = str(text or "").strip()
         if not body:
             raise DashboardChatValidationError("Message text is required.", error_code="empty_message")
         session = self.get_session(session_id)
         with session.lock:
-            return asyncio.run(self._send_message_async(session=session, text=body))
+            return asyncio.run(
+                self._send_message_async(
+                    session=session,
+                    text=body,
+                    ingress_overrides=dict(ingress_overrides or {}),
+                )
+            )
 
-    async def _send_message_async(self, *, session: DashboardChatSession, text: str) -> Dict[str, Any]:
+    async def _send_message_async(
+        self,
+        *,
+        session: DashboardChatSession,
+        text: str,
+        ingress_overrides: Optional[Dict[str, Any]] = None,
+    ) -> Dict[str, Any]:
         session.turn_count += 1
         trace_id = uuid.uuid4().hex[:10]
+        turn_id = session.turn_count
         user_message = self._append_message(
             session,
             role="user",
@@ -335,7 +420,7 @@ class DashboardChatService:
                 "dashboard_chat": {
                     "session_id": session.session_id,
                     "session_name": session.session_name,
-                    "message_id": session.turn_count,
+                    "message_id": turn_id,
                     "text": text,
                     "source_kind": "dashboard_local",
                     "trace_id": trace_id,
@@ -344,14 +429,23 @@ class DashboardChatService:
             },
         )
         llm_client = self._llm_client_resolver() if callable(self._llm_client_resolver) else None
-        unified_ingress = await build_unified_ingress(
-            request,
-            session.state,
-            bridge=self.bridge,
-            llm_client=llm_client,
-        )
+        with self._phase_probe_span(
+            session_id=session.session_id,
+            trace_id=trace_id,
+            turn_id=turn_id,
+            phase="build_unified_ingress",
+        ):
+            unified_ingress = await build_unified_ingress(
+                request,
+                session.state,
+                bridge=self.bridge,
+                llm_client=llm_client,
+            )
+        merged_ingress_context = dict(unified_ingress.ingress_context or {})
+        if ingress_overrides:
+            merged_ingress_context.update(dict(ingress_overrides))
         session.state.ingress_context = self._merge_dashboard_proto_self_scope(
-            unified_ingress.ingress_context,
+            merged_ingress_context,
             session.proto_self_scope,
         )
         self._sync_pending_result_continuation_from_ingress(session.state, user_text=request.effective_user_input)
@@ -359,14 +453,20 @@ class DashboardChatService:
         if getattr(pre_runtime, "remember_challenge_turn", False):
             session.state.last_challenge_turn = request.effective_user_input
 
-        ingress_gate = self.subject_gate.process_ingress(
+        with self._phase_probe_span(
             session_id=session.session_id,
-            turn_id=self._build_subject_turn_id(session, trace_id),
-            source="api:dashboard",
-            user_input=request.effective_user_input,
-            state=session.state,
-            evidence_collector=None,
-        )
+            trace_id=trace_id,
+            turn_id=turn_id,
+            phase="subject_gate_process_ingress",
+        ):
+            ingress_gate = self.subject_gate.process_ingress(
+                session_id=session.session_id,
+                turn_id=self._build_subject_turn_id(session, trace_id),
+                source="api:dashboard",
+                user_input=request.effective_user_input,
+                state=session.state,
+                evidence_collector=None,
+            )
         if not ingress_gate.ok:
             assistant_message = self._append_message(
                 session,
@@ -411,6 +511,19 @@ class DashboardChatService:
             )
 
         if pre_runtime.should_return_early:
+            self._emit_phase_probe(
+                {
+                    "session_id": session.session_id,
+                    "turn_id": turn_id,
+                    "trace_id": trace_id,
+                    "phase": "pre_runtime_return",
+                    "status": "completed",
+                    "started_at": _utc_now_iso(),
+                    "elapsed_ms": 0,
+                    "error_kind": None,
+                    "error_message": None,
+                }
+            )
             return await self._complete_pre_runtime_turn(
                 session=session,
                 request=request,
@@ -421,14 +534,64 @@ class DashboardChatService:
                 user_message=user_message,
             )
 
-        result = await self.runner.run_turn(
-            session_key=session.session_id,
-            user_input=request.effective_user_input,
-            state=session.state,
-            source="api:dashboard",
-            evidence_collector=None,
-        )
-        output_verdict, response_plan = self._finalize_runtime_delivery_contract(session.state, result)
+        with self._phase_probe_span(
+            session_id=session.session_id,
+            trace_id=trace_id,
+            turn_id=turn_id,
+            phase="runner_run_turn",
+        ):
+            runner_kwargs = {
+                "session_key": session.session_id,
+                "user_input": request.effective_user_input,
+                "state": session.state,
+                "source": "api:dashboard",
+                "evidence_collector": None,
+            }
+            parameters = inspect.signature(self.runner.run_turn).parameters
+            if "loop_phase_probe" in parameters:
+                def _loop_phase_probe(event: dict[str, Any]) -> None:
+                    self._emit_phase_probe(
+                        {
+                            "session_id": session.session_id,
+                            "turn_id": turn_id,
+                            "trace_id": trace_id,
+                            "phase": str(event.get("phase") or "").strip() or None,
+                            "service_phase": "runner_run_turn",
+                            "status": event.get("status"),
+                            "started_at": event.get("started_at"),
+                            "elapsed_ms": event.get("elapsed_ms"),
+                            "error_kind": event.get("error_kind"),
+                            "error_message": event.get("error_message"),
+                            "generation_id": event.get("generation_id"),
+                            "engine_phase": event.get("engine_phase"),
+                            "provider": event.get("provider"),
+                            "model": event.get("model"),
+                            "provider_attempt": event.get("provider_attempt"),
+                            "message_count": event.get("message_count"),
+                            "serialized_context_bytes": event.get("serialized_context_bytes"),
+                            "chat_compaction_mode": event.get("chat_compaction_mode"),
+                            "timeout_seconds": event.get("timeout_seconds"),
+                            "stage": event.get("stage"),
+                            "finish_reason": event.get("finish_reason"),
+                            "content_present": event.get("content_present"),
+                            "content_length": event.get("content_length"),
+                            "raw_has_choices": event.get("raw_has_choices"),
+                            "raw_has_message": event.get("raw_has_message"),
+                            "raw_message_content_present": event.get("raw_message_content_present"),
+                            "raw_message_content_length": event.get("raw_message_content_length"),
+                            "content_source": event.get("content_source"),
+                        }
+                    )
+
+                runner_kwargs["loop_phase_probe"] = _loop_phase_probe
+            result = await self.runner.run_turn(**runner_kwargs)
+        with self._phase_probe_span(
+            session_id=session.session_id,
+            trace_id=trace_id,
+            turn_id=turn_id,
+            phase="finalize_runtime_delivery_contract",
+        ):
+            output_verdict, response_plan = self._finalize_runtime_delivery_contract(session.state, result)
         unified_turn = build_unified_turn_result(
             state=session.state,
             runtime_result=result,
@@ -442,12 +605,18 @@ class DashboardChatService:
                 "transport": "dashboard_local",
             },
         )
-        unified_egress = build_unified_egress(
-            unified_turn,
-            session.state,
-            bridge=self.bridge,
-            transport_meta={"client": "dashboard_local"},
-        )
+        with self._phase_probe_span(
+            session_id=session.session_id,
+            trace_id=trace_id,
+            turn_id=turn_id,
+            phase="build_unified_egress",
+        ):
+            unified_egress = build_unified_egress(
+                unified_turn,
+                session.state,
+                bridge=self.bridge,
+                transport_meta={"client": "dashboard_local"},
+            )
         assistant_message = None
         if unified_egress.should_send and unified_egress.user_visible_text:
             assistant_message = self._append_message(

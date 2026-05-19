@@ -5,6 +5,7 @@ import os
 import re
 from typing import Any, Dict, List, Optional
 
+from app.runtime_v2.topic_anchor import build_topic_anchor_variants
 from app.runtime_v2.semantic_parser import build_runtime_status_reply
 from app.runtime_v2.run_items import build_run_item_summary_text
 
@@ -32,11 +33,40 @@ class OutputCheckVerdict:
     intent_gate_violation_class: str = "none"
     intent_gate_violation_types: tuple[str, ...] = ()
     intent_gate_confidence: Optional[float] = None
+    anti_template_status: str = "skipped"
+    anti_template_reason: str = ""
+    fallback_origin: str = "none"
 
 
 _TERMINAL_KINDS = {"completed_verified", "completed", "blocked", "failed", "status_probe"}
 _INTENT_GATE_ALLOWED_AUTHORITIES = {"model_chat"}
 _INTENT_GATE_ALLOWED_REPLY_ORIGINS = {"chat_mainline"}
+_ANTI_TEMPLATE_ALLOWED_AUTHORITIES = {"model_chat"}
+_ANTI_TEMPLATE_ALLOWED_REPLY_ORIGINS = {"chat_mainline", "subject_system_v1_proactive"}
+_ANTI_TEMPLATE_GENERIC_PATTERNS = (
+    "你想聊什么",
+    "你先起头",
+    "你接着起个头",
+    "还是由我直接起个头",
+    "最近有没有碰到",
+    "想顺手吐槽",
+    "随便聊聊",
+    "目前没在忙具体任务",
+    "你想听听我对什么话题的看法",
+)
+_ANTI_TEMPLATE_PROACTIVE_TEMPLATE_PATTERNS = (
+    "I can surface a bounded reminder to preserve continuity here if you want.",
+    "There may be a continuity reminder worth surfacing. Do you want me to bring it up?",
+    "I can follow up on the open commitment with a bounded next step if you want.",
+    "There is an open commitment thread here. Do you want me to surface the next bounded follow-up?",
+    "I may need to review a blocked or failed commitment before moving further. Want me to surface that review first?",
+    "我刚想到一个相关切口。你想继续展开吗？",
+    "轻轻接回来",
+    "现在继续吗",
+    "你想现在继续展开吗",
+    "我想补一个轻提醒",
+    "你想先看这个切口吗",
+)
 _COMPLETION_CLAIM_GUARD_PATTERNS = (
     re.compile(r"已(经)?(改好|修好|修复|解决|处理好|保存)", re.IGNORECASE),
     re.compile(r"改好啦", re.IGNORECASE),
@@ -68,7 +98,11 @@ def apply_output_check(plan: ResponsePlan, state: Any) -> OutputCheckVerdict:
     intent_gate_violation_class = "none"
     intent_gate_violation_types: tuple[str, ...] = ()
     intent_gate_confidence: Optional[float] = None
+    anti_template_status = "skipped"
+    anti_template_reason = "not_applicable"
+    fallback_origin = str(metadata.get("fallback_origin") or "none").strip() or "none"
     used_intent_gate_fallback = False
+    used_anti_template_fallback = False
 
     raw_evidence_payload = metadata.get("evidence_payload")
     if isinstance(raw_evidence_payload, dict):
@@ -132,6 +166,28 @@ def apply_output_check(plan: ResponsePlan, state: Any) -> OutputCheckVerdict:
         applied_authority = intent_gate_verdict["applied_authority"]
         used_intent_gate_fallback = bool(intent_gate_verdict["used_fallback"])
         used_host_fallback = used_host_fallback or used_intent_gate_fallback
+        if used_intent_gate_fallback:
+            fallback_origin = "degraded_only"
+
+    anti_template_verdict = evaluate_anti_template_gate(
+        plan,
+        state,
+        reply_text=reply_text,
+        delivery_kind=delivery_kind,
+        applied_authority=applied_authority,
+        reply_origin=reply_origin,
+        is_evidence_bearing=is_evidence_bearing,
+        apply_fallback=True,
+    )
+    anti_template_status = anti_template_verdict["status"]
+    anti_template_reason = anti_template_verdict["reason"]
+    if anti_template_verdict["applied"]:
+        reply_text = anti_template_verdict["reply_text"]
+        applied_authority = anti_template_verdict["applied_authority"]
+        used_anti_template_fallback = bool(anti_template_verdict["used_fallback"])
+        used_host_fallback = used_host_fallback or used_anti_template_fallback
+        if used_anti_template_fallback:
+            fallback_origin = "degraded_only"
 
     passed = bool(reply_text)
     reason = "ok"
@@ -139,6 +195,10 @@ def apply_output_check(plan: ResponsePlan, state: Any) -> OutputCheckVerdict:
         reason = completion_claim_guard["reason"]
     elif used_intent_gate_fallback:
         reason = "intent_gate_fallback_applied"
+    elif used_anti_template_fallback:
+        reason = "anti_template_fallback_applied"
+    elif intent_gate_status == "violation":
+        reason = "intent_gate_violation_logged"
     elif used_host_verbatim:
         reason = "host_verbatim_applied"
     elif used_host_fallback:
@@ -167,6 +227,9 @@ def apply_output_check(plan: ResponsePlan, state: Any) -> OutputCheckVerdict:
         intent_gate_violation_class=intent_gate_violation_class,
         intent_gate_violation_types=intent_gate_violation_types,
         intent_gate_confidence=intent_gate_confidence,
+        anti_template_status=anti_template_status,
+        anti_template_reason=anti_template_reason,
+        fallback_origin=fallback_origin,
     )
 
 
@@ -359,6 +422,104 @@ def _build_response_intent_contract(plan: ResponsePlan, state: Any) -> Dict[str,
     }
 
 
+def evaluate_anti_template_gate(
+    plan: ResponsePlan,
+    state: Any,
+    *,
+    reply_text: str,
+    delivery_kind: str,
+    applied_authority: str,
+    reply_origin: str,
+    is_evidence_bearing: bool,
+    apply_fallback: bool = True,
+) -> Dict[str, Any]:
+    result = {
+        "applied": False,
+        "used_fallback": False,
+        "reply_text": reply_text,
+        "applied_authority": applied_authority,
+        "status": "skipped",
+        "reason": "not_applicable",
+    }
+    metadata = dict(getattr(plan, "metadata", None) or {})
+    fallback_origin = str(metadata.get("fallback_origin") or "none").strip() or "none"
+    if (
+        not reply_text
+        or is_evidence_bearing
+        or delivery_kind != "chat"
+        or applied_authority not in _ANTI_TEMPLATE_ALLOWED_AUTHORITIES
+        or reply_origin not in _ANTI_TEMPLATE_ALLOWED_REPLY_ORIGINS
+        or fallback_origin == "degraded_only"
+    ):
+        return result
+
+    conversation_act = str(metadata.get("conversation_act") or metadata.get("chat_act") or "").strip()
+    if conversation_act in {"presence_check", "tone_feedback", "social_keepalive"}:
+        return result
+
+    context = _extract_contract_context(plan, state)
+    normalized = str(reply_text or "").strip().lower()
+    banned_patterns = list(_ANTI_TEMPLATE_GENERIC_PATTERNS)
+    if reply_origin == "subject_system_v1_proactive":
+        banned_patterns.extend(_ANTI_TEMPLATE_PROACTIVE_TEMPLATE_PATTERNS)
+    banned_patterns.extend(context.get("banned_patterns") or [])
+    violation_reason = ""
+    if any(pattern.lower() in normalized for pattern in banned_patterns):
+        violation_reason = "generic_or_template_phrase_detected"
+    elif reply_origin == "subject_system_v1_proactive":
+        violation_reason = _proactive_specificity_violation_reason(reply_text, metadata)
+    elif conversation_act == "solicited_view":
+        question_count = _count_explicit_questions(reply_text)
+        if not _has_declarative_viewpoint(reply_text):
+            violation_reason = "solicited_view_missing_viewpoint"
+        elif question_count < 1:
+            violation_reason = "solicited_view_missing_followup_question"
+        elif question_count > 1:
+            violation_reason = "solicited_view_too_many_questions"
+        else:
+            required_anchor_tokens = [
+                str(token).strip().lower()
+                for token in (context.get("required_anchor_tokens") or [])
+                if str(token).strip()
+            ]
+            if required_anchor_tokens and not any(token in normalized for token in required_anchor_tokens):
+                violation_reason = "solicited_view_missing_topic_anchor"
+
+    if not violation_reason:
+        result["status"] = "ok"
+        result["reason"] = "ok"
+        return result
+
+    result["status"] = "violation"
+    result["reason"] = violation_reason
+    if not apply_fallback:
+        return result
+
+    if conversation_act == "solicited_view":
+        fallback = _build_solicited_view_fallback(plan, state)
+    elif reply_origin == "subject_system_v1_proactive":
+        result.update(
+            {
+                "applied": True,
+                "used_fallback": False,
+                "reply_text": "",
+                "applied_authority": "host_guard",
+            }
+        )
+        return result
+    else:
+        fallback = _build_intent_gate_fallback(plan)
+    result.update(
+        {
+            "applied": True,
+            "used_fallback": True,
+            "reply_text": fallback,
+            "applied_authority": "host_degraded_fallback",
+        }
+    )
+    return result
+
+
 def evaluate_completion_claim_guard(
     plan: ResponsePlan,
     state: Any,
@@ -487,6 +648,8 @@ def _build_completion_claim_guard_fallback(state: Any) -> str:
 def _build_intent_gate_fallback(plan: ResponsePlan) -> str:
     metadata = dict(getattr(plan, "metadata", None) or {})
     conversation_act = str(metadata.get("conversation_act") or metadata.get("chat_act") or "").strip()
+    if conversation_act == "solicited_view":
+        return _build_solicited_view_fallback(plan)
     if conversation_act == "presence_check":
         return "在，我在。"
     if conversation_act == "tone_feedback":
@@ -498,6 +661,169 @@ def _build_intent_gate_fallback(plan: ResponsePlan) -> str:
     if conversation_act == "light_chitchat":
         return "我在听。"
     return "我换个更稳妥的说法。"
+
+
+def _extract_contract_context(plan: ResponsePlan, state: Any) -> Dict[str, Any]:
+    metadata = dict(getattr(plan, "metadata", None) or {})
+    ingress_context = dict(getattr(state, "ingress_context", None) or {}) if state is not None else {}
+    chat_output_contract = metadata.get("chat_output_contract")
+    if not isinstance(chat_output_contract, dict):
+        chat_output_contract = ingress_context.get("chat_output_contract") or {}
+    chat_output_contract = dict(chat_output_contract or {})
+    topic_anchor_summary = str(
+        metadata.get("solicited_view_topic_anchor")
+        or chat_output_contract.get("topic_anchor_summary")
+        or ingress_context.get("solicited_view_topic_anchor")
+        or metadata.get("topic_summary")
+        or ""
+    ).strip()
+    required_anchor_tokens = [
+        str(token).strip()
+        for token in (
+            metadata.get("required_anchor_tokens")
+            or chat_output_contract.get("required_anchor_tokens")
+            or []
+        )
+        if str(token).strip()
+    ]
+    banned_patterns = [
+        str(pattern).strip()
+        for pattern in (
+            metadata.get("anti_template_banned_patterns")
+            or chat_output_contract.get("banned_patterns")
+            or []
+        )
+        if str(pattern).strip()
+    ]
+    return {
+        "topic_anchor_summary": topic_anchor_summary,
+        "required_anchor_tokens": required_anchor_tokens,
+        "banned_patterns": banned_patterns,
+    }
+
+
+def _count_explicit_questions(text: str) -> int:
+    body = str(text or "").strip()
+    if not body:
+        return 0
+    count = body.count("?") + body.count("？")
+    if count:
+        return count
+    segments = [segment.strip() for segment in re.split(r"[。.!！\n]+", body) if segment.strip()]
+    return sum(
+        1
+        for segment in segments
+        if segment.endswith(("吗", "呢", "么"))
+        or segment.startswith(("为什么", "怎么", "如何", "是否"))
+    )
+
+
+def _has_declarative_viewpoint(text: str) -> bool:
+    body = str(text or "").strip()
+    if not body:
+        return False
+    if any(
+        marker in body
+        for marker in (
+            "我觉得",
+            "我倾向于",
+            "我更倾向",
+            "我的看法",
+            "我会把重点放在",
+            "关键在于",
+            "更像是",
+            "需要",
+            "应该",
+            "如果沿着",
+        )
+    ):
+        return True
+    segments = [segment.strip() for segment in re.split(r"[。.!！?\n？]+", body) if segment.strip()]
+    for segment in segments:
+        if segment.endswith(("吗", "呢", "么")):
+            continue
+        if len(segment) >= 12:
+            return True
+    return False
+
+
+def _proactive_specificity_violation_reason(reply_text: str, metadata: Dict[str, Any]) -> str:
+    def _normalize(value: str) -> str:
+        return "".join(str(value or "").strip().lower().split())
+
+    def _topic_anchor_bound(body: str, anchor: str) -> bool:
+        normalized_body = _normalize(body)
+        for variant in build_topic_anchor_variants(anchor, limit=120):
+            if _normalize(variant) in normalized_body:
+                return True
+        normalized_anchor = _normalize(anchor)
+        if any("a" <= char.lower() <= "z" for char in normalized_anchor):
+            tokens = [
+                token
+                for token in anchor.lower().replace("?", " ").replace("？", " ").split()
+                if len(token) >= 2
+            ]
+            if tokens and any(token in body.lower() for token in tokens):
+                return True
+        stop_fragments = {"你觉得", "怎么做", "是什么", "为什么", "有没有", "什么想法", "告诉我"}
+        for size in (4, 3):
+            for index in range(0, max(0, len(normalized_anchor) - size + 1)):
+                fragment = normalized_anchor[index : index + size]
+                if fragment in stop_fragments:
+                    continue
+                if fragment in normalized_body:
+                    return True
+        return False
+
+    normalized = str(reply_text or "").strip()
+    if not normalized:
+        return "proactive_missing_specificity"
+    if _count_explicit_questions(normalized) > 1:
+        return "proactive_too_many_questions"
+
+    topic_summary = str(metadata.get("topic_summary") or "").strip()
+    topic_anchor_summary = str(metadata.get("topic_anchor_summary") or "").strip()
+    topic_sendability = str(metadata.get("topic_sendability") or "").strip()
+    source_draft_text = str(metadata.get("source_draft_text") or "").strip()
+    open_question = str(metadata.get("open_question") or "").strip()
+    message_shape_hint = str(metadata.get("message_shape_hint") or "").strip()
+    candidate_family = str(metadata.get("candidate_family") or "").strip()
+
+    if candidate_family == "thought_probe":
+        if topic_sendability == "meta_only":
+            return "proactive_missing_specificity"
+        if not source_draft_text and not topic_summary and not open_question:
+            return "proactive_missing_specificity"
+        if message_shape_hint == "question_only" and not open_question:
+            return "proactive_missing_specificity"
+        if topic_anchor_summary and not _topic_anchor_bound(normalized, topic_anchor_summary):
+            return "proactive_missing_specificity"
+        if not topic_anchor_summary and not topic_summary and not source_draft_text:
+            return "proactive_missing_specificity"
+    elif len(normalized) < 12:
+        return "proactive_missing_specificity"
+    return ""
+
+
+def _build_solicited_view_fallback(plan: ResponsePlan, state: Any | None = None) -> str:
+    metadata = dict(getattr(plan, "metadata", None) or {})
+    context = _extract_contract_context(plan, state)
+    anchor = str(
+        metadata.get("solicited_view_topic_anchor")
+        or context.get("topic_anchor_summary")
+        or metadata.get("topic_summary")
+        or ""
+    ).strip()
+    if anchor:
+        return (
+            f"如果沿着“{anchor}”继续看，我更倾向于把重点放在可持续闭环和可验证边界上，"
+            "而不是一次性追求最终状态。你更想先拆核心机制，还是先看现实约束？"
+        )
+    return "如果沿着刚才这个话题继续看，我更倾向于先抓住最关键的约束，再往下推演。你更想先看原理，还是先看落地路径？"
+
+
+def _build_proactive_anti_template_fallback(plan: ResponsePlan) -> str:
+    return ""
 
 
 def _resolve_intent_shadow_sources(state: Any) -> tuple[str, str]:

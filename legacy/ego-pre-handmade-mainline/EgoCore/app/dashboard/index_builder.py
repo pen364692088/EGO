@@ -183,6 +183,57 @@ def _classify_sample_scope(sample_dir: Path, ledger: Dict[str, Any]) -> Tuple[st
     return "real_user", None
 
 
+def _infer_source_kind(
+    *,
+    raw_update: Dict[str, Any],
+    session_id: Optional[str],
+    thread_id: Optional[str],
+) -> Optional[str]:
+    if isinstance(raw_update.get("dashboard_chat"), dict):
+        return "dashboard_local"
+
+    for value in (session_id, thread_id):
+        text = str(value or "").strip().lower()
+        if text.startswith("dashboard:"):
+            return "dashboard_local"
+        if text.startswith("telegram:"):
+            return "telegram_prepared"
+
+    if isinstance(raw_update.get("message"), dict) or isinstance(raw_update.get("callback_query"), dict):
+        return "telegram_prepared"
+    return None
+
+
+def _infer_entrypoint(
+    *,
+    source_kind: Optional[str],
+    source_type: Optional[str],
+    session_id: Optional[str],
+    thread_id: Optional[str],
+    raw_update: Dict[str, Any],
+) -> str:
+    normalized_source_kind = str(source_kind or "").strip().lower()
+    if normalized_source_kind.startswith("dashboard"):
+        return "dashboard_chat"
+    if normalized_source_kind.startswith("telegram"):
+        return "telegram"
+
+    for value in (session_id, thread_id):
+        text = str(value or "").strip().lower()
+        if text.startswith("dashboard:"):
+            return "dashboard_chat"
+        if text.startswith("telegram:"):
+            return "telegram"
+
+    if isinstance(raw_update.get("dashboard_chat"), dict):
+        return "dashboard_chat"
+    if isinstance(raw_update.get("message"), dict) or isinstance(raw_update.get("callback_query"), dict):
+        return "telegram"
+    if str(source_type or "").strip().lower() == "real_channel":
+        return "other_real_entry"
+    return "unknown"
+
+
 def _normalize_action_name(value: Any) -> str:
     if isinstance(value, str):
         return value
@@ -599,6 +650,8 @@ def _build_agency_record(
         sample_id=run_record.sample_id,
         timestamp=run_record.timestamp,
         session_id=run_record.session_id,
+        source_kind=run_record.source_kind,
+        entrypoint=run_record.entrypoint,
         subject_profile=subject_profile,
         idle_check=idle_check,
         idle_eligible=idle_eligible,
@@ -1163,6 +1216,19 @@ def _build_run_record(sample_dir: Path) -> RunIndexRecord:
     oe_available = _is_oe_available(ledger, completeness)
     host_only = bool(response_plan) and not oe_available
     sample_scope, sample_scope_reason = _classify_sample_scope(sample_dir, ledger)
+    raw_update = _load_raw_update(sample_dir, ledger)
+    source_kind = _infer_source_kind(
+        raw_update=raw_update,
+        session_id=ids.get("session_id"),
+        thread_id=ids.get("thread_id"),
+    )
+    entrypoint = _infer_entrypoint(
+        source_kind=source_kind,
+        source_type=ledger.get("source_type"),
+        session_id=ids.get("session_id"),
+        thread_id=ids.get("thread_id"),
+        raw_update=raw_update,
+    )
     gap_types = _classify_gap_types(
         completeness,
         host_only=host_only,
@@ -1182,6 +1248,8 @@ def _build_run_record(sample_dir: Path) -> RunIndexRecord:
         repair_closure=bool(cycle_delta.get("repair_closure")),
         artifact_refs=_artifact_refs(sample_dir),
         source_type=ledger.get("source_type"),
+        source_kind=source_kind,
+        entrypoint=entrypoint,
         sample_scope=sample_scope,
         sample_scope_reason=sample_scope_reason,
         response_plan_status=response_plan.get("status"),
@@ -1229,6 +1297,8 @@ def _build_growth_record(sample_dir: Path, run_record: RunIndexRecord) -> Option
         },
         session_id=run_record.session_id,
         thread_id=run_record.thread_id,
+        source_kind=run_record.source_kind,
+        entrypoint=run_record.entrypoint,
         closure_family_id=run_record.closure_family_id,
         focus_goal=_collapse_focus_goal(seed_state_snapshot.get("focus_goal")),
         revision_counter=int(seed_state_snapshot.get("revision_counter") or 0),
@@ -1686,6 +1756,7 @@ def _render_data_schema() -> str:
 
 - host-only 样本会进入 `runs.jsonl` 与 continuity 统计
 - host-only 样本不会进入 `growth_signals.jsonl`
+- `runs.jsonl` / `growth_signals.jsonl` / `agency_runs.jsonl` 会显式写入 `entrypoint`；当前至少区分 `telegram`、`dashboard_chat`、`other_real_entry`、`unknown`
 - `restore` 一旦拿到“显式 restore + 首条 post-restore 完整 bundle + continuity probe 命中”的真实链，就应升级为 `status=direct_real`
 """
 

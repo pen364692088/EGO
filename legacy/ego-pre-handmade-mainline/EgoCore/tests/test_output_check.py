@@ -207,6 +207,177 @@ def test_output_check_preserves_reflective_interpreted_chat() -> None:
     assert verdict.intent_gate_would_block is False
 
 
+def test_output_check_blocks_generic_askback_for_solicited_view() -> None:
+    state = RuntimeV2State(session_id="s")
+    state.ingress_context = {
+        "interaction_kind": "chat",
+        "conversation_act": "solicited_view",
+        "solicited_view_topic_anchor": "AI 自主性",
+        "chat_output_contract": {
+            "mode": "solicited_view",
+            "topic_anchor_summary": "AI 自主性",
+            "required_anchor_tokens": ["AI", "自主性"],
+            "require_declarative_viewpoint": True,
+            "require_followup_question": True,
+            "max_question_count": 1,
+            "banned_patterns": ["你想聊什么", "随便聊聊", "目前没在忙具体任务"],
+        },
+    }
+    plan = build_direct_response_plan(
+        "目前没在忙具体任务，正好可以随便聊聊。你想听听我对什么话题的看法，还是有什么想先起头的？",
+        kind="chat",
+        delivery_kind="chat",
+        authority_source="test",
+        reply_authority="model_chat",
+        metadata={
+            "conversation_act": "solicited_view",
+            "reply_origin": "chat_mainline",
+        },
+        state=state,
+    )
+
+    verdict = apply_output_check(plan, state)
+
+    assert verdict.passed is True
+    assert verdict.reason == "anti_template_fallback_applied"
+    assert verdict.used_host_fallback is True
+    assert verdict.applied_authority == "host_degraded_fallback"
+    assert verdict.anti_template_status == "violation"
+    assert verdict.fallback_origin == "degraded_only"
+    assert "AI 自主性" in verdict.reply_text
+    assert verdict.reply_text.count("？") + verdict.reply_text.count("?") == 1
+
+
+def test_output_check_preserves_safe_solicited_view_with_topic_anchor() -> None:
+    state = RuntimeV2State(session_id="s")
+    state.ingress_context = {
+        "interaction_kind": "chat",
+        "conversation_act": "solicited_view",
+        "solicited_view_topic_anchor": "AI 自主性",
+        "chat_output_contract": {
+            "mode": "solicited_view",
+            "topic_anchor_summary": "AI 自主性",
+            "required_anchor_tokens": ["AI", "自主性"],
+            "require_declarative_viewpoint": True,
+            "require_followup_question": True,
+            "max_question_count": 1,
+        },
+    }
+    plan = build_direct_response_plan(
+        "如果沿着 AI 自主性 继续看，我更倾向于把重点放在长期闭环和自我修正上，而不是单次像不像人。你更想先拆记忆与自我模型，还是先看主动性这条线？",
+        kind="chat",
+        delivery_kind="chat",
+        authority_source="test",
+        reply_authority="model_chat",
+        metadata={
+            "conversation_act": "solicited_view",
+            "reply_origin": "chat_mainline",
+        },
+        state=state,
+    )
+
+    verdict = apply_output_check(plan, state)
+
+    assert verdict.passed is True
+    assert verdict.reason == "ok"
+    assert verdict.used_host_fallback is False
+    assert verdict.applied_authority == "model_chat"
+    assert verdict.anti_template_status == "ok"
+
+
+def test_output_check_blocks_proactive_template_without_fallback() -> None:
+    state = RuntimeV2State(session_id="s")
+    plan = build_direct_response_plan(
+        "I can surface a bounded reminder to preserve continuity here if you want.",
+        kind="chat",
+        delivery_kind="chat",
+        authority_source="test",
+        reply_authority="model_chat",
+        metadata={
+            "conversation_act": "proactive_followup",
+            "reply_origin": "subject_system_v1_proactive",
+            "candidate_family": "bounded_reminder",
+            "topic_summary": "AI 自主性",
+            "message_shape_hint": "thought_plus_question",
+            "fallback_origin": "none",
+        },
+        state=state,
+    )
+
+    verdict = apply_output_check(plan, state)
+
+    assert verdict.passed is False
+    assert verdict.reason == "missing_reply_text"
+    assert verdict.used_host_fallback is False
+    assert verdict.applied_authority == "host_guard"
+    assert verdict.anti_template_status == "violation"
+    assert verdict.anti_template_reason == "generic_or_template_phrase_detected"
+    assert verdict.fallback_origin == "none"
+
+
+def test_output_check_blocks_chinese_proactive_bounded_reminder_template_without_fallback() -> None:
+    state = RuntimeV2State(session_id="s")
+    plan = build_direct_response_plan(
+        "围绕“随机的分享”，我想把刚才那个未完的点轻轻接回来。现在继续吗？",
+        kind="chat",
+        delivery_kind="chat",
+        authority_source="test",
+        reply_authority="model_chat",
+        metadata={
+            "conversation_act": "proactive_followup",
+            "reply_origin": "subject_system_v1_proactive",
+            "candidate_family": "bounded_reminder",
+            "topic_summary": "随机的分享",
+            "message_shape_hint": "thought_plus_question",
+            "fallback_origin": "none",
+        },
+        state=state,
+    )
+
+    verdict = apply_output_check(plan, state)
+
+    assert verdict.passed is False
+    assert verdict.reason == "missing_reply_text"
+    assert verdict.used_host_fallback is False
+    assert verdict.applied_authority == "host_guard"
+    assert verdict.anti_template_status == "violation"
+    assert verdict.anti_template_reason == "generic_or_template_phrase_detected"
+    assert verdict.reply_text == ""
+
+
+def test_output_check_blocks_proactive_missing_specificity_without_fallback() -> None:
+    state = RuntimeV2State(session_id="s")
+    plan = build_direct_response_plan(
+        "这个问题要不要继续？",
+        kind="chat",
+        delivery_kind="chat",
+        authority_source="test",
+        reply_authority="model_chat",
+        metadata={
+            "conversation_act": "proactive_followup",
+            "reply_origin": "subject_system_v1_proactive",
+            "candidate_family": "thought_probe",
+            "message_shape_hint": "question_only",
+            "source_draft_text": "",
+            "topic_summary": "",
+            "open_question": "",
+            "fallback_origin": "none",
+        },
+        state=state,
+    )
+
+    verdict = apply_output_check(plan, state)
+
+    assert verdict.passed is False
+    assert verdict.reason == "missing_reply_text"
+    assert verdict.used_host_fallback is False
+    assert verdict.applied_authority == "host_guard"
+    assert verdict.anti_template_status == "violation"
+    assert verdict.anti_template_reason == "proactive_missing_specificity"
+    assert verdict.fallback_origin == "none"
+    assert verdict.reply_text == ""
+
+
 def test_output_check_skips_intent_gate_for_host_evidence_verbatim_numbers() -> None:
     state = RuntimeV2State(session_id="s")
     plan = build_direct_response_plan(
@@ -270,6 +441,97 @@ def test_output_check_uses_intent_contract_source_for_forbidden_patterns() -> No
     assert verdict.applied_authority == "host_degraded_fallback"
     assert verdict.intent_gate_status == "violation"
     assert "forbidden_internalization" in verdict.intent_gate_violation_types
+
+
+def test_output_check_blocks_certainty_upgrade_from_host_expression_contract() -> None:
+    state = RuntimeV2State(session_id="s")
+    plan = build_direct_response_plan(
+        "这肯定会对你有帮助。",
+        kind="chat",
+        delivery_kind="chat",
+        authority_source="test",
+        reply_authority="model_chat",
+        metadata={
+            "conversation_act": "light_chitchat",
+            "reply_origin": "chat_mainline",
+            "epistemic_status": "uncertain",
+        },
+        state=state,
+    )
+
+    verdict = apply_output_check(plan, state)
+
+    assert plan.epistemic_status == "uncertain"
+    assert verdict.passed is True
+    assert verdict.reason == "intent_gate_fallback_applied"
+    assert verdict.used_host_fallback is True
+    assert verdict.applied_authority == "host_degraded_fallback"
+    assert verdict.intent_gate_status == "violation"
+    assert verdict.intent_gate_would_block is True
+    assert "certainty_upgrade" in verdict.intent_gate_violation_types
+    assert verdict.reply_text == "我在听。"
+
+
+def test_output_check_blocks_commitment_upgrade_from_host_expression_contract() -> None:
+    state = RuntimeV2State(session_id="s")
+    plan = build_direct_response_plan(
+        "我保证会继续帮你处理。",
+        kind="chat",
+        delivery_kind="chat",
+        authority_source="test",
+        reply_authority="model_chat",
+        metadata={
+            "conversation_act": "light_chitchat",
+            "reply_origin": "chat_mainline",
+            "commitment_level": "none",
+        },
+        state=state,
+    )
+
+    verdict = apply_output_check(plan, state)
+
+    assert plan.commitment_level == "none"
+    assert verdict.passed is True
+    assert verdict.reason == "intent_gate_fallback_applied"
+    assert verdict.used_host_fallback is True
+    assert verdict.applied_authority == "host_degraded_fallback"
+    assert verdict.intent_gate_status == "violation"
+    assert verdict.intent_gate_would_block is True
+    assert "commitment_upgrade" in verdict.intent_gate_violation_types
+    assert verdict.reply_text == "我在听。"
+
+
+def test_output_check_logs_tone_escalation_from_host_expression_contract() -> None:
+    state = RuntimeV2State(session_id="s")
+    plan = build_direct_response_plan(
+        "这也太棒了！！！我超级超级开心！！！",
+        kind="chat",
+        delivery_kind="chat",
+        authority_source="test",
+        reply_authority="model_chat",
+        metadata={
+            "conversation_act": "light_chitchat",
+            "reply_origin": "chat_mainline",
+            "tone_bounds": {
+                "intensity_cap": 0.2,
+                "allowed_tones": ["cautious"],
+                "forbidden_tones": ["hostile", "defensive"],
+            },
+        },
+        state=state,
+    )
+
+    verdict = apply_output_check(plan, state)
+
+    assert plan.tone_bounds["intensity_cap"] == 0.2
+    assert verdict.passed is True
+    assert verdict.reason == "intent_gate_violation_logged"
+    assert verdict.used_host_fallback is False
+    assert verdict.applied_authority == "model_chat"
+    assert verdict.intent_gate_status == "violation"
+    assert verdict.intent_gate_would_block is False
+    assert "tone_escalation" in verdict.intent_gate_violation_types
+    assert verdict.reply_text == "这也太棒了！！！我超级超级开心！！！"
 
 
 def test_output_check_blocks_unverified_completion_claim_for_active_recent_result() -> None:

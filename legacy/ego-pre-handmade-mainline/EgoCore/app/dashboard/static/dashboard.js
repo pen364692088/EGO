@@ -161,6 +161,55 @@ const I18N = {
         sessions: "测试会话",
         transcript: "聊天窗口",
         debug: "调试卡片",
+        flow_title: "当前消息流程图",
+        flow_subtitle: "把当前选中的 assistant 回合压成一条可读的因果链，先看主线说明，再回读 raw debug 卡片。",
+        flow_note: "这只是 dashboard local transport 下的解释层，不提升 live 证据口径。",
+        flow_empty: "先点击一条 assistant 消息，再查看这轮从 subject gate 到 delivery 的流程。",
+        flow_influences: "关键影响参数",
+        flow_copy: {
+          overall_headline_pass: "这轮走通了受约束的聊天主链",
+          overall_summary_pass: "当前选中的 assistant 回合通过了 subject ingress，生成了 bounded guidance，由宿主保留 reply authority，并完成了本地 delivery。",
+          overall_headline_host_only: "这轮在进入主体前就停下了",
+          overall_summary_host_only: "当前回合停留在 host-only 路径，没有形成 proto-self guidance。",
+          overall_headline_broken: "这轮缺少完整的运行时链路证据",
+          overall_summary_broken: "当前 debug payload 不能完整重建从 subject gate 到 final delivery 的路径。",
+          overall_headline_degraded: "这轮进入主链，但被宿主收紧或拦截",
+          overall_summary_degraded: "主体链路确实运行了，但 host-side output check 或 delivery 决策阻止了干净送出。",
+          subject_gate_headline_pass: "Subject gate 接纳了这轮输入",
+          subject_gate_summary_pass: "这轮通过 ingress，并保持在可由主体参与的路径上。",
+          subject_gate_headline_host_only: "Ingress 在主体处理前就被拦下",
+          subject_gate_summary_host_only: "宿主在主体接管前就终止了这轮路径。",
+          subject_gate_headline_degraded: "Subject finalize 没有保住主体链",
+          subject_gate_summary_degraded: "Ingress 通过了，但 finalize 没有让这轮稳定留在主体主线上。",
+          subject_gate_headline_missing: "缺少完整的 subject gate 判定",
+          subject_gate_summary_missing: "当前 debug payload 没有暴露完整的 subject gate verdict。",
+          ingress_headline_pass: "Ingress 已归一化成运行时字段",
+          ingress_summary_pass: "宿主解析器先把这轮输入整理成明确的 runtime shape，再交给后续链路。",
+          ingress_headline_missing: "缺少 ingress 归一化细节",
+          ingress_summary_missing: "当前回合没有记录 runtime_action 或 interaction_kind。",
+          proto_self_headline_pass: "Proto-Self 给出了受约束指导",
+          proto_self_summary_pass: "主体层为这轮生成了 bounded 的 policy 和 tendency hints。",
+          proto_self_headline_host_only: "Proto-Self 没有被触发",
+          proto_self_summary_host_only: "由于 ingress 没进主体路径，这轮没有可总结的 proto-self 层。",
+          proto_self_headline_missing: "缺少 Proto-Self 指导",
+          proto_self_summary_missing: "当前没有记录 subject profile、policy hint、tendency 或 candidate actions。",
+          response_plan_headline_pass: "宿主明确保留了 reply authority",
+          response_plan_summary_pass: "宿主在参考主体 guidance 后，组装了本轮的响应与 delivery plan。",
+          response_plan_headline_missing: "Response plan 不完整",
+          response_plan_summary_missing: "当前回合没有记录稳定的 response-plan contract。",
+          output_check_headline_pass: "Output check 放行了回复",
+          output_check_summary_pass: "生成的回复通过了宿主侧输出检查。",
+          output_check_headline_degraded: "Output check 拦截或降级了回复",
+          output_check_summary_degraded: "宿主在 output-check 阶段保留裁决权，并改写或阻止了最终回复。",
+          output_check_headline_missing: "缺少 output-check 判定",
+          output_check_summary_missing: "当前回合没有显式记录 output-check 的 pass/fail verdict。",
+          delivery_headline_pass: "本地 delivery 已完成",
+          delivery_summary_pass: "最后一步 local transport 已经发出了 assistant 回复。",
+          delivery_headline_degraded: "这轮在最终送出前停下了",
+          delivery_summary_degraded: "宿主保留了控制权，并没有执行最终发送。",
+          delivery_headline_missing: "缺少最终 delivery 状态",
+          delivery_summary_missing: "当前没有记录最终 send decision 或 delivery verdict。",
+        },
         transport: "Transport",
         session_state: "Session State",
         subject_gate: "Subject Gate",
@@ -169,6 +218,28 @@ const I18N = {
         response_plan: "Response Plan",
         output_check: "Output Check",
         delivery: "Final Delivery",
+        flow_fields: {
+          ingress_ok: "ingress 通过",
+          ingress_reason: "ingress 原因",
+          finalize_ok: "finalize 通过",
+          runtime_action: "runtime_action",
+          interaction_kind: "interaction_kind",
+          parser_source: "parser_source",
+          subject_profile: "subject_profile",
+          preferred_mode: "preferred_mode",
+          preferred_tone: "preferred_tone",
+          suggested_next_step: "suggested_next_step",
+          ask_preferred: "ask_preferred",
+          kind: "kind",
+          reply_authority: "reply_authority",
+          delivery_kind: "delivery_kind",
+          passed: "passed",
+          reason: "reason",
+          reply_origin: "reply_origin",
+          should_send: "should_send",
+          text_preview: "text_preview",
+          intercept_reason: "intercept_reason",
+        },
       },
       agency: {
         title: "Agency",
@@ -486,6 +557,55 @@ const I18N = {
         sessions: "Test sessions",
         transcript: "Chat window",
         debug: "Debug cards",
+        flow_title: "Selected Turn Flow",
+        flow_subtitle: "Compress the selected assistant turn into one readable causal chain before drilling into raw debug cards.",
+        flow_note: "This is still a dashboard-local explanation layer and does not upgrade live evidence claims.",
+        flow_empty: "Select an assistant message to inspect the path from subject gate to final delivery.",
+        flow_influences: "Key influences",
+        flow_copy: {
+          overall_headline_pass: "This turn reached a bounded chat reply path",
+          overall_summary_pass: "The selected assistant turn passed subject ingress, produced bounded guidance, stayed under host reply authority, and reached local delivery.",
+          overall_headline_host_only: "This turn stopped before subject processing",
+          overall_summary_host_only: "The selected turn stayed on the host-only path and never produced proto-self guidance.",
+          overall_headline_broken: "This turn is missing part of the runtime contract",
+          overall_summary_broken: "The selected debug payload does not contain a complete path from subject gate to final delivery.",
+          overall_headline_degraded: "This turn entered the mainline but was held or degraded by the host",
+          overall_summary_degraded: "The subject path ran, but host-side checks or delivery decisions prevented a clean final send.",
+          subject_gate_headline_pass: "Subject gate admitted this turn",
+          subject_gate_summary_pass: "This turn passed ingress and remained eligible for subject-guided handling.",
+          subject_gate_headline_host_only: "Ingress stopped before subject processing",
+          subject_gate_summary_host_only: "The host path stopped this turn before the subject chain took ownership.",
+          subject_gate_headline_degraded: "Subject finalize blocked downstream delivery",
+          subject_gate_summary_degraded: "Ingress passed, but finalize did not keep the turn on the subject-backed path.",
+          subject_gate_headline_missing: "Subject gate evidence is missing",
+          subject_gate_summary_missing: "The selected debug payload does not expose a complete subject gate verdict.",
+          ingress_headline_pass: "Ingress intent was normalized into runtime fields",
+          ingress_summary_pass: "The host parser resolved this turn into a concrete runtime shape before subject processing.",
+          ingress_headline_missing: "Ingress normalization details are missing",
+          ingress_summary_missing: "No runtime_action or interaction_kind was recorded for the selected turn.",
+          proto_self_headline_pass: "Proto-Self emitted bounded guidance",
+          proto_self_summary_pass: "The subject layer produced bounded policy and tendency hints for this turn.",
+          proto_self_headline_host_only: "Proto-Self was skipped before it could run",
+          proto_self_summary_host_only: "Without subject ingress, there is no proto-self layer to summarize.",
+          proto_self_headline_missing: "Proto-Self guidance is missing",
+          proto_self_summary_missing: "No subject profile, policy hint, tendency, or candidate actions were captured.",
+          response_plan_headline_pass: "Host response plan kept explicit reply authority",
+          response_plan_summary_pass: "The host assembled a delivery plan after considering subject guidance.",
+          response_plan_headline_missing: "Response plan is incomplete",
+          response_plan_summary_missing: "No stable response-plan contract was recorded for the selected turn.",
+          output_check_headline_pass: "Output checks accepted the reply",
+          output_check_summary_pass: "The generated reply survived host-side output checks.",
+          output_check_headline_degraded: "Output checks intercepted or degraded the reply",
+          output_check_summary_degraded: "The host kept authority and changed or blocked the reply at the output-check stage.",
+          output_check_headline_missing: "Output-check verdict is missing",
+          output_check_summary_missing: "No explicit output-check pass/fail verdict was recorded.",
+          delivery_headline_pass: "Local delivery completed for this turn",
+          delivery_summary_pass: "The final local transport step emitted an assistant reply.",
+          delivery_headline_degraded: "The turn stopped before final delivery",
+          delivery_summary_degraded: "The host retained control and did not send a final assistant reply.",
+          delivery_headline_missing: "Delivery state is missing",
+          delivery_summary_missing: "No delivery verdict or final send decision was recorded.",
+        },
         transport: "Transport",
         session_state: "Session State",
         subject_gate: "Subject Gate",
@@ -494,6 +614,28 @@ const I18N = {
         response_plan: "Response Plan",
         output_check: "Output Check",
         delivery: "Final Delivery",
+        flow_fields: {
+          ingress_ok: "ingress ok",
+          ingress_reason: "ingress reason",
+          finalize_ok: "finalize ok",
+          runtime_action: "runtime_action",
+          interaction_kind: "interaction_kind",
+          parser_source: "parser_source",
+          subject_profile: "subject_profile",
+          preferred_mode: "preferred_mode",
+          preferred_tone: "preferred_tone",
+          suggested_next_step: "suggested_next_step",
+          ask_preferred: "ask_preferred",
+          kind: "kind",
+          reply_authority: "reply_authority",
+          delivery_kind: "delivery_kind",
+          passed: "passed",
+          reason: "reason",
+          reply_origin: "reply_origin",
+          should_send: "should_send",
+          text_preview: "text_preview",
+          intercept_reason: "intercept_reason",
+        },
       },
       agency: {
         title: "Agency",
@@ -2185,6 +2327,100 @@ function renderDebugCard(title, rows = []) {
   `;
 }
 
+function chatFlowStepTitle(stepId) {
+  if (stepId === "subject_gate") return t("pages.chat.subject_gate");
+  if (stepId === "ingress") return t("pages.chat.ingress");
+  if (stepId === "proto_self") return t("pages.chat.proto_self");
+  if (stepId === "response_plan") return t("pages.chat.response_plan");
+  if (stepId === "output_check") return t("pages.chat.output_check");
+  if (stepId === "delivery") return t("pages.chat.delivery");
+  return stepId || t("common.unknown");
+}
+
+function chatFlowFieldLabel(fieldKey) {
+  const localeTable = (I18N[UI_STATE.locale] || I18N.zh)?.pages?.chat?.flow_fields || {};
+  return localeTable[fieldKey] || fieldKey || t("common.unknown");
+}
+
+function chatFlowCopy(copyKey, fallback) {
+  const localeTable = (I18N[UI_STATE.locale] || I18N.zh)?.pages?.chat?.flow_copy || {};
+  return localeTable[copyKey] || fallback || t("common.unknown");
+}
+
+function renderChatFlow(flowModel) {
+  if (!flowModel?.selected_message_id || !Array.isArray(flowModel.flow_steps) || !flowModel.flow_steps.length) {
+    return `
+      <section class="panel chat-flow-empty">
+        <h3>${escapeHtml(t("pages.chat.flow_title"))}</h3>
+        <p class="muted">${escapeHtml(t("pages.chat.flow_empty"))}</p>
+      </section>
+    `;
+  }
+
+  const influenceCards = renderMetricGrid(
+    (flowModel.key_influences || []).map((entry) => ({
+      label: chatFlowFieldLabel(entry.label),
+      value: entry.value,
+    })),
+  );
+  const stepCards = flowModel.flow_steps
+    .map(
+      (step) => `
+        <article class="panel chat-flow-step ${escapeHtml(flowStatusClass(step.status))}">
+          <div class="chat-flow-step-head">
+            <strong>${escapeHtml(chatFlowStepTitle(step.id))}</strong>
+            <span class="pill ${flowStatusClass(step.status)}">${escapeHtml(step.status || t("common.unknown"))}</span>
+          </div>
+          <div class="chat-flow-step-headline">${escapeHtml(chatFlowCopy(step.headline_key, step.headline || t("common.unknown")))}</div>
+          <p class="muted">${escapeHtml(chatFlowCopy(step.summary_key, step.summary || t("common.no_data")))}</p>
+          <div class="chat-flow-metric-list">
+            ${(step.metrics || [])
+              .map(
+                (metric) => `
+                  <div class="chat-flow-metric">
+                    <span>${escapeHtml(chatFlowFieldLabel(metric.label))}</span>
+                    <strong>${escapeHtml(metric.value)}</strong>
+                  </div>
+                `,
+              )
+              .join("")}
+          </div>
+        </article>
+      `,
+    )
+    .join("");
+
+  return `
+    <section class="panel story-panel chat-flow-story">
+      <div class="section-head">
+        <div>
+          <h2>${escapeHtml(t("pages.chat.flow_title"))}</h2>
+          <p class="muted">${escapeHtml(t("pages.chat.flow_subtitle"))}</p>
+          <div class="story-headline">${escapeHtml(chatFlowCopy(flowModel.headline_key, flowModel.headline || t("common.unknown")))}</div>
+          <p class="muted">${escapeHtml(chatFlowCopy(flowModel.summary_key, flowModel.summary || t("common.no_data")))}</p>
+          <p class="muted">${escapeHtml(t("pages.chat.flow_note"))}</p>
+        </div>
+        <div class="pill-row">
+          <span class="pill ${flowStatusClass(flowModel.turn_status)}">${escapeHtml(flowModel.turn_status || t("common.unknown"))}</span>
+          <span class="pill">${escapeHtml(`${t("common.selected_turn")}: ${flowModel.selected_message_id}`)}</span>
+          ${
+            flowModel.flags?.task_status
+              ? `<span class="pill">${escapeHtml(`${t("common.state")}: ${flowModel.flags.task_status}`)}</span>`
+              : ""
+          }
+        </div>
+      </div>
+      <div class="detail-block">
+        <h4>${escapeHtml(t("pages.chat.flow_influences"))}</h4>
+        ${influenceCards}
+      </div>
+    </section>
+    <section class="chat-flow-grid">
+      ${stepCards}
+    </section>
+  `;
+}
+
 function resolveLatestAssistantMessage(detail) {
   const transcript = detail?.transcript || [];
   for (let index = transcript.length - 1; index >= 0; index -= 1) {
@@ -2207,6 +2443,10 @@ function renderChat(sessionsPayload, detail) {
   }
   const selectedDebug = debugHistory[UI_STATE.chatSelectedMessageId] || detail?.last_debug || null;
   const selectedAssistant = transcript.find((item) => item.message_id === UI_STATE.chatSelectedMessageId) || latestAssistant;
+  const chatFlowModel =
+    typeof ChatState.buildTurnFlowModel === "function"
+      ? ChatState.buildTurnFlowModel(selectedDebug, selectedAssistant, detail?.session_state || {})
+      : null;
 
   const sessionButtons = sessions.length
     ? sessions
@@ -2368,6 +2608,7 @@ function renderChat(sessionsPayload, detail) {
         </div>
       </section>
     </section>
+    ${renderChatFlow(chatFlowModel)}
     <section class="chat-debug-grid">
       ${debugCards}
     </section>

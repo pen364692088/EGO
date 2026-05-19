@@ -2,21 +2,29 @@
 
 一个轻量级、独立的 Agent Runtime，专注 Telegram 单 Agent 任务执行。
 
-## 当前权威状态（2026-04-11）
+## 历史参考状态（2026-04-20 快照）
+
+> 该目录位于 `legacy/ego-pre-handmade-mainline/`，只作为旧双核 runtime/reference/fallback 快照。
+> 当前仓库默认 operator 主线与 authority 以仓库根目录的 `docs/PROGRAM_STATE_UNIFIED.yaml`
+> 以及 `EgoOperator/` 为准；本 README 中的 “当前” 只描述该 legacy 快照当时的内部状态。
 
 - `EgoCore` 是唯一正式宿主：入口、runtime、工具执行、安全裁决、delivery、audit
 - 当前 formal mainline 仍是：`telegram_bot -> telegram_runtime_bridge -> native_loop -> contract_runtime -> openemotion hooks -> delivery`
 - `RuntimeV2ProtoSelfRuntime` 仍是主体事件正式入口
 - formal runtime mainline 与 research implementation lane 不是一回事；前者继续单一稳定，后者允许按证据切换 build-first candidate
-- 当前 repo 的最高优先级 implementation lane 已切到 `self-awareness candidate program`
-- 当前唯一 build-first candidate 已切到 `active-inference self-model`
+- 当前 repo 的最高优先级 implementation lane 已切到 `subject-system-v1-governed-proactivity`
+- 当前唯一 build-first candidate 仍是 `active-inference self-model`，但它已退为冻结的 closed evidence / predecessor tranche
 - `MVS-aligned compact` 已因 frozen replay gate failure 降为 closed evidence / supporting line，不再是当前主实现线
 - `WP17 / MVP22` 当前降为 parked bounded lane，不再是默认最高优先级 implementation track
 - `proto_self_v2` 已是主体层默认主线，当前只读解释层与受治理写回面已收口
 - `repo_authority_cleanup: closeout-complete (repo/integration scope)`
-- 当前 repo 处于 `边界冻结下的收口期`
-- 当前 execution owner 已切到 `unified-host-contract-correctness`
-- 当前先冻结 unified host contract correctness，用 `dashboard_local` 与 `telegram_prepared` 的 in-process parity 证明宿主 contract 稳定；fresh real Telegram proof 已降为 deferred adapter-level follow-up，而不是当前 acceptance root
+- 当前 repo 处于 `新主线切换后的 bootstrap 实现期`
+- 历史 path/compat 仍沿用 `边界冻结下的收口期` 的分类约束；这只是兼容锚点，不改当前 execution owner
+- 当前 execution owner 已切到 `subject-system-v1-governed-proactivity`
+- 当前已把 `Milestone 1` 固定为 proof floor，并完成 `Milestone 2 + 3` 的 local candidate-only slice，再把 `Milestone 4` 推到 bounded live gate：runtime 现在会写入 canonical `subject_system_v1` facade，在 idle/developmental 路径产出 `held / ask / suggest` proactive artifact，并把 current-lane 决策翻译进 host-owned `pending_proactive_followup -> delivery -> outbox -> transport_gate -> telegram` 链；当前 lane 还拿到了 1 条 allowlisted `operator_seeded` self-DM real send sample，`active-inference mainline activation` 与 `unified-host-contract-correctness` 都保留为冻结的 predecessor evidence，而不是当前 owner
+- 当前证明面是 replay-backed / recorded output-validation + local integration + 1 条 narrow operator-seeded self-DM live sample
+- `tools/run_subject_system_v1_self_dm_live_gate.py` 是 one-shot sample sender；它不会保持 Telegram polling 在线。正式常驻 listener 仍只有 `python3 -m app.main --telegram`
+- 当前 admitted 口径只到 `narrow E4 sample-level self_dm gate`
 - 剩余项仅保留在 `optional housekeeping / future cleanup backlog`
 - 这不是 real-channel 新效果声明，也不是新的 authority wave 声明
 - thin substrate / compat / reference-only 残留仍存在，但不阻塞 closeout
@@ -178,6 +186,33 @@ cp .env.example .env
 ```bash
 python3 -m app.main --telegram
 ```
+
+启动后用下面这个工具确认 listener 在线，而不是把 one-shot proactive sample 当成 listener proof：
+
+```bash
+python3 tools/check_telegram_listener_status.py
+```
+
+如果你要测“常驻 listener 下会不会自己在 idle window 主动发 Telegram”，再用下面这个工具看 autodrain soak 状态：
+
+```bash
+python3 tools/check_telegram_proactive_soak_status.py
+```
+
+注意：
+- 只要你改了 Telegram listener 相关代码、proactive gate、transport、outbox、或启动环境变量，**这轮实现和本地验证完成后就必须立刻重启** `python3 -m app.main --telegram`，不要等到下一轮 live Telegram soak 前才补
+- 在这类 live Telegram 测试里，**Codex 默认应主动代执行这次重启**，并明确告知“已重启、需要重新播种”，而不是把“记得先重启”留给用户二次提醒
+- 不重启就还是旧进程里的内存逻辑，live 结果不能当成新补丁的证据
+- listener 重启会清掉进程内 recent-turn / reminder seed 状态；如果你要验证 same-thread reminder / proactive soak，**重启后必须重新播种一次对话语境**
+- 因此，重启前的旧聊天窗口不能直接拿来证明重启后的 listener 行为
+
+如果你只是要抓一条 allowlisted self-DM sample，仍然使用：
+
+```bash
+python3 tools/run_subject_system_v1_self_dm_live_gate.py --chat-id <telegram_chat_id>
+```
+
+但这条命令会发完就退出，不会保持入站回复链在线。
 
 ### 3. Test
 
