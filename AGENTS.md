@@ -228,6 +228,7 @@ Before any implementation:
 
 ## Skill routing
 
+- EgoOperator human-trial / GitHub issue comment / test log / Project closeout / file-web_fetch-approval-memory gate repair loops：优先使用 `ego-operator-devloop`；若同时是 runtime bug / regression，再叠加 `ego-bugfix-root-cause`；若用户给出锁定实现计划，再叠加 `ego-implement-milestone`
 - 多步骤长任务、已有 `docs/codex/tasks/<slug>/`、或 prompt 含 `LONGRUN`：优先使用 `long-run-execution`
 - 复杂、模糊、跨模块任务：优先使用 `ego-plan-from-spec`
 - 按 spec / plan / acceptance 实现明确里程碑：优先使用 `ego-implement-milestone`
