@@ -88,6 +88,7 @@ legacy/ego-pre-handmade-mainline/OpenEmotion/artifacts/testbot/tapes/
 !.codex/memory/sessions/README.md
 
 # Local-only operator/autopilot workspaces and credentials
+.repo-quarantine/
 .codex-autopilot/
 .codex-memory/
 .ssh/
@@ -105,3 +106,39 @@ artifacts/tmp/
 artifacts/tmp_*/
 artifacts/tmp*.log
 reports/self_reports/
+
+# Local/raw evidence captures that require explicit admission before tracking
+artifacts/telegram_real_mainline_v1/real_telegram/
+artifacts/telegram_real_mainline_v1/integration/
+artifacts/telegram_real_mainline_v1/simulated/
+artifacts/telegram_real_mainline_v1/proactive_visible_text_quarantine_gate_v1/
+artifacts/telegram_simulated_mainline_v1/
+artifacts/telegram_simulated_whole_chain_v1/
+artifacts/mvp13/mirror/
+artifacts/research_campaign/*.lock
+
+# Legacy generated mirrors and local evidence runs after demotion
+legacy/ego-pre-handmade-mainline/EgoCore/artifacts/proto_self_mirror/
+legacy/ego-pre-handmade-mainline/EgoCore/artifacts/proto_self_v2/
+legacy/ego-pre-handmade-mainline/EgoCore/artifacts/compacted/
+legacy/ego-pre-handmade-mainline/EgoCore/artifacts/restore/audit/
+legacy/ego-pre-handmade-mainline/EgoCore/prompts/tempsaved/
+legacy/ego-pre-handmade-mainline/OpenEmotion/artifacts/mvp12/controlled_*/
+legacy/ego-pre-handmade-mainline/OpenEmotion/artifacts/mvp12/shadow_state.json
+legacy/ego-pre-handmade-mainline/OpenEmotion/artifacts/mvp13/controlled_*/
+legacy/ego-pre-handmade-mainline/OpenEmotion/artifacts/mvp13/formal_*/
+legacy/ego-pre-handmade-mainline/OpenEmotion/artifacts/mvp15/controlled_*/
+legacy/ego-pre-handmade-mainline/OpenEmotion/artifacts/mvp15/formal_*/
+legacy/ego-pre-handmade-mainline/OpenEmotion/artifacts/mvp16/controlled_*/
+legacy/ego-pre-handmade-mainline/OpenEmotion/artifacts/mvp16/formal_*/
+legacy/ego-pre-handmade-mainline/OpenEmotion/artifacts/mvp17/controlled_*/
+legacy/ego-pre-handmade-mainline/OpenEmotion/artifacts/mvp17/formal_*/
+legacy/ego-pre-handmade-mainline/OpenEmotion/artifacts/mvp18/controlled_*/
+legacy/ego-pre-handmade-mainline/OpenEmotion/artifacts/mvp18/formal_*/
+legacy/ego-pre-handmade-mainline/OpenEmotion/artifacts/mvp19/controlled_*/
+legacy/ego-pre-handmade-mainline/OpenEmotion/artifacts/mvp19/formal_*/
+legacy/ego-pre-handmade-mainline/OpenEmotion/artifacts/mvp20/controlled_*/
+legacy/ego-pre-handmade-mainline/OpenEmotion/artifacts/mvp20/formal_*/
+legacy/ego-pre-handmade-mainline/OpenEmotion/artifacts/mvp21/controlled_*/
+legacy/ego-pre-handmade-mainline/OpenEmotion/artifacts/proto_self_mirror/
+legacy/ego-pre-handmade-mainline/OpenEmotion/artifacts/subject_system_v1/
