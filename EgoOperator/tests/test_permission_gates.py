@@ -226,6 +226,96 @@ def test_run_command_approval_summary_keeps_stdout_on_nonzero_return(tmp_path, m
     assert "7263.23" in approved["operator_summary"]
 
 
+def test_long_run_command_action_card_uses_digest_and_approve_command(tmp_path, monkeypatch):
+    monkeypatch.setattr(agent, "DEFAULT_AGENT_WORKSPACE", tmp_path)
+    monkeypatch.setattr(agent, "DEFAULT_AGENT_ALLOWED_ROOTS", (tmp_path,))
+    runtime = agent.build_demo_runtime(enable_operator_memory=False, runtime_mode="approve")
+    long_command = "echo start " + ("0123456789" * 120) + " end"
+
+    proposal = runtime.propose_run_command(long_command, reason="long command digest smoke")
+    proposal_id = proposal["proposal"]["proposal_id"]
+    card = proposal["action_card"]
+
+    assert proposal["status"] == "pending_approval"
+    assert long_command not in card
+    assert "command_digest" in card
+    assert "omitted=" in card
+    assert "sha256=" in card
+    assert f"/approve {proposal_id}" in card
+
+
+def test_long_stdout_and_stderr_approval_summary_uses_digest(tmp_path, monkeypatch):
+    monkeypatch.setattr(agent, "DEFAULT_AGENT_WORKSPACE", tmp_path)
+    monkeypatch.setattr(agent, "DEFAULT_AGENT_ALLOWED_ROOTS", (tmp_path,))
+    runtime = agent.build_demo_runtime(enable_operator_memory=False, runtime_mode="approve")
+    long_stdout = "HEAD\n" + ("x" * 2000) + "\nTAIL"
+    long_stderr = "ERR_HEAD\n" + ("y" * 1200) + "\nERR_TAIL"
+
+    def fake_run(command: str):
+        return {
+            "status": "failed",
+            "returncode": 7,
+            "stdout": long_stdout,
+            "stderr": long_stderr,
+            "command": command,
+        }
+
+    monkeypatch.setattr(agent, "_run_command_execute", fake_run)
+
+    proposal = runtime.propose_run_command("powershell long output", reason="long output digest smoke")
+    approved = runtime.approve_pending_operation(proposal["proposal"]["proposal_id"])
+    summary = approved["operator_summary"]
+
+    assert "returncode: 7" in summary
+    assert "HEAD" in summary
+    assert "TAIL" in summary
+    assert "ERR_HEAD" in summary
+    assert "ERR_TAIL" in summary
+    assert "[digest chars=" in summary
+    assert "omitted=" in summary
+    assert "sha256=" in summary
+    assert long_stdout not in summary
+    assert long_stderr not in summary
+
+
+def test_approval_cli_compact_full_and_both_modes(tmp_path, monkeypatch):
+    monkeypatch.setattr(agent, "DEFAULT_AGENT_WORKSPACE", tmp_path)
+    monkeypatch.setattr(agent, "DEFAULT_AGENT_ALLOWED_ROOTS", (tmp_path,))
+    runtime = agent.build_demo_runtime(enable_operator_memory=False, runtime_mode="approve")
+    runtime.trace_store = agent.JsonlTraceStore(tmp_path / "trace.jsonl")
+    long_stdout = "VALUE_HEAD\n" + ("z" * 2000) + "\nVALUE_TAIL"
+
+    def fake_run(command: str):
+        return {
+            "status": "ok",
+            "returncode": 0,
+            "stdout": long_stdout,
+            "stderr": "",
+            "command": command,
+        }
+
+    monkeypatch.setattr(agent, "_run_command_execute", fake_run)
+
+    proposal = runtime.propose_run_command("powershell long cli output", reason="compact cli smoke")
+    approved = runtime.approve_pending_operation(proposal["proposal"]["proposal_id"])
+    compact = runtime.format_approval_cli_output(approved, mode="compact")
+    full = runtime.format_approval_cli_output(approved, mode="full")
+    both = runtime.format_approval_cli_output(approved, mode="both")
+
+    assert "审批命令已执行成功" in compact
+    assert "Approval compact digest" in compact
+    assert "stdout_digest" in compact
+    assert "trace.jsonl" in compact
+    assert "Full approval JSON" not in compact
+    assert long_stdout not in compact
+    assert full.strip().startswith("{")
+    assert '"approval"' in full
+    assert json.loads(full)["execution"]["stdout"] == long_stdout
+    assert "Approval compact digest" in both
+    assert "Full approval JSON" in both
+    assert "VALUE_HEAD\\n" in both
+
+
 def test_write_file_approval_summary_includes_path_and_bytes(tmp_path, monkeypatch):
     monkeypatch.setattr(agent, "DEFAULT_AGENT_WORKSPACE", tmp_path)
     monkeypatch.setattr(agent, "DEFAULT_AGENT_ALLOWED_ROOTS", (tmp_path,))
@@ -280,6 +370,48 @@ def test_heartbeat_approval_summary_includes_due_time_and_message(tmp_path, monk
     assert "稍后提醒继续测试" in approved["operator_summary"]
 
 
+def test_compact_approval_digest_covers_write_web_fetch_and_heartbeat(tmp_path, monkeypatch):
+    monkeypatch.setattr(agent, "DEFAULT_AGENT_WORKSPACE", tmp_path)
+    monkeypatch.setattr(agent, "DEFAULT_AGENT_ALLOWED_ROOTS", (tmp_path,))
+    runtime = agent.build_demo_runtime(enable_operator_memory=False, runtime_mode="approve")
+    runtime.trace_store = agent.JsonlTraceStore(tmp_path / "trace.jsonl")
+
+    def fake_fetch(url: str, extract_mode: str, max_chars: int):
+        return {
+            "status": "ok",
+            "url": url,
+            "extract_mode": extract_mode,
+            "truncated": True,
+            "content": "WEB_HEAD\n" + ("w" * 1200) + "\nWEB_TAIL",
+        }
+
+    monkeypatch.setattr(agent, "_web_fetch_execute", fake_fetch)
+
+    write_result = runtime.approve_pending_operation(
+        runtime.propose_file_write("digest.txt", "hello", reason="digest write")["proposal"]["proposal_id"]
+    )
+    web_result = runtime.approve_pending_operation(
+        runtime.propose_web_fetch("https://example.com", reason="digest web")["proposal"]["proposal_id"]
+    )
+    heartbeat_result = runtime.approve_pending_operation(
+        runtime.propose_heartbeat(60, "稍后提醒继续测试", reason="digest heartbeat")["proposal"]["proposal_id"]
+    )
+
+    write_digest = runtime.compact_approval_execution_result(write_result)
+    web_digest = runtime.compact_approval_execution_result(web_result)
+    heartbeat_digest = runtime.compact_approval_execution_result(heartbeat_result)
+
+    assert write_digest["action"] == "write_file"
+    assert write_digest["path"].endswith("digest.txt")
+    assert write_digest["bytes"] == 5
+    assert write_digest["trace_path"].endswith("trace.jsonl")
+    assert web_digest["action"] == "web_fetch"
+    assert web_digest["url"] == "https://example.com"
+    assert web_digest["content_preview_digest"]["truncated"] is True
+    assert heartbeat_digest["action"] == "heartbeat"
+    assert heartbeat_digest["message_digest"]["text"] == "稍后提醒继续测试"
+
+
 def test_failed_or_rejected_approval_does_not_invent_summary(tmp_path, monkeypatch):
     monkeypatch.setattr(agent, "DEFAULT_AGENT_WORKSPACE", tmp_path)
     monkeypatch.setattr(agent, "DEFAULT_AGENT_ALLOWED_ROOTS", (tmp_path,))
@@ -292,6 +424,7 @@ def test_failed_or_rejected_approval_does_not_invent_summary(tmp_path, monkeypat
 
     assert unknown["status"] == "failed"
     assert "operator_summary" not in unknown
+    assert "审批" not in runtime.format_approval_cli_output(unknown, mode="compact")
     assert rejected["status"] == "rejected"
     assert after_reject["status"] == "failed"
     assert "operator_summary" not in after_reject

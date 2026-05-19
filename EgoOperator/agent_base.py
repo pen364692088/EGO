@@ -183,6 +183,8 @@ DEFAULT_MEMORY_MAX_CHARS_PER_MESSAGE = int(os.getenv("AGENT_MEMORY_MAX_CHARS_PER
 DEFAULT_MAX_TOOL_LOOPS = int(os.getenv("AGENT_MAX_TOOL_LOOPS", "50"))
 DEFAULT_TOOL_LOOP_HARD_CAP = int(os.getenv("AGENT_TOOL_LOOP_HARD_CAP", "150"))
 DEFAULT_UNBACKED_APPROVAL_REPAIR_ATTEMPTS = int(os.getenv("AGENT_UNBACKED_APPROVAL_REPAIR_ATTEMPTS", "2"))
+VALID_APPROVAL_CLI_OUTPUT_MODES = {"compact", "full", "both"}
+DEFAULT_APPROVAL_CLI_OUTPUT = os.getenv("AGENT_APPROVAL_CLI_OUTPUT", "compact").strip().lower() or "compact"
 DEFAULT_VERBOSE_TOOLS = env_flag("AGENT_VERBOSE_TOOLS", True)
 DEFAULT_VERBOSE_TODOS = env_flag("AGENT_VERBOSE_TODOS", True)
 DEFAULT_VERBOSE_SUBAGENTS = env_flag("AGENT_VERBOSE_SUBAGENTS", True)
@@ -2712,6 +2714,64 @@ def _content_hash(content: str) -> str:
     return hashlib.sha256((content or "").encode("utf-8")).hexdigest()
 
 
+def normalize_approval_cli_output_mode(mode: str) -> str:
+    normalized = str(mode or "").strip().lower()
+    return normalized if normalized in VALID_APPROVAL_CLI_OUTPUT_MODES else "compact"
+
+
+def current_approval_cli_output_mode() -> str:
+    return normalize_approval_cli_output_mode(DEFAULT_APPROVAL_CLI_OUTPUT)
+
+
+def text_digest(value: Any, *, max_chars: int = 800) -> Dict[str, Any]:
+    text = str(value or "")
+    digest = {
+        "chars": len(text),
+        "sha256": _content_hash(text),
+        "truncated": False,
+        "text": text,
+    }
+    if len(text) <= max_chars:
+        return digest
+    head_chars = max(120, int(max_chars * 0.6))
+    tail_chars = max(80, max_chars - head_chars)
+    if head_chars + tail_chars >= len(text):
+        return digest
+    return {
+        "chars": len(text),
+        "sha256": digest["sha256"],
+        "truncated": True,
+        "omitted_chars": len(text) - head_chars - tail_chars,
+        "head": text[:head_chars],
+        "tail": text[-tail_chars:],
+    }
+
+
+def render_text_digest(value: Any, *, max_chars: int = 800) -> str:
+    digest = text_digest(value, max_chars=max_chars)
+    if not digest.get("truncated"):
+        return str(digest.get("text") or "").strip()
+    return "\n".join([
+        f"[digest chars={digest['chars']} omitted={digest['omitted_chars']} sha256={digest['sha256']}]",
+        "[head]",
+        str(digest.get("head") or "").rstrip(),
+        "[tail]",
+        str(digest.get("tail") or "").lstrip(),
+    ]).strip()
+
+
+def render_inline_digest(value: Any, *, max_chars: int = 240) -> str:
+    digest = text_digest(value, max_chars=max_chars)
+    if not digest.get("truncated"):
+        return str(digest.get("text") or "")
+    head = str(digest.get("head") or "").replace("\n", "\\n")
+    tail = str(digest.get("tail") or "").replace("\n", "\\n")
+    return (
+        f"{head} ... [omitted={digest['omitted_chars']} chars; "
+        f"sha256={digest['sha256']}] ... {tail}"
+    )
+
+
 def _workspace_relative_posix(path: str) -> str:
     return _operation_path_key(path)
 
@@ -3329,17 +3389,30 @@ class PermissionBroker:
                 f"- extract_mode: {payload.get('extract_mode', 'text')}",
                 f"- max_chars: {payload.get('max_chars', DEFAULT_WEB_FETCH_MAX_CHARS)}",
                 f"- payload_sha256: {proposal.content_hash}",
-                f"- reason: {proposal.reason}",
+                f"- reason: {render_inline_digest(proposal.reason, max_chars=240)}",
+                f"- approve: /approve {proposal.proposal_id}",
             ])
         if proposal.action == "run_command":
-            return "\n".join([
+            lines = [
                 "Pending operation approval:",
                 f"- id: {proposal.proposal_id}",
                 f"- action: {proposal.action}",
-                f"- command: {proposal.path}",
                 f"- payload_sha256: {proposal.content_hash}",
-                f"- reason: {proposal.reason}",
-            ])
+                f"- reason: {render_inline_digest(proposal.reason, max_chars=240)}",
+                f"- approve: /approve {proposal.proposal_id}",
+            ]
+            command_digest = text_digest(proposal.path, max_chars=360)
+            if command_digest.get("truncated"):
+                lines.extend([
+                    f"- command_digest: chars={command_digest['chars']} omitted={command_digest['omitted_chars']} sha256={command_digest['sha256']}",
+                    "- command_head:",
+                    str(command_digest.get("head") or "").rstrip(),
+                    "- command_tail:",
+                    str(command_digest.get("tail") or "").lstrip(),
+                ])
+            else:
+                lines.append(f"- command: {command_digest.get('text', '')}")
+            return "\n".join(lines)
         if proposal.action == "heartbeat":
             try:
                 payload = json.loads(proposal.content)
@@ -3352,9 +3425,10 @@ class PermissionBroker:
                 f"- heartbeat_id: {payload.get('heartbeat_id', proposal.path)}",
                 f"- due_at: {payload.get('due_at', '')}",
                 f"- delay_seconds: {payload.get('delay_seconds', '')}",
-                f"- message: {payload.get('message', '')}",
+                f"- message: {render_inline_digest(payload.get('message', ''), max_chars=240)}",
                 f"- payload_sha256: {proposal.content_hash}",
-                f"- reason: {proposal.reason}",
+                f"- reason: {render_inline_digest(proposal.reason, max_chars=240)}",
+                f"- approve: /approve {proposal.proposal_id}",
             ])
         lines = [
             "Pending operation approval:",
@@ -3363,13 +3437,14 @@ class PermissionBroker:
             f"- path: {proposal.path}",
             f"- overwrite: {proposal.overwrite}",
             f"- content_sha256: {proposal.content_hash}",
-            f"- reason: {proposal.reason}",
+            f"- reason: {render_inline_digest(proposal.reason, max_chars=240)}",
+            f"- approve: /approve {proposal.proposal_id}",
         ]
         if proposal.preflight_warnings:
             lines.append(f"- preflight_warnings: {', '.join(proposal.preflight_warnings)}")
         lines.extend([
             "- preview:",
-            proposal.preview(),
+            render_text_digest(proposal.content, max_chars=800),
         ])
         return "\n".join(lines)
 
@@ -4127,10 +4202,72 @@ class AgentRuntime:
         self.memory.add("system", "[operator_runtime_decision]\n" + json.dumps(summary, ensure_ascii=False, sort_keys=True))
 
     def _approval_summary_excerpt(self, value: Any, max_chars: int = 1200) -> str:
-        text = str(value or "").strip()
-        if len(text) > max_chars:
-            return text[:max_chars] + "\n...[truncated]"
-        return text
+        return render_text_digest(value, max_chars=max_chars)
+
+    def compact_approval_execution_result(self, approval_result: Dict[str, Any]) -> Dict[str, Any]:
+        approval = approval_result.get("approval") if isinstance(approval_result, dict) else {}
+        approval = approval if isinstance(approval, dict) else {}
+        proposal = approval.get("proposal") if isinstance(approval, dict) else {}
+        proposal = proposal if isinstance(proposal, dict) else {}
+        execution = approval_result.get("execution") if isinstance(approval_result, dict) else {}
+        execution = execution if isinstance(execution, dict) else {}
+        action = str(proposal.get("action") or execution.get("action") or "")
+        compact: Dict[str, Any] = {
+            "status": approval_result.get("status", "unknown"),
+            "proposal_id": proposal.get("proposal_id") or execution.get("proposal_id"),
+            "action": action or None,
+            "lease_id": approval.get("lease_id") or execution.get("lease_id"),
+            "payload_sha256": proposal.get("content_hash") or execution.get("content_hash"),
+            "content_hash": execution.get("content_hash") or proposal.get("content_hash"),
+            "trace_path": str(self.trace_store.path),
+        }
+        if approval_result.get("reason"):
+            compact["reason"] = approval_result.get("reason")
+        if execution:
+            compact["execution"] = {
+                "status": execution.get("status"),
+            }
+            if execution.get("returncode") is not None:
+                compact["execution"]["returncode"] = execution.get("returncode")
+
+        if action == "run_command":
+            compact["command_digest"] = text_digest(execution.get("command", proposal.get("path", "")), max_chars=360)
+            compact["stdout_digest"] = text_digest(execution.get("stdout", ""), max_chars=800)
+            compact["stderr_digest"] = text_digest(execution.get("stderr", ""), max_chars=500)
+        elif action == "write_file":
+            compact["path"] = execution.get("path", proposal.get("path"))
+            if execution.get("bytes") is not None:
+                compact["bytes"] = execution.get("bytes")
+        elif action == "web_fetch":
+            compact["url"] = execution.get("url", proposal.get("path"))
+            if execution.get("truncated") is not None:
+                compact["truncated"] = execution.get("truncated")
+            compact["content_preview_digest"] = text_digest(execution.get("content", ""), max_chars=800)
+        elif action == "heartbeat":
+            compact["heartbeat_id"] = execution.get("heartbeat_id", proposal.get("path"))
+            compact["due_at"] = execution.get("due_at")
+            compact["message_digest"] = text_digest(execution.get("message", ""), max_chars=360)
+        return {key: value for key, value in compact.items() if value is not None}
+
+    def format_approval_cli_output(self, approval_result: Dict[str, Any], mode: Optional[str] = None) -> str:
+        selected_mode = normalize_approval_cli_output_mode(mode or current_approval_cli_output_mode())
+        full_json = json.dumps(approval_result, ensure_ascii=False, indent=2)
+        if selected_mode == "full":
+            return full_json
+
+        compact_json = json.dumps(
+            self.compact_approval_execution_result(approval_result),
+            ensure_ascii=False,
+            indent=2,
+        )
+        parts: List[str] = []
+        operator_summary = str(approval_result.get("operator_summary") or "").strip()
+        if operator_summary:
+            parts.append(operator_summary)
+        parts.append("Approval compact digest:\n" + compact_json)
+        if selected_mode == "both":
+            parts.append("Full approval JSON:\n" + full_json)
+        return "\n\n".join(parts)
 
     def format_approval_execution_summary(self, approval_result: Dict[str, Any]) -> str:
         approval = approval_result.get("approval") or {}
@@ -5910,6 +6047,7 @@ def render_runtime_permission_status(runtime: AgentRuntime) -> str:
         f"- write_file: {'trusted direct enabled' if DEFAULT_ENABLE_WRITE_FILE and 'write_file' in runtime.gate.allowed_tools else 'transaction approval required'}",
         f"- run_command: {'readonly direct enabled' if DEFAULT_ENABLE_READONLY_RUN_COMMAND and 'run_command' in runtime.gate.allowed_tools else ('trusted direct enabled' if DEFAULT_ENABLE_RUN_COMMAND and 'run_command' in runtime.gate.allowed_tools else 'transaction approval required')}",
         f"- web_fetch: {'safe public auto enabled' if safe_auto_web_fetch_enabled() and 'web_fetch' in runtime.gate.allowed_tools else ('trusted direct enabled' if DEFAULT_ENABLE_WEB_FETCH and 'web_fetch' in runtime.gate.allowed_tools else 'transaction approval required')}",
+        f"- approval_cli_output: {current_approval_cli_output_mode()}",
         f"- write_allowlist: {', '.join(DEFAULT_WRITE_ALLOWLIST) if DEFAULT_WRITE_ALLOWLIST else '(workspace-contained; no extra allowlist)'}",
         f"- allowed_roots: {', '.join(str(root) for root in _iter_allowed_roots())}",
         f"- tool_loop_budget: soft={DEFAULT_MAX_TOOL_LOOPS} | hard={DEFAULT_TOOL_LOOP_HARD_CAP}",
@@ -5966,10 +6104,7 @@ if __name__ == "__main__":
         if msg.lower().startswith("/approve "):
             proposal_id = msg.split(maxsplit=1)[1].strip()
             approval_result = runtime.approve_pending_operation(proposal_id)
-            print(json.dumps(approval_result, ensure_ascii=False, indent=2))
-            operator_summary = str(approval_result.get("operator_summary") or "").strip()
-            if operator_summary:
-                print("\n" + operator_summary)
+            print(runtime.format_approval_cli_output(approval_result))
             continue
         if msg.lower().startswith("/reject "):
             parts = msg.split(maxsplit=2)
