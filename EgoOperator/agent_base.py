@@ -255,6 +255,16 @@ VALID_TEAM_MSG_TYPES = {
 TEAM_RUNTIME_STATUSES = {"idle", "working"}
 TEAM_TERMINAL_STATUSES = {"offline", "shutdown"}
 DEFAULT_RUN_COMMAND_TIMEOUT_SECONDS = int(os.getenv("AGENT_RUN_COMMAND_TIMEOUT_SECONDS", "15"))
+DEFAULT_PATH_INFO_MAX_ENTRIES = int(os.getenv("AGENT_PATH_INFO_MAX_ENTRIES", "50000"))
+DEFAULT_ENABLE_READONLY_RUN_COMMAND = env_flag("AGENT_ENABLE_READONLY_RUN_COMMAND", True)
+DEFAULT_READONLY_RUN_COMMAND_ALLOWED_PREFIXES = [
+    item.strip()
+    for item in os.getenv(
+        "AGENT_READONLY_RUN_COMMAND_ALLOWED_PREFIXES",
+        "pwd,dir,ls,echo,python --version,python3 --version,whoami,du",
+    ).split(",")
+    if item.strip()
+]
 DEFAULT_ENABLE_RUN_COMMAND = env_flag("AGENT_ENABLE_RUN_COMMAND", False)
 DEFAULT_RUN_COMMAND_ALLOWED_PREFIXES = [
     item.strip()
@@ -883,10 +893,10 @@ def build_system_prompt(operator_memory_context: str = "", subject_context: str 
         + _allowed_roots_prompt_text()
         + "。需要查看本地文件时优先使用工具，不要假装已经读取，也不要在未调用工具前自行判定 allowed_roots 内路径不可访问。"
         + "\n17. 需要创建或修改文件时，优先调用 propose_file_write 生成可审批操作包；workspace 外但 allowed_roots 内的绝对路径也是合法 proposal 目标。如果用户给出绝对路径，必须原样使用该路径，不要猜相对路径或 fallback 到 workspace 内；不要让子代理直接写文件，也不要在未批准时声称已写入。"
-        + "\n17a. 不得手写、伪造或猜测 Pending operation approval、proposal_id、content_sha256 或 /approve 命令；只有 propose_file_write / propose_web_fetch / propose_heartbeat 工具返回的真实 action_card 才能展示给用户。"
+        + "\n17a. 不得手写、伪造或猜测 Pending operation approval、proposal_id、content_sha256 或 /approve 命令；只有 propose_file_write / propose_web_fetch / propose_run_command / propose_heartbeat 工具返回的真实 action_card 才能展示给用户。"
         + "\n18. remember_note 只能在用户明确要求“记住/记一下/以后记得/下次记得/remember”时调用；普通聊天、工具结果、子代理回禀和自动总结不能写 core memory。若 remember_note 返回 blocked，必须明确说“未写入”，不得声称已经记住。"
         + "\n19. operator memory 是 EgoOperator candidate-local 记忆，不是 PROJECT_MEMORY、OpenEmotion 记忆或 EGO evidence ledger。"
-        + "\n20. write_file、run_command、web_fetch 是受控工具；安全 public http/https GET 在 safe-auto 策略下可直接调用 web_fetch，涉及高风险、被拒或 approval-only 策略时调用 propose_web_fetch 生成可审批操作包。"
+        + "\n20. write_file、run_command、web_fetch 是受控工具；目录大小/文件数量优先调用 path_info；低风险只读命令可直接调用 run_command；修改、删除、未知命令必须调用 propose_run_command 生成可审批操作包。安全 public http/https GET 在 safe-auto 策略下可直接调用 web_fetch，涉及高风险、被拒或 approval-only 策略时调用 propose_web_fetch。"
         + "\n21. 若用户明确要求稍后提醒、主动找我或定时跟进，只能调用 propose_heartbeat 生成 bounded heartbeat proposal；到期也只是候选提醒，不代表自主意识或后台独立行动。"
         + "\n\n可派遣子代理类型：xiaohuangmen, sili_suitang, dongchang_tanshi, shangbao_dianbu, neiguan_yingzao"
         + (
@@ -2718,6 +2728,10 @@ def _web_fetch_payload(url: str, extract_mode: str, max_chars: int) -> str:
     )
 
 
+def _run_command_payload(command: str) -> str:
+    return json.dumps({"command": command}, ensure_ascii=False, sort_keys=True)
+
+
 def _heartbeat_payload(heartbeat_id: str, delay_seconds: int, due_at: str, message: str, reason: str) -> str:
     return json.dumps(
         {
@@ -2933,6 +2947,41 @@ class PermissionBroker:
             create_parents=False,
             overwrite=False,
             reason=reason or "web fetch requested by operator task",
+            source=source,
+        )
+        self.proposals[proposal.proposal_id] = proposal
+        return {
+            "status": "pending_approval",
+            "proposal": proposal.to_dict(),
+            "action_card": self.format_action_card(proposal.proposal_id),
+            "next": f"Use /approve {proposal.proposal_id} or /reject {proposal.proposal_id}.",
+        }
+
+    def propose_run_command(
+        self,
+        *,
+        command: str,
+        reason: str = "",
+        source: str = "tool",
+    ) -> Dict[str, Any]:
+        if self.runtime_mode == "chat":
+            return {"status": "blocked", "reason": "runtime_mode_chat_blocks_operation_proposals"}
+
+        clean_command = str(command or "").strip()
+        if not clean_command:
+            return {"status": "blocked", "reason": "empty_command"}
+
+        payload = _run_command_payload(clean_command)
+        proposal = OperationProposal(
+            proposal_id=new_id("proposal"),
+            action="run_command",
+            path=clean_command,
+            resolved_path=clean_command,
+            content=payload,
+            content_hash=_content_hash(payload),
+            create_parents=False,
+            overwrite=False,
+            reason=reason or "command execution requested by operator task",
             source=source,
         )
         self.proposals[proposal.proposal_id] = proposal
@@ -3183,6 +3232,42 @@ class PermissionBroker:
             proposal.execution_result = result
             return result
 
+    def execute_run_command_with_lease(self, lease_id: str, *, command: str) -> Dict[str, Any]:
+        lease = self.leases.get(lease_id)
+        if lease is None:
+            return {"status": "blocked", "reason": "unknown_lease", "lease_id": lease_id}
+        if lease.consumed:
+            return {"status": "blocked", "reason": "lease_already_consumed", "lease_id": lease_id}
+        proposal = self.proposals.get(lease.proposal_id)
+        if proposal is None:
+            return {"status": "blocked", "reason": "proposal_missing_for_lease", "lease_id": lease_id}
+        if proposal.action != "run_command" or lease.action != "run_command":
+            return {"status": "blocked", "reason": "unsupported_lease_action", "lease_id": lease_id}
+
+        clean_command = str(command or "").strip()
+        actual_payload = _run_command_payload(clean_command)
+        actual_hash = _content_hash(actual_payload)
+        if clean_command != lease.path:
+            return {"status": "blocked", "reason": "lease_command_mismatch", "expected": lease.path, "actual": clean_command}
+        if actual_hash != lease.content_hash:
+            return {
+                "status": "blocked",
+                "reason": "lease_content_hash_mismatch",
+                "expected": lease.content_hash,
+                "actual": actual_hash,
+            }
+
+        lease.consumed = True
+        result = _run_command_execute(clean_command)
+        result.update({
+            "lease_id": lease.lease_id,
+            "proposal_id": proposal.proposal_id,
+            "content_hash": actual_hash,
+        })
+        proposal.status = "executed" if result.get("status") == "ok" else "execution_failed"
+        proposal.execution_result = result
+        return result
+
     def execute_heartbeat_with_lease(self, lease_id: str, *, payload: Dict[str, Any]) -> Dict[str, Any]:
         lease = self.leases.get(lease_id)
         if lease is None:
@@ -3243,6 +3328,15 @@ class PermissionBroker:
                 f"- url: {payload.get('url', proposal.path)}",
                 f"- extract_mode: {payload.get('extract_mode', 'text')}",
                 f"- max_chars: {payload.get('max_chars', DEFAULT_WEB_FETCH_MAX_CHARS)}",
+                f"- payload_sha256: {proposal.content_hash}",
+                f"- reason: {proposal.reason}",
+            ])
+        if proposal.action == "run_command":
+            return "\n".join([
+                "Pending operation approval:",
+                f"- id: {proposal.proposal_id}",
+                f"- action: {proposal.action}",
+                f"- command: {proposal.path}",
                 f"- payload_sha256: {proposal.content_hash}",
                 f"- reason: {proposal.reason}",
             ])
@@ -3483,6 +3577,12 @@ class SafetyGate:
                 if validation.get("status") != "ok":
                     return GateResult(False, str(validation.get("reason", "invalid_web_fetch_request")))
                 return GateResult(True, "operation_proposal_allowed")
+            if action.tool_call.tool_name == "propose_run_command":
+                if self.runtime_mode == "chat":
+                    return GateResult(False, "runtime_mode_chat_blocks_operation_proposals")
+                if not str(action.tool_call.args.get("command", "")).strip():
+                    return GateResult(False, "empty_command")
+                return GateResult(True, "operation_proposal_allowed")
             if action.tool_call.tool_name == "propose_heartbeat":
                 if self.runtime_mode == "chat":
                     return GateResult(False, "runtime_mode_chat_blocks_operation_proposals")
@@ -3507,6 +3607,14 @@ class SafetyGate:
                 if self.runtime_mode == "trusted-workspace" and (DEFAULT_ENABLE_WEB_FETCH or safe_auto_web_fetch_enabled()):
                     return GateResult(True, "tool_call_allowed")
                 return GateResult(False, "web_fetch_requires_transaction_approval")
+            if action.tool_call.tool_name == "run_command":
+                command = str(action.tool_call.args.get("command", ""))
+                if self.runtime_mode in {"chat", "plan"}:
+                    return GateResult(False, "run_command_requires_transaction_approval")
+                allowed, reason = _run_command_direct_admission(command)
+                if not allowed:
+                    return GateResult(False, reason)
+                return GateResult(True, "readonly_run_command_allowed")
             if action.tool_call.tool_name in SIDE_EFFECT_TOOLS and self.runtime_mode in {"chat", "plan", "approve"}:
                 return GateResult(False, f"{action.tool_call.tool_name}_requires_transaction_approval")
             if action.tool_call.tool_name in {"read_file", "write_file"}:
@@ -3521,14 +3629,6 @@ class SafetyGate:
                 pattern = str(action.tool_call.args.get("pattern", ""))
                 if ".." in Path(pattern).parts:
                     return GateResult(False, "invalid_glob_pattern")
-            if action.tool_call.tool_name == "run_command":
-                command = str(action.tool_call.args.get("command", ""))
-                if not DEFAULT_ENABLE_RUN_COMMAND:
-                    return GateResult(False, "run_command_disabled")
-                if _command_has_obvious_danger(command):
-                    return GateResult(False, "dangerous_command_pattern")
-                if not _command_prefix_allowed(command):
-                    return GateResult(False, "command_prefix_not_allowed")
             if action.tool_call.tool_name == "write_file" and not DEFAULT_ENABLE_WRITE_FILE:
                 return GateResult(False, "write_file_disabled")
             if action.tool_call.tool_name == "remember_note":
@@ -3610,6 +3710,11 @@ def _command_prefix_allowed(command: str) -> bool:
     return any(normalized == p or normalized.startswith(p + " ") for p in DEFAULT_RUN_COMMAND_ALLOWED_PREFIXES)
 
 
+def _readonly_command_prefix_allowed(command: str) -> bool:
+    normalized = command.strip()
+    return any(normalized == p or normalized.startswith(p + " ") for p in DEFAULT_READONLY_RUN_COMMAND_ALLOWED_PREFIXES)
+
+
 def _command_has_obvious_danger(command: str) -> bool:
     lowered = command.lower()
     dangerous_fragments = [
@@ -3637,33 +3742,20 @@ def _command_has_obvious_danger(command: str) -> bool:
     return any(fragment in padded for fragment in dangerous_fragments)
 
 
-def run_command_tool(command: str) -> Dict[str, Any]:
-    """
-    Minimal shell command tool.
+def _run_command_direct_admission(command: str) -> tuple[bool, str]:
+    clean_command = (command or "").strip()
+    if not clean_command:
+        return False, "empty_command"
+    if _command_has_obvious_danger(clean_command):
+        return False, "run_command_requires_transaction_approval"
+    if DEFAULT_ENABLE_READONLY_RUN_COMMAND and _readonly_command_prefix_allowed(clean_command):
+        return True, "readonly_run_command_allowed"
+    if DEFAULT_ENABLE_RUN_COMMAND and _command_prefix_allowed(clean_command):
+        return True, "trusted_run_command_allowed"
+    return False, "run_command_requires_transaction_approval"
 
-    It is intentionally guarded twice:
-    1. SafetyGate must allow the tool.
-    2. This tool itself refuses unless AGENT_ENABLE_RUN_COMMAND=1 and command prefix is allowed.
-    """
-    command = (command or "").strip()
-    if not DEFAULT_ENABLE_RUN_COMMAND:
-        return {
-            "status": "blocked",
-            "reason": "run_command_disabled",
-            "hint": "Set AGENT_ENABLE_RUN_COMMAND=1 only in a trusted local sandbox.",
-        }
-    if not command:
-        return {"status": "failed", "error": "empty command"}
-    if _command_has_obvious_danger(command):
-        return {"status": "blocked", "reason": "dangerous_command_pattern", "command": command}
-    if not _command_prefix_allowed(command):
-        return {
-            "status": "blocked",
-            "reason": "command_prefix_not_allowed",
-            "allowed_prefixes": DEFAULT_RUN_COMMAND_ALLOWED_PREFIXES,
-            "command": command,
-        }
 
+def _run_command_execute(command: str) -> Dict[str, Any]:
     try:
         completed = subprocess.run(
             command,
@@ -3679,9 +3771,103 @@ def run_command_tool(command: str) -> Dict[str, Any]:
             "returncode": completed.returncode,
             "stdout": completed.stdout,
             "stderr": completed.stderr,
+            "command": command,
         }
     except subprocess.TimeoutExpired:
-        return {"status": "failed", "error": "timeout", "timeout_seconds": DEFAULT_RUN_COMMAND_TIMEOUT_SECONDS}
+        return {"status": "failed", "error": "timeout", "timeout_seconds": DEFAULT_RUN_COMMAND_TIMEOUT_SECONDS, "command": command}
+
+
+def run_command_tool(command: str) -> Dict[str, Any]:
+    """
+    Minimal shell command tool.
+
+    It is intentionally guarded twice:
+    1. SafetyGate must allow the tool.
+    2. This tool itself only executes read-only allowlisted commands by default.
+    """
+    command = (command or "").strip()
+    allowed, reason = _run_command_direct_admission(command)
+    if not allowed:
+        return {
+            "status": "blocked",
+            "reason": reason,
+            "hint": "Use propose_run_command and /approve for mutation-capable or non-allowlisted commands.",
+            "readonly_allowed_prefixes": DEFAULT_READONLY_RUN_COMMAND_ALLOWED_PREFIXES,
+            "command": command,
+        }
+    return _run_command_execute(command)
+
+
+def _format_bytes(size: int) -> str:
+    value = float(max(size, 0))
+    for unit in ("bytes", "KB", "MB", "GB", "TB"):
+        if value < 1024 or unit == "TB":
+            if unit == "bytes":
+                return f"{int(value)} bytes"
+            return f"{value:.2f} {unit}"
+        value /= 1024
+    return f"{value:.2f} TB"
+
+
+def path_info_tool(path: str, max_entries: int = DEFAULT_PATH_INFO_MAX_ENTRIES) -> Dict[str, Any]:
+    try:
+        resolved = _resolve_workspace_path(path)
+    except ValueError:
+        return {"status": "blocked", "reason": "path_outside_workspace", "path": path}
+    if not resolved.exists():
+        return {"status": "missing", "path": str(resolved)}
+
+    max_count = max(1, int(max_entries or DEFAULT_PATH_INFO_MAX_ENTRIES))
+    if resolved.is_file():
+        size = resolved.stat().st_size
+        return {
+            "status": "ok",
+            "path": str(resolved),
+            "type": "file",
+            "bytes": size,
+            "human_size": _format_bytes(size),
+            "file_count": 1,
+            "dir_count": 0,
+            "truncated": False,
+        }
+    if not resolved.is_dir():
+        return {"status": "ok", "path": str(resolved), "type": "other", "truncated": False}
+
+    total_bytes = 0
+    file_count = 0
+    dir_count = 0
+    errors: List[str] = []
+    truncated = False
+    visited = 0
+    for item in resolved.rglob("*"):
+        visited += 1
+        if visited > max_count:
+            truncated = True
+            break
+        try:
+            if item.is_dir():
+                dir_count += 1
+            elif item.is_file():
+                file_count += 1
+                total_bytes += item.stat().st_size
+        except OSError as exc:
+            errors.append(f"{item}: {exc}")
+            if len(errors) >= 20:
+                errors.append("...[truncated]")
+                break
+    return {
+        "status": "ok",
+        "path": str(resolved),
+        "type": "directory",
+        "bytes": total_bytes,
+        "human_size": _format_bytes(total_bytes),
+        "file_count": file_count,
+        "dir_count": dir_count,
+        "entries_scanned": visited,
+        "max_entries": max_count,
+        "truncated": truncated,
+        "errors": errors,
+    }
 
 
 def load_skill_tool(skill_name: str) -> Dict[str, Any]:
@@ -3848,6 +4034,13 @@ class AgentRuntime:
             source="main_agent_tool",
         )
 
+    def propose_run_command(self, command: str, reason: str = "") -> Dict[str, Any]:
+        return self.permission_broker.propose_run_command(
+            command=command,
+            reason=reason,
+            source="main_agent_tool",
+        )
+
     def propose_heartbeat(
         self,
         delay_seconds: int,
@@ -3919,6 +4112,12 @@ class AgentRuntime:
                 summary["extract_mode"] = execution.get("extract_mode")
                 summary["truncated"] = execution.get("truncated")
                 summary["content"] = str(execution.get("content") or "")[:1200]
+        elif proposal.action == "run_command":
+            summary["command"] = proposal.path
+            if execution:
+                summary["returncode"] = execution.get("returncode")
+                summary["stdout"] = str(execution.get("stdout") or "")[:1200]
+                summary["stderr"] = str(execution.get("stderr") or "")[:1200]
         elif proposal.action == "heartbeat":
             if execution:
                 summary["heartbeat_id"] = execution.get("heartbeat_id")
@@ -3954,6 +4153,16 @@ class AgentRuntime:
                     url=str(payload.get("url", proposal.path)),
                     extract_mode=str(payload.get("extract_mode", "text")),
                     max_chars=int(payload.get("max_chars", DEFAULT_WEB_FETCH_MAX_CHARS)),
+                )
+        elif proposal.action == "run_command":
+            try:
+                payload = json.loads(proposal.content)
+            except json.JSONDecodeError:
+                execution = {"status": "failed", "reason": "invalid_run_command_proposal_payload"}
+            else:
+                execution = self.permission_broker.execute_run_command_with_lease(
+                    lease_id,
+                    command=str(payload.get("command", proposal.path)),
                 )
         elif proposal.action == "heartbeat":
             try:
@@ -5174,8 +5383,8 @@ def build_demo_runtime(
         "run_command",
         run_command_tool,
         description=(
-            "在本地终端执行一条 shell 命令并返回 stdout/stderr。"
-            "仅在 AGENT_ENABLE_RUN_COMMAND=1 且命令前缀进入 allowlist 时可用。"
+            "在本地终端执行一条低风险只读 shell 命令并返回 stdout/stderr。"
+            "默认只允许 readonly allowlist；修改、删除、未知命令请调用 propose_run_command。"
         ),
         input_schema={
             "type": "object",
@@ -5186,6 +5395,24 @@ def build_demo_runtime(
                 }
             },
             "required": ["command"],
+            "additionalProperties": False,
+        },
+    )
+    tools.register(
+        "path_info",
+        path_info_tool,
+        description=(
+            "读取 workspace/allowed_roots 内文件或目录的大小、文件数和目录数。"
+            "适合回答“这个目录占用多大存储空间”等本地查询。"
+            f"allowed_roots={_allowed_roots_prompt_text()}"
+        ),
+        input_schema={
+            "type": "object",
+            "properties": {
+                "path": {"type": "string", "description": "workspace 相对路径，或 allowed_roots 内绝对路径。"},
+                "max_entries": {"type": "integer", "description": "最多扫描条目数，默认 AGENT_PATH_INFO_MAX_ENTRIES。"},
+            },
+            "required": ["path"],
             "additionalProperties": False,
         },
     )
@@ -5334,6 +5561,7 @@ def build_demo_runtime(
     allowed_tools = [
         "current_time",
         "read_file",
+        "path_info",
         "glob_files",
         "grep_files",
         "load_skill",
@@ -5343,8 +5571,9 @@ def build_demo_runtime(
     if selected_runtime_mode in {"plan", "approve", "trusted-workspace"}:
         allowed_tools.append("propose_file_write")
         allowed_tools.append("propose_web_fetch")
+        allowed_tools.append("propose_run_command")
         allowed_tools.append("propose_heartbeat")
-    if DEFAULT_ENABLE_RUN_COMMAND and selected_runtime_mode == "trusted-workspace":
+    if (DEFAULT_ENABLE_READONLY_RUN_COMMAND or DEFAULT_ENABLE_RUN_COMMAND) and selected_runtime_mode in {"approve", "trusted-workspace"}:
         allowed_tools.append("run_command")
     if (
         (safe_auto_web_fetch_enabled() and selected_runtime_mode in {"approve", "trusted-workspace"})
@@ -5415,6 +5644,24 @@ def build_demo_runtime(
                 "reason": {"type": "string", "description": "为什么需要读取这个网页。"},
             },
             "required": ["url"],
+            "additionalProperties": False,
+        },
+    )
+
+    tools.register(
+        "propose_run_command",
+        runtime.propose_run_command,
+        description=(
+            "生成一个待 operator 审批的本地命令执行 proposal。"
+            "用于修改、删除或不在 readonly allowlist 中的命令；不会直接执行，批准后 runtime 用一次性 lease 执行。"
+        ),
+        input_schema={
+            "type": "object",
+            "properties": {
+                "command": {"type": "string", "description": "要审批执行的完整 shell 命令。"},
+                "reason": {"type": "string", "description": "为什么需要执行这个命令。"},
+            },
+            "required": ["command"],
             "additionalProperties": False,
         },
     )
@@ -5573,12 +5820,14 @@ def render_runtime_permission_status(runtime: AgentRuntime) -> str:
         + (" + remember_note tool with explicit user intent" if runtime.operator_memory_enabled() else " only when operator memory is enabled"),
         "- layered_memory_commands: /memory_review, /memory_pin, /memory_unpin, /memory_archive, /forget",
         f"- file_read_tools: {'enabled' if {'read_file', 'glob_files', 'grep_files'}.issubset(runtime.gate.allowed_tools) else 'restricted'}",
+        f"- path_info: {'enabled' if 'path_info' in runtime.gate.allowed_tools else 'disabled'}",
         f"- file_write_proposals: {'enabled' if 'propose_file_write' in runtime.gate.allowed_tools else 'disabled'}",
+        f"- command_proposals: {'enabled' if 'propose_run_command' in runtime.gate.allowed_tools else 'disabled'}",
         f"- web_fetch_policy: {current_web_fetch_policy()}",
         f"- web_fetch_proposals: {'enabled' if 'propose_web_fetch' in runtime.gate.allowed_tools else 'disabled'}",
         f"- heartbeat_proposals: {'enabled' if 'propose_heartbeat' in runtime.gate.allowed_tools else 'disabled'}",
         f"- write_file: {'trusted direct enabled' if DEFAULT_ENABLE_WRITE_FILE and 'write_file' in runtime.gate.allowed_tools else 'transaction approval required'}",
-        f"- run_command: {'trusted direct enabled' if DEFAULT_ENABLE_RUN_COMMAND and 'run_command' in runtime.gate.allowed_tools else 'disabled'}",
+        f"- run_command: {'readonly direct enabled' if DEFAULT_ENABLE_READONLY_RUN_COMMAND and 'run_command' in runtime.gate.allowed_tools else ('trusted direct enabled' if DEFAULT_ENABLE_RUN_COMMAND and 'run_command' in runtime.gate.allowed_tools else 'transaction approval required')}",
         f"- web_fetch: {'safe public auto enabled' if safe_auto_web_fetch_enabled() and 'web_fetch' in runtime.gate.allowed_tools else ('trusted direct enabled' if DEFAULT_ENABLE_WEB_FETCH and 'web_fetch' in runtime.gate.allowed_tools else 'transaction approval required')}",
         f"- write_allowlist: {', '.join(DEFAULT_WRITE_ALLOWLIST) if DEFAULT_WRITE_ALLOWLIST else '(workspace-contained; no extra allowlist)'}",
         f"- allowed_roots: {', '.join(str(root) for root in _iter_allowed_roots())}",

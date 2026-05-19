@@ -63,6 +63,7 @@ def test_trace_store_does_not_create_parent_until_write(tmp_path):
 def test_default_gate_blocks_side_effect_tools(monkeypatch):
     monkeypatch.setattr(agent, "DEFAULT_ENABLE_WRITE_FILE", False)
     monkeypatch.setattr(agent, "DEFAULT_ENABLE_RUN_COMMAND", False)
+    monkeypatch.setattr(agent, "DEFAULT_ENABLE_READONLY_RUN_COMMAND", False)
     monkeypatch.setattr(agent, "DEFAULT_ENABLE_WEB_FETCH", False)
     monkeypatch.setattr(agent, "DEFAULT_WEB_FETCH_POLICY", "approval-only")
     gate = agent.SafetyGate(allowed_tools=["write_file", "run_command", "web_fetch"])

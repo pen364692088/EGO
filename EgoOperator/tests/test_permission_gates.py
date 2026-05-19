@@ -100,6 +100,7 @@ def _tool_names(runtime: agent.AgentRuntime) -> set[str]:
 def test_main_agent_default_exposes_read_tools_but_not_side_effect_tools(monkeypatch):
     monkeypatch.setattr(agent, "DEFAULT_ENABLE_WRITE_FILE", False)
     monkeypatch.setattr(agent, "DEFAULT_ENABLE_RUN_COMMAND", False)
+    monkeypatch.setattr(agent, "DEFAULT_ENABLE_READONLY_RUN_COMMAND", True)
     monkeypatch.setattr(agent, "DEFAULT_ENABLE_WEB_FETCH", False)
     monkeypatch.setattr(agent, "DEFAULT_WEB_FETCH_POLICY", "safe-auto")
     monkeypatch.setattr(agent, "DEFAULT_ENABLE_AGENT_TEAM", False)
@@ -107,12 +108,93 @@ def test_main_agent_default_exposes_read_tools_but_not_side_effect_tools(monkeyp
     runtime = agent.build_demo_runtime(enable_operator_memory=False)
 
     names = _tool_names(runtime)
-    assert {"read_file", "glob_files", "grep_files"}.issubset(names)
+    assert {"read_file", "glob_files", "grep_files", "path_info"}.issubset(names)
     assert "write_file" not in names
-    assert "run_command" not in names
+    assert "run_command" in names
+    assert "propose_run_command" in names
     assert "web_fetch" in names
     assert "propose_web_fetch" in names
     assert "remember_note" not in names
+
+
+def test_path_info_reports_directory_size_and_blocks_outside_path(tmp_path, monkeypatch):
+    monkeypatch.setattr(agent, "DEFAULT_AGENT_WORKSPACE", tmp_path)
+    monkeypatch.setattr(agent, "DEFAULT_AGENT_ALLOWED_ROOTS", (tmp_path,))
+    (tmp_path / "dir").mkdir()
+    (tmp_path / "dir" / "a.txt").write_text("hello", encoding="utf-8")
+    (tmp_path / "dir" / "b.txt").write_text("世界", encoding="utf-8")
+
+    result = agent.path_info_tool("dir")
+    outside = agent.path_info_tool(str(tmp_path.parent / "outside"))
+
+    assert result["status"] == "ok"
+    assert result["type"] == "directory"
+    assert result["file_count"] == 2
+    assert result["bytes"] == len("hello".encode("utf-8")) + len("世界".encode("utf-8"))
+    assert outside["status"] == "blocked"
+    assert outside["reason"] == "path_outside_workspace"
+
+
+def test_readonly_run_command_executes_and_mutation_requires_approval(monkeypatch):
+    monkeypatch.setattr(agent, "DEFAULT_ENABLE_RUN_COMMAND", False)
+    monkeypatch.setattr(agent, "DEFAULT_ENABLE_READONLY_RUN_COMMAND", True)
+    monkeypatch.setattr(agent, "DEFAULT_READONLY_RUN_COMMAND_ALLOWED_PREFIXES", ["echo"])
+
+    ok = agent.run_command_tool("echo hello")
+    blocked = agent.run_command_tool("rm -rf definitely-not-needed")
+
+    assert ok["status"] == "ok"
+    assert ok["stdout"].strip() == "hello"
+    assert blocked["status"] == "blocked"
+    assert blocked["reason"] == "run_command_requires_transaction_approval"
+
+
+def test_run_command_gate_blocks_mutation_with_proposal_hint(tmp_path, monkeypatch):
+    monkeypatch.setattr(agent, "DEFAULT_AGENT_WORKSPACE", tmp_path)
+    monkeypatch.setattr(agent, "DEFAULT_AGENT_ALLOWED_ROOTS", (tmp_path,))
+    monkeypatch.setattr(agent, "DEFAULT_ENABLE_RUN_COMMAND", False)
+    monkeypatch.setattr(agent, "DEFAULT_ENABLE_READONLY_RUN_COMMAND", True)
+    runtime = agent.build_demo_runtime(enable_operator_memory=False, runtime_mode="approve")
+    event = agent.AgentEvent(
+        schema_version="agent_event.v1",
+        event_id="evt_cmd",
+        timestamp=agent.utc_now(),
+        actor="user",
+        source="test",
+        event_type=agent.EventType.USER_MESSAGE,
+        raw_text="删除文件",
+        safety_context={"risk": "low"},
+    )
+    action = agent.AgentAction(
+        action_type=agent.ActionType.TOOL_CALL,
+        tool_call=agent.ToolCall(tool_name="run_command", args={"command": "rm -rf test"}),
+    )
+
+    result = runtime.gate.check(event, action)
+
+    assert result.allowed is False
+    assert result.reason == "run_command_requires_transaction_approval"
+    assert "propose_run_command" in _tool_names(runtime)
+
+
+def test_run_command_proposal_approval_executes_and_enters_session_memory(tmp_path, monkeypatch):
+    monkeypatch.setattr(agent, "DEFAULT_AGENT_WORKSPACE", tmp_path)
+    monkeypatch.setattr(agent, "DEFAULT_AGENT_ALLOWED_ROOTS", (tmp_path,))
+    monkeypatch.setattr(agent, "DEFAULT_ENABLE_RUN_COMMAND", False)
+    monkeypatch.setattr(agent, "DEFAULT_ENABLE_READONLY_RUN_COMMAND", True)
+    runtime = agent.build_demo_runtime(enable_operator_memory=False, runtime_mode="approve")
+    runtime.trace_store = agent.JsonlTraceStore(tmp_path / "trace.jsonl")
+
+    proposal = runtime.propose_run_command("echo approved", reason="command approval smoke")
+    approved = runtime.approve_pending_operation(proposal["proposal"]["proposal_id"])
+
+    assert proposal["status"] == "pending_approval"
+    assert proposal["proposal"]["action"] == "run_command"
+    assert proposal["proposal"]["proposal_id"].startswith("proposal_")
+    assert approved["status"] == "ok"
+    assert approved["execution"]["stdout"].strip() == "approved"
+    assert "approved_operation_result" in runtime.memory.render()
+    assert "echo approved" in runtime.memory.render()
 
 
 def test_write_file_opt_in_now_uses_transaction_proposal_by_default(tmp_path, monkeypatch):
