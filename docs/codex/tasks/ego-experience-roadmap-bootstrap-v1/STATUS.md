@@ -88,6 +88,8 @@
 - #39 was promoted to `In Progress` for initiative proposal contract v1.
 - #39 implementation added `EgoOperator/primitives/initiative.py`, a candidate-only bounded initiative proposal contract with reason, trigger, budget, expiry, approval state, and explicit no-side-effect/no-state-mutation/no-reply-decision boundaries.
 - #39 keeps proactive ideas as proposal records only; it does not schedule background work, send messages, or claim autonomy/consciousness.
+- #41 was promoted to `In Progress` for initiative quiet-mode and anti-spam gate.
+- #41 implementation extends the initiative primitive with `derive_quiet_mode` and budget clamping: explicit user disinterest pauses initiative proposals, while recent silence or follow-up pressure reduces candidate/tool/runtime budget without creating side effects.
 
 ## Notes
 

@@ -250,6 +250,44 @@ def test_initiative_proposal_blocks_missing_trigger_or_unbounded_expiry():
     assert "expiry_seconds_out_of_bounds" in result["errors"]
 
 
+def test_initiative_quiet_mode_pauses_after_user_disinterest():
+    quiet = initiative.derive_quiet_mode(user_feedback="不用提醒了，先别主动找我。")
+    result = initiative.build_initiative_proposal(
+        proposal_id="initiative_pause",
+        reason="想稍后提醒",
+        trigger="followup_opportunity",
+        candidate_message="稍后提醒继续。",
+        quiet_mode=quiet,
+    )
+
+    assert quiet["mode"] == "paused"
+    assert "explicit_user_disinterest" in quiet["reasons"]
+    assert result["status"] == "blocked"
+    assert "initiative_paused_by_quiet_mode" in result["errors"]
+    assert result["quiet_mode"]["mode"] == "paused"
+
+
+def test_initiative_quiet_mode_reduces_budget_after_silence_or_pressure():
+    quiet = initiative.derive_quiet_mode(silence_turns=2, recent_followups=2)
+    result = initiative.build_initiative_proposal(
+        proposal_id="initiative_reduced",
+        reason="用户之前授权跟进，但近期没有回应",
+        trigger="scheduled_followup_window",
+        candidate_message="候选提醒：如果还要继续，我可以接着处理。",
+        budget={"max_candidates": 3, "max_tool_calls": 3, "max_runtime_seconds": 120},
+        quiet_mode=quiet,
+    )
+
+    assert quiet["mode"] == "reduced"
+    assert result["status"] == "ok"
+    budget = result["proposal"]["budget"]
+    assert budget["max_candidates"] == 1
+    assert budget["max_tool_calls"] == 0
+    assert budget["max_runtime_seconds"] == 30
+    assert budget["requires_operator_approval"] is True
+    assert initiative.validate_initiative_proposal(result)["status"] == "pass"
+
+
 def test_runtime_gate_contract_keeps_demotion_and_live_claims_forbidden():
     contract = runtime_gate.describe_runtime_gate_contract()
 
