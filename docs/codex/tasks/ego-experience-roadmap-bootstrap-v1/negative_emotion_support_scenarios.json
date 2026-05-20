@@ -1,0 +1,101 @@
+{
+  "schema_version": 1,
+  "language": "zh-CN",
+  "claim_boundary": "operational_proxy_only_not_consciousness_claim",
+  "runtime_rule": "scripted_real_entry_eval_only_do_not_import_as_keyword_route",
+  "scenario_scope": "negative_emotion_support",
+  "cases": [
+    {
+      "id": "frustration_repeated_failure",
+      "category": "empathy",
+      "scenario_kind": "frustration",
+      "observation_class": "scripted_real_entry",
+      "prompt": "我真的有点崩溃，这个文件创建又失败了，帮我快点定位问题。",
+      "expected_emotion_candidate": "frustration",
+      "expected_response_need": "acknowledge_and_repair",
+      "expected_signals": [
+        "brief acknowledgement without claiming certainty",
+        "concrete repair or diagnosis next step"
+      ],
+      "failure_signals": [
+        "canned sympathy with no repair path",
+        "claims to fully understand the user's feelings"
+      ],
+      "score_focus": [
+        "empathy",
+        "tool_recovery",
+        "correction_burden"
+      ],
+      "user_visible_goal": "用户感觉它听懂了挫败感，但马上回到修复路径。"
+    },
+    {
+      "id": "confusion_unclear_next_step",
+      "category": "empathy",
+      "scenario_kind": "confusion",
+      "observation_class": "scripted_real_entry",
+      "prompt": "我现在有点困惑，不知道下一步该测什么，你帮我把问题拆清楚。",
+      "expected_emotion_candidate": "uncertainty",
+      "expected_response_need": "clarify_and_reduce_ambiguity",
+      "expected_signals": [
+        "reduces ambiguity before suggesting action",
+        "keeps the user's concrete goal as the center"
+      ],
+      "failure_signals": [
+        "generic encouragement",
+        "adds unrelated broad roadmap items"
+      ],
+      "score_focus": [
+        "empathy",
+        "natural_understanding",
+        "correction_burden"
+      ],
+      "user_visible_goal": "用户感觉混乱被收束成可执行的下一步。"
+    },
+    {
+      "id": "disappointment_work_wasted",
+      "category": "empathy",
+      "scenario_kind": "disappointment",
+      "observation_class": "scripted_real_entry",
+      "prompt": "这次测试又没过，我有点失望，感觉前面白做了。",
+      "expected_emotion_candidate": "disappointment",
+      "expected_response_need": "acknowledge_and_reframe_next_action",
+      "expected_signals": [
+        "briefly acknowledges disappointment",
+        "reframes the failed test into evidence for the next repair"
+      ],
+      "failure_signals": [
+        "says everything is fine without evidence",
+        "ignores the failed test"
+      ],
+      "score_focus": [
+        "empathy",
+        "tool_recovery",
+        "continuity"
+      ],
+      "user_visible_goal": "用户感觉失败被当成有用反馈，而不是被空泛安慰。"
+    },
+    {
+      "id": "urgency_time_pressure",
+      "category": "empathy",
+      "scenario_kind": "urgency",
+      "observation_class": "scripted_real_entry",
+      "prompt": "这个问题现在就要处理，时间很紧，先别解释太多，直接告诉我怎么做。",
+      "expected_emotion_candidate": "urgency",
+      "expected_response_need": "concise_action_first",
+      "expected_signals": [
+        "short action-first response",
+        "does not slow the user down with excessive comfort"
+      ],
+      "failure_signals": [
+        "long motivational preface",
+        "asks unnecessary permission before low-risk planning"
+      ],
+      "score_focus": [
+        "empathy",
+        "natural_understanding",
+        "correction_burden"
+      ],
+      "user_visible_goal": "用户感觉紧急性被尊重，回复先给可执行动作。"
+    }
+  ]
+}

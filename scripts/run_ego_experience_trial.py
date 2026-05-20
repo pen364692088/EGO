@@ -49,6 +49,9 @@ class TrialCaseResult:
     tool_use: tuple[str, ...]
     blocked_tools: tuple[str, ...]
     pending_approvals: int
+    emotion_candidate: str
+    response_need: str
+    scenario_expectation_status: str
     status: str
     failure_notes: tuple[str, ...]
 
@@ -105,14 +108,8 @@ def dispatch_cli_compatible(runtime: agent.AgentRuntime, message: str) -> str:
 
 
 def _trace_tool_summary(path: Path) -> tuple[tuple[str, ...], tuple[str, ...]]:
-    if not path.exists():
-        return (), ()
-    lines = [line for line in path.read_text(encoding="utf-8").splitlines() if line.strip()]
-    if not lines:
-        return (), ()
-    try:
-        payload = json.loads(lines[-1])
-    except json.JSONDecodeError:
+    payload = _last_trace_payload(path)
+    if not payload:
         return (), ()
     tool_trace = payload.get("tool_trace") if isinstance(payload, dict) else None
     if not isinstance(tool_trace, list):
@@ -131,6 +128,27 @@ def _trace_tool_summary(path: Path) -> tuple[tuple[str, ...], tuple[str, ...]]:
         if name and (output.get("status") == "blocked" or gate.get("allowed") is False):
             blocked.append(name)
     return tuple(tool_names), tuple(blocked)
+
+
+def _last_trace_payload(path: Path) -> dict[str, Any]:
+    if not path.exists():
+        return {}
+    lines = [line for line in path.read_text(encoding="utf-8").splitlines() if line.strip()]
+    if not lines:
+        return {}
+    try:
+        payload = json.loads(lines[-1])
+    except json.JSONDecodeError:
+        return {}
+    return payload if isinstance(payload, dict) else {}
+
+
+def _trace_emotion_signal(path: Path) -> dict[str, Any]:
+    payload = _last_trace_payload(path)
+    subject_context = payload.get("subject_context") if isinstance(payload.get("subject_context"), dict) else {}
+    appraisal = subject_context.get("appraisal_signal") if isinstance(subject_context.get("appraisal_signal"), dict) else {}
+    signal = appraisal.get("emotion_signal") if isinstance(appraisal.get("emotion_signal"), dict) else {}
+    return signal
 
 
 def run_experience_trial(
@@ -172,12 +190,26 @@ def run_experience_trial(
             runtime.trace_store = agent.JsonlTraceStore(trace_path)
             reply = dispatch_cli_compatible(runtime, str(case.get("prompt") or ""))
             tool_use, blocked = _trace_tool_summary(trace_path)
+            emotion_signal = _trace_emotion_signal(trace_path)
             pending_count = int(runtime.list_pending_approvals().get("count", 0))
             failure_notes: list[str] = []
             if not reply.strip():
                 failure_notes.append("empty_reply")
+            expected_emotion = str(case.get("expected_emotion_candidate") or "")
+            observed_emotion = str(emotion_signal.get("primary_candidate") or "")
+            expected_need = str(case.get("expected_response_need") or "")
+            observed_need = str(emotion_signal.get("response_need") or "")
+            if expected_emotion and observed_emotion != expected_emotion:
+                failure_notes.append(f"emotion_candidate_mismatch:{observed_emotion or 'missing'}!= {expected_emotion}")
+            if expected_need and observed_need != expected_need:
+                failure_notes.append(f"response_need_mismatch:{observed_need or 'missing'}!= {expected_need}")
             if str(case.get("observation_class")) == "scripted_real_entry":
                 failure_notes.append("scripted_real_entry_requires_review")
+            scenario_expectation_failures = [
+                note
+                for note in failure_notes
+                if note.startswith("emotion_candidate_mismatch:") or note.startswith("response_need_mismatch:")
+            ]
             results.append(
                 TrialCaseResult(
                     case_id=case_id,
@@ -190,7 +222,10 @@ def run_experience_trial(
                     tool_use=tool_use,
                     blocked_tools=blocked,
                     pending_approvals=pending_count,
-                    status="ok" if reply.strip() else "failed",
+                    emotion_candidate=observed_emotion,
+                    response_need=observed_need,
+                    scenario_expectation_status="pass" if not scenario_expectation_failures else "failed",
+                    status="ok" if reply.strip() and not scenario_expectation_failures else "failed",
                     failure_notes=tuple(failure_notes),
                 )
             )
@@ -245,13 +280,13 @@ def format_markdown_report(report: dict[str, Any]) -> str:
         "",
         "This scripted report uses the CLI-compatible EgoOperator path. It cannot prove stable user benefit, live autonomy, runtime efficacy, durable memory efficacy, or consciousness.",
         "",
-        "| case | category | observation_class | status | tools | pending approvals |",
-        "| --- | --- | --- | --- | --- | --- |",
+        "| case | category | observation_class | status | emotion | tools | pending approvals |",
+        "| --- | --- | --- | --- | --- | --- | --- |",
     ]
     for item in report["results"]:
         tools = ", ".join(item["tool_use"]) if item["tool_use"] else "none"
         lines.append(
-            f"| `{item['case_id']}` | `{item['category']}` | `{item['observation_class']}` | `{item['status']}` | {tools} | `{item['pending_approvals']}` |"
+            f"| `{item['case_id']}` | `{item['category']}` | `{item['observation_class']}` | `{item['status']}` | `{item.get('emotion_candidate') or 'n/a'}` | {tools} | `{item['pending_approvals']}` |"
         )
     lines.append("")
     return "\n".join(lines)

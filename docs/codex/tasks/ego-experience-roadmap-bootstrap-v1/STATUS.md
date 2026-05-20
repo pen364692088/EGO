@@ -75,6 +75,11 @@
 - After #35, `python3 scripts/codex_project_autopilot.py verify-profile --profile autopilot_full` passed: `87 passed`.
 - #35 closeout-check initially exposed an Autopilot L3 reviewer self-reference bug: the reviewer treated pre-review `status=blocked` as a reason to block. The reviewer packet now uses `status=pending_llm_review` and explicitly forbids blocking solely because closeout has not happened yet.
 - #35 closeout-check then returned `eligible` with `llm_reviewer_verdict=closeout_allowed`, `autopilot_full` passing, and dirty gate scoped.
+- #36 was promoted to `In Progress` for negative emotion support scenarios.
+- #36 implementation added `negative_emotion_support_scenarios.json` covering frustration, confusion/uncertainty, disappointment, and urgency as eval-only scripted-real-entry scenarios, plus trial-report extraction of trace-backed `emotion_signal` expectations.
+- #36 deterministic validation passed: `python3 scripts/validate_experience_eval_contract.py` reports `negative_emotion_support.case_count=4` and covers `frustration / uncertainty / disappointment / urgency` with zero errors.
+- #36 scripted CLI-compatible smoke passed with memory disabled for `/tmp` output containment: `python3 scripts/run_ego_experience_trial.py --sample-pack docs/codex/tasks/ego-experience-roadmap-bootstrap-v1/negative_emotion_support_scenarios.json --out /tmp/ego_negative_emotion_trial --disable-memory` returned `scripted_real_entry_provider_unavailable`, `case_count=4`, `failed_count=0`, and all scenario expectation statuses `pass`.
+- #36 targeted validation passed: `TMPDIR=/tmp python3 -m pytest -q scripts/tests/test_experience_eval_contract.py scripts/tests/test_run_ego_experience_trial.py EgoOperator/tests/test_extracted_primitives.py` (`17 passed`).
 
 ## Notes
 

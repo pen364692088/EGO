@@ -58,7 +58,36 @@ def test_experience_trial_runs_sample_pack_through_cli_compatible_path(tmp_path,
     assert all(item["entrypoint"] == "cli_compatible_dispatch" for item in report["results"])
     assert payload["case_count"] == 3
     assert "CLI-compatible EgoOperator path" in markdown
+    assert all("emotion_candidate" in item for item in report["results"])
     assert "real consciousness" in payload["not_claimed"]
+
+
+def test_negative_emotion_pack_runs_through_trace_emotion_signal(tmp_path, monkeypatch) -> None:
+    agent = run_ego_experience_trial.agent
+    monkeypatch.setattr(agent, "EGO_OPERATOR_ROOT", tmp_path)
+    monkeypatch.setattr(agent, "DEFAULT_AGENT_WORKSPACE", tmp_path)
+    (tmp_path / ".gitignore").write_text("artifacts/experience_trial/\nmemory/*.jsonl\n", encoding="utf-8")
+
+    report = run_ego_experience_trial.run_experience_trial(
+        sample_pack_path=(
+            ROOT
+            / "docs"
+            / "codex"
+            / "tasks"
+            / "ego-experience-roadmap-bootstrap-v1"
+            / "negative_emotion_support_scenarios.json"
+        ),
+        output_dir=tmp_path,
+    )
+
+    observed = {item["case_id"]: item for item in report["results"]}
+    assert report["status"] == "scripted_real_entry_provider_unavailable"
+    assert report["case_count"] == 4
+    assert observed["frustration_repeated_failure"]["emotion_candidate"] == "frustration"
+    assert observed["confusion_unclear_next_step"]["emotion_candidate"] == "uncertainty"
+    assert observed["disappointment_work_wasted"]["emotion_candidate"] == "disappointment"
+    assert observed["urgency_time_pressure"]["emotion_candidate"] == "urgency"
+    assert all(item["scenario_expectation_status"] == "pass" for item in report["results"])
 
 
 def test_cli_compatible_dispatch_uses_bounded_continuity_context_injection(tmp_path, monkeypatch) -> None:

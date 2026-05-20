@@ -23,9 +23,17 @@ def test_experience_eval_contract_is_valid() -> None:
     assert result["claim_state_count"] == 7
     assert result["claim_calibration"].endswith("CLAIM_CEILING_CALIBRATION.md")
     assert result["continuity_regression_pack"].endswith("continuity_regression_pack.json")
+    assert result["negative_emotion_pack"].endswith("negative_emotion_support_scenarios.json")
     assert result["continuity_regression"]["paraphrase_group_count"] >= 4
     assert result["continuity_regression"]["carryover_case_count"] >= 4
     assert result["continuity_regression"]["paraphrase_prompt_count"] >= 12
+    assert result["negative_emotion_support"]["case_count"] >= 4
+    assert set(result["negative_emotion_support"]["covered_emotion_candidates"]) == {
+        "disappointment",
+        "frustration",
+        "uncertainty",
+        "urgency",
+    }
     assert set(result["covered_dimensions"]) == validate_experience_eval_contract.REQUIRED_DIMENSIONS
     assert {
         "deterministic_local",

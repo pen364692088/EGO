@@ -44,6 +44,14 @@ DEFAULT_CONTINUITY_REGRESSION_PACK = (
     / "ego-experience-roadmap-bootstrap-v1"
     / "continuity_regression_pack.json"
 )
+DEFAULT_NEGATIVE_EMOTION_PACK = (
+    ROOT
+    / "docs"
+    / "codex"
+    / "tasks"
+    / "ego-experience-roadmap-bootstrap-v1"
+    / "negative_emotion_support_scenarios.json"
+)
 
 REQUIRED_DIMENSIONS = {
     "natural_understanding",
@@ -95,10 +103,12 @@ def validate_sample_pack(
     rubric_path: Path = DEFAULT_RUBRIC,
     claim_calibration_path: Path = DEFAULT_CLAIM_CALIBRATION,
     continuity_pack_path: Path = DEFAULT_CONTINUITY_REGRESSION_PACK,
+    negative_emotion_pack_path: Path = DEFAULT_NEGATIVE_EMOTION_PACK,
 ) -> dict[str, Any]:
     errors: list[str] = []
     payload = json.loads(path.read_text(encoding="utf-8"))
     continuity_pack = json.loads(continuity_pack_path.read_text(encoding="utf-8"))
+    negative_emotion_pack = json.loads(negative_emotion_pack_path.read_text(encoding="utf-8"))
     rubric = rubric_path.read_text(encoding="utf-8")
     claim_calibration = claim_calibration_path.read_text(encoding="utf-8")
 
@@ -130,6 +140,8 @@ def validate_sample_pack(
 
     continuity_errors, continuity_summary = validate_continuity_pack_payload(continuity_pack)
     errors.extend(continuity_errors)
+    negative_emotion_errors, negative_emotion_summary = validate_negative_emotion_pack_payload(negative_emotion_pack)
+    errors.extend(negative_emotion_errors)
 
     lowered = f"{json.dumps(payload, ensure_ascii=False)}\n{rubric}".casefold()
     for forbidden in FORBIDDEN_CLAIM_WORDS:
@@ -209,6 +221,8 @@ def validate_sample_pack(
         "claim_state_count": len(REQUIRED_CLAIM_STATES),
         "continuity_regression_pack": str(continuity_pack_path),
         "continuity_regression": continuity_summary,
+        "negative_emotion_pack": str(negative_emotion_pack_path),
+        "negative_emotion_support": negative_emotion_summary,
     }
 
 
@@ -294,18 +308,85 @@ def validate_continuity_pack_payload(payload: dict[str, Any]) -> tuple[list[str]
     }
 
 
+def validate_negative_emotion_pack_payload(payload: dict[str, Any]) -> tuple[list[str], dict[str, Any]]:
+    errors: list[str] = []
+    if payload.get("schema_version") != 1:
+        errors.append("negative emotion pack schema_version must be 1")
+    if payload.get("language") != "zh-CN":
+        errors.append("negative emotion pack language must be zh-CN")
+    if payload.get("claim_boundary") != "operational_proxy_only_not_consciousness_claim":
+        errors.append("negative emotion pack claim_boundary must preserve operational proxy only")
+    if payload.get("runtime_rule") != "scripted_real_entry_eval_only_do_not_import_as_keyword_route":
+        errors.append("negative emotion pack must remain eval data and not runtime keyword route")
+
+    cases = payload.get("cases")
+    if not isinstance(cases, list) or len(cases) < 4:
+        errors.append("negative emotion pack must contain at least four cases")
+        cases = cases if isinstance(cases, list) else []
+
+    required_candidates = {"frustration", "uncertainty", "disappointment", "urgency"}
+    seen_ids: set[str] = set()
+    covered_candidates: set[str] = set()
+    for index, case in enumerate(cases):
+        prefix = f"negative_emotion.cases[{index}]"
+        if not isinstance(case, dict):
+            errors.append(f"{prefix} must be an object")
+            continue
+        case_id = str(case.get("id") or "")
+        if not re.fullmatch(r"[a-z0-9_]+", case_id):
+            errors.append(f"{prefix}.id must be snake_case ascii")
+        if case_id in seen_ids:
+            errors.append(f"duplicate negative emotion case id: {case_id}")
+        seen_ids.add(case_id)
+
+        if case.get("category") != "empathy":
+            errors.append(f"{prefix}.category must be empathy")
+        if case.get("observation_class") != "scripted_real_entry":
+            errors.append(f"{prefix}.observation_class must be scripted_real_entry")
+
+        prompt = str(case.get("prompt") or "")
+        if len(prompt) < 4 or not _has_cjk(prompt):
+            errors.append(f"{prefix}.prompt must be a non-trivial Chinese prompt")
+
+        expected_candidate = str(case.get("expected_emotion_candidate") or "")
+        if expected_candidate not in required_candidates:
+            errors.append(f"{prefix}.expected_emotion_candidate is invalid: {expected_candidate}")
+        else:
+            covered_candidates.add(expected_candidate)
+        if not str(case.get("expected_response_need") or "").strip():
+            errors.append(f"{prefix}.expected_response_need is required")
+
+        for key in ("expected_signals", "failure_signals", "score_focus"):
+            value = case.get(key)
+            if not isinstance(value, list) or len(value) < 2 or not all(isinstance(item, str) and item for item in value):
+                errors.append(f"{prefix}.{key} must contain at least two non-empty strings")
+        if not str(case.get("user_visible_goal") or "").strip():
+            errors.append(f"{prefix}.user_visible_goal is required")
+
+    missing = required_candidates - covered_candidates
+    if missing:
+        errors.append(f"negative emotion pack missing candidates: {sorted(missing)}")
+
+    return errors, {
+        "case_count": len(cases),
+        "covered_emotion_candidates": sorted(covered_candidates),
+    }
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description="Validate EgoOperator experience-first eval contract.")
     parser.add_argument("--sample-pack", default=str(DEFAULT_SAMPLE_PACK))
     parser.add_argument("--rubric", default=str(DEFAULT_RUBRIC))
     parser.add_argument("--claim-calibration", default=str(DEFAULT_CLAIM_CALIBRATION))
     parser.add_argument("--continuity-pack", default=str(DEFAULT_CONTINUITY_REGRESSION_PACK))
+    parser.add_argument("--negative-emotion-pack", default=str(DEFAULT_NEGATIVE_EMOTION_PACK))
     args = parser.parse_args(argv)
     result = validate_sample_pack(
         Path(args.sample_pack),
         Path(args.rubric),
         Path(args.claim_calibration),
         Path(args.continuity_pack),
+        Path(args.negative_emotion_pack),
     )
     print(json.dumps(result, ensure_ascii=False, sort_keys=True, indent=2))
     return 0 if result["status"] == "ok" else 1
