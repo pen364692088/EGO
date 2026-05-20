@@ -211,6 +211,19 @@ auto_execute:
     - "memory promotion required"
   claim_ceiling: Codex autopilot ready-issue executor gate local candidate pass
 
+auto_pause:
+  enabled: true
+  recent_report_limit: 8
+  repeated_failure_threshold: 3
+  repeated_issue_threshold: 3
+  pausing_stop_reasons:
+    - dirty_worktree_unsafe
+    - dirty_scope_unsafe
+    - closeout_not_eligible
+    - issue_not_ready
+    - no_ready_issue
+    - l5_execute_not_implemented
+
 observation_classes:
   deterministic_local:
     closeout_allowed: true

@@ -58,6 +58,7 @@ class ProjectContract:
     observation_classes: dict[str, Any] = field(default_factory=dict)
     auto_closeout: dict[str, Any] = field(default_factory=dict)
     auto_execute: dict[str, Any] = field(default_factory=dict)
+    auto_pause: dict[str, Any] = field(default_factory=dict)
 
     def github_config(self, *, dry_run: bool = False) -> github_project_task.Config:
         return github_project_task.Config(
@@ -190,6 +191,11 @@ def load_contract(path: Path) -> ProjectContract:
             payload.get("auto_execute") or {},
             code="invalid_auto_execute",
             message="auto_execute must be an object",
+        ),
+        auto_pause=_require_mapping(
+            payload.get("auto_pause") or {},
+            code="invalid_auto_pause",
+            message="auto_pause must be an object",
         ),
     )
 
@@ -553,6 +559,7 @@ def contract_summary(contract: ProjectContract) -> dict[str, Any]:
         "commit_policy": contract.commit_policy,
         "auto_closeout": contract.auto_closeout,
         "auto_execute": contract.auto_execute,
+        "auto_pause": contract.auto_pause,
     }
 
 
@@ -1033,6 +1040,145 @@ def write_run_report(payload: dict[str, Any], *, report_dir: Path = DEFAULT_REPO
     return str(path)
 
 
+def report_contains_test_claim(value: Any) -> bool:
+    if isinstance(value, dict):
+        for key, item in value.items():
+            if key == "claim_ceiling" and str(item).startswith("Test "):
+                return True
+            if report_contains_test_claim(item):
+                return True
+    if isinstance(value, list):
+        return any(report_contains_test_claim(item) for item in value)
+    return False
+
+
+def _auto_pause_config(contract: ProjectContract) -> dict[str, Any]:
+    cfg = dict(contract.auto_pause)
+    cfg.setdefault("enabled", True)
+    cfg.setdefault("recent_report_limit", 8)
+    cfg.setdefault("repeated_failure_threshold", 3)
+    cfg.setdefault("repeated_issue_threshold", 3)
+    cfg.setdefault(
+        "pausing_stop_reasons",
+        [
+            "dirty_worktree_unsafe",
+            "dirty_scope_unsafe",
+            "closeout_not_eligible",
+            "issue_not_ready",
+            "no_ready_issue",
+            "l5_execute_not_implemented",
+        ],
+    )
+    return cfg
+
+
+def load_run_reports(report_dir: Path, *, limit: int) -> list[dict[str, Any]]:
+    if not report_dir.exists():
+        return []
+    paths = sorted(report_dir.glob("*-autopilot-run.json"), key=lambda path: path.stat().st_mtime, reverse=True)
+    reports = []
+    for path in paths[: max(0, limit)]:
+        try:
+            payload = json.loads(path.read_text(encoding="utf-8"))
+        except (OSError, json.JSONDecodeError):
+            continue
+        if isinstance(payload, dict):
+            if report_contains_test_claim(payload):
+                continue
+            payload.setdefault("report_path", str(path))
+            reports.append(payload)
+    return reports
+
+
+def report_issue_refs(report: dict[str, Any]) -> list[str]:
+    refs = []
+    for entry in report.get("planned") or []:
+        if not isinstance(entry, dict):
+            continue
+        issue = entry.get("issue")
+        if isinstance(issue, dict):
+            ref = issue.get("number") or issue.get("title")
+            if ref is not None:
+                refs.append(str(ref))
+    return refs
+
+
+def pause_gate_from_reports(
+    reports: list[dict[str, Any]],
+    *,
+    repeated_failure_threshold: int,
+    repeated_issue_threshold: int,
+    pausing_stop_reasons: list[str],
+) -> dict[str, Any]:
+    reasons = []
+    recent_stop_reasons = [str(report.get("stop_reason") or "") for report in reports if report.get("stop_reason")]
+    if recent_stop_reasons:
+        first = recent_stop_reasons[0]
+        repeated = 0
+        for reason in recent_stop_reasons:
+            if reason != first:
+                break
+            repeated += 1
+        if repeated >= repeated_failure_threshold and first in set(pausing_stop_reasons):
+            reasons.append(
+                {
+                    "reason": "repeated_failure_stop_reason",
+                    "stop_reason": first,
+                    "count": repeated,
+                    "threshold": repeated_failure_threshold,
+                }
+            )
+
+    recent_issue_refs = []
+    for report in reports:
+        refs = report_issue_refs(report)
+        recent_issue_refs.append(refs[0] if refs else "")
+    if recent_issue_refs and recent_issue_refs[0]:
+        first_issue = recent_issue_refs[0]
+        repeated_issue = 0
+        for ref in recent_issue_refs:
+            if ref != first_issue:
+                break
+            repeated_issue += 1
+        if repeated_issue >= repeated_issue_threshold:
+            reasons.append(
+                {
+                    "reason": "zeno_trap_repeated_issue",
+                    "issue": first_issue,
+                    "count": repeated_issue,
+                    "threshold": repeated_issue_threshold,
+                }
+            )
+
+    return {
+        "status": "paused" if reasons else "ok",
+        "pause_required": bool(reasons),
+        "recent_report_count": len(reports),
+        "reasons": reasons,
+        "next_action": "reframe_or_create_operator_cut" if reasons else "continue",
+    }
+
+
+def pause_gate(contract: ProjectContract, *, report_dir: Path) -> dict[str, Any]:
+    cfg = _auto_pause_config(contract)
+    if not bool(cfg.get("enabled")):
+        return {
+            "status": "ok",
+            "pause_required": False,
+            "recent_report_count": 0,
+            "reasons": [],
+            "next_action": "continue",
+            "disabled": True,
+        }
+    reports = load_run_reports(report_dir, limit=int(cfg.get("recent_report_limit") or 8))
+    return pause_gate_from_reports(
+        reports,
+        repeated_failure_threshold=int(cfg.get("repeated_failure_threshold") or 3),
+        repeated_issue_threshold=int(cfg.get("repeated_issue_threshold") or 3),
+        pausing_stop_reasons=_as_list(cfg.get("pausing_stop_reasons")),
+    )
+
+
 def structured_issue_body(issue: dict[str, Any]) -> str:
     title = str(issue.get("title") or "Untitled task")
     body = str(issue.get("body") or "").strip()
@@ -1262,6 +1408,10 @@ def command_diff_scope(contract: ProjectContract, *, baseline_path: Path, runner
     return diff_scope_summary(contract, baseline_path, runner)
 
 
+def command_pause_check(contract: ProjectContract, *, report_dir: Path) -> dict[str, Any]:
+    return pause_gate(contract, report_dir=report_dir)
+
+
 def command_normalize_issue(
     client: github_project_task.GhClient,
     contract: ProjectContract,
@@ -1437,6 +1587,7 @@ def command_run_loop(
     baseline_path: Path,
     runner: CommandRunner,
     write_report: bool,
+    report_dir: Path,
 ) -> dict[str, Any]:
     if dry_run and execute:
         raise AutopilotError("invalid_run_loop_mode", "Choose either --dry-run or --execute, not both")
@@ -1451,7 +1602,19 @@ def command_run_loop(
             "planned": [],
         }
         if write_report:
-            payload["report_path"] = write_run_report(payload)
+            payload["report_path"] = write_run_report(payload, report_dir=report_dir)
+        return payload
+
+    pause = pause_gate(contract, report_dir=report_dir)
+    if pause.get("pause_required"):
+        payload = {
+            "status": "stopped",
+            "stop_reason": "autopilot_pause_required",
+            "pause_gate": pause,
+            "planned": [],
+        }
+        if write_report:
+            payload["report_path"] = write_run_report(payload, report_dir=report_dir)
         return payload
 
     gate = dirty_gate(contract, runner, baseline_path)
@@ -1463,7 +1626,7 @@ def command_run_loop(
             "planned": [],
         }
         if write_report:
-            payload["report_path"] = write_run_report(payload)
+            payload["report_path"] = write_run_report(payload, report_dir=report_dir)
         return payload
 
     report = build_report(client, contract)
@@ -1480,7 +1643,7 @@ def command_run_loop(
             "planned": [],
         }
         if write_report:
-            payload["report_path"] = write_run_report(payload)
+            payload["report_path"] = write_run_report(payload, report_dir=report_dir)
         return payload
 
     status_rank = {"In Progress": 0, "Todo": 1}
@@ -1529,7 +1692,7 @@ def command_run_loop(
             "stop_reason": "max_issues_reached" if len(ready) > max_issues else "ready_queue_exhausted",
         }
         if write_report:
-            payload["report_path"] = write_run_report(payload)
+            payload["report_path"] = write_run_report(payload, report_dir=report_dir)
         return payload
 
     if mode == "l5-executor":
@@ -1543,7 +1706,7 @@ def command_run_loop(
                 "note": "L5 v1 only emits executor eligibility packets; it does not mutate code unattended.",
             }
             if write_report:
-                payload["report_path"] = write_run_report(payload)
+                payload["report_path"] = write_run_report(payload, report_dir=report_dir)
             return payload
         planned = []
         for item in selected:
@@ -1571,7 +1734,7 @@ def command_run_loop(
             "stop_reason": "max_issues_reached" if len(ready) > max_issues else "ready_queue_exhausted",
         }
         if write_report:
-            payload["report_path"] = write_run_report(payload)
+            payload["report_path"] = write_run_report(payload, report_dir=report_dir)
         return payload
 
     planned = [
@@ -1591,7 +1754,7 @@ def command_run_loop(
         "stop_reason": "max_issues_reached" if len(ready) > max_issues else "ready_queue_exhausted",
     }
     if write_report:
-        payload["report_path"] = write_run_report(payload)
+        payload["report_path"] = write_run_report(payload, report_dir=report_dir)
     return payload
 
 
@@ -1599,6 +1762,7 @@ def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(description="Cross-project Codex autopilot helpers")
     parser.add_argument("--contract", default=str(DEFAULT_CONTRACT_PATH), help="Path to project contract YAML")
     parser.add_argument("--baseline-path", default=str(DEFAULT_BASELINE_PATH), help="Path to local dirty baseline JSON")
+    parser.add_argument("--report-dir", default=str(DEFAULT_REPORT_DIR), help="Path to local autopilot run reports")
 
     subparsers = parser.add_subparsers(dest="command", required=True)
     subparsers.add_parser("doctor")
@@ -1606,6 +1770,7 @@ def build_parser() -> argparse.ArgumentParser:
     subparsers.add_parser("plan-next")
     subparsers.add_parser("baseline")
     subparsers.add_parser("diff-scope")
+    subparsers.add_parser("pause-check")
 
     verify_profile = subparsers.add_parser("verify-profile")
     verify_profile.add_argument("--profile", required=True)
@@ -1674,6 +1839,8 @@ def dispatch(
         return command_baseline(contract, baseline_path=Path(args.baseline_path), runner=runner)
     if args.command == "diff-scope":
         return command_diff_scope(contract, baseline_path=Path(args.baseline_path), runner=runner)
+    if args.command == "pause-check":
+        return command_pause_check(contract, report_dir=Path(args.report_dir))
     if args.command == "verify-profile":
         return command_verify_profile(contract, args.profile, runner=runner)
     if args.command == "normalize-issue":
@@ -1735,6 +1902,7 @@ def dispatch(
             baseline_path=Path(args.baseline_path),
             runner=runner,
             write_report=bool(args.write_report),
+            report_dir=Path(args.report_dir),
         )
     raise AutopilotError("unknown_command", f"Unknown command: {args.command}")
 

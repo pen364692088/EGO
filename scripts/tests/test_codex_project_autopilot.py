@@ -282,6 +282,18 @@ auto_execute:
     - "requires stage card"
     - "modifies docs/PROGRAM_STATE_UNIFIED.yaml"
   claim_ceiling: Test executor claim
+auto_pause:
+  enabled: false
+  recent_report_limit: 8
+  repeated_failure_threshold: 3
+  repeated_issue_threshold: 3
+  pausing_stop_reasons:
+    - dirty_worktree_unsafe
+    - dirty_scope_unsafe
+    - closeout_not_eligible
+    - issue_not_ready
+    - no_ready_issue
+    - l5_execute_not_implemented
 """,
         encoding="utf-8",
     )
@@ -585,6 +597,70 @@ def test_diff_scope_marks_changed_preexisting_outside_allowed_as_unsafe(tmp_path
     assert code == 0
     assert payload["unsafe"]["count"] == 1
     assert payload["counts"]["changed_preexisting_unsafe"] == 1
+
+
+def test_pause_gate_detects_repeated_failure_stop_reason() -> None:
+    reports = [{"stop_reason": "dirty_scope_unsafe", "planned": []} for _ in range(3)]
+
+    gate = codex_project_autopilot.pause_gate_from_reports(
+        reports,
+        repeated_failure_threshold=3,
+        repeated_issue_threshold=3,
+        pausing_stop_reasons=["dirty_scope_unsafe"],
+    )
+
+    assert gate["status"] == "paused"
+    assert gate["pause_required"] is True
+    assert gate["reasons"][0]["reason"] == "repeated_failure_stop_reason"
+    assert gate["next_action"] == "reframe_or_create_operator_cut"
+
+
+def test_pause_gate_detects_repeated_same_issue_zeno_trap() -> None:
+    reports = [
+        {"stop_reason": "max_issues_reached", "planned": [{"issue": {"number": 56}}]},
+        {"stop_reason": "max_issues_reached", "planned": [{"issue": {"number": 56}}]},
+        {"stop_reason": "max_issues_reached", "planned": [{"issue": {"number": 56}}]},
+    ]
+
+    gate = codex_project_autopilot.pause_gate_from_reports(
+        reports,
+        repeated_failure_threshold=3,
+        repeated_issue_threshold=3,
+        pausing_stop_reasons=["dirty_scope_unsafe"],
+    )
+
+    assert gate["status"] == "paused"
+    assert any(reason["reason"] == "zeno_trap_repeated_issue" for reason in gate["reasons"])
+
+
+def test_pause_gate_allows_mixed_progress_reports() -> None:
+    reports = [
+        {"stop_reason": "max_issues_reached", "planned": [{"issue": {"number": 56}}]},
+        {"stop_reason": "ready_queue_exhausted", "planned": [{"issue": {"number": 55}}]},
+    ]
+
+    gate = codex_project_autopilot.pause_gate_from_reports(
+        reports,
+        repeated_failure_threshold=3,
+        repeated_issue_threshold=3,
+        pausing_stop_reasons=["dirty_scope_unsafe"],
+    )
+
+    assert gate["status"] == "ok"
+    assert gate["pause_required"] is False
+
+
+def test_load_run_reports_skips_unit_test_claim_reports(tmp_path: Path) -> None:
+    report_dir = tmp_path / "reports"
+    report_dir.mkdir()
+    (report_dir / "20260101-000000-autopilot-run.json").write_text(
+        json.dumps({"planned": [{"closeout_check": {"claim_ceiling": "Test closeout claim"}}]}),
+        encoding="utf-8",
+    )
+
+    reports = codex_project_autopilot.load_run_reports(report_dir, limit=8)
+
+    assert reports == []
 
 
 def test_run_loop_with_baseline_does_not_block_on_unchanged_preexisting_dirty(tmp_path: Path) -> None:
@@ -1170,9 +1246,22 @@ def test_run_loop_l3_closeout_dry_run_writes_report_without_mutating(tmp_path: P
         j({"items": [item(ISSUE_READY, "In Progress")]}),
     ]
     fake = FakeGh(responses)
+    report_dir = tmp_path / "reports"
 
     code, payload = run_cli(
-        ["--contract", str(path), "run-loop", "--mode", "l3-closeout", "--dry-run", "--max-issues", "1", "--write-report"],
+        [
+            "--contract",
+            str(path),
+            "--report-dir",
+            str(report_dir),
+            "run-loop",
+            "--mode",
+            "l3-closeout",
+            "--dry-run",
+            "--max-issues",
+            "1",
+            "--write-report",
+        ],
         fake=fake,
         runner=FakeRunner(stdout=""),
     )
@@ -1181,6 +1270,7 @@ def test_run_loop_l3_closeout_dry_run_writes_report_without_mutating(tmp_path: P
     assert payload["status"] == "ok"
     assert payload["planned"][0]["closeout_check"]["eligible"] is True
     assert payload["report_path"].endswith("-autopilot-run.json")
+    assert str(report_dir) in payload["report_path"]
     assert not any(call[:2] == ("issue", "close") for call in fake.calls)
 
 
