@@ -172,3 +172,25 @@ def test_cli_compatible_dispatch_quarantines_stale_candidate_on_user_correction(
     archived = runtime.operator_memory.list_candidate_memories(include_archived=True)
     assert all(item["id"] != stale["id"] for item in active)
     assert any(item["id"] == stale["id"] and item["status"] == "cold_archive" for item in archived)
+
+
+def test_cli_compatible_dispatch_approves_candidate_memory(tmp_path, monkeypatch) -> None:
+    agent = run_ego_experience_trial.agent
+    monkeypatch.setattr(agent, "EGO_OPERATOR_ROOT", tmp_path)
+    monkeypatch.setattr(agent, "DEFAULT_AGENT_WORKSPACE", tmp_path)
+    runtime = agent.build_demo_runtime(
+        enable_operator_memory=True,
+        operator_memory_dir=tmp_path / "memory",
+        runtime_mode="approve",
+    )
+    runtime.trace_store = agent.JsonlTraceStore(tmp_path / "trace.jsonl")
+    runtime.planner.llm = CapturePromptLLM()
+
+    run_ego_experience_trial.dispatch_cli_compatible(runtime, "我偏好中文结论先行，少废话。")
+    candidate = runtime.operator_memory.list_candidate_memories()[0]
+    reply = run_ego_experience_trial.dispatch_cli_compatible(runtime, f"/memory_approve {candidate['id']}")
+    payload = json.loads(reply)
+
+    assert payload["status"] == "ok"
+    assert "中文结论先行" in runtime.operator_memory.load_core()
+    assert all(item["id"] != candidate["id"] for item in runtime.operator_memory.list_candidate_memories())

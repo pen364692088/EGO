@@ -4604,6 +4604,11 @@ class AgentRuntime:
             return {"status": "blocked", "reason": "operator_memory_disabled"}
         return self.operator_memory.archive_memory(memory_id)
 
+    def approve_operator_memory(self, memory_id: str) -> Dict[str, Any]:
+        if self.operator_memory is None:
+            return {"status": "blocked", "reason": "operator_memory_disabled"}
+        return self.operator_memory.approve_candidate_memory(memory_id)
+
     def forget_operator_memory(self, memory_id: str) -> Dict[str, Any]:
         if self.operator_memory is None:
             return {"status": "blocked", "reason": "operator_memory_disabled"}
@@ -6119,7 +6124,7 @@ def render_runtime_permission_status(runtime: AgentRuntime) -> str:
         + (f" | dir={memory_dir}" if memory_dir else ""),
         "- core_memory_write: /remember <text>"
         + (" + remember_note tool with explicit user intent" if runtime.operator_memory_enabled() else " only when operator memory is enabled"),
-        "- layered_memory_commands: /memory_review, /memory_pin, /memory_unpin, /memory_archive, /forget",
+        "- layered_memory_commands: /memory_review, /memory_approve, /memory_pin, /memory_unpin, /memory_archive, /forget",
         f"- file_read_tools: {'enabled' if {'read_file', 'glob_files', 'grep_files'}.issubset(runtime.gate.allowed_tools) else 'restricted'}",
         f"- path_info: {'enabled' if 'path_info' in runtime.gate.allowed_tools else 'disabled'}",
         f"- file_write_proposals: {'enabled' if 'propose_file_write' in runtime.gate.allowed_tools else 'disabled'}",
@@ -6234,6 +6239,9 @@ if __name__ == "__main__":
             continue
         if msg.startswith("/memory_archive "):
             print(json.dumps(runtime.archive_operator_memory(msg.removeprefix("/memory_archive ").strip()), ensure_ascii=False, indent=2))
+            continue
+        if msg.startswith("/memory_approve "):
+            print(json.dumps(runtime.approve_operator_memory(msg.removeprefix("/memory_approve ").strip()), ensure_ascii=False, indent=2))
             continue
         if msg.startswith("/forget "):
             print(json.dumps(runtime.forget_operator_memory(msg.removeprefix("/forget ").strip()), ensure_ascii=False, indent=2))

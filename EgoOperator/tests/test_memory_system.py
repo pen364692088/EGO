@@ -282,6 +282,20 @@ def test_archived_and_forgotten_memory_are_excluded_from_hot_context(tmp_path):
     assert store.cold_archive_file.exists()
 
 
+def test_candidate_memory_approval_promotes_to_core_and_removes_active_candidate(tmp_path):
+    store = OperatorMemoryStore(tmp_path / "memory", containment_root=tmp_path)
+    candidate = store.propose_candidate_memory("user_signal: 用户偏好中文结论先行", source="test")
+
+    approved = store.approve_candidate_memory(candidate["id"])
+
+    assert approved["status"] == "ok"
+    assert approved["approved_content"] == "用户偏好中文结论先行"
+    assert "用户偏好中文结论先行" in store.load_core()
+    assert all(item["id"] != candidate["id"] for item in store.list_candidate_memories())
+    approved_items = store.list_candidate_memories(include_archived=True)
+    assert any(item["id"] == candidate["id"] and item["status"] == "approved" for item in approved_items)
+
+
 def test_core_memory_correction_quarantines_stale_core_note(tmp_path):
     store = OperatorMemoryStore(tmp_path / "memory", containment_root=tmp_path)
 

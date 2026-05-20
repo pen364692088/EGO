@@ -100,6 +100,8 @@ def dispatch_cli_compatible(runtime: agent.AgentRuntime, message: str) -> str:
         return json.dumps(runtime.unpin_operator_memory(msg.removeprefix("/memory_unpin ").strip()), ensure_ascii=False, indent=2)
     if msg.startswith("/memory_archive "):
         return json.dumps(runtime.archive_operator_memory(msg.removeprefix("/memory_archive ").strip()), ensure_ascii=False, indent=2)
+    if msg.startswith("/memory_approve "):
+        return json.dumps(runtime.approve_operator_memory(msg.removeprefix("/memory_approve ").strip()), ensure_ascii=False, indent=2)
     if msg.startswith("/forget "):
         return json.dumps(runtime.forget_operator_memory(msg.removeprefix("/forget ").strip()), ensure_ascii=False, indent=2)
     if lowered in {"/tools", "tools"}:

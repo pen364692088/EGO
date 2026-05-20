@@ -676,6 +676,10 @@ class OperatorMemoryStore:
                 item["pinned"] = False
                 item["archived"] = True
                 item["status"] = "cold_archive"
+            elif action == "approve":
+                item["pinned"] = False
+                item["archived"] = False
+                item["status"] = "approved"
             elif action == "forget":
                 item["pinned"] = False
                 item["archived"] = True
@@ -769,6 +773,32 @@ class OperatorMemoryStore:
         archived["archived_by_event"] = event
         self._append_jsonl(self.cold_archive_file, archived)
         return {"status": "ok", "event": event, "archive_path": str(self.cold_archive_file)}
+
+    def approve_candidate_memory(self, memory_id: str, *, reason: str = "operator_approved_candidate") -> Dict[str, Any]:
+        state = self._candidate_state()
+        item = state.get(memory_id)
+        if item is None:
+            return {"status": "failed", "reason": "unknown_memory_id", "memory_id": memory_id}
+        if item.get("status") != "candidate" or item.get("archived"):
+            return {"status": "blocked", "reason": f"candidate_not_approvable:{item.get('status')}", "memory_id": memory_id}
+        content = re.sub(r"^user_signal:\s*", "", str(item.get("content") or "").strip(), flags=re.IGNORECASE)
+        if not content:
+            return {"status": "blocked", "reason": "empty_candidate_content", "memory_id": memory_id}
+        core_result = self.remember(content, source="operator_candidate_approval")
+        event = self._append_memory_event(
+            memory_id,
+            action="approve",
+            reason=reason,
+            metadata={"core_result": core_result},
+        )
+        return {
+            "status": "ok",
+            "memory_id": memory_id,
+            "approved_content": content,
+            "core_memory": core_result,
+            "event": event,
+            "claim_ceiling": "candidate-local operator memory approval only; not durable learning proof",
+        }
 
     def forget_memory(self, memory_id: str, *, reason: str = "operator_forget") -> Dict[str, Any]:
         if memory_id not in self._candidate_state():
