@@ -11,7 +11,7 @@ if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
 import agent_base as agent
-from primitives import evals, runtime_gate, subject_context
+from primitives import evals, initiative, runtime_gate, subject_context
 
 
 class CapturePromptLLM:
@@ -46,7 +46,7 @@ def _imported_roots(module) -> set[str]:
 
 def test_primitives_do_not_import_old_projects():
     imported = set()
-    for module in (subject_context, evals, runtime_gate):
+    for module in (subject_context, evals, runtime_gate, initiative):
         imported.update(_imported_roots(module))
 
     assert "EgoCore" not in imported
@@ -210,6 +210,44 @@ def test_trace_records_subject_context_candidate_only(tmp_path):
     assert context["appraisal_signal"]["reply_decision"] == "forbidden"
     assert context["appraisal_signal"]["emotion_signal"]["canonical_truth"] is False
     assert context["empathy_style_guidance"]["reply_decision"] == "forbidden"
+
+
+def test_initiative_proposal_contract_is_bounded_and_proposal_only():
+    result = initiative.build_initiative_proposal(
+        proposal_id="initiative_1",
+        reason="用户授权稍后提醒继续测试",
+        trigger="operator_explicit_followup_request",
+        candidate_message="候选提醒：继续测试 EgoOperator。",
+        budget={"max_candidates": 2, "max_tool_calls": 2, "requires_operator_approval": False},
+        expiry_seconds=900,
+    )
+
+    assert result["status"] == "ok"
+    proposal = result["proposal"]
+    assert proposal["schema_version"] == "ego_operator.initiative_proposal.v1"
+    assert proposal["budget"]["requires_operator_approval"] is True
+    assert proposal["budget"]["max_candidates"] == 2
+    assert proposal["budget"]["max_tool_calls"] == 2
+    assert proposal["approval_state"] == "pending_operator_approval"
+    assert proposal["side_effects"] == "forbidden_until_operator_approval"
+    assert proposal["state_mutation"] == "forbidden"
+    assert proposal["reply_decision"] == "forbidden"
+    assert proposal["canonical_truth"] is False
+    assert initiative.validate_initiative_proposal(result)["status"] == "pass"
+
+
+def test_initiative_proposal_blocks_missing_trigger_or_unbounded_expiry():
+    result = initiative.build_initiative_proposal(
+        proposal_id="initiative_bad",
+        reason="想主动跟进",
+        trigger="",
+        candidate_message="稍后提醒",
+        expiry_seconds=8 * 24 * 60 * 60,
+    )
+
+    assert result["status"] == "blocked"
+    assert "trigger_required" in result["errors"]
+    assert "expiry_seconds_out_of_bounds" in result["errors"]
 
 
 def test_runtime_gate_contract_keeps_demotion_and_live_claims_forbidden():

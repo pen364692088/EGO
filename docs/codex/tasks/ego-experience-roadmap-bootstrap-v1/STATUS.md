@@ -85,6 +85,9 @@
 - #37 implementation also added `emotion_misread_recovery_scenarios.json` and wired the scripted trial report to validate trace-backed `emotion_candidate` / `response_need` expectations.
 - #37 scripted CLI-compatible smoke passed with memory disabled for `/tmp` output containment: `python3 scripts/run_ego_experience_trial.py --sample-pack docs/codex/tasks/ego-experience-roadmap-bootstrap-v1/emotion_misread_recovery_scenarios.json --out /tmp/ego_emotion_misread_trial --disable-memory` returned `scripted_real_entry_provider_unavailable`, `case_count=3`, `failed_count=0`, and all scenario expectation statuses `pass`.
 - #37 targeted validation passed: `TMPDIR=/tmp python3 -m pytest -q EgoOperator/tests/test_extracted_primitives.py scripts/tests/test_experience_eval_contract.py scripts/tests/test_run_ego_experience_trial.py` (`21 passed`).
+- #39 was promoted to `In Progress` for initiative proposal contract v1.
+- #39 implementation added `EgoOperator/primitives/initiative.py`, a candidate-only bounded initiative proposal contract with reason, trigger, budget, expiry, approval state, and explicit no-side-effect/no-state-mutation/no-reply-decision boundaries.
+- #39 keeps proactive ideas as proposal records only; it does not schedule background work, send messages, or claim autonomy/consciousness.
 
 ## Notes
 
