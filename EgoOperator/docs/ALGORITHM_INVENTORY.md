@@ -118,6 +118,57 @@ No item below authorizes demoting, archiving, or modifying the old projects.
 - `primitives/runtime_gate.py`: local gate and claim-ceiling contract.
 - `primitives/evals.py`: paraphrase and operator-behavior eval primitives.
 
+## Executable Legacy Primitive Inventory
+
+This section is the #59 research output. It classifies concrete legacy
+capabilities by extraction posture. It does not move, edit, or reactivate legacy
+code.
+
+### EgoCore
+
+| Capability | Evidence surface | Classification | EgoOperator extraction rule |
+| --- | --- | --- | --- |
+| Runtime tool boundary and command/file tests | `legacy/ego-pre-handmade-mainline/EgoCore/tests/test_shell_tool_windows_commands.py`, `tests/test_file_tool_windows_paths.py`, `tests/test_llm_client_tool_calls.py` | keep | Keep the idea of runtime-owned execution and Windows-path handling, but keep EgoOperator's transaction approval and content-hash lease as authority. |
+| Completion / output claim contract | `tests/test_completion_contract_integration.py`, `tests/test_output_check.py`, `tests/test_response_contract.py` | keep | Extract as local claim-ceiling and completion-result checks; do not import old response templates. |
+| Trace/session logging | `tests/test_session_log.py`, `tests/test_replay_regression.py`, dashboard session export tests | keep | Preserve append-only replayability and UTF-8 trace readability in EgoOperator JSONL. |
+| Telegram transport and process launchers | `app/telegram_*`, `tests/test_telegram_*`, launcher docs | reference-only | Keep as fallback/live-reference material only; do not make transport a blocker for EgoOperator CLI UX. |
+| Semantic router / request classifier | `app/command_router.py`, `tests/test_semantic_router.py`, `tests/test_request_classifier_host_override.py` | discard | Do not reintroduce keyword-first routing before LLM understanding. Use only as negative regression material. |
+| Proactive subject-system bridge | `tests/test_subject_system_v1_*`, `tests/test_proactive_*` | rewrite | If reused, expose only proposal/gate/trace primitives. Do not port the old proactive main chain wholesale. |
+
+### OpenEmotion
+
+| Capability | Evidence surface | Classification | EgoOperator extraction rule |
+| --- | --- | --- | --- |
+| Self-model schema and snapshots | `emotiond/self_model/*`, `schemas/self_model.schema.json`, `core/self_model.py` | keep | Keep as readonly operational self-model context; never as consciousness proof or direct state authority. |
+| Appraisal / emotion labels / response intent contracts | `emotiond/appraisal.py`, `emotiond/emotion_labels.py`, `schemas/response_intent_contract.v1.schema.json` | keep | Extract bounded affect signals and response-intent hints as candidate context only. |
+| Episodic/narrative memory surfaces | `emotiond/memory/*`, `emotiond/episodic_memory.py`, `emotiond/narrative_memory.py` | rewrite | Use for salience and candidate-memory ideas; EgoOperator core memory still requires operator approval. |
+| Reflection engines and adapters | `emotiond/reflection*`, `emotiond/meta_cognition.py` | rewrite | Reflection can propose next checks or self-description cautions, not mutate memory/state or decide replies. |
+| Developmental cycle / intrinsic motivation | `emotiond/developmental_core/*`, `emotiond/intrinsic_motivation.py` | reference-only | Useful for long-term research; too heavy for the current operator runtime cut. |
+| emotiond daemon as authority source | `emotiond/api.py`, `emotiond/daemon.py`, `POLICIES/SELF_REPORT_ALIGNMENT.md` | discard for EgoOperator runtime | Do not add a second daemon/state owner to EgoOperator. Keep only as historical authority-boundary reference. |
+
+### ego_desktop_lab
+
+| Capability | Evidence surface | Classification | EgoOperator extraction rule |
+| --- | --- | --- | --- |
+| Permissioned runtime action and gates | `permissioned_runtime_action.py`, `gate.py`, `tests/test_permissioned_runtime_action_v7.py`, `tests/test_high_risk_action_blocked.py` | keep | Keep proposal/admission/test style, mapped into EgoOperator's existing permission broker. |
+| LLM proposal cannot mutate core state | `tests/test_llm_proposal_cannot_modify_state.py`, `tests/test_llm_plan_must_pass_gate.py`, `tests/test_llm_can_propose_plan_but_gate_can_block.py` | keep | Treat as a core invariant for all future EgoOperator planning/active-layer work. |
+| Failure classification and repair/reframe loops | `root_cause.py`, `goal_reframe.py`, `tests/test_continue_repair_loop_triggers_reframe.py`, `tests/test_repeated_repair_triggers_goal_split.py` | keep | Extract as Autopilot/EgoOperator repair gates: repeated failures should trigger reframe, not endless micro-fixes. |
+| Experience memory / strategy learning | `experience_memory.py`, `strategy_memory.py`, `tests/test_experience_memory_v7.py`, `tests/test_repair_success_updates_strategy_memory.py` | rewrite | Use as candidate-learning design input; do not auto-promote learning into core memory. |
+| Decision/operator report views | `decision_view.py`, `console.py`, report builder exports in `__init__.py` | keep | Keep operator digest/report patterns; avoid importing the lab shell as runtime. |
+| Semantic intelligence / semantic policy router | `semantic_intelligence.py`, `semantic_policy.py`, `semantic_provider.py`, `console.py` | discard as runtime entry | Useful for eval/reporting, but not as first-layer runtime routing. |
+| Live shadow / human trial harness | `live_shadow_*`, `tests/test_live_shadow_human_trial_v7.py` | reference-only | Keep as evaluation inspiration; do not present lab shadow as real provider/human pass. |
+
+### Extraction Order
+
+1. Keep strengthening EgoOperator's existing gates/reports before importing any
+   subject or learning primitive.
+2. Extract failure-reframe and operator-report patterns next because they reduce
+   development-loop waste without changing user-visible self claims.
+3. Extract memory/appraisal/reflection only as candidate context with explicit
+   operator approval or reviewer gates.
+4. Leave transport, daemon, semantic-router, and old proactive-chain mechanics as
+   reference-only until a separate Stage Card says otherwise.
+
 ## Next Gate
 
 Run the 20-case Dark Souls paraphrase gate and the five-scenario operator

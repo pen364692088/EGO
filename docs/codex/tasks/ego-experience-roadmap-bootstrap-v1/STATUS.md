@@ -116,6 +116,8 @@
 - #56 implementation adds an `auto_pause` contract and `pause-check` / run-loop preflight gate that pauses after repeated pausing stop reasons or repeated targeting of the same issue, requiring reframing or an operator cut instead of continuing blindly. This is an autopilot control-plane guard only, not a product/runtime autonomy claim.
 - #57 was promoted to `In Progress` for autonomous run report and operator digest UX.
 - #57 implementation adds `operator_digest` to run-loop payloads and written reports, summarizing status, mode, selected issue actions, stop reason, and the concrete user/operator action needed after a run.
+- #59 was promoted to `In Progress` for legacy algorithm inventory research.
+- #59 implementation extends `EgoOperator/docs/ALGORITHM_INVENTORY.md` with an executable primitive inventory for legacy EgoCore, OpenEmotion, and ego_desktop_lab, classifying concrete capabilities as keep / rewrite / discard / reference-only without editing or moving legacy code.
 
 ## Notes
 
