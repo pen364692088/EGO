@@ -120,6 +120,8 @@
 - #59 implementation extends `EgoOperator/docs/ALGORITHM_INVENTORY.md` with an executable primitive inventory for legacy EgoCore, OpenEmotion, and ego_desktop_lab, classifying concrete capabilities as keep / rewrite / discard / reference-only without editing or moving legacy code.
 - #60 was promoted to `In Progress` for OpenEmotion subject primitive extraction mapping.
 - #60 implementation adds `EgoOperator/docs/OPENEMOTION_SUBJECT_PRIMITIVE_MAP.md`, mapping self-model, salience/memory, appraisal, reflection, initiative, and self-report alignment into EgoOperator proposal-only or readonly primitives with explicit forbidden roles and extraction order.
+- #61 was promoted to `In Progress` for EgoCore gate/trace/transport extraction mapping.
+- #61 implementation adds `EgoOperator/docs/EGOCORE_GATE_TRACE_TRANSPORT_MAP.md`, mapping legacy EgoCore risk signals, tool/file preflight, completion verifiers, output/memory claim gates, JSONL session trace, progress events, and transport envelopes into EgoOperator primitive contracts while explicitly discarding semantic-router and verbalizer entry paths.
 
 ## Notes
 

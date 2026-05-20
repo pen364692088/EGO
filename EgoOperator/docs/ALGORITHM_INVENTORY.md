@@ -126,6 +126,9 @@ code.
 
 ### EgoCore
 
+Detailed gate/trace/transport mapping lives in
+[`EGOCORE_GATE_TRACE_TRANSPORT_MAP.md`](EGOCORE_GATE_TRACE_TRANSPORT_MAP.md).
+
 | Capability | Evidence surface | Classification | EgoOperator extraction rule |
 | --- | --- | --- | --- |
 | Runtime tool boundary and command/file tests | `legacy/ego-pre-handmade-mainline/EgoCore/tests/test_shell_tool_windows_commands.py`, `tests/test_file_tool_windows_paths.py`, `tests/test_llm_client_tool_calls.py` | keep | Keep the idea of runtime-owned execution and Windows-path handling, but keep EgoOperator's transaction approval and content-hash lease as authority. |
