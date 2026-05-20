@@ -124,6 +124,8 @@
 - #61 implementation adds `EgoOperator/docs/EGOCORE_GATE_TRACE_TRANSPORT_MAP.md`, mapping legacy EgoCore risk signals, tool/file preflight, completion verifiers, output/memory claim gates, JSONL session trace, progress events, and transport envelopes into EgoOperator primitive contracts while explicitly discarding semantic-router and verbalizer entry paths.
 - #62 was promoted to `In Progress` for ego_desktop_lab eval harness reuse mapping.
 - #62 implementation adds `EgoOperator/docs/EGO_DESKTOP_LAB_EVAL_HARNESS_MAP.md`, mapping legacy lab verification packs, stage runner, decision view/operator report, root-cause tickets, repeated-failure reframe triggers, live-shadow sample packs, and contextual follow-up regressions into EgoOperator eval primitives while keeping lab shell and semantic routing reference-only.
+- #64 was promoted to `In Progress` for an external agent memory architecture scan.
+- #64 implementation adds `EgoOperator/docs/EXTERNAL_AGENT_MEMORY_ARCHITECTURE_SCAN.md`, surveying Letta/MemGPT, LangGraph/LangChain, Mem0, CrewAI, AutoGen, OpenHands, and smolagents memory patterns and distilling namespace/key metadata, hot-context retrieval, write-path gating, and trace-vs-core-memory separation into future EgoOperator follow-up issues without adding dependencies.
 
 ## Notes
 

@@ -184,3 +184,10 @@ Run the 20-case Dark Souls paraphrase gate and the five-scenario operator
 comparison. Only if `EgoOperator` stays better on experience, explainability,
 side-effect control, and trace readability should a separate
 `ego-mainline-demotion-v1` task be opened.
+
+## External Reference Scans
+
+- [`EXTERNAL_AGENT_MEMORY_ARCHITECTURE_SCAN.md`](EXTERNAL_AGENT_MEMORY_ARCHITECTURE_SCAN.md)
+  records current external memory architecture patterns for EgoOperator
+  candidate-local memory work. It is research input only, not an imported
+  dependency or runtime proof.
