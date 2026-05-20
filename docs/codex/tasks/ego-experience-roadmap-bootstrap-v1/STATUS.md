@@ -104,6 +104,9 @@
 - #49 implementation adds a readonly operational self-model snapshot under subject context: role, runtime mode, capability boundaries, current commitments, uncertainty, and recent failures are context only, with state mutation and reply decision explicitly forbidden.
 - #50 was promoted to `In Progress` for self-description honesty gate.
 - #50 implementation adds readonly self-description guidance and a local evaluator that accepts bounded EgoOperator/operator-first descriptions while rejecting consciousness, independent-awareness, or autonomous-action overclaims.
+- #51 was promoted to `In Progress` for commitment tracking and completion memory.
+- #51 implementation adds an in-session operator commitment ledger: proposal creation records pending commitments, approval execution records completed/failed status, and follow-up turns can use this session-only state without writing long-term memory or claiming durable continuity.
+- #51 also extends `autopilot_full` to run `EgoOperator/tests/test_operator_runtime_contract.py`, so runtime approval/follow-up regressions are covered by future L3 closeout checks.
 
 ## Notes
 

@@ -4070,6 +4070,7 @@ class AgentRuntime:
         self.session_id = new_id("session")
         self.subagent_counter = 0
         self.heartbeats: Dict[str, HeartbeatRecord] = {}
+        self.commitments: Dict[str, Dict[str, Any]] = {}
         self.team: Optional[AgentTeamManager] = None
         self._last_operator_memory_context: Optional[MemoryContext] = None
 
@@ -4112,7 +4113,7 @@ class AgentRuntime:
         create_parents: bool = True,
         overwrite: bool = False,
     ) -> Dict[str, Any]:
-        return self.permission_broker.propose_file_write(
+        result = self.permission_broker.propose_file_write(
             path=path,
             content=content,
             reason=reason,
@@ -4120,6 +4121,8 @@ class AgentRuntime:
             overwrite=overwrite,
             source="main_agent_tool",
         )
+        self._record_proposal_commitment(result)
+        return result
 
     def propose_web_fetch(
         self,
@@ -4128,20 +4131,24 @@ class AgentRuntime:
         max_chars: int = DEFAULT_WEB_FETCH_MAX_CHARS,
         reason: str = "",
     ) -> Dict[str, Any]:
-        return self.permission_broker.propose_web_fetch(
+        result = self.permission_broker.propose_web_fetch(
             url=url,
             extract_mode=extract_mode,
             max_chars=max_chars,
             reason=reason,
             source="main_agent_tool",
         )
+        self._record_proposal_commitment(result)
+        return result
 
     def propose_run_command(self, command: str, reason: str = "") -> Dict[str, Any]:
-        return self.permission_broker.propose_run_command(
+        result = self.permission_broker.propose_run_command(
             command=command,
             reason=reason,
             source="main_agent_tool",
         )
+        self._record_proposal_commitment(result)
+        return result
 
     def propose_heartbeat(
         self,
@@ -4149,12 +4156,14 @@ class AgentRuntime:
         message: str,
         reason: str = "",
     ) -> Dict[str, Any]:
-        return self.permission_broker.propose_heartbeat(
+        result = self.permission_broker.propose_heartbeat(
             delay_seconds=delay_seconds,
             message=message,
             reason=reason,
             source="main_agent_tool",
         )
+        self._record_proposal_commitment(result)
+        return result
 
     def list_pending_approvals(self, include_closed: bool = False) -> Dict[str, Any]:
         return self.permission_broker.list_proposals(include_closed=include_closed)
@@ -4185,6 +4194,31 @@ class AgentRuntime:
             # Permission execution must not fail just because audit persistence failed.
             pass
 
+    def _record_proposal_commitment(self, proposal_result: Dict[str, Any]) -> None:
+        proposal_payload = proposal_result.get("proposal") if isinstance(proposal_result, dict) else {}
+        if not isinstance(proposal_payload, dict):
+            return
+        proposal_id = str(proposal_payload.get("proposal_id") or "").strip()
+        proposal = self.permission_broker.proposals.get(proposal_id)
+        if proposal is None:
+            return
+        execution = proposal_result.get("execution") if isinstance(proposal_result.get("execution"), dict) else None
+        status = "pending_approval" if proposal_result.get("status") == "pending_approval" else str(proposal_result.get("status") or proposal.status)
+        payload: Dict[str, Any] = {
+            "type": "operator_runtime_commitment",
+            "instruction": "This is an active in-session commitment. Track it until approval, rejection, completion, or failure; do not claim completion before execution result exists.",
+            "proposal_id": proposal.proposal_id,
+            "action": proposal.action,
+            "status": status,
+            "reason": proposal.reason,
+            "path_or_target": proposal.path,
+            "created_from": proposal.source,
+        }
+        if execution:
+            payload["execution_status"] = execution.get("status")
+        self.commitments[proposal.proposal_id] = payload
+        self.memory.add("system", "[operator_runtime_commitment]\n" + json.dumps(payload, ensure_ascii=False, sort_keys=True))
+
     def _record_permission_result_in_session(
         self,
         *,
@@ -4200,6 +4234,15 @@ class AgentRuntime:
             "decision": decision,
             "status": (execution or {}).get("status") if execution else proposal.status,
             "reason": proposal.reason,
+        }
+        commitment_status = "completed" if (execution or {}).get("status") == "ok" else "failed"
+        summary["commitment"] = {
+            "type": "operator_runtime_commitment_completion",
+            "proposal_id": proposal.proposal_id,
+            "action": proposal.action,
+            "status": commitment_status,
+            "target": proposal.path,
+            "instruction": "Use this completion status for follow-up questions like 好了吗; do not ask for the same approval again.",
         }
         if proposal.action == "write_file":
             summary["path"] = proposal.path
@@ -4237,6 +4280,11 @@ class AgentRuntime:
                 summary["due_at"] = execution.get("due_at")
                 summary["message"] = execution.get("message")
 
+        self.commitments[proposal.proposal_id] = {
+            **self.commitments.get(proposal.proposal_id, {}),
+            **summary["commitment"],
+            "execution": execution or {},
+        }
         self.memory.add("system", "[operator_runtime_decision]\n" + json.dumps(summary, ensure_ascii=False, sort_keys=True))
 
     def _approval_summary_excerpt(self, value: Any, max_chars: int = 1200) -> str:

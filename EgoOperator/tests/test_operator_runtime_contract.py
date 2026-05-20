@@ -619,6 +619,29 @@ def test_approve_mode_creates_pending_file_write_and_approval_executes(tmp_path,
     assert approved["execution"]["content_hash"] == result["proposal"]["content_hash"]
 
 
+def test_proposal_and_approval_update_in_session_commitment_memory(tmp_path, monkeypatch):
+    runtime = _runtime(tmp_path, monkeypatch)
+
+    proposal = runtime.propose_file_write("test/commitment.html", "<h1>ok</h1>", reason="commitment smoke")
+    proposal_id = proposal["proposal"]["proposal_id"]
+    pending_memory = runtime.memory.render()
+
+    assert "[operator_runtime_commitment]" in pending_memory
+    assert proposal_id in pending_memory
+    assert "pending_approval" in pending_memory
+    assert runtime.commitments[proposal_id]["status"] == "pending_approval"
+
+    approved = runtime.approve_pending_operation(proposal_id)
+    completed_memory = runtime.memory.render()
+
+    assert approved["status"] == "ok"
+    assert "[operator_runtime_decision]" in completed_memory
+    assert "operator_runtime_commitment_completion" in completed_memory
+    assert "completed" in completed_memory
+    assert runtime.commitments[proposal_id]["status"] == "completed"
+    assert runtime.commitments[proposal_id]["execution"]["status"] == "ok"
+
+
 def test_absolute_path_under_allowed_root_can_create_pending_file_write(tmp_path, monkeypatch):
     workspace = tmp_path / "Ego" / "EgoOperator"
     workspace.mkdir(parents=True)

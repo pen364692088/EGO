@@ -53,6 +53,7 @@ verify_profiles:
           - scripts/tests/test_import_human_observation_comments.py
           - EgoOperator/tests/test_memory_system.py
           - EgoOperator/tests/test_extracted_primitives.py
+          - EgoOperator/tests/test_operator_runtime_contract.py
         env:
           TMPDIR: /tmp
       - label: diff_check
