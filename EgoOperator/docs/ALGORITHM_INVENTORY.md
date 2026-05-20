@@ -199,3 +199,7 @@ side-effect control, and trace readability should a separate
   records external emotion/empathy assistant UX patterns and translates them
   into testable EgoOperator eval and response-style gates. It is research input
   only, not an empathy efficacy proof.
+- [`CAPABILITY_IMPORT_DECISION_GATE.md`](CAPABILITY_IMPORT_DECISION_GATE.md)
+  defines the accept/rewrite/research-only/discard/stage-card gate for moving
+  legacy or external scan outputs into future EgoOperator implementation issues.
+  It is a decision contract, not an imported capability.

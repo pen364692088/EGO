@@ -130,6 +130,8 @@
 - #65 implementation adds `EgoOperator/docs/EXTERNAL_AGENT_AUTONOMY_TASK_LOOP_SCAN.md`, comparing OpenAI Agents SDK HITL, LangGraph interrupts, OpenHands event-driven step/persistence/stuck detection, AutoGen termination conditions, and smolagents loop/sandbox cautions against Codex Autopilot gates. It recommends step-based event loops, serializable interruptions, stop-reason taxonomy, event-signature stuck detection, and operator digests without implementing unattended mutation.
 - #66 was promoted to `In Progress` for an external emotion-aware assistant UX scan.
 - #66 implementation adds `EgoOperator/docs/EXTERNAL_EMOTION_AWARE_ASSISTANT_UX_SCAN.md`, translating OpenAI Model Spec, Hume EVI, EmpatheticDialogues/ParlAI, EmoBench-M, Hum-Dial, NICE, and SoulChat patterns into EgoOperator empathy UX principles: acknowledge-then-act, no first-person feeling claims, misread recovery, situation-grounded evals, and dependency/overreach boundaries.
+- #67 was promoted to `In Progress` for a reusable capability import decision gate.
+- #67 implementation adds `EgoOperator/docs/CAPABILITY_IMPORT_DECISION_GATE.md`, defining accept/rewrite/research-only/discard/stage-card import classes, required import packets, hard-stop rules, reviewer gate, initial import backlog, and rejected/reference-only imports so legacy/external scans do not become runtime dependencies or second authority sources without a narrow implementation issue.
 
 ## Notes
 
