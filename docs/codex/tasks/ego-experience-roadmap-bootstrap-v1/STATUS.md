@@ -30,6 +30,11 @@
 - `autopilot_target` / `autopilot_full` now include the experience eval validator and test.
 - `python3 scripts/codex_project_autopilot.py verify-profile --profile autopilot_target` passed.
 - `python3 scripts/codex_project_autopilot.py verify-profile --profile autopilot_full` passed: `47 passed`.
+- #25 implementation added `scripts/run_ego_experience_trial.py` and `scripts/tests/test_run_ego_experience_trial.py`.
+- #25 scripted smoke passed: `python3 scripts/run_ego_experience_trial.py --case-limit 3` returned `scripted_real_entry_provider_unavailable` with `provider_mode=none`, which proves the CLI-compatible runner can execute without overclaiming real-provider quality.
+- #25 targeted test passed: `TMPDIR=/tmp python3 -m pytest -q scripts/tests/test_run_ego_experience_trial.py`.
+- After #25, `python3 scripts/codex_project_autopilot.py verify-profile --profile autopilot_target` passed.
+- After #25, `python3 scripts/codex_project_autopilot.py verify-profile --profile autopilot_full` passed: `49 passed`.
 
 ## Notes
 
