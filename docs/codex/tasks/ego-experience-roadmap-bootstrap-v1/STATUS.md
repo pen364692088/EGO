@@ -35,6 +35,14 @@
 - #25 targeted test passed: `TMPDIR=/tmp python3 -m pytest -q scripts/tests/test_run_ego_experience_trial.py`.
 - After #25, `python3 scripts/codex_project_autopilot.py verify-profile --profile autopilot_target` passed.
 - After #25, `python3 scripts/codex_project_autopilot.py verify-profile --profile autopilot_full` passed: `49 passed`.
+- #26 was promoted to `In Progress` to implement a human observation packet importer for Project comments.
+- #26 implementation added `scripts/import_human_observation_comments.py` and `scripts/tests/test_import_human_observation_comments.py`.
+- #26 importer emits advisory human-comment observation packets with `closeout_allowed=false`, preserving the distinction between human observation and deterministic closeout proof.
+- #26 targeted validation passed: `python3 -m py_compile scripts/import_human_observation_comments.py scripts/tests/test_import_human_observation_comments.py`.
+- #26 targeted tests passed: `TMPDIR=/tmp python3 -m pytest -q scripts/tests/test_import_human_observation_comments.py` (`6 passed`).
+- After #26, `python3 scripts/codex_project_autopilot.py verify-profile --profile autopilot_target` passed.
+- After #26, `python3 scripts/codex_project_autopilot.py verify-profile --profile autopilot_full` passed: `55 passed`.
+- #26 closeout-check returned `eligible` with dirty gate scoped to `.codex/project_contract.yaml`, the roadmap task status, and the new importer/test files.
 
 ## Notes
 
