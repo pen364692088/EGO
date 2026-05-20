@@ -118,6 +118,8 @@
 - #57 implementation adds `operator_digest` to run-loop payloads and written reports, summarizing status, mode, selected issue actions, stop reason, and the concrete user/operator action needed after a run.
 - #59 was promoted to `In Progress` for legacy algorithm inventory research.
 - #59 implementation extends `EgoOperator/docs/ALGORITHM_INVENTORY.md` with an executable primitive inventory for legacy EgoCore, OpenEmotion, and ego_desktop_lab, classifying concrete capabilities as keep / rewrite / discard / reference-only without editing or moving legacy code.
+- #60 was promoted to `In Progress` for OpenEmotion subject primitive extraction mapping.
+- #60 implementation adds `EgoOperator/docs/OPENEMOTION_SUBJECT_PRIMITIVE_MAP.md`, mapping self-model, salience/memory, appraisal, reflection, initiative, and self-report alignment into EgoOperator proposal-only or readonly primitives with explicit forbidden roles and extraction order.
 
 ## Notes
 

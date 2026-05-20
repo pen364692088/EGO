@@ -137,6 +137,9 @@ code.
 
 ### OpenEmotion
 
+Detailed subject primitive mapping lives in
+[`OPENEMOTION_SUBJECT_PRIMITIVE_MAP.md`](OPENEMOTION_SUBJECT_PRIMITIVE_MAP.md).
+
 | Capability | Evidence surface | Classification | EgoOperator extraction rule |
 | --- | --- | --- | --- |
 | Self-model schema and snapshots | `emotiond/self_model/*`, `schemas/self_model.schema.json`, `core/self_model.py` | keep | Keep as readonly operational self-model context; never as consciousness proof or direct state authority. |
