@@ -126,6 +126,8 @@
 - #62 implementation adds `EgoOperator/docs/EGO_DESKTOP_LAB_EVAL_HARNESS_MAP.md`, mapping legacy lab verification packs, stage runner, decision view/operator report, root-cause tickets, repeated-failure reframe triggers, live-shadow sample packs, and contextual follow-up regressions into EgoOperator eval primitives while keeping lab shell and semantic routing reference-only.
 - #64 was promoted to `In Progress` for an external agent memory architecture scan.
 - #64 implementation adds `EgoOperator/docs/EXTERNAL_AGENT_MEMORY_ARCHITECTURE_SCAN.md`, surveying Letta/MemGPT, LangGraph/LangChain, Mem0, CrewAI, AutoGen, OpenHands, and smolagents memory patterns and distilling namespace/key metadata, hot-context retrieval, write-path gating, and trace-vs-core-memory separation into future EgoOperator follow-up issues without adding dependencies.
+- #65 was promoted to `In Progress` for an external agent autonomy and task-loop scan.
+- #65 implementation adds `EgoOperator/docs/EXTERNAL_AGENT_AUTONOMY_TASK_LOOP_SCAN.md`, comparing OpenAI Agents SDK HITL, LangGraph interrupts, OpenHands event-driven step/persistence/stuck detection, AutoGen termination conditions, and smolagents loop/sandbox cautions against Codex Autopilot gates. It recommends step-based event loops, serializable interruptions, stop-reason taxonomy, event-signature stuck detection, and operator digests without implementing unattended mutation.
 
 ## Notes
 

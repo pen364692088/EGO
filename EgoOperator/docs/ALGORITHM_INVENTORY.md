@@ -191,3 +191,7 @@ side-effect control, and trace readability should a separate
   records current external memory architecture patterns for EgoOperator
   candidate-local memory work. It is research input only, not an imported
   dependency or runtime proof.
+- [`EXTERNAL_AGENT_AUTONOMY_TASK_LOOP_SCAN.md`](EXTERNAL_AGENT_AUTONOMY_TASK_LOOP_SCAN.md)
+  records current external task-loop, HITL, termination, persistence, and stuck
+  detection patterns for Codex Autopilot and future EgoOperator active-layer
+  work. It is research input only, not an autonomy proof.
