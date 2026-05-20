@@ -22,6 +22,7 @@ DEFAULT_CONTRACT_PATH = ROOT / ".codex" / "project_contract.yaml"
 DEFAULT_BASELINE_PATH = ROOT / ".codex" / "autopilot" / "dirty_baseline.json"
 DEFAULT_REPORT_DIR = ROOT / ".codex" / "autopilot" / "runs"
 DEFAULT_REVIEW_SCHEMA_PATH = SCRIPT_DIR / "codex_autopilot_closeout_review_schema.json"
+DEFAULT_PLAN_SCHEMA_PATH = SCRIPT_DIR / "codex_autopilot_plan_proposal_schema.json"
 
 if str(SCRIPT_DIR) not in sys.path:
     sys.path.insert(0, str(SCRIPT_DIR))
@@ -60,6 +61,7 @@ class ProjectContract:
     auto_closeout: dict[str, Any] = field(default_factory=dict)
     auto_execute: dict[str, Any] = field(default_factory=dict)
     auto_pause: dict[str, Any] = field(default_factory=dict)
+    goal_control: dict[str, Any] = field(default_factory=dict)
 
     def github_config(self, *, dry_run: bool = False) -> github_project_task.Config:
         return github_project_task.Config(
@@ -197,6 +199,11 @@ def load_contract(path: Path) -> ProjectContract:
             payload.get("auto_pause") or {},
             code="invalid_auto_pause",
             message="auto_pause must be an object",
+        ),
+        goal_control=_require_mapping(
+            payload.get("goal_control") or {},
+            code="invalid_goal_control",
+            message="goal_control must be an object",
         ),
     )
 
@@ -525,6 +532,176 @@ def command_plan_next(client: github_project_task.GhClient, contract: ProjectCon
     }
 
 
+def _goal_control_config(contract: ProjectContract) -> dict[str, Any]:
+    cfg = dict(contract.goal_control)
+    cfg.setdefault("planning_backend", "codex_exec")
+    cfg.setdefault("native_goal_enabled", False)
+    cfg.setdefault("candidate_issue_limit", 3)
+    cfg.setdefault("claim_ceiling", "Codex Autopilot goal-aware meta-control local workflow candidate pass")
+    cfg.setdefault(
+        "hard_stop_markers",
+        [
+            "program state",
+            "evidence ledger",
+            "permissions expansion",
+            "permission expansion",
+            "memory promotion",
+            "mainline demotion",
+            "stage card",
+            "docs/PROGRAM_STATE_UNIFIED.yaml",
+            "artifacts/evidence_ledger",
+        ],
+    )
+    return cfg
+
+
+def outcome_scoreboard(report: dict[str, Any], *, recent_reports: list[dict[str, Any]] | None = None) -> dict[str, Any]:
+    counts = {str(key): int(value) for key, value in (report.get("counts") or {}).items()}
+    recent_reports = recent_reports or []
+    stop_reasons: dict[str, int] = {}
+    verify_failures = 0
+    verify_seen = 0
+    evidence_complete = 0
+    evidence_seen = 0
+    for payload in recent_reports:
+        reason = str(payload.get("stop_reason") or "")
+        if reason:
+            stop_reasons[reason] = stop_reasons.get(reason, 0) + 1
+        for entry in payload.get("planned") or []:
+            if not isinstance(entry, dict):
+                continue
+            check = entry.get("closeout_check") if isinstance(entry.get("closeout_check"), dict) else {}
+            if check:
+                evidence_seen += 1
+                if check.get("eligible") is True:
+                    evidence_complete += 1
+            verify = entry.get("verify") if isinstance(entry.get("verify"), dict) else {}
+            if verify:
+                verify_seen += 1
+                if verify.get("passed") is False:
+                    verify_failures += 1
+    human_required = [
+        issue.get("number")
+        for issue in report.get("issues") or []
+        if (issue.get("classification") or {}).get("class") == "human_required"
+    ]
+    return {
+        "ready_issue_throughput": {
+            "done_count": counts.get("done", 0),
+            "ready_count": counts.get("ready", 0) + counts.get("research", 0),
+            "note": "Board-count proxy; not productivity proof.",
+        },
+        "blocked_reasons": {
+            "class_counts": {
+                key: counts.get(key, 0)
+                for key in ["unknown", "blocked", "human_required", "aggregate", "parked", "supporting", "high_impact"]
+                if counts.get(key, 0)
+            },
+            "recent_stop_reasons": stop_reasons,
+        },
+        "reopened_issue_count": {
+            "status": "unknown",
+            "reason": "GitHub issue reopen events are not queried in v3.",
+        },
+        "human_required_aging": {
+            "status": "unknown",
+            "issue_numbers": human_required[:20],
+            "reason": "Project item age is not part of the current gh item-list payload.",
+        },
+        "verify_failure_rate": {
+            "status": "known" if verify_seen else "unknown",
+            "failures": verify_failures,
+            "total": verify_seen,
+        },
+        "closeout_evidence_completeness": {
+            "status": "known" if evidence_seen else "unknown",
+            "eligible_packets": evidence_complete,
+            "total_packets": evidence_seen,
+        },
+    }
+
+
+def command_goal_status(client: github_project_task.GhClient, contract: ProjectContract, *, report_dir: Path) -> dict[str, Any]:
+    report = build_report(client, contract)
+    selected = select_next(report)
+    recent_reports = load_run_reports(report_dir, limit=int(_goal_control_config(contract).get("recent_report_limit") or 8))
+    ready_issues = [
+        issue
+        for issue in report.get("issues", [])
+        if (issue.get("classification") or {}).get("autopilot_allowed") is True
+    ]
+    return {
+        "status": "ok",
+        "control_plane": "goal-aware",
+        "project": report.get("project"),
+        "counts": report.get("counts"),
+        "ready_issue_count": len(ready_issues),
+        "next_issue": selected,
+        "human_required": [
+            {"number": issue.get("number"), "title": issue.get("title"), "project_status": issue.get("project_status")}
+            for issue in report.get("issues", [])
+            if (issue.get("classification") or {}).get("class") == "human_required"
+        ],
+        "highest_risk": goal_highest_risk(report),
+        "outcome_scoreboard": outcome_scoreboard(report, recent_reports=recent_reports),
+        "goal_control": _goal_control_config(contract),
+        "claim_ceiling": _goal_control_config(contract).get("claim_ceiling"),
+    }
+
+
+def goal_highest_risk(report: dict[str, Any]) -> dict[str, Any]:
+    priority = ["high_impact", "unknown", "human_required", "blocked", "aggregate", "parked"]
+    issues = report.get("issues") or []
+    for cls in priority:
+        matches = [issue for issue in issues if (issue.get("classification") or {}).get("class") == cls]
+        if matches:
+            return {
+                "class": cls,
+                "count": len(matches),
+                "sample": [
+                    {"number": item.get("number"), "title": item.get("title"), "reason": (item.get("classification") or {}).get("reason")}
+                    for item in matches[:5]
+                ],
+            }
+    return {"class": "none", "count": 0, "sample": []}
+
+
+def goal_refresh_packet(
+    client: github_project_task.GhClient,
+    contract: ProjectContract,
+    *,
+    issue_ref: str | None = None,
+    report_dir: Path,
+) -> dict[str, Any]:
+    report = build_report(client, contract)
+    selected = select_next(report)
+    issue_payload = None
+    if issue_ref:
+        issue_payload = command_classify_issue(client, contract, issue_ref)
+    recent_reports = load_run_reports(report_dir, limit=int(_goal_control_config(contract).get("recent_report_limit") or 8))
+    return {
+        "status": "ok",
+        "project": report.get("project"),
+        "goal_control": _goal_control_config(contract),
+        "board_counts": report.get("counts"),
+        "issues": report.get("issues"),
+        "ready_issue": selected,
+        "issue": issue_payload,
+        "highest_risk": goal_highest_risk(report),
+        "recent_reports": [
+            {
+                "status": item.get("status"),
+                "mode": item.get("mode"),
+                "stop_reason": item.get("stop_reason"),
+                "report_path": item.get("report_path"),
+            }
+            for item in recent_reports[:8]
+        ],
+        "outcome_scoreboard": outcome_scoreboard(report, recent_reports=recent_reports),
+        "claim_ceiling": _goal_control_config(contract).get("claim_ceiling"),
+    }
+
+
 def command_classify_issue(client: github_project_task.GhClient, contract: ProjectContract, issue_ref: str) -> dict[str, Any]:
     cfg = contract.github_config()
     issue = issue_view_full(client, cfg, issue_ref)
@@ -561,6 +738,7 @@ def contract_summary(contract: ProjectContract) -> dict[str, Any]:
         "auto_closeout": contract.auto_closeout,
         "auto_execute": contract.auto_execute,
         "auto_pause": contract.auto_pause,
+        "goal_control": contract.goal_control,
     }
 
 
@@ -784,6 +962,22 @@ def issue_closeout_evidence_items(issue: dict[str, Any]) -> list[dict[str, Any]]
         if not section:
             continue
         for bullet in section_bullets(section):
+            bullet_cf = bullet.casefold()
+            if (
+                "planner proposal" in bullet_cf
+                or "plan proposal" in bullet_cf
+                or "candidate issue" in bullet_cf
+                or "candidate task" in bullet_cf
+            ):
+                items.append(
+                    {
+                        "type": "planner_proposal",
+                        "source": f"issue_body:{heading}",
+                        "status": "proposal_only",
+                        "summary": bullet,
+                    }
+                )
+                continue
             items.append(
                 {
                     "type": "issue_evidence",
@@ -1880,6 +2074,322 @@ def command_decompose_goal(
     )
 
 
+def candidate_issue_proposals_from_report(
+    contract: ProjectContract,
+    report: dict[str, Any],
+    *,
+    max_issues: int | None = None,
+) -> list[dict[str, Any]]:
+    limit = max(1, int(max_issues or _goal_control_config(contract).get("candidate_issue_limit") or 3))
+    proposals: list[dict[str, Any]] = []
+    issue_priority = {
+        "unknown": 0,
+        "epic": 1,
+        "aggregate": 2,
+        "research": 3,
+        "human_required": 4,
+    }
+    candidates = []
+    for issue in report.get("issues") or []:
+        cls = str((issue.get("classification") or {}).get("class") or "")
+        if cls not in issue_priority:
+            continue
+        candidates.append((issue_priority[cls], int(issue.get("number") or 999999), issue))
+    candidates.sort(key=lambda item: (item[0], item[1]))
+
+    prefix = preferred_ready_prefix(contract)
+    for _, _, source in candidates[:limit]:
+        cls = str((source.get("classification") or {}).get("class") or "")
+        number = source.get("number")
+        title = str(source.get("title") or "untitled")
+        if cls == "unknown":
+            meaning = f"Normalize and scope #{number}: {title}"
+            observation_class = "deterministic_local"
+        elif cls == "epic":
+            meaning = f"Create first executable slice from #{number}: {title}"
+            observation_class = "deterministic_local"
+        elif cls == "aggregate":
+            meaning = f"Split one narrow ready repair from aggregate #{number}: {title}"
+            observation_class = "deterministic_local"
+        elif cls == "research":
+            meaning = f"Turn research #{number} into a bounded inventory/report task: {title}"
+            observation_class = "deterministic_local"
+        else:
+            meaning = f"Prepare human smoke packet for #{number}: {title}"
+            observation_class = "human_required"
+        proposals.append(
+            {
+                "source_issue": {
+                    "number": number,
+                    "title": title,
+                    "classification": source.get("classification"),
+                    "url": source.get("url"),
+                },
+                "title": compact_issue_title(prefix, meaning),
+                "project_status": "Todo",
+                "observation_class": observation_class,
+                "acceptance_gate": "The issue body contains canonical source, current meaning, acceptance gate, rollback, and claim ceiling.",
+                "rollback": "Close the candidate as superseded/not planned if the framing is wrong.",
+                "claim_ceiling": "Candidate issue proposal only; not implementation proof or product efficacy.",
+                "body": decomposition_issue_body(
+                    canonical_source=f"Generated from Project issue #{number}: {source.get('url')}",
+                    current_meaning=meaning,
+                    observation_class=observation_class,
+                ),
+            }
+        )
+
+    if not proposals:
+        meaning = "Create the next ready issue from the current Project goal/status gap"
+        proposals.append(
+            {
+                "source_issue": None,
+                "title": compact_issue_title(prefix, meaning),
+                "project_status": "Todo",
+                "observation_class": "deterministic_local",
+                "acceptance_gate": "A scoped ready issue exists with canonical source, current meaning, acceptance gate, rollback, and claim ceiling.",
+                "rollback": "Close as not planned if the Project already has a better ready issue.",
+                "claim_ceiling": "Candidate issue proposal only; not implementation proof or product efficacy.",
+                "body": decomposition_issue_body(
+                    canonical_source="Generated from goal-aware Autopilot no-ready Project state",
+                    current_meaning=meaning,
+                    observation_class="deterministic_local",
+                ),
+            }
+        )
+    return proposals
+
+
+def _proposal_required_field_errors(proposals: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    errors = []
+    required = ["title", "observation_class", "acceptance_gate", "rollback", "claim_ceiling"]
+    for index, proposal in enumerate(proposals):
+        for field_name in required:
+            if not str(proposal.get(field_name) or "").strip():
+                errors.append({"index": index, "reason": "missing_generated_issue_field", "field": field_name})
+        body = str(proposal.get("body") or "")
+        if body:
+            for section in REQUIRED_DECOMPOSITION_SECTIONS:
+                if section not in body:
+                    errors.append({"index": index, "reason": "missing_generated_issue_body_section", "section": section})
+    return errors
+
+
+def command_propose_ready_issues(
+    client: github_project_task.GhClient,
+    contract: ProjectContract,
+    *,
+    dry_run: bool,
+    max_issues: int,
+) -> dict[str, Any]:
+    if not dry_run:
+        raise AutopilotError("mutation_not_implemented", "v3 propose-ready-issues only supports --dry-run")
+    report = build_report(client, contract)
+    proposals = candidate_issue_proposals_from_report(contract, report, max_issues=max_issues)
+    review = review_decomposition_proposals([{"title": item.get("title"), "body": item.get("body")} for item in proposals])
+    field_errors = _proposal_required_field_errors(proposals)
+    return {
+        "status": "ok" if not field_errors and review.get("verdict") == "proposal_set_ready" else "blocked",
+        "mode": "dry_run",
+        "proposal_count": len(proposals),
+        "proposals": proposals,
+        "reviewer_check": review,
+        "field_errors": field_errors,
+        "claim_ceiling": _goal_control_config(contract).get("claim_ceiling"),
+    }
+
+
+def planner_hard_stop_reasons(contract: ProjectContract, planner_payload: dict[str, Any]) -> list[dict[str, Any]]:
+    cfg = _goal_control_config(contract)
+    reasons = []
+    protected_markers = [path.rstrip("/") for path in contract.protected_paths]
+
+    def marker_is_negated(text: str, marker: str) -> bool:
+        text_cf = text.casefold()
+        marker_cf = marker.casefold()
+        index = text_cf.find(marker_cf)
+        if index < 0:
+            return False
+        context = text_cf[max(0, index - 160) : index + len(marker_cf) + 160]
+        negators = [
+            "do not",
+            "don't",
+            "without",
+            "avoid",
+            "avoiding",
+            " no ",
+            " not ",
+            "cannot",
+            "can't",
+            "unless",
+            "forbid",
+            "forbidden",
+            "discard",
+            "untouched",
+            "unchanged",
+            "no issue",
+            "stop condition",
+            "non-goal",
+            "not proof",
+            "no proof",
+            "不",
+            "不得",
+            "不能",
+        ]
+        return any(token in context for token in negators)
+
+    def scan(value: Any, *, path: str = "") -> None:
+        if isinstance(value, dict):
+            for key, item in value.items():
+                key_text = str(key)
+                if key_text in {"stop_conditions", "non_goals"}:
+                    continue
+                scan(item, path=f"{path}.{key_text}" if path else key_text)
+            return
+        if isinstance(value, list):
+            for index, item in enumerate(value):
+                scan(item, path=f"{path}[{index}]")
+            return
+        if not isinstance(value, str):
+            return
+        for marker in _as_list(cfg.get("hard_stop_markers")):
+            if marker.casefold() in value.casefold() and not marker_is_negated(value, marker):
+                reasons.append({"reason": "planner_hard_stop_marker", "marker": marker, "path": path})
+        for protected in protected_markers:
+            if protected.casefold() in value.casefold() and not marker_is_negated(value, protected):
+                reasons.append({"reason": "planner_protected_path_marker", "path": protected, "field": path})
+
+    scan(planner_payload)
+    return reasons
+
+
+def call_planner_backend(
+    contract: ProjectContract,
+    packet: dict[str, Any],
+    *,
+    runner: CommandRunner,
+) -> dict[str, Any]:
+    cfg = _goal_control_config(contract)
+    backend = str(cfg.get("planning_backend") or "codex_exec")
+    prompt = (
+        "You are a conservative project-planning backend for Codex Autopilot.\n"
+        "Return JSON only matching the provided schema. Generate proposals only; do not claim implementation evidence.\n"
+        "Every candidate issue must include acceptance_gate, rollback, claim_ceiling, and observation_class.\n"
+        "Do not propose changes to protected paths, program state, evidence ledger, permissions expansion, memory promotion, "
+        "mainline/demotion, or Stage Card items as auto-executable work.\n\n"
+        f"Packet:\n{json.dumps(packet, ensure_ascii=False, sort_keys=True, indent=2)}"
+    )
+    if backend == "native_goal":
+        if not bool(cfg.get("native_goal_enabled")):
+            return {
+                "status": "planning_backend_unavailable",
+                "backend": backend,
+                "reason": "native_goal_backend_disabled_until_stable_api_exists",
+            }
+        return {
+            "status": "planning_backend_unavailable",
+            "backend": backend,
+            "reason": "native_goal_backend_not_implemented",
+        }
+    if backend != "codex_exec":
+        return {"status": "planning_backend_unavailable", "backend": backend, "reason": "unsupported_planning_backend"}
+
+    result = runner.run(
+        [
+            "codex",
+            "exec",
+            "--ephemeral",
+            "--sandbox",
+            "read-only",
+            "--output-schema",
+            str(DEFAULT_PLAN_SCHEMA_PATH),
+            prompt,
+        ]
+    )
+    if result.returncode != 0:
+        return {
+            "status": "planning_backend_unavailable",
+            "backend": backend,
+            "returncode": result.returncode,
+            "stderr_preview": result.stderr[-1000:],
+            "stdout_preview": result.stdout[-1000:],
+        }
+    parsed = _extract_json_object(result.stdout)
+    if not parsed:
+        return {
+            "status": "planning_backend_unavailable",
+            "backend": backend,
+            "reason": "planner_invalid_json",
+            "stdout_preview": result.stdout[-1000:],
+        }
+    parsed.setdefault("status", "ok")
+    parsed["backend"] = backend
+    return parsed
+
+
+def _planner_candidate_issues(planner_payload: dict[str, Any]) -> list[dict[str, Any]]:
+    items = planner_payload.get("candidate_issues")
+    return [item for item in items if isinstance(item, dict)] if isinstance(items, list) else []
+
+
+def command_goal_refresh(
+    client: github_project_task.GhClient,
+    contract: ProjectContract,
+    *,
+    issue_ref: str | None,
+    report_dir: Path,
+) -> dict[str, Any]:
+    return goal_refresh_packet(client, contract, issue_ref=issue_ref, report_dir=report_dir)
+
+
+def command_plan_proposal(
+    client: github_project_task.GhClient,
+    contract: ProjectContract,
+    *,
+    issue_ref: str | None,
+    board: bool,
+    goal: str | None,
+    goal_file: str | None,
+    dry_run: bool,
+    runner: CommandRunner,
+    report_dir: Path,
+) -> dict[str, Any]:
+    if not dry_run:
+        raise AutopilotError("mutation_not_implemented", "v3 plan-proposal only supports --dry-run")
+    packet = goal_refresh_packet(client, contract, issue_ref=issue_ref, report_dir=report_dir)
+    goal_text = read_goal_input(goal, goal_file)
+    if goal_text:
+        packet["explicit_goal"] = goal_text
+    packet["scope"] = "board" if board or not issue_ref else "issue"
+    deterministic_candidates = candidate_issue_proposals_from_report(
+        contract,
+        {"issues": packet.get("issues") or [], "counts": packet.get("board_counts") or {}},
+        max_issues=int(_goal_control_config(contract).get("candidate_issue_limit") or 3),
+    )
+    planner_payload = call_planner_backend(contract, packet, runner=runner)
+    blocked_reasons = []
+    if planner_payload.get("status") == "planning_backend_unavailable":
+        return {
+            "status": "planning_backend_unavailable",
+            "mode": "dry_run",
+            "planner": planner_payload,
+            "fallback_candidate_issues": deterministic_candidates,
+            "claim_ceiling": _goal_control_config(contract).get("claim_ceiling"),
+        }
+    blocked_reasons.extend(planner_hard_stop_reasons(contract, planner_payload))
+    field_errors = _proposal_required_field_errors(_planner_candidate_issues(planner_payload))
+    blocked_reasons.extend(field_errors)
+    return {
+        "status": "blocked" if blocked_reasons else "ok",
+        "mode": "dry_run",
+        "planner": planner_payload,
+        "candidate_issues": _planner_candidate_issues(planner_payload),
+        "fallback_candidate_issues": deterministic_candidates if not _planner_candidate_issues(planner_payload) else [],
+        "blocked_reasons": blocked_reasons,
+        "claim_ceiling": _goal_control_config(contract).get("claim_ceiling"),
+    }
+
+
 def command_run_once(
     client: github_project_task.GhClient,
     contract: ProjectContract,
@@ -2056,10 +2566,20 @@ def command_run_loop(
         if issue.get("classification", {}).get("autopilot_allowed") is True
     ]
     if not ready:
+        proposals = candidate_issue_proposals_from_report(
+            contract,
+            report,
+            max_issues=min(max_issues or 1, int(_goal_control_config(contract).get("candidate_issue_limit") or 3)),
+        )
         payload = {
             "status": "stopped",
             "stop_reason": "no_ready_issue",
             "counts": report["counts"],
+            "plan_stage": {
+                "status": "candidate_issues_proposed",
+                "note": "No ready issue was available; goal-aware mode generated dry-run candidate issue drafts instead of looping.",
+                "candidate_issues": proposals,
+            },
             "planned": [],
         }
         return finalize_run_loop_payload(payload, write_report=write_report, report_dir=report_dir)
@@ -2178,6 +2698,21 @@ def build_parser() -> argparse.ArgumentParser:
     subparsers.add_parser("doctor")
     subparsers.add_parser("report")
     subparsers.add_parser("plan-next")
+    subparsers.add_parser("goal-status")
+    goal_refresh = subparsers.add_parser("goal-refresh")
+    goal_refresh.add_argument("--issue")
+
+    plan_proposal = subparsers.add_parser("plan-proposal")
+    plan_proposal.add_argument("--issue")
+    plan_proposal.add_argument("--board", action="store_true")
+    plan_proposal.add_argument("--goal")
+    plan_proposal.add_argument("--goal-file")
+    plan_proposal.add_argument("--dry-run", action="store_true")
+
+    propose_ready = subparsers.add_parser("propose-ready-issues")
+    propose_ready.add_argument("--dry-run", action="store_true")
+    propose_ready.add_argument("--max-issues", type=int, default=3)
+
     subparsers.add_parser("baseline")
     subparsers.add_parser("diff-scope")
     subparsers.add_parser("pause-check")
@@ -2243,6 +2778,29 @@ def dispatch(
         return command_report(client, contract)
     if args.command == "plan-next":
         return command_plan_next(client, contract)
+    if args.command == "goal-status":
+        return command_goal_status(client, contract, report_dir=Path(args.report_dir))
+    if args.command == "goal-refresh":
+        return command_goal_refresh(client, contract, issue_ref=args.issue, report_dir=Path(args.report_dir))
+    if args.command == "plan-proposal":
+        return command_plan_proposal(
+            client,
+            contract,
+            issue_ref=args.issue,
+            board=bool(args.board),
+            goal=args.goal,
+            goal_file=args.goal_file,
+            dry_run=bool(args.dry_run),
+            runner=runner,
+            report_dir=Path(args.report_dir),
+        )
+    if args.command == "propose-ready-issues":
+        return command_propose_ready_issues(
+            client,
+            contract,
+            dry_run=bool(args.dry_run),
+            max_issues=args.max_issues,
+        )
     if args.command == "classify-issue":
         return command_classify_issue(client, contract, args.issue)
     if args.command == "baseline":

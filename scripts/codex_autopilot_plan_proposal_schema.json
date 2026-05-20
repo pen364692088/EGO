@@ -1,0 +1,75 @@
+{
+  "additionalProperties": false,
+  "properties": {
+    "candidate_issues": {
+      "items": {
+        "additionalProperties": false,
+        "properties": {
+          "acceptance_gate": {
+            "type": "string"
+          },
+          "claim_ceiling": {
+            "type": "string"
+          },
+          "current_meaning": {
+            "type": "string"
+          },
+          "observation_class": {
+            "type": "string"
+          },
+          "rollback": {
+            "type": "string"
+          },
+          "title": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "title",
+          "current_meaning",
+          "observation_class",
+          "acceptance_gate",
+          "rollback",
+          "claim_ceiling"
+        ],
+        "type": "object"
+      },
+      "type": "array"
+    },
+    "claim_ceiling": {
+      "type": "string"
+    },
+    "current_blocker": {
+      "type": "string"
+    },
+    "goal_summary": {
+      "type": "string"
+    },
+    "recommended_next_action": {
+      "type": "string"
+    },
+    "requires_human": {
+      "type": "boolean"
+    },
+    "status": {
+      "type": "string"
+    },
+    "stop_conditions": {
+      "items": {
+        "type": "string"
+      },
+      "type": "array"
+    }
+  },
+  "required": [
+    "status",
+    "goal_summary",
+    "current_blocker",
+    "recommended_next_action",
+    "candidate_issues",
+    "stop_conditions",
+    "claim_ceiling",
+    "requires_human"
+  ],
+  "type": "object"
+}

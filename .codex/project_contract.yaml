@@ -70,6 +70,7 @@ verify_profiles:
           - docs/codex/tasks/codex-cross-project-devloop-toolkit-v1
           - docs/codex/tasks/codex-autopilot-l2-dirty-baseline-v1
           - docs/codex/tasks/codex-autopilot-l3-l4-v2
+          - docs/codex/tasks/codex-autopilot-meta-control-v3
           - docs/codex/tasks/ego-experience-roadmap-bootstrap-v1
           - EgoOperator
 
@@ -89,6 +90,7 @@ allowed_mutation_paths:
   - docs/codex/tasks/codex-cross-project-devloop-toolkit-v1/
   - docs/codex/tasks/codex-autopilot-l2-dirty-baseline-v1/
   - docs/codex/tasks/codex-autopilot-l3-l4-v2/
+  - docs/codex/tasks/codex-autopilot-meta-control-v3/
   - docs/codex/tasks/ego-experience-roadmap-bootstrap-v1/
 
 commit_policy:
@@ -223,6 +225,23 @@ auto_pause:
     - issue_not_ready
     - no_ready_issue
     - l5_execute_not_implemented
+
+goal_control:
+  planning_backend: codex_exec
+  native_goal_enabled: false
+  candidate_issue_limit: 3
+  recent_report_limit: 8
+  hard_stop_markers:
+    - "program state"
+    - "evidence ledger"
+    - "permissions expansion"
+    - "permission expansion"
+    - "memory promotion"
+    - "mainline demotion"
+    - "stage card"
+    - "docs/PROGRAM_STATE_UNIFIED.yaml"
+    - "artifacts/evidence_ledger"
+  claim_ceiling: Codex Autopilot goal-aware meta-control local workflow candidate pass
 
 observation_classes:
   deterministic_local:

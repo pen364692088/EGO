@@ -294,6 +294,17 @@ auto_pause:
     - issue_not_ready
     - no_ready_issue
     - l5_execute_not_implemented
+goal_control:
+  planning_backend: codex_exec
+  native_goal_enabled: false
+  candidate_issue_limit: 3
+  recent_report_limit: 8
+  hard_stop_markers:
+    - "program state"
+    - "evidence ledger"
+    - "stage card"
+    - "docs/PROGRAM_STATE_UNIFIED.yaml"
+  claim_ceiling: Test goal-control claim
 """,
         encoding="utf-8",
     )
@@ -1481,3 +1492,169 @@ def test_run_loop_l5_executor_execute_is_not_implemented(tmp_path: Path) -> None
     assert code == 0
     assert payload["status"] == "stopped"
     assert payload["stop_reason"] == "l5_execute_not_implemented"
+
+
+def planner_response(*, title: str = "Codex Toolkit: generated ready task", marker: str = "") -> str:
+    return j(
+        {
+            "status": "ok",
+            "goal_summary": "Improve Autopilot goal-aware control.",
+            "current_blocker": "No ready issue is available.",
+            "recommended_next_action": "Create a bounded ready issue.",
+            "candidate_issues": [
+                {
+                    "title": title,
+                    "current_meaning": f"Generate a bounded task proposal. {marker}".strip(),
+                    "observation_class": "deterministic_local",
+                    "acceptance_gate": "The generated issue has acceptance, rollback, claim ceiling, and observation class.",
+                    "rollback": "Close the candidate as superseded if the framing is wrong.",
+                    "claim_ceiling": "Planner proposal only; not implementation evidence.",
+                }
+            ],
+            "stop_conditions": [],
+            "claim_ceiling": "Planner proposal only.",
+            "requires_human": False,
+        }
+    )
+
+
+def planner_runner(stdout: str, *, returncode: int = 0) -> FakeRunner:
+    runner = FakeRunner(stdout="")
+    original_run = runner.run
+
+    def run_with_planner(args, *, env=None):
+        if tuple(args[:6]) == ("codex", "exec", "--ephemeral", "--sandbox", "read-only", "--output-schema"):
+            return codex_project_autopilot.CommandResult(args=args, returncode=returncode, stdout=stdout, stderr="planner failed" if returncode else "")
+        return original_run(args, env=env)
+
+    runner.run = run_with_planner  # type: ignore[method-assign]
+    return runner
+
+
+def test_goal_status_reports_board_distribution(tmp_path: Path) -> None:
+    path = write_contract(tmp_path)
+
+    code, payload = run_cli(["--contract", str(path), "goal-status"], fake=FakeGh(base_responses()))
+
+    assert code == 0
+    assert payload["status"] == "ok"
+    assert payload["control_plane"] == "goal-aware"
+    assert payload["counts"]["ready"] == 3
+    assert payload["counts"]["human_required"] == 2
+    assert payload["next_issue"]["number"] == 17
+    assert payload["outcome_scoreboard"]["ready_issue_throughput"]["ready_count"] >= 2
+
+
+def test_goal_refresh_outputs_planner_packet(tmp_path: Path) -> None:
+    path = write_contract(tmp_path)
+
+    code, payload = run_cli(["--contract", str(path), "goal-refresh"], fake=FakeGh(base_responses()))
+
+    assert code == 0
+    assert payload["status"] == "ok"
+    assert payload["goal_control"]["planning_backend"] == "codex_exec"
+    assert "board_counts" in payload
+    assert "outcome_scoreboard" in payload
+
+
+def test_plan_proposal_uses_codex_exec_planner_and_keeps_dry_run(tmp_path: Path) -> None:
+    path = write_contract(tmp_path)
+    fake = FakeGh(base_responses(items=[item(ISSUE_EPIC, "Todo")]))
+    runner = planner_runner(planner_response())
+
+    code, payload = run_cli(
+        ["--contract", str(path), "plan-proposal", "--board", "--dry-run"],
+        fake=fake,
+        runner=runner,
+    )
+
+    assert code == 0
+    assert payload["status"] == "ok"
+    assert payload["planner"]["backend"] == "codex_exec"
+    assert payload["candidate_issues"][0]["acceptance_gate"]
+    assert not any(call[:2] == ("issue", "create") for call in fake.calls)
+
+
+def test_plan_proposal_backend_unavailable_returns_structured_status(tmp_path: Path) -> None:
+    path = write_contract(tmp_path)
+
+    code, payload = run_cli(
+        ["--contract", str(path), "plan-proposal", "--board", "--dry-run"],
+        fake=FakeGh(base_responses(items=[item(ISSUE_EPIC, "Todo")])),
+        runner=planner_runner("", returncode=127),
+    )
+
+    assert code == 0
+    assert payload["status"] == "planning_backend_unavailable"
+    assert payload["planner"]["backend"] == "codex_exec"
+    assert payload["fallback_candidate_issues"]
+
+
+def test_plan_proposal_blocks_high_impact_or_protected_planner_output(tmp_path: Path) -> None:
+    path = write_contract(tmp_path)
+
+    code, payload = run_cli(
+        ["--contract", str(path), "plan-proposal", "--board", "--dry-run"],
+        fake=FakeGh(base_responses(items=[item(ISSUE_EPIC, "Todo")])),
+        runner=planner_runner(planner_response(marker="Touch docs/PROGRAM_STATE_UNIFIED.yaml")),
+    )
+
+    assert code == 0
+    assert payload["status"] == "blocked"
+    assert any(reason["reason"] in {"planner_hard_stop_marker", "planner_protected_path_marker"} for reason in payload["blocked_reasons"])
+
+
+def test_propose_ready_issues_dry_run_generates_required_fields(tmp_path: Path) -> None:
+    path = write_contract(tmp_path)
+
+    code, payload = run_cli(
+        ["--contract", str(path), "propose-ready-issues", "--dry-run", "--max-issues", "2"],
+        fake=FakeGh(base_responses(items=[item(ISSUE_UNKNOWN, "Todo"), item(ISSUE_EPIC, "Todo")])),
+    )
+
+    assert code == 0
+    assert payload["status"] == "ok"
+    assert payload["proposal_count"] == 2
+    first = payload["proposals"][0]
+    assert first["acceptance_gate"]
+    assert first["rollback"]
+    assert first["claim_ceiling"]
+    assert first["observation_class"]
+    assert "## Acceptance gate" in first["body"]
+
+
+def test_run_loop_no_ready_outputs_candidate_issue_drafts(tmp_path: Path) -> None:
+    path = write_contract(tmp_path)
+
+    code, payload = run_cli(
+        ["--contract", str(path), "run-loop", "--dry-run", "--max-issues", "2"],
+        fake=FakeGh(base_responses(items=[item(ISSUE_EPIC, "Todo")])),
+        runner=FakeRunner(stdout=""),
+    )
+
+    assert code == 0
+    assert payload["status"] == "stopped"
+    assert payload["stop_reason"] == "no_ready_issue"
+    assert payload["plan_stage"]["status"] == "candidate_issues_proposed"
+    assert payload["plan_stage"]["candidate_issues"][0]["body"].count("## Acceptance gate") == 1
+
+
+def test_closeout_evidence_does_not_treat_planner_proposal_as_implementation(tmp_path: Path) -> None:
+    path = write_contract(tmp_path)
+    proposal_only_issue = issue(
+        90,
+        "Codex Toolkit: planner-only closeout should block",
+        body=READY_BODY + "\n## Closeout evidence\n- planner proposal: create a candidate issue from the board.\n",
+    )
+
+    code, payload = run_cli(
+        ["--contract", str(path), "closeout-check", "--issue", "90"],
+        fake=FakeGh(responses_for_issue(proposal_only_issue)),
+        runner=closeout_runner(changed_files=""),
+    )
+
+    assert code == 0
+    assert payload["status"] == "blocked"
+    evidence_types = {item["type"] for item in payload["evidence_packet"]["evidence_items"]}
+    assert "planner_proposal" in evidence_types
+    assert any(reason["reason"] == "closeout_evidence_missing_issue_specific_item" for reason in payload["blocked_reasons"])

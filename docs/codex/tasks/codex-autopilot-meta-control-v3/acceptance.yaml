@@ -1,0 +1,32 @@
+version: 1
+task: codex-autopilot-meta-control-v3
+github_issue: 69
+claim_ceiling: Codex Autopilot goal-aware meta-control local workflow candidate pass
+allowed_paths:
+  - .codex/project_contract.yaml
+  - scripts/**
+  - scripts/tests/**
+  - docs/codex/tasks/codex-autopilot-meta-control-v3/**
+forbidden_paths:
+  - EgoOperator/**
+  - legacy/ego-pre-handmade-mainline/**
+  - docs/PROGRAM_STATE_UNIFIED.yaml
+  - artifacts/evidence_ledger/**
+acceptance:
+  - goal_control_contract_defined
+  - goal_status_reports_board_distribution
+  - goal_refresh_outputs_planner_packet
+  - plan_proposal_uses_codex_exec_backend_when_available
+  - planner_unavailable_returns_structured_status
+  - high_impact_or_protected_markers_block_planner_output
+  - generated_issue_proposals_include_acceptance_rollback_claim_ceiling_observation_class
+  - planner_proposal_is_not_implementation_evidence
+  - no_ready_run_loop_outputs_candidate_issue_drafts
+  - tests_pass
+cannot_claim:
+  - full_unattended_autonomous_development
+  - stable_productivity_gain
+  - product_runtime_efficacy
+  - live_autonomy
+  - durable_memory_efficacy
+  - consciousness
