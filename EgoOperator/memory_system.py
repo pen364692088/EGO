@@ -26,6 +26,7 @@ DEFAULT_COMPACTION_THRESHOLD = 0.7
 DEFAULT_HOT_CONTEXT_MAX_ITEMS = 5
 DEFAULT_HOT_CONTEXT_MIN_HITS = 2
 DEFAULT_MEMORY_ITEM_MAX_CHARS = 800
+DEFAULT_STALE_PREFERENCE_DECAY_DAYS = 30
 
 CONTINUITY_QUERY_PATTERNS = (
     r"记得",
@@ -245,6 +246,24 @@ def _memory_key_from_content(text: str) -> str:
     if any(token in value for token in ("工具", "tool", "审批", "approval")):
         return "tool_preference"
     return ""
+
+
+def _parse_iso_datetime(value: str) -> Optional[datetime]:
+    text = (value or "").strip()
+    if not text:
+        return None
+    try:
+        return datetime.fromisoformat(text.replace("Z", "+00:00")).astimezone(timezone.utc)
+    except ValueError:
+        return None
+
+
+def _age_days(ts: str, *, clock: Clock) -> int:
+    parsed = _parse_iso_datetime(ts)
+    if parsed is None:
+        return 0
+    delta = clock().astimezone(timezone.utc) - parsed
+    return max(0, delta.days)
 
 
 def _is_core_memory_note_line(line: str) -> bool:
@@ -596,12 +615,17 @@ class OperatorMemoryStore:
             }),
         }
         result = self._append_jsonl(self.candidate_memory_file, row)
-        if memory_key and correction:
+        if memory_key:
+            conflict_reason = (
+                "superseded_by_candidate_correction"
+                if correction
+                else "superseded_by_new_candidate_same_key"
+            )
             result["conflicts_quarantined"] = self.quarantine_candidate_conflicts(
                 memory_key,
                 replacement_content=clean,
                 replacement_memory_id=str(row["id"]),
-                reason="superseded_by_candidate_correction",
+                reason=conflict_reason,
             )
         return result
 
@@ -840,11 +864,22 @@ class OperatorMemoryStore:
             content = str(item.get("content", ""))
             hit_count = int(item.get("hit_count", 0) or 0)
             relevance = _relevance_score(content, query_tokens)
-            is_hot = bool(item.get("pinned")) or hit_count >= min_hits or relevance > 0
+            age_days = _age_days(str(item.get("last_hit_ts") or item.get("ts") or ""), clock=self.clock)
+            stale_by_age = age_days >= DEFAULT_STALE_PREFERENCE_DECAY_DAYS and not item.get("pinned")
+            hit_hot = hit_count >= min_hits and not stale_by_age
+            is_hot = bool(item.get("pinned")) or hit_hot or relevance > 0
             if not is_hot:
                 continue
-            score = relevance + hit_count * 10 + (1000 if item.get("pinned") else 0)
-            scored.append((score, dict(item)))
+            effective_hits = 0 if stale_by_age else hit_count
+            score = relevance + effective_hits * 10 + (1000 if item.get("pinned") else 0)
+            enriched = dict(item)
+            if stale_by_age:
+                enriched["stale_preference_decay"] = {
+                    "status": "active",
+                    "age_days": age_days,
+                    "effect": "hit_count_no_longer_promotes_hot_context_without_query_relevance",
+                }
+            scored.append((score, enriched))
         scored.sort(key=lambda pair: (pair[0], str(pair[1].get("last_hit_ts") or pair[1].get("ts") or "")), reverse=True)
         return [item for _, item in scored[: max(0, max_items)]]
 

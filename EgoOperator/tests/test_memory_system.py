@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import json
 import sys
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
 import pytest
@@ -42,6 +43,14 @@ class CapturePromptLLM:
 class BadCompactionLLM:
     def complete(self, prompt):
         return "not-json"
+
+
+class MutableClock:
+    def __init__(self, value: datetime) -> None:
+        self.value = value
+
+    def __call__(self) -> datetime:
+        return self.value
 
 
 def test_cli_memory_default_on_writes_only_after_first_turn(tmp_path, monkeypatch):
@@ -263,6 +272,61 @@ def test_repeated_hits_can_make_candidate_hot_without_pin(tmp_path):
     context = store.build_context()
 
     assert "用户偏好：中文结论先行" in context.render_for_prompt()
+
+
+def test_stale_unpinned_candidate_hits_do_not_dominate_hot_context(tmp_path):
+    clock = MutableClock(datetime(2026, 1, 1, tzinfo=timezone.utc))
+    store = OperatorMemoryStore(tmp_path / "memory", containment_root=tmp_path, clock=clock)
+    candidate = store.propose_candidate_memory("用户偏好：中文结论先行", source="test")
+    store.record_memory_hit(candidate["id"], query="中文")
+    store.record_memory_hit(candidate["id"], query="中文")
+
+    clock.value = clock.value + timedelta(days=45)
+    context = store.build_context(query_text="今天聊黑暗之魂")
+
+    assert "用户偏好：中文结论先行" not in context.render_for_prompt()
+
+
+def test_stale_candidate_can_still_match_direct_relevant_query(tmp_path):
+    clock = MutableClock(datetime(2026, 1, 1, tzinfo=timezone.utc))
+    store = OperatorMemoryStore(tmp_path / "memory", containment_root=tmp_path, clock=clock)
+    candidate = store.propose_candidate_memory("用户偏好：中文结论先行", source="test")
+    store.record_memory_hit(candidate["id"], query="中文")
+    store.record_memory_hit(candidate["id"], query="中文")
+
+    clock.value = clock.value + timedelta(days=45)
+    context = store.build_context(query_text="中文 偏好")
+
+    rendered = context.render_for_prompt()
+    assert "用户偏好：中文结论先行" in rendered
+    assert "stale_preference_decay" not in rendered
+    hot_item = context.hot_items[0]
+    assert hot_item["stale_preference_decay"]["age_days"] >= 45
+
+
+def test_new_same_key_preference_quarantines_stale_candidate(tmp_path):
+    store = OperatorMemoryStore(tmp_path / "memory", containment_root=tmp_path)
+    stale = store.propose_candidate_memory("user_signal: 我偏好中文回答", source="test")
+
+    replacement = store.propose_candidate_memory("user_signal: 我偏好英文回答", source="test")
+
+    active = store.list_candidate_memories()
+    archived = store.list_candidate_memories(include_archived=True)
+    assert replacement["status"] == "candidate"
+    assert replacement["conflicts_quarantined"]["count"] == 1
+    assert all(item["id"] != stale["id"] for item in active)
+    assert any(item["id"] == stale["id"] and item["status"] == "cold_archive" for item in archived)
+    event_rows = [
+        json.loads(line)
+        for line in store.memory_events_file.read_text(encoding="utf-8").splitlines()
+        if line.strip()
+    ]
+    assert any(
+        event["memory_id"] == stale["id"]
+        and event["action"] == "archive"
+        and event["reason"] == "superseded_by_new_candidate_same_key"
+        for event in event_rows
+    )
 
 
 def test_archived_and_forgotten_memory_are_excluded_from_hot_context(tmp_path):

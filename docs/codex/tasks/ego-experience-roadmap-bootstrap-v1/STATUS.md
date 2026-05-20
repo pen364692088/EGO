@@ -98,6 +98,8 @@
 - #45 implementation adds explicit `/memory_approve <id>` candidate approval: approved candidate preferences are promoted into EgoOperator candidate-local `MEMORY.md`, the candidate moves out of active review, and the same command is available in the CLI-compatible scripted entrypoint. This remains operator-approved local memory only, not automatic learning or EGO canonical memory.
 - #46 was promoted to `In Progress` for adaptation effectiveness sample pack.
 - #46 implementation adds `adaptation_effectiveness_sample_pack.json` plus a scripted before/after report path that produces deterministic guard results and an LLM reviewer packet for approved-preference response adaptation. This remains a scripted reviewer packet only, not durable learning proof.
+- #47 was promoted to `In Progress` for stale preference decay and conflict handling.
+- #47 implementation keeps old preferences from dominating future hot context by quarantining same-key candidate replacements and making stale unpinned candidates lose hit-count-only hot-context promotion while still allowing direct query relevance.
 
 ## Notes
 
