@@ -144,6 +144,7 @@ auto_closeout:
   done_status: Done
   observation_verify_profiles:
     deterministic_local: autopilot_full
+    research: autopilot_full
     scripted_real_entry: autopilot_full
     scripted_with_llm_judge: autopilot_full
   llm_review_observation_classes:
@@ -266,6 +267,9 @@ observation_classes:
   deterministic_local:
     closeout_allowed: true
     description: Unit tests or local deterministic scripts provide a direct oracle.
+  research:
+    closeout_allowed: true
+    description: A bounded research/report artifact provides issue-specific evidence; no runtime efficacy or human perception claim is made.
   scripted_real_entry:
     closeout_allowed: true
     description: The same user-facing entrypoint can be scripted and judged deterministically.

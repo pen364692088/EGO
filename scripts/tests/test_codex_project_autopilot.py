@@ -219,6 +219,8 @@ task_classification:
 observation_classes:
   deterministic_local:
     closeout_allowed: true
+  research:
+    closeout_allowed: true
   scripted_real_entry:
     closeout_allowed: true
   scripted_with_llm_judge:
@@ -230,6 +232,7 @@ auto_closeout:
   done_status: Done
   observation_verify_profiles:
     deterministic_local: target
+    research: target
     scripted_real_entry: target
     scripted_with_llm_judge: target
   llm_review_observation_classes:
@@ -1079,6 +1082,66 @@ def test_closeout_check_scripted_real_entry_with_report_evidence_is_eligible(tmp
     assert code == 0
     assert payload["status"] == "eligible"
     assert any(item["type"] == "issue_evidence" for item in payload["evidence_packet"]["evidence_items"])
+
+
+def test_closeout_check_research_requires_report_evidence(tmp_path: Path) -> None:
+    path = write_contract(tmp_path)
+    research = issue(
+        73,
+        "Research: quote-safe scene matrix",
+        body=READY_BODY + "\nObservation class: research\n",
+    )
+
+    code, payload = run_cli(
+        ["--contract", str(path), "closeout-check", "--issue", "73"],
+        fake=FakeGh(responses_for_issue(research)),
+        runner=closeout_runner(),
+    )
+
+    assert code == 0
+    assert payload["status"] == "blocked"
+    assert any(
+        reason["reason"] == "closeout_evidence_missing_research_report_item"
+        for reason in payload["blocked_reasons"]
+    )
+
+
+def test_closeout_check_research_with_label_sections_and_report_evidence_is_eligible(tmp_path: Path) -> None:
+    path = write_contract(tmp_path)
+    research = issue(
+        75,
+        "Research: Joi trait extraction and quote-safe scene matrix",
+        body=(
+            "Canonical source: roadmap.\n\n"
+            "Observation class: research\n\n"
+            "Acceptance gate:\n"
+            "- Matrix covers at least 8 interaction beats.\n"
+            "- No long dialogue text is committed.\n\n"
+            "Closeout evidence:\n"
+            "- research matrix report: `docs/codex/tasks/demo/JOI_COMPANION_REFERENCE_MATRIX.md` covers 8 beats and maps each beat to a mechanism candidate.\n\n"
+            "Claim ceiling:\n"
+            "Bounded research only.\n\n"
+            "Rollback:\n"
+            "Revert the report.\n"
+        ),
+    )
+
+    code, payload = run_cli(
+        ["--contract", str(path), "closeout-check", "--issue", "75"],
+        fake=FakeGh(responses_for_issue(research)),
+        runner=closeout_runner(),
+    )
+
+    assert code == 0
+    assert payload["status"] == "eligible"
+    gates = [row["gate"] for row in payload["evidence_packet"]["acceptance_result"]]
+    assert "Matrix covers at least 8 interaction beats." in gates
+    assert "No long dialogue text is committed." in gates
+    assert payload["evidence_packet"]["observation_boundary"]["can_claim"] == "bounded research/report candidate pass"
+    summaries = [item["summary"] for item in payload["evidence_packet"]["evidence_items"]]
+    assert any("research matrix report" in summary for summary in summaries)
+    assert not any("Rollback" in summary for summary in summaries)
+    assert not any("Claim ceiling" in summary for summary in summaries)
 
 
 def test_closeout_comment_summarizes_long_verify_output(tmp_path: Path) -> None:

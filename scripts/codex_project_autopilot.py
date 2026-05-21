@@ -941,12 +941,19 @@ def format_digest_text(text: str, *, max_chars: int = 220) -> str:
 
 
 def extract_markdown_section(body: str, heading: str) -> str:
-    pattern = re.compile(rf"^##\s+{re.escape(heading)}\s*$", re.IGNORECASE | re.MULTILINE)
+    pattern = re.compile(
+        rf"^(?:##\s+{re.escape(heading)}|{re.escape(heading)}\s*:)\s*$",
+        re.IGNORECASE | re.MULTILINE,
+    )
     match = pattern.search(body)
     if not match:
         return ""
     rest = body[match.end() :]
-    next_heading = re.search(r"^##\s+", rest, flags=re.MULTILINE)
+    next_heading = re.search(
+        r"^(?:##\s+|[A-Za-z][A-Za-z0-9 /_-]{0,80}\s*:).*$",
+        rest,
+        flags=re.MULTILINE,
+    )
     if next_heading:
         rest = rest[: next_heading.start()]
     return rest.strip()
@@ -1135,6 +1142,12 @@ def observation_boundary(observation_class: str) -> dict[str, Any]:
             "can_claim": "local deterministic workflow candidate pass",
             "cannot_claim": "real user perception, runtime efficacy, live autonomy, durable memory efficacy, or consciousness",
         }
+    if observation_class == "research":
+        return {
+            "class": observation_class,
+            "can_claim": "bounded research/report candidate pass",
+            "cannot_claim": "runtime efficacy, human perception, stable product benefit, live autonomy, durable memory efficacy, or consciousness",
+        }
     if observation_class == "scripted_real_entry":
         return {
             "class": observation_class,
@@ -1197,6 +1210,16 @@ def closeout_evidence_blockers(observation_class: str, evidence_packet: dict[str
             blockers.append({"reason": "closeout_evidence_missing_verification"})
         if not issue_specific:
             blockers.append({"reason": "closeout_evidence_missing_issue_specific_item"})
+    elif observation_class == "research":
+        if not passed_verify:
+            blockers.append({"reason": "closeout_evidence_missing_verification"})
+        research_evidence = any(
+            item.get("type") == "issue_evidence"
+            and re.search(r"(research|matrix|report|inventory|scan|artifact|研究|矩阵|报告|清单)", str(item.get("summary") or ""), re.I)
+            for item in items
+        )
+        if not research_evidence:
+            blockers.append({"reason": "closeout_evidence_missing_research_report_item"})
     elif observation_class == "scripted_real_entry":
         if not passed_verify:
             blockers.append({"reason": "closeout_evidence_missing_verification"})
