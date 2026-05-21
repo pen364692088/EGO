@@ -30,6 +30,7 @@ def test_experience_eval_contract_is_valid() -> None:
     assert result["joi_companion_pack"].endswith("joi_companion_smoke_pack.json")
     assert result["companion_relationship_pack"].endswith("companion_relationship_continuity_pack.json")
     assert result["affective_attunement_pack"].endswith("affective_attunement_timing_pack.json")
+    assert result["bounded_self_initiative_pack"].endswith("bounded_self_initiative_pack.json")
     assert result["continuity_regression"]["paraphrase_group_count"] >= 4
     assert result["continuity_regression"]["carryover_case_count"] >= 4
     assert result["continuity_regression"]["paraphrase_prompt_count"] >= 12
@@ -70,6 +71,22 @@ def test_experience_eval_contract_is_valid() -> None:
         "playfulness",
         "uncertainty",
     }
+    assert result["bounded_self_initiative"]["case_count"] >= 6
+    assert result["bounded_self_initiative"]["observation_class"] == "scripted_real_entry"
+    assert set(result["bounded_self_initiative"]["covered_mechanisms"]) == {
+        "bounded_checkin",
+        "cancel_or_quiet",
+        "candidate_due_only",
+        "explicit_followup_proposal",
+        "memory_gate",
+        "tool_gate",
+    }
+    assert {"explicit_operator_intent", "approval_required", "cancellable"}.issubset(
+        set(result["bounded_self_initiative"]["covered_consent_policies"])
+    )
+    assert {"explicit_expiry_required", "due_candidate_only", "operator_cancellable"}.issubset(
+        set(result["bounded_self_initiative"]["covered_expiry_policies"])
+    )
     assert {"continuity", "memory_pollution", "tool_recovery", "correction_burden"}.issubset(
         set(result["adaptation_effectiveness"]["covered_score_focus"])
     )

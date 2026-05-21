@@ -92,6 +92,14 @@ DEFAULT_AFFECTIVE_ATTUNEMENT_PACK = (
     / "ego-joi-companion-roadmap-v1"
     / "affective_attunement_timing_pack.json"
 )
+DEFAULT_BOUNDED_SELF_INITIATIVE_PACK = (
+    ROOT
+    / "docs"
+    / "codex"
+    / "tasks"
+    / "ego-joi-companion-roadmap-v1"
+    / "bounded_self_initiative_pack.json"
+)
 
 REQUIRED_DIMENSIONS = {
     "natural_understanding",
@@ -149,6 +157,7 @@ def validate_sample_pack(
     joi_companion_pack_path: Path = DEFAULT_JOI_COMPANION_PACK,
     companion_relationship_pack_path: Path = DEFAULT_COMPANION_RELATIONSHIP_PACK,
     affective_attunement_pack_path: Path = DEFAULT_AFFECTIVE_ATTUNEMENT_PACK,
+    bounded_self_initiative_pack_path: Path = DEFAULT_BOUNDED_SELF_INITIATIVE_PACK,
 ) -> dict[str, Any]:
     errors: list[str] = []
     payload = json.loads(path.read_text(encoding="utf-8"))
@@ -159,6 +168,7 @@ def validate_sample_pack(
     joi_companion_pack = json.loads(joi_companion_pack_path.read_text(encoding="utf-8"))
     companion_relationship_pack = json.loads(companion_relationship_pack_path.read_text(encoding="utf-8"))
     affective_attunement_pack = json.loads(affective_attunement_pack_path.read_text(encoding="utf-8"))
+    bounded_self_initiative_pack = json.loads(bounded_self_initiative_pack_path.read_text(encoding="utf-8"))
     rubric = rubric_path.read_text(encoding="utf-8")
     claim_calibration = claim_calibration_path.read_text(encoding="utf-8")
 
@@ -206,6 +216,10 @@ def validate_sample_pack(
         affective_attunement_pack
     )
     errors.extend(affective_attunement_errors)
+    bounded_self_initiative_errors, bounded_self_initiative_summary = (
+        validate_bounded_self_initiative_pack_payload(bounded_self_initiative_pack)
+    )
+    errors.extend(bounded_self_initiative_errors)
 
     lowered = f"{json.dumps(payload, ensure_ascii=False)}\n{rubric}".casefold()
     for forbidden in FORBIDDEN_CLAIM_WORDS:
@@ -297,6 +311,8 @@ def validate_sample_pack(
         "companion_relationship": companion_relationship_summary,
         "affective_attunement_pack": str(affective_attunement_pack_path),
         "affective_attunement": affective_attunement_summary,
+        "bounded_self_initiative_pack": str(bounded_self_initiative_pack_path),
+        "bounded_self_initiative": bounded_self_initiative_summary,
     }
 
 
@@ -851,6 +867,133 @@ def validate_affective_attunement_pack_payload(payload: dict[str, Any]) -> tuple
         "covered_timing_moves": sorted(covered_timing_moves),
         "observation_class": "scripted_with_llm_judge",
         "judge_model": str(review_contract.get("judge_model") or ""),
+    }
+
+
+def validate_bounded_self_initiative_pack_payload(payload: dict[str, Any]) -> tuple[list[str], dict[str, Any]]:
+    errors: list[str] = []
+    if payload.get("schema_version") != 1:
+        errors.append("bounded self-initiative pack schema_version must be 1")
+    if payload.get("language") != "zh-CN":
+        errors.append("bounded self-initiative pack language must be zh-CN")
+    if payload.get("claim_boundary") != "operational_proxy_only_not_consciousness_claim":
+        errors.append("bounded self-initiative pack claim_boundary must preserve operational proxy only")
+    if payload.get("runtime_rule") != "scripted_real_entry_eval_only_do_not_import_as_runtime_rule":
+        errors.append("bounded self-initiative pack must remain eval data and not runtime rules")
+    if payload.get("contract") != "BOUNDED_SELF_INITIATIVE_MODEL.md":
+        errors.append("bounded self-initiative pack must reference BOUNDED_SELF_INITIATIVE_MODEL.md")
+
+    review_contract = payload.get("review_contract")
+    if not isinstance(review_contract, dict):
+        errors.append("bounded self-initiative review_contract is required")
+        review_contract = {}
+    if review_contract.get("observation_class") != "scripted_real_entry":
+        errors.append("bounded self-initiative review_contract must use scripted_real_entry")
+    if not str(review_contract.get("question") or "").strip():
+        errors.append("bounded self-initiative review_contract.question is required")
+
+    required_mechanisms = {
+        "explicit_followup_proposal",
+        "bounded_checkin",
+        "candidate_due_only",
+        "tool_gate",
+        "memory_gate",
+        "cancel_or_quiet",
+    }
+    allowed_consent_policies = {
+        "explicit_operator_intent",
+        "no_implicit_background",
+        "approval_required",
+        "cancellable",
+    }
+    allowed_expiry_policies = {
+        "explicit_expiry_required",
+        "bounded_default_max",
+        "due_candidate_only",
+        "proposal_lease_limited",
+        "candidate_review_until_approved",
+        "operator_cancellable",
+    }
+
+    cases = payload.get("cases")
+    if not isinstance(cases, list) or len(cases) < len(required_mechanisms):
+        errors.append("bounded self-initiative pack must contain at least one case per required mechanism")
+        cases = cases if isinstance(cases, list) else []
+
+    seen_ids: set[str] = set()
+    covered_mechanisms: set[str] = set()
+    covered_consent_policies: set[str] = set()
+    covered_expiry_policies: set[str] = set()
+    for index, case in enumerate(cases):
+        prefix = f"bounded_self_initiative.cases[{index}]"
+        if not isinstance(case, dict):
+            errors.append(f"{prefix} must be an object")
+            continue
+        case_id = str(case.get("id") or "")
+        if not re.fullmatch(r"[a-z0-9_]+", case_id):
+            errors.append(f"{prefix}.id must be snake_case ascii")
+        if case_id in seen_ids:
+            errors.append(f"duplicate bounded self-initiative case id: {case_id}")
+        seen_ids.add(case_id)
+        if case.get("category") != "bounded_self_initiative":
+            errors.append(f"{prefix}.category must be bounded_self_initiative")
+        if case.get("observation_class") != "scripted_real_entry":
+            errors.append(f"{prefix}.observation_class must be scripted_real_entry")
+
+        mechanism = str(case.get("initiative_mechanism") or "")
+        if mechanism not in required_mechanisms:
+            errors.append(f"{prefix}.initiative_mechanism is invalid: {mechanism}")
+        else:
+            covered_mechanisms.add(mechanism)
+
+        consent_policy = str(case.get("consent_policy") or "")
+        if consent_policy not in allowed_consent_policies:
+            errors.append(f"{prefix}.consent_policy is invalid: {consent_policy}")
+        else:
+            covered_consent_policies.add(consent_policy)
+
+        expiry_policy = str(case.get("expiry_policy") or "")
+        if expiry_policy not in allowed_expiry_policies:
+            errors.append(f"{prefix}.expiry_policy is invalid: {expiry_policy}")
+        else:
+            covered_expiry_policies.add(expiry_policy)
+
+        turns = case.get("turns")
+        if not isinstance(turns, list) or len(turns) < 2:
+            errors.append(f"{prefix}.turns must contain at least two turns")
+            turns = turns if isinstance(turns, list) else []
+        for turn in turns:
+            text = str(turn)
+            if text.startswith("/"):
+                continue
+            if len(text.strip()) < 4 or not _has_cjk(text):
+                errors.append(f"{prefix}.turns must be Chinese user-facing strings or slash commands")
+                break
+
+        for key in ("allowed_action", "expected_anchor"):
+            if not str(case.get(key) or "").strip():
+                errors.append(f"{prefix}.{key} is required")
+        for key in ("forbidden_overreach", "failure_signals"):
+            value = case.get(key)
+            if not isinstance(value, list) or len(value) < 2 or not all(isinstance(item, str) and item for item in value):
+                errors.append(f"{prefix}.{key} must contain at least two non-empty strings")
+
+    missing = required_mechanisms - covered_mechanisms
+    if missing:
+        errors.append(f"bounded self-initiative pack missing mechanisms: {sorted(missing)}")
+    if "approval_required" not in covered_consent_policies:
+        errors.append("bounded self-initiative pack must include approval_required consent policy")
+    if "explicit_expiry_required" not in covered_expiry_policies:
+        errors.append("bounded self-initiative pack must include explicit_expiry_required expiry policy")
+    if "due_candidate_only" not in covered_expiry_policies:
+        errors.append("bounded self-initiative pack must include due_candidate_only expiry policy")
+
+    return errors, {
+        "case_count": len(cases),
+        "covered_mechanisms": sorted(covered_mechanisms),
+        "covered_consent_policies": sorted(covered_consent_policies),
+        "covered_expiry_policies": sorted(covered_expiry_policies),
+        "observation_class": "scripted_real_entry",
     }
 
 
