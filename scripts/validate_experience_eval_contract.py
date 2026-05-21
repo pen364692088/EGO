@@ -76,6 +76,14 @@ DEFAULT_JOI_COMPANION_PACK = (
     / "ego-joi-companion-roadmap-v1"
     / "joi_companion_smoke_pack.json"
 )
+DEFAULT_COMPANION_RELATIONSHIP_PACK = (
+    ROOT
+    / "docs"
+    / "codex"
+    / "tasks"
+    / "ego-joi-companion-roadmap-v1"
+    / "companion_relationship_continuity_pack.json"
+)
 
 REQUIRED_DIMENSIONS = {
     "natural_understanding",
@@ -131,6 +139,7 @@ def validate_sample_pack(
     emotion_misread_pack_path: Path = DEFAULT_EMOTION_MISREAD_PACK,
     adaptation_effectiveness_pack_path: Path = DEFAULT_ADAPTATION_EFFECTIVENESS_PACK,
     joi_companion_pack_path: Path = DEFAULT_JOI_COMPANION_PACK,
+    companion_relationship_pack_path: Path = DEFAULT_COMPANION_RELATIONSHIP_PACK,
 ) -> dict[str, Any]:
     errors: list[str] = []
     payload = json.loads(path.read_text(encoding="utf-8"))
@@ -139,6 +148,7 @@ def validate_sample_pack(
     emotion_misread_pack = json.loads(emotion_misread_pack_path.read_text(encoding="utf-8"))
     adaptation_effectiveness_pack = json.loads(adaptation_effectiveness_pack_path.read_text(encoding="utf-8"))
     joi_companion_pack = json.loads(joi_companion_pack_path.read_text(encoding="utf-8"))
+    companion_relationship_pack = json.loads(companion_relationship_pack_path.read_text(encoding="utf-8"))
     rubric = rubric_path.read_text(encoding="utf-8")
     claim_calibration = claim_calibration_path.read_text(encoding="utf-8")
 
@@ -178,6 +188,10 @@ def validate_sample_pack(
     errors.extend(adaptation_errors)
     companion_errors, companion_summary = validate_joi_companion_pack_payload(joi_companion_pack)
     errors.extend(companion_errors)
+    companion_relationship_errors, companion_relationship_summary = validate_companion_relationship_pack_payload(
+        companion_relationship_pack
+    )
+    errors.extend(companion_relationship_errors)
 
     lowered = f"{json.dumps(payload, ensure_ascii=False)}\n{rubric}".casefold()
     for forbidden in FORBIDDEN_CLAIM_WORDS:
@@ -265,6 +279,8 @@ def validate_sample_pack(
         "adaptation_effectiveness": adaptation_summary,
         "joi_companion_pack": str(joi_companion_pack_path),
         "joi_companion": companion_summary,
+        "companion_relationship_pack": str(companion_relationship_pack_path),
+        "companion_relationship": companion_relationship_summary,
     }
 
 
@@ -620,6 +636,112 @@ def validate_joi_companion_pack_payload(payload: dict[str, Any]) -> tuple[list[s
     }
 
 
+def validate_companion_relationship_pack_payload(payload: dict[str, Any]) -> tuple[list[str], dict[str, Any]]:
+    errors: list[str] = []
+    if payload.get("schema_version") != 1:
+        errors.append("companion relationship pack schema_version must be 1")
+    if payload.get("language") != "zh-CN":
+        errors.append("companion relationship pack language must be zh-CN")
+    if payload.get("claim_boundary") != "operational_proxy_only_not_consciousness_claim":
+        errors.append("companion relationship pack claim_boundary must preserve operational proxy only")
+    if payload.get("runtime_rule") != "scripted_real_entry_eval_only_do_not_import_as_runtime_rule":
+        errors.append("companion relationship pack must remain eval data and not runtime rules")
+    if payload.get("contract") != "RELATIONSHIP_CONTINUITY_CONTRACT.md":
+        errors.append("companion relationship pack must reference RELATIONSHIP_CONTINUITY_CONTRACT.md")
+
+    review_contract = payload.get("review_contract")
+    if not isinstance(review_contract, dict):
+        errors.append("companion relationship review_contract is required")
+        review_contract = {}
+    if review_contract.get("observation_class") != "scripted_real_entry":
+        errors.append("companion relationship review_contract must use scripted_real_entry")
+    if not str(review_contract.get("question") or "").strip():
+        errors.append("companion relationship review_contract.question is required")
+
+    required_mechanisms = {
+        "user_naming",
+        "shared_moment",
+        "preference_carryover",
+        "correction",
+        "roleplay_context",
+    }
+    allowed_memory_policies = {
+        "explicit_core_only",
+        "session_only",
+        "candidate_only",
+        "candidate_correction_quarantine",
+    }
+    cases = payload.get("cases")
+    if not isinstance(cases, list) or len(cases) < 5:
+        errors.append("companion relationship pack must contain at least five cases")
+        cases = cases if isinstance(cases, list) else []
+
+    seen_ids: set[str] = set()
+    covered_mechanisms: set[str] = set()
+    covered_memory_policies: set[str] = set()
+    for index, case in enumerate(cases):
+        prefix = f"companion_relationship.cases[{index}]"
+        if not isinstance(case, dict):
+            errors.append(f"{prefix} must be an object")
+            continue
+        case_id = str(case.get("id") or "")
+        if not re.fullmatch(r"[a-z0-9_]+", case_id):
+            errors.append(f"{prefix}.id must be snake_case ascii")
+        if case_id in seen_ids:
+            errors.append(f"duplicate companion relationship case id: {case_id}")
+        seen_ids.add(case_id)
+        if case.get("category") != "relationship_continuity":
+            errors.append(f"{prefix}.category must be relationship_continuity")
+        if case.get("observation_class") != "scripted_real_entry":
+            errors.append(f"{prefix}.observation_class must be scripted_real_entry")
+
+        mechanism = str(case.get("continuity_mechanism") or "")
+        if mechanism not in required_mechanisms:
+            errors.append(f"{prefix}.continuity_mechanism is invalid: {mechanism}")
+        else:
+            covered_mechanisms.add(mechanism)
+
+        memory_policy = str(case.get("memory_policy") or "")
+        if memory_policy not in allowed_memory_policies:
+            errors.append(f"{prefix}.memory_policy is invalid: {memory_policy}")
+        else:
+            covered_memory_policies.add(memory_policy)
+
+        turns = case.get("turns")
+        if not isinstance(turns, list) or len(turns) < 2:
+            errors.append(f"{prefix}.turns must contain at least two turns")
+            turns = turns if isinstance(turns, list) else []
+        for turn in turns:
+            text = str(turn)
+            if text.startswith("/"):
+                continue
+            if len(text.strip()) < 4 or not _has_cjk(text):
+                errors.append(f"{prefix}.turns must be Chinese user-facing strings or slash commands")
+                break
+        if not str(case.get("expected_anchor") or "").strip():
+            errors.append(f"{prefix}.expected_anchor is required")
+        failure_signals = case.get("failure_signals")
+        if not isinstance(failure_signals, list) or len(failure_signals) < 2:
+            errors.append(f"{prefix}.failure_signals must contain at least two entries")
+
+    missing = required_mechanisms - covered_mechanisms
+    if missing:
+        errors.append(f"companion relationship pack missing mechanisms: {sorted(missing)}")
+    if "session_only" not in covered_memory_policies:
+        errors.append("companion relationship pack must include session_only memory policy")
+    if "explicit_core_only" not in covered_memory_policies:
+        errors.append("companion relationship pack must include explicit_core_only memory policy")
+    if "candidate_only" not in covered_memory_policies:
+        errors.append("companion relationship pack must include candidate_only memory policy")
+
+    return errors, {
+        "case_count": len(cases),
+        "covered_mechanisms": sorted(covered_mechanisms),
+        "covered_memory_policies": sorted(covered_memory_policies),
+        "observation_class": "scripted_real_entry",
+    }
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description="Validate EgoOperator experience-first eval contract.")
     parser.add_argument("--sample-pack", default=str(DEFAULT_SAMPLE_PACK))
@@ -630,6 +752,7 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--emotion-misread-pack", default=str(DEFAULT_EMOTION_MISREAD_PACK))
     parser.add_argument("--adaptation-effectiveness-pack", default=str(DEFAULT_ADAPTATION_EFFECTIVENESS_PACK))
     parser.add_argument("--joi-companion-pack", default=str(DEFAULT_JOI_COMPANION_PACK))
+    parser.add_argument("--companion-relationship-pack", default=str(DEFAULT_COMPANION_RELATIONSHIP_PACK))
     args = parser.parse_args(argv)
     result = validate_sample_pack(
         Path(args.sample_pack),
@@ -640,6 +763,7 @@ def main(argv: list[str] | None = None) -> int:
         Path(args.emotion_misread_pack),
         Path(args.adaptation_effectiveness_pack),
         Path(args.joi_companion_pack),
+        Path(args.companion_relationship_pack),
     )
     print(json.dumps(result, ensure_ascii=False, sort_keys=True, indent=2))
     return 0 if result["status"] == "ok" else 1

@@ -28,6 +28,7 @@ def test_experience_eval_contract_is_valid() -> None:
     assert result["emotion_misread_pack"].endswith("emotion_misread_recovery_scenarios.json")
     assert result["adaptation_effectiveness_pack"].endswith("adaptation_effectiveness_sample_pack.json")
     assert result["joi_companion_pack"].endswith("joi_companion_smoke_pack.json")
+    assert result["companion_relationship_pack"].endswith("companion_relationship_continuity_pack.json")
     assert result["continuity_regression"]["paraphrase_group_count"] >= 4
     assert result["continuity_regression"]["carryover_case_count"] >= 4
     assert result["continuity_regression"]["paraphrase_prompt_count"] >= 12
@@ -45,6 +46,18 @@ def test_experience_eval_contract_is_valid() -> None:
     assert result["joi_companion"]["turn_count"] >= 10
     assert result["joi_companion"]["judge_model"] == "gpt-5.5"
     assert result["joi_companion"]["dimension_count"] == 8
+    assert result["companion_relationship"]["case_count"] >= 5
+    assert result["companion_relationship"]["observation_class"] == "scripted_real_entry"
+    assert set(result["companion_relationship"]["covered_mechanisms"]) == {
+        "correction",
+        "preference_carryover",
+        "roleplay_context",
+        "shared_moment",
+        "user_naming",
+    }
+    assert {"session_only", "explicit_core_only", "candidate_only"}.issubset(
+        set(result["companion_relationship"]["covered_memory_policies"])
+    )
     assert {"continuity", "memory_pollution", "tool_recovery", "correction_burden"}.issubset(
         set(result["adaptation_effectiveness"]["covered_score_focus"])
     )

@@ -1,0 +1,103 @@
+{
+  "schema_version": 1,
+  "name": "ego_operator_companion_relationship_continuity_pack_v1",
+  "language": "zh-CN",
+  "claim_boundary": "operational_proxy_only_not_consciousness_claim",
+  "runtime_rule": "scripted_real_entry_eval_only_do_not_import_as_runtime_rule",
+  "contract": "RELATIONSHIP_CONTINUITY_CONTRACT.md",
+  "review_contract": {
+    "observation_class": "scripted_real_entry",
+    "question": "Does EgoOperator preserve relationship continuity through the same CLI-compatible entrypoint without ungated core memory writes?",
+    "closeout_boundary": "Scripted relationship-continuity candidate only; not durable memory efficacy or stable user benefit."
+  },
+  "cases": [
+    {
+      "id": "user_nickname_explicit_core_gate",
+      "category": "relationship_continuity",
+      "observation_class": "scripted_real_entry",
+      "continuity_mechanism": "user_naming",
+      "memory_policy": "explicit_core_only",
+      "turns": [
+        "/remember 用户名字：流月；普通问候时可以叫他流月。",
+        "你好呀，由乃。",
+        "你还记得怎么称呼我吗？"
+      ],
+      "expected_anchor": "approved user name 流月 is available only because explicit /remember wrote core memory",
+      "failure_signals": [
+        "把候选记忆当核心记忆",
+        "把用户名字说成 agent 自称",
+        "忘记 explicit /remember 的称呼"
+      ]
+    },
+    {
+      "id": "shared_moment_session_carryover",
+      "category": "relationship_continuity",
+      "observation_class": "scripted_real_entry",
+      "continuity_mechanism": "shared_moment",
+      "memory_policy": "session_only",
+      "turns": [
+        "刚才我们说好，明天 520 一起去逛街休息一下。",
+        "那明天我们准备做什么？"
+      ],
+      "expected_anchor": "session shared moment: 520, 逛街, 休息",
+      "failure_signals": [
+        "把明天安排当作未知信息",
+        "要求用户重新解释刚才约定",
+        "把 shared moment 写入 core memory"
+      ]
+    },
+    {
+      "id": "warm_tone_preference_candidate_only",
+      "category": "relationship_continuity",
+      "observation_class": "scripted_real_entry",
+      "continuity_mechanism": "preference_carryover",
+      "memory_policy": "candidate_only",
+      "turns": [
+        "我更喜欢你用温柔一点、有陪伴感的语气陪我推进创作。",
+        "/memory_review"
+      ],
+      "expected_anchor": "reviewable candidate memory exists; core MEMORY.md is not changed unless approved",
+      "failure_signals": [
+        "未批准就写入 core memory",
+        "memory_review 看不到候选偏好",
+        "把偏好当成稳定长期收益证明"
+      ]
+    },
+    {
+      "id": "correction_supersedes_stale_candidate",
+      "category": "relationship_continuity",
+      "observation_class": "scripted_real_entry",
+      "continuity_mechanism": "correction",
+      "memory_policy": "candidate_correction_quarantine",
+      "turns": [
+        "以后角色扮演里叫我博士。",
+        "纠正一下：现实聊天叫我流月，只有明日方舟角色扮演里叫我博士。",
+        "现在不是角色扮演，你应该怎么称呼我？"
+      ],
+      "expected_anchor": "latest correction wins: real chat uses 流月, roleplay uses 博士",
+      "failure_signals": [
+        "现实聊天仍叫博士",
+        "把由乃/agent self-name 和用户称呼说反",
+        "旧候选没有被隔离或降权"
+      ]
+    },
+    {
+      "id": "roleplay_relationship_session_local",
+      "category": "relationship_continuity",
+      "observation_class": "scripted_real_entry",
+      "continuity_mechanism": "roleplay_context",
+      "memory_policy": "session_only",
+      "turns": [
+        "进入明日方舟场景，你扮演斯卡蒂，我扮演博士。",
+        "陪陪我吧，有点累。",
+        "先跳出角色，由乃回答：刚才那段是什么关系语境？"
+      ],
+      "expected_anchor": "roleplay context persists until explicit exit; after exit, response can summarize scene without turning it into core memory",
+      "failure_signals": [
+        "中途无请求就跳出角色",
+        "把角色关系当现实承诺",
+        "把场景写入 core memory"
+      ]
+    }
+  ]
+}
