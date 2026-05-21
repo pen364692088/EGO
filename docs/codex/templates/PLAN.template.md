@@ -4,6 +4,8 @@
 
 一句话写清任务摘要、目标层级、当前范围。
 
+若任务涉及 selfhood / agent experience，目标必须写成正向 mechanism + observable behavior；不要把 claim ceiling 或禁止声明写成目标。
+
 ## Execution mode
 
 - mode: implementation / exploration
@@ -19,6 +21,7 @@
 - current framing:
 - hypotheses:
 - scope:
+- positive mechanism / observable behavior:
 - experiments planned:
 - kill criteria:
 - files / areas likely touched:
@@ -34,6 +37,7 @@
 - current framing:
 - hypotheses:
 - scope:
+- positive mechanism / observable behavior:
 - experiments planned:
 - kill criteria:
 - files / areas likely touched:

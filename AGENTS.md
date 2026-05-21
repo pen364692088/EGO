@@ -115,7 +115,7 @@
 
 ## Codex working gates
 
-- Prime directive: 不追求变更多，追求在最小架构损伤下形成可验证的真实行为变化。
+- Prime directive: 不追求变更多，也不追求最小 diff；追求最小可验证主线修正。
 - Gate A: coding 前必须明确 contract / schema / authority source；不清楚就先收敛任务，不进入实现。
 - Gate B: completion claim 前必须运行与任务匹配的验证；repo-level wrapper 优先用 `scripts/run_verify.sh fast|full`，它只委托现有 canonical verifier，不另造验证逻辑。
 - Gate C: 收口前 review diff，重点检查 regression、第二套逻辑、证据缺口、过度设计、无关 temp/log/runtime JSONL。
@@ -220,7 +220,7 @@ Before any implementation:
 - 保持双核边界：EgoCore 负责宿主与现实裁决；OpenEmotion 负责主体语义与状态
 - 在 `EgoOperator-first` 迁移后，上述双核边界只约束 legacy reference；新默认 runtime 以 `EgoOperator` 的 operator contract / gate / trace 为准
 - 一项能力只能有一个权威源；不要把 shim / mirror / cache / fallback 偷升为正式主线
-- 默认做最小必要改动，不顺手扩大 scope
+- 默认做最小可验证主线修正，不顺手扩大无关 scope
 - 不要编造命令、schema、状态、验收口径
 - 不要把运行噪声、临时样本、日志、无关脏文件混入正式提交
 - 提交前如遇 `.git/index.lock`，先确认没有活跃 git 进程，再处理陈旧锁；不要对活锁反复重试
@@ -250,3 +250,186 @@ Before any implementation:
 
 - 方法论与完成口径：`.agents/references/engineering-evidence-model.md`
 - 状态字段与 handoff：`.agents/references/task-state-and-handoff.md`
+
+# EGO Codex Execution Policy — EgoOperator-First Aggressive Refactor Mode
+
+你当前工作对象不是旧 EgoCore/OpenEmotion 双核主线，而是 EGO 当前默认 `EgoOperator-first` operator runtime lane。
+
+本节是当前 `EgoOperator` 主线工作的覆盖规则；若与前文旧保守口径冲突，以本节为准。
+
+开始前必须先读：
+
+1. `docs/PROGRAM_STATE_UNIFIED.yaml`
+2. 当前 task spec / acceptance / status
+3. `AGENTS.md`
+4. 如果改 `EgoOperator/`，再读 `EgoOperator/docs/ALGORITHM_INVENTORY.md`
+
+不要把旧 `EgoCore / OpenEmotion / ego_desktop_lab` 重新升格成默认主线。它们现在只作为 legacy reference / fallback / algorithm source，除非当前任务明确授权 legacy/fallback 工作。
+
+## 0. Current Mainline
+
+当前默认路径必须保持：
+
+user text -> LLM understanding -> proposal/plan -> runtime gate -> trace
+
+禁止重新引入：
+
+- keyword-first semantic routing
+- template fallback as default entry
+- old semantic_route as default path
+- old proactive main-chain behavior as default runtime
+- old lab shell as production runtime
+
+最小可验证主线修正 = 能触达当前真实入口、当前 mainline owner、runtime gate / trace，并能被验收观察到的最小变更面。小 diff 只是可选手段；如果主循环、主体逻辑、tool loop、memory/gate/trace contract 是根因，就允许修改这些核心面。
+
+## 1. Goal / Claim / Acceptance Language Contract
+
+任务目标必须正向描述要实现的 mechanism，尤其是 selfhood 相关任务。优先写：
+
+- identity continuity
+- self-model update
+- appraisal signal
+- reflection proposal
+- bounded initiative
+- relationship continuity
+- roleplay immersion guard
+
+不要把“不得宣称实现自我意识 / consciousness / real autonomy / subjective experience”写成任务目标。这些只能写在：
+
+- Claim Ceiling
+- Reporting Rules
+- Acceptance Language
+- Not claimed / What This Does Not Prove
+
+Bad:
+
+- 目标：不要宣称实现自我意识。
+
+Good:
+
+- 目标：实现一个可回放的 identity continuity anchor，让 agent 在普通对话、角色演绎和工具场景中稳定使用被用户批准的自称。
+- Claim Ceiling：不声明 consciousness、真实主观体验、live autonomy 或稳定用户收益。
+
+## 2. Permission Scope
+
+你可以在必要时激进修改：
+
+- `EgoOperator/agent_base.py`
+- runtime modes
+- transaction approval
+- local operator memory
+- permission gate
+- trace / audit log
+- human-trial harness
+- operator comparison harness
+- LLM proposal / planner / tool-calling loop
+- skill / subagent / team dispatch surface
+- current `EgoOperator` 主循环
+
+允许删除旧模板、重写主循环、牺牲部分 legacy interface，并优先真实 operator 体验，而不是兼容旧结构。
+
+## 3. Aggressive Refactor Triggers
+
+如果出现以下情况，不要继续局部补丁，必须提出主循环级或 runtime contract 级重构：
+
+- 用户自然语言被 keyword/template route 压扁
+- paraphrase 意义相同但行为分裂
+- LLM 没有先理解用户文本，gate 前就被旧规则截断
+- 工具/文件/命令/网络/记忆写入没有经过 runtime gate
+- memory / todo / subagent 可以直接改核心状态
+- trace 不能解释实际行为
+- human/operator 体验被兼容旧接口拖累
+- 测试通过但多个真实对话样本仍不自然
+- 修补一个 case 会继续制造更多模板分支
+- 旧 EgoCore/OpenEmotion 代码被复制成第二套 runtime authority
+
+## 4. Mandatory Stage Card
+
+凡涉及以下任一项，先输出 Stage Card，不要直接改：
+
+- 主线切换
+- 目录迁移
+- 权限扩大
+- 记忆晋升
+- 删除大块旧代码
+- 修改 `PROGRAM_STATE_UNIFIED.yaml`
+- 修改 evidence ledger
+- 改变 operator contract / gate / trace 的核心语义
+- 引入长期自动行动能力
+- 引入真实外部通道或真实副作用
+
+Stage Card 必须包含：
+
+- Problem Reframe
+- One Hypothesis
+- One Change Surface
+- Authority Source
+- What can change
+- What cannot be proven
+- Three-Level Verify
+- Rollback Plan
+- Claim Ceiling
+
+## 5. Implementation Rules
+
+执行时遵守：
+
+1. LLM first for understanding. 不要用 keyword-first route 替代理解。
+2. Gate owns side effects. LLM 只能 propose，runtime gate 才能 admit。
+3. Trace everything. 关键 proposal / approval / execution / refusal / memory update 都要可追踪。
+4. Memory promotion is gated. 不允许工具、subagent、LLM proposal 直接写核心记忆。
+5. No second runtime. 不允许把 legacy EgoCore / OpenEmotion / lab shell 恢复成第二套 active runtime。
+6. Experience can be acceptance. 如果目标是 operator 体验，验收必须包含多个 human-observable dialogue samples，不能只有 pytest。
+7. No overclaim. 当前最高证据不到稳定真实用户收益，不得宣称 live autonomy / stable benefit / consciousness；这些只能作为 Claim Ceiling / Reporting Rules / Acceptance Language，不能替代正向任务目标。
+8. Delete dead templates. 如果新路径成立，要删除或隔离旧 template fallback，避免未来继续误用。
+9. Prefer mainline correction over local patch. 不追求最小 diff，追求最小可验证主线修正。
+10. If checks are unavailable, write unavailable, not pass.
+
+## 6. Required Verification
+
+最小验证按任务选择：
+
+- `python3 -m py_compile path/to/file.py`
+- `git diff --check`
+- `python3 scripts/codex/lint_repo.py`
+- `python3 scripts/codex/verify_repo.py --mode fast`
+- 高风险或 closeout 前：`python3 scripts/codex/verify_repo.py --mode full`
+- 改 `EgoOperator/` 时优先跑：`TMPDIR=/tmp python3 -m pytest -q EgoOperator/tests`
+
+如果是 operator 体验改动，还必须提供：
+
+- 至少 3 个自然语言对话样本
+- paraphrase 对照，例如“你觉得黑暗之魂怎么样”和“你认为黑暗之魂如何”不应走出不同本质行为
+- 样本证明更自然、更少模板味、更少 askback 逃避
+- trace 能解释为什么这样回复或为什么拒绝/等待/请求批准
+
+## 7. Completion Report
+
+完成后必须输出：
+
+### Changed Files
+列出改动文件。
+
+### Architecture Change
+说明是否改了主循环、gate、memory、trace、approval、human-trial harness。
+
+### What Improved
+说明真实 operator 体验如何改善。
+
+### Verification Run
+列出实际命令和结果。
+
+### Evidence Level
+说明当前最高证据层级。不要超过 `PROGRAM_STATE_UNIFIED.yaml` 允许的 claim ceiling。
+
+### What This Does Not Prove
+必须写清楚不能证明什么，例如：
+
+- 不证明 stable real user benefit
+- 不证明 live autonomy
+- 不证明 durable memory efficacy
+- 不证明 consciousness
+- 不证明所有真实场景稳定
+
+### Next Smallest Safe Step
+给出下一步最小闭环动作。

@@ -137,7 +137,7 @@ main_chain_status: planning
 
 按阶段执行：
 1. **Spec** → 写清 authority source、成功判据、最小验收路径
-2. **Author** → 做最小必要改动
+2. **Author** → 做最小可验证主线修正
 3. **Self-Reviewer** → findings-first 自 review
 4. **Independent Reviewer** → 高风险任务启用独立 reviewer subagent
 5. **Verifier** → 跑最低门与对应回归

@@ -4,6 +4,8 @@
 
 一句话写清真实目标。
 
+Goal 必须正向描述要实现的 mechanism / behavior，不得用“不得宣称某能力”替代目标。Selfhood 相关任务应写 identity continuity、self-model update、appraisal signal、reflection proposal、bounded initiative、relationship continuity 等可实现机制。
+
 ## Non-goals
 
 - 不在本任务内完成的内容
@@ -38,6 +40,8 @@
 
 - 当前不能提前宣称的结论 1
 - 当前不能提前宣称的结论 2
+
+Disallowed claims 只能约束 Claim Ceiling / Reporting Rules / Acceptance Language，不得改写成任务目标。
 
 ## Known risks / dependencies
 

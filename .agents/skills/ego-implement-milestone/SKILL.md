@@ -14,7 +14,7 @@ description: "Use when a milestone is already defined by a spec, plan, acceptanc
 1. 明确当前只实现哪个 milestone，以及哪些内容不在 scope 内。
 2. 确认 authority source、入口、主链位置、完成标准。
 3. 若适用，先补或更新测试 / 最小复现；若不适用，要明确说明为什么。
-4. 只做当前 milestone 的最小必要改动。
+4. 只做当前 milestone 的最小可验证主线修正：以触达真实入口、当前 owner、gate/trace 和验收信号为准，不以最小 diff 为目标。
 5. 运行该 milestone 的最小验证：
    - 语法 / 导入
    - 定向测试
