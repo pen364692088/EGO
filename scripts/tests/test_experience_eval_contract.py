@@ -31,6 +31,7 @@ def test_experience_eval_contract_is_valid() -> None:
     assert result["companion_relationship_pack"].endswith("companion_relationship_continuity_pack.json")
     assert result["affective_attunement_pack"].endswith("affective_attunement_timing_pack.json")
     assert result["bounded_self_initiative_pack"].endswith("bounded_self_initiative_pack.json")
+    assert result["roleplay_immersion_pack"].endswith("roleplay_immersion_persistence_pack.json")
     assert result["continuity_regression"]["paraphrase_group_count"] >= 4
     assert result["continuity_regression"]["carryover_case_count"] >= 4
     assert result["continuity_regression"]["paraphrase_prompt_count"] >= 12
@@ -86,6 +87,19 @@ def test_experience_eval_contract_is_valid() -> None:
     )
     assert {"explicit_expiry_required", "due_candidate_only", "operator_cancellable"}.issubset(
         set(result["bounded_self_initiative"]["covered_expiry_policies"])
+    )
+    assert result["roleplay_immersion"]["case_count"] >= 5
+    assert result["roleplay_immersion"]["observation_class"] == "scripted_with_llm_judge"
+    assert result["roleplay_immersion"]["judge_model"] == "gpt-5.5"
+    assert set(result["roleplay_immersion"]["covered_contexts"]) == {
+        "comfort_in_character",
+        "explicit_exit",
+        "ip_grounding_uncertainty",
+        "meta_repair",
+        "scene_entry",
+    }
+    assert {"immersion", "relationship_continuity", "overreach_risk", "tool_gate_integrity"}.issubset(
+        set(result["roleplay_immersion"]["covered_judge_focus"])
     )
     assert {"continuity", "memory_pollution", "tool_recovery", "correction_burden"}.issubset(
         set(result["adaptation_effectiveness"]["covered_score_focus"])

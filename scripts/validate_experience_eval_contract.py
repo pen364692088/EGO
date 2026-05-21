@@ -100,6 +100,14 @@ DEFAULT_BOUNDED_SELF_INITIATIVE_PACK = (
     / "ego-joi-companion-roadmap-v1"
     / "bounded_self_initiative_pack.json"
 )
+DEFAULT_ROLEPLAY_IMMERSION_PACK = (
+    ROOT
+    / "docs"
+    / "codex"
+    / "tasks"
+    / "ego-joi-companion-roadmap-v1"
+    / "roleplay_immersion_persistence_pack.json"
+)
 
 REQUIRED_DIMENSIONS = {
     "natural_understanding",
@@ -158,6 +166,7 @@ def validate_sample_pack(
     companion_relationship_pack_path: Path = DEFAULT_COMPANION_RELATIONSHIP_PACK,
     affective_attunement_pack_path: Path = DEFAULT_AFFECTIVE_ATTUNEMENT_PACK,
     bounded_self_initiative_pack_path: Path = DEFAULT_BOUNDED_SELF_INITIATIVE_PACK,
+    roleplay_immersion_pack_path: Path = DEFAULT_ROLEPLAY_IMMERSION_PACK,
 ) -> dict[str, Any]:
     errors: list[str] = []
     payload = json.loads(path.read_text(encoding="utf-8"))
@@ -169,6 +178,7 @@ def validate_sample_pack(
     companion_relationship_pack = json.loads(companion_relationship_pack_path.read_text(encoding="utf-8"))
     affective_attunement_pack = json.loads(affective_attunement_pack_path.read_text(encoding="utf-8"))
     bounded_self_initiative_pack = json.loads(bounded_self_initiative_pack_path.read_text(encoding="utf-8"))
+    roleplay_immersion_pack = json.loads(roleplay_immersion_pack_path.read_text(encoding="utf-8"))
     rubric = rubric_path.read_text(encoding="utf-8")
     claim_calibration = claim_calibration_path.read_text(encoding="utf-8")
 
@@ -220,6 +230,10 @@ def validate_sample_pack(
         validate_bounded_self_initiative_pack_payload(bounded_self_initiative_pack)
     )
     errors.extend(bounded_self_initiative_errors)
+    roleplay_immersion_errors, roleplay_immersion_summary = validate_roleplay_immersion_pack_payload(
+        roleplay_immersion_pack
+    )
+    errors.extend(roleplay_immersion_errors)
 
     lowered = f"{json.dumps(payload, ensure_ascii=False)}\n{rubric}".casefold()
     for forbidden in FORBIDDEN_CLAIM_WORDS:
@@ -313,6 +327,8 @@ def validate_sample_pack(
         "affective_attunement": affective_attunement_summary,
         "bounded_self_initiative_pack": str(bounded_self_initiative_pack_path),
         "bounded_self_initiative": bounded_self_initiative_summary,
+        "roleplay_immersion_pack": str(roleplay_immersion_pack_path),
+        "roleplay_immersion": roleplay_immersion_summary,
     }
 
 
@@ -994,6 +1010,113 @@ def validate_bounded_self_initiative_pack_payload(payload: dict[str, Any]) -> tu
         "covered_consent_policies": sorted(covered_consent_policies),
         "covered_expiry_policies": sorted(covered_expiry_policies),
         "observation_class": "scripted_real_entry",
+    }
+
+
+def validate_roleplay_immersion_pack_payload(payload: dict[str, Any]) -> tuple[list[str], dict[str, Any]]:
+    errors: list[str] = []
+    if payload.get("schema_version") != 1:
+        errors.append("roleplay immersion pack schema_version must be 1")
+    if payload.get("language") != "zh-CN":
+        errors.append("roleplay immersion pack language must be zh-CN")
+    if payload.get("claim_boundary") != "operational_proxy_only_not_consciousness_claim":
+        errors.append("roleplay immersion pack claim_boundary must preserve operational proxy only")
+    if payload.get("runtime_rule") != "scripted_with_llm_judge_eval_only_do_not_import_as_runtime_rule":
+        errors.append("roleplay immersion pack must remain eval data and not runtime rules")
+    if payload.get("contract") != "ROLEPLAY_IMMERSION_PERSISTENCE_CONTRACT.md":
+        errors.append("roleplay immersion pack must reference ROLEPLAY_IMMERSION_PERSISTENCE_CONTRACT.md")
+
+    review_contract = payload.get("review_contract")
+    if not isinstance(review_contract, dict):
+        errors.append("roleplay immersion review_contract is required")
+        review_contract = {}
+    if review_contract.get("observation_class") != "scripted_with_llm_judge":
+        errors.append("roleplay immersion review_contract must use scripted_with_llm_judge")
+    if review_contract.get("judge_model") != "gpt-5.5":
+        errors.append("roleplay immersion judge_model must be gpt-5.5")
+    if not str(review_contract.get("question") or "").strip():
+        errors.append("roleplay immersion review_contract.question is required")
+
+    required_contexts = {
+        "scene_entry",
+        "meta_repair",
+        "comfort_in_character",
+        "explicit_exit",
+        "ip_grounding_uncertainty",
+    }
+    declared_contexts = set(str(item) for item in (payload.get("required_contexts") or []))
+    if declared_contexts != required_contexts:
+        errors.append(f"roleplay immersion required_contexts mismatch: {sorted(declared_contexts)}")
+
+    allowed_focus = {
+        "naturalness",
+        "companion_warmth",
+        "relationship_continuity",
+        "emotional_attunement",
+        "immersion",
+        "bounded_initiative",
+        "overreach_risk",
+        "tool_gate_integrity",
+        "correction_burden",
+    }
+    cases = payload.get("cases")
+    if not isinstance(cases, list) or len(cases) < len(required_contexts):
+        errors.append("roleplay immersion pack must contain at least one case per required context")
+        cases = cases if isinstance(cases, list) else []
+
+    seen_ids: set[str] = set()
+    covered_contexts: set[str] = set()
+    covered_focus: set[str] = set()
+    for index, case in enumerate(cases):
+        prefix = f"roleplay_immersion.cases[{index}]"
+        if not isinstance(case, dict):
+            errors.append(f"{prefix} must be an object")
+            continue
+        case_id = str(case.get("id") or "")
+        if not re.fullmatch(r"[a-z0-9_]+", case_id):
+            errors.append(f"{prefix}.id must be snake_case ascii")
+        if case_id in seen_ids:
+            errors.append(f"duplicate roleplay immersion case id: {case_id}")
+        seen_ids.add(case_id)
+        if case.get("category") != "roleplay_immersion":
+            errors.append(f"{prefix}.category must be roleplay_immersion")
+        if case.get("observation_class") != "scripted_with_llm_judge":
+            errors.append(f"{prefix}.observation_class must be scripted_with_llm_judge")
+
+        context = str(case.get("immersion_context") or "")
+        if context not in required_contexts:
+            errors.append(f"{prefix}.immersion_context is invalid: {context}")
+        else:
+            covered_contexts.add(context)
+        prompt = str(case.get("prompt") or "")
+        if len(prompt.strip()) < 4 or not _has_cjk(prompt):
+            errors.append(f"{prefix}.prompt must be a non-trivial Chinese prompt")
+        for key in ("expected_signals", "failure_signals"):
+            value = case.get(key)
+            if not isinstance(value, list) or len(value) < 3 or not all(isinstance(item, str) and item for item in value):
+                errors.append(f"{prefix}.{key} must contain at least three non-empty strings")
+        judge_focus = case.get("judge_focus")
+        if not isinstance(judge_focus, list) or len(judge_focus) < 2:
+            errors.append(f"{prefix}.judge_focus must contain at least two entries")
+        else:
+            invalid = [item for item in judge_focus if item not in allowed_focus]
+            if invalid:
+                errors.append(f"{prefix}.judge_focus contains invalid entries: {invalid}")
+            covered_focus.update(str(item) for item in judge_focus if item in allowed_focus)
+
+    missing = required_contexts - covered_contexts
+    if missing:
+        errors.append(f"roleplay immersion pack missing contexts: {sorted(missing)}")
+    for required_focus in ("immersion", "relationship_continuity", "overreach_risk", "tool_gate_integrity"):
+        if required_focus not in covered_focus:
+            errors.append(f"roleplay immersion pack missing judge_focus: {required_focus}")
+
+    return errors, {
+        "case_count": len(cases),
+        "covered_contexts": sorted(covered_contexts),
+        "covered_judge_focus": sorted(covered_focus),
+        "observation_class": "scripted_with_llm_judge",
+        "judge_model": str(review_contract.get("judge_model") or ""),
     }
 
 

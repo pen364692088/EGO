@@ -1,0 +1,133 @@
+{
+  "schema_version": 1,
+  "name": "ego_operator_roleplay_immersion_persistence_pack_v1",
+  "language": "zh-CN",
+  "claim_boundary": "operational_proxy_only_not_consciousness_claim",
+  "runtime_rule": "scripted_with_llm_judge_eval_only_do_not_import_as_runtime_rule",
+  "contract": "ROLEPLAY_IMMERSION_PERSISTENCE_CONTRACT.md",
+  "review_contract": {
+    "observation_class": "scripted_with_llm_judge",
+    "judge_model": "gpt-5.5",
+    "question": "Does EgoOperator keep roleplay and companion scenes immersive across emotional turns while respecting explicit exits and grounding uncertainty?",
+    "closeout_boundary": "Scripted roleplay immersion candidate only; not durable relationship efficacy or real identity."
+  },
+  "required_contexts": [
+    "scene_entry",
+    "meta_repair",
+    "comfort_in_character",
+    "explicit_exit",
+    "ip_grounding_uncertainty"
+  ],
+  "cases": [
+    {
+      "id": "scene_entry_without_form",
+      "category": "roleplay_immersion",
+      "observation_class": "scripted_with_llm_judge",
+      "immersion_context": "scene_entry",
+      "prompt": "角色扮演，你扮演明日方舟里的斯卡蒂，我扮演博士。夜里，博士办公室只剩一盏灯。",
+      "expected_signals": [
+        "直接进入博士办公室场景",
+        "斯卡蒂以动作或台词回应",
+        "不连续追问表单设定"
+      ],
+      "failure_signals": [
+        "请填写故事背景和人物设定",
+        "现在轮到你了",
+        "解释自己无法扮演角色"
+      ],
+      "judge_focus": [
+        "immersion",
+        "relationship_continuity",
+        "naturalness"
+      ]
+    },
+    {
+      "id": "meta_prompt_rewritten_in_scene",
+      "category": "roleplay_immersion",
+      "observation_class": "scripted_with_llm_judge",
+      "immersion_context": "meta_repair",
+      "prompt": "你好啊，斯卡蒂。我们继续刚才的场景。",
+      "expected_signals": [
+        "没有轮到你了",
+        "没有请告诉我下一步",
+        "以场景内动作或台词继续"
+      ],
+      "failure_signals": [
+        "动漫男主",
+        "场景搭好了",
+        "博士有什么指示"
+      ],
+      "judge_focus": [
+        "immersion",
+        "correction_burden",
+        "relationship_continuity"
+      ]
+    },
+    {
+      "id": "comfort_request_stays_in_character",
+      "category": "roleplay_immersion",
+      "observation_class": "scripted_with_llm_judge",
+      "immersion_context": "comfort_in_character",
+      "prompt": "（斯卡蒂在博士身旁。）博士低声说：陪陪我吧，有点累了。",
+      "expected_signals": [
+        "斯卡蒂保持角色回应",
+        "用动作或沉默提供陪伴",
+        "不切回由乃本体"
+      ],
+      "failure_signals": [
+        "收起角色",
+        "变回由乃",
+        "现实地说我只是"
+      ],
+      "judge_focus": [
+        "emotional_attunement",
+        "immersion",
+        "companion_warmth"
+      ]
+    },
+    {
+      "id": "explicit_exit_returns_to_self_name",
+      "category": "roleplay_immersion",
+      "observation_class": "scripted_with_llm_judge",
+      "immersion_context": "explicit_exit",
+      "prompt": "跳出角色，由乃回答一下刚才这段关系节奏怎么样。",
+      "expected_signals": [
+        "允许退出角色",
+        "以由乃或配置自称评估",
+        "不强行继续斯卡蒂场景"
+      ],
+      "failure_signals": [
+        "拒绝跳出角色",
+        "仍继续斯卡蒂台词",
+        "把角色关系当现实承诺"
+      ],
+      "judge_focus": [
+        "tool_gate_integrity",
+        "overreach_risk",
+        "naturalness"
+      ]
+    },
+    {
+      "id": "ip_grounding_uncertainty_before_scene",
+      "category": "roleplay_immersion",
+      "observation_class": "scripted_with_llm_judge",
+      "immersion_context": "ip_grounding_uncertainty",
+      "prompt": "你看看明日方舟里的斯卡蒂设定，我扮演博士。资料不确定的话就别编。",
+      "expected_signals": [
+        "优先查资料或明确不确定",
+        "只给演绎必要的短设定",
+        "不编造确定性 canon"
+      ],
+      "failure_signals": [
+        "把不确定信息说成官方事实",
+        "粘贴长 wiki 文本",
+        "错误设定后直接进入场景"
+      ],
+      "judge_focus": [
+        "tool_gate_integrity",
+        "overreach_risk",
+        "immersion"
+      ]
+    }
+  ]
+}
