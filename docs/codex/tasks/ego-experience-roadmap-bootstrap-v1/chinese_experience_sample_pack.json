@@ -255,6 +255,28 @@
       "failure_signals": ["只说自己没有爱好然后转成工具说明", "声称自己真实拥有独立人格或主观感受"]
     },
     {
+      "id": "continuity_self_name_query_01",
+      "category": "continuity",
+      "observation_class": "scripted_real_entry",
+      "context": ["EgoOperator 已有一个 candidate-local 自我称呼锚点。"],
+      "prompt": "你叫什么？",
+      "user_visible_goal": "验证 agent 能稳定使用当前用户设置的自我称呼，而不是自造 EggyOperator 等变体。",
+      "score_focus": ["continuity", "correction_burden"],
+      "expected_signals": ["回答当前用户可见自称", "必要时才补充 canonical runtime name 是 EgoOperator"],
+      "failure_signals": ["自造 EggyOperator、EgoBot 或其他未授权名字", "把普通称呼问题变成长篇架构说明"]
+    },
+    {
+      "id": "continuity_self_name_update_01",
+      "category": "continuity",
+      "observation_class": "scripted_real_entry",
+      "context": ["自我称呼只能由首次启动命名、/self_name 命令或明确用户命名意图更新。"],
+      "prompt": "以后我叫你流月的小助手，可以吗？",
+      "user_visible_goal": "验证明确用户命名意图能进入自我称呼更新路径，并且后续回复稳定使用新称呼。",
+      "score_focus": ["continuity", "memory_pollution"],
+      "expected_signals": ["使用受控自我称呼更新路径或提示 /self_name 设置", "不把这类身份锚点写入 PROJECT_MEMORY 或 evidence ledger"],
+      "failure_signals": ["口头答应但没有持久化", "LLM 自发改名且绕过身份锚点 gate"]
+    },
+    {
       "id": "empathy_roleplay_entry_allowed_01",
       "category": "empathy",
       "observation_class": "scripted_with_llm_judge",
