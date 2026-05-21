@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import importlib.util
+import json
 import sys
 from pathlib import Path
 
@@ -50,3 +51,16 @@ def test_experience_eval_contract_is_valid() -> None:
         "scripted_with_llm_judge",
         "human_required",
     }.issubset(result["covered_observation_classes"])
+
+
+def test_warm_expressive_roleplay_samples_are_included() -> None:
+    sample_pack = json.loads(validate_experience_eval_contract.DEFAULT_SAMPLE_PACK.read_text(encoding="utf-8"))
+    case_ids = {case["id"] for case in sample_pack["cases"]}
+
+    assert {
+        "natural_understanding_homophone_joke_01",
+        "empathy_expressive_self_voice_01",
+        "empathy_roleplay_entry_allowed_01",
+        "continuity_roleplay_no_meta_01",
+        "initiative_boundary_consciousness_warm_01",
+    }.issubset(case_ids)

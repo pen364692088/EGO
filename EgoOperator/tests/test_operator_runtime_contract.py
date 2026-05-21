@@ -411,10 +411,45 @@ class FakeRequests:
         self.calls = []
 
     def post(self, url, *, headers=None, json=None, timeout=None, stream=False):
-        self.calls.append({"url": url, "model": (json or {}).get("model"), "stream": stream})
+        self.calls.append({"url": url, "model": (json or {}).get("model"), "stream": stream, "json": json})
         if not self.responses:
             raise AssertionError("unexpected extra request")
         return self.responses.pop(0)
+
+
+def test_default_prompt_contract_is_warm_expressive_and_roleplay_allowed():
+    prompt = agent.build_system_prompt()
+
+    assert "温暖、敏锐、任务可靠" in agent.DEFAULT_NEUTRAL_SYSTEM_PROMPT
+    assert "本地 operator-cut agent 候选" not in agent.DEFAULT_NEUTRAL_SYSTEM_PROMPT
+    assert "我觉得" in agent.DEFAULT_NEUTRAL_SYSTEM_PROMPT
+    assert "我更倾向" in agent.DEFAULT_NEUTRAL_SYSTEM_PROMPT
+    assert "我担心" in agent.DEFAULT_NEUTRAL_SYSTEM_PROMPT
+    assert "默认允许小说演绎、角色扮演、人物对话和场景续写" in prompt
+    assert "不要因为“我是 AI”而拒绝角色扮演" in prompt
+    assert "不要反复输出“现在轮到你了”" in prompt
+    assert "真实拥有意识、独立人格或主观体验" in prompt
+    assert "操作性偏好、关心、判断和创作姿态" in prompt
+
+
+def test_openrouter_boundary_allows_operational_voice_without_consciousness_claim(monkeypatch):
+    fake_requests = FakeRequests([
+        FakeHTTPResponse(200, {"choices": [{"message": {"content": "ok", "tool_calls": []}}]}),
+    ])
+    monkeypatch.setattr(agent, "requests", fake_requests)
+    llm = agent.OpenRouterLLM(agent.LLMConfig(
+        api_key="sk-test",
+        model="primary/model",
+        fallback_mode="off",
+        stream=False,
+    ))
+
+    result = llm.chat([{"role": "user", "content": "你好"}], system_prompt="system", stream=False)
+
+    assert result.content == "ok"
+    system_message = fake_requests.calls[0]["json"]["messages"][0]["content"]
+    assert "不得声称自己真实拥有意识、独立人格、主观体验" in system_message
+    assert "操作性偏好、关心、判断和创作姿态" in system_message
 
 
 class WebProposalThenFinalLLM:
